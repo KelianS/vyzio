@@ -1,3 +1,4 @@
+import type { HouseClock } from './schedule_rule.entity'
 /** Why the camera's part of the last privacy toggle is not confirmed (SPECS 9.2); null when it followed. */
 export const PrivacyMiss = {
   PositionMissing: 'position_missing',
@@ -67,9 +68,17 @@ export interface Camera {
   privacyMissDetail: string | null
   ptzSupported: boolean
   privacyStrategy: PrivacyStrategy
+  /** Surveillance resumed by hand inside a Privacy range; null when it is not (SPECS 9.2). */
+  privacyResume: PrivacyResume | null
   verifiedCapabilities: string[]
   /** The qualities its live view offers; empty while it is not in surveillance. */
   liveQualities: LiveQuality[]
   /** When detection last finished; null: never, so its page runs it on arrival (ADR-68 b). */
   detectedAt: string | null
+}
+
+/** A surveillance resumed by hand inside a Privacy range, held until the ranges let the camera out (SPECS 9.2). */
+export interface PrivacyResume {
+  /** When the ranges end, in the house's clock; null when they never do. */
+  until: HouseClock | null
 }

@@ -16,6 +16,8 @@ public sealed class ToggleCameraPrivacyModeUseCase(
     IPtzPresetRepository presets,
     PtzManagedPositions positions,
     ILiveStreamRelay live,
+    IScheduleRuleRepository rules,
+    PrivacyResumes resumes,
     ILogger<ToggleCameraPrivacyModeUseCase>? logger = null)
 {
     public async Task<CameraDto?> ExecuteAsync(string cameraId, bool active, PrivacyModeSource source = PrivacyModeSource.Manual, CancellationToken ct = default)
@@ -29,6 +31,8 @@ public sealed class ToggleCameraPrivacyModeUseCase(
         camera.PrivacyModeActive = active;
         camera.PrivacyModeSource = active ? source : null;
         answer.ApplyTo(camera);
+        // Before the save, so no scheduler pass sees the camera uncut without its resume.
+        await TrackResumeAsync(camera.Id, active, source);
 
         // Applied to the end even if the caller hangs up: privacy must not stop half way.
         camera.UpdatedAt = DateTimeOffset.UtcNow;
@@ -41,6 +45,15 @@ public sealed class ToggleCameraPrivacyModeUseCase(
 
         return CameraDto.From(camera);
     }
+
+    // A cut ends a resume; resuming by hand inside a range keeps the schedule from cutting again until it ends (SPECS 9.2).
+    private async Task TrackResumeAsync(string cameraId, bool active, PrivacyModeSource source)
+    {
+        if (active)
+            resumes.End(cameraId);
+        else if (source == PrivacyModeSource.Manual)
+            resumes.Resume(cameraId, await rules.GetByKindAsync(ScheduleRuleKind.Privacy, CancellationToken.None));
+    }
 }
 
 public sealed class BatchToggleCameraPrivacyModeUseCase(
@@ -51,6 +64,8 @@ public sealed class BatchToggleCameraPrivacyModeUseCase(
     IPtzPresetRepository presets,
     PtzManagedPositions positions,
     ILiveStreamRelay live,
+    IScheduleRuleRepository rules,
+    PrivacyResumes resumes,
     ILogger<BatchToggleCameraPrivacyModeUseCase>? logger = null)
 {
     public async Task<IReadOnlyList<CameraDto>> ExecuteAsync(
@@ -61,6 +76,7 @@ public sealed class BatchToggleCameraPrivacyModeUseCase(
         var allCameras = await cameras.GetAllAsync(ct);
         var targets = allCameras.Where(c => cameraIds.Contains(c.Id)).ToList();
         var updated = new List<CameraDto>(targets.Count);
+        IReadOnlyList<ScheduleRule> privacyRules = active ? [] : await rules.GetByKindAsync(ScheduleRuleKind.Privacy, ct);
 
         try
         {
@@ -72,6 +88,8 @@ public sealed class BatchToggleCameraPrivacyModeUseCase(
                 camera.PrivacyModeActive = active;
                 camera.PrivacyModeSource = active ? PrivacyModeSource.Manual : null;
                 answer.ApplyTo(camera);
+                // The same rule as one camera, camera by camera, before the save (SPECS 9.2).
+                if (active) resumes.End(camera.Id); else resumes.Resume(camera.Id, privacyRules);
 
                 camera.UpdatedAt = DateTimeOffset.UtcNow;
                 await cameras.UpdateAsync(camera, CancellationToken.None);

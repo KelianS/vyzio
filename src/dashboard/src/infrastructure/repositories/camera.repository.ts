@@ -4,6 +4,7 @@ import {
   PrivacyMiss,
   type Camera,
   type LiveQuality,
+  type PrivacyResume,
 } from '../../domain/entities/camera.entity'
 import type {
   CameraProtocol,
@@ -52,6 +53,7 @@ interface CameraDto {
   privacyMissDetail?: string | null
   ptzSupported: boolean
   privacyStrategy: string
+  privacyResume?: PrivacyResume | null
   verifiedCapabilities: string[]
   liveQualities: LiveQuality[]
   detectedAt: string | null
@@ -399,6 +401,7 @@ function mapCamera(camera: CameraDto): Camera {
     privacyMissDetail: camera.privacyMissDetail ?? null,
     ptzSupported: camera.ptzSupported ?? false,
     privacyStrategy: camera.privacyStrategy as Camera['privacyStrategy'],
+    privacyResume: camera.privacyResume ?? null,
     verifiedCapabilities: camera.verifiedCapabilities ?? [],
     liveQualities: camera.liveQualities,
     detectedAt: camera.detectedAt,

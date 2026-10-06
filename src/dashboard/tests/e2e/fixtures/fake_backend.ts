@@ -28,6 +28,8 @@ export interface FakeCamera {
   privacyMissDetail: string | null
   ptzSupported: boolean
   privacyStrategy: string
+  /** Surveillance resumed by hand inside a Privacy range, and when the ranges end (SPECS 9.2). */
+  privacyResume: { until: { dayOfWeek: number; time: string } | null } | null
   verifiedCapabilities: string[]
   /** The live view's qualities (ADR-72 c). */
   liveQualities: string[]
@@ -165,6 +167,7 @@ export function makeFakeCamera(overrides: Partial<FakeCamera> = {}): FakeCamera 
     privacyMissDetail: null,
     ptzSupported: false,
     privacyStrategy: 'software_blur',
+    privacyResume: null,
     verifiedCapabilities: [],
     liveQualities: ['low', 'high'],
     detectedAt: '2026-01-01T00:00:00Z',

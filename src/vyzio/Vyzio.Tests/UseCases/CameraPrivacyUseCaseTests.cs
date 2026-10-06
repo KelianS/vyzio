@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Time.Testing;
 using NSubstitute;
 using Vyzio.Application.UseCases.Cameras;
 using Vyzio.Core.Entities;
@@ -19,6 +20,9 @@ public class ToggleCameraPrivacyModeUseCaseTests
     private readonly IPtzPresetRepository _presets = Substitute.For<IPtzPresetRepository>();
     private readonly ILogger<ToggleCameraPrivacyModeUseCase> _logger = Substitute.For<ILogger<ToggleCameraPrivacyModeUseCase>>();
     private readonly ILiveStreamRelay _live = Substitute.For<ILiveStreamRelay>();
+    private readonly IScheduleRuleRepository _schedules = Substitute.For<IScheduleRuleRepository>();
+    // 2026-09-23 is a Wednesday, inside the morning range below.
+    private readonly PrivacyResumes _resumes = new(TimeZoneInfo.Utc, new FakeTimeProvider(DateTimeOffset.Parse("2026-09-23T10:30:00+00:00", System.Globalization.CultureInfo.InvariantCulture)));
     private readonly ToggleCameraPrivacyModeUseCase _sut;
 
     public ToggleCameraPrivacyModeUseCaseTests()
@@ -30,8 +34,17 @@ public class ToggleCameraPrivacyModeUseCaseTests
             .Returns(call => new PtzPreset { CameraId = "cam1", PresetId = call.ArgAt<int>(1) });
         _ptzProvider.ReadPresetsAsync(Arg.Any<Camera>(), Arg.Any<CameraCapabilityBinding>(), Arg.Any<CancellationToken>())
             .Returns(new HashSet<int> { PtzPreset.SurveillanceSlot, PtzPreset.ParkingSlot });
-        _sut = new ToggleCameraPrivacyModeUseCase(_cameras, _bindings, _registry, _frigateConfig, _presets, new PtzManagedPositions(TimeProvider.System, NullLogger<PtzManagedPositions>.Instance), _live, _logger);
+        _sut = new ToggleCameraPrivacyModeUseCase(_cameras, _bindings, _registry, _frigateConfig, _presets, new PtzManagedPositions(TimeProvider.System, NullLogger<PtzManagedPositions>.Instance), _live, _schedules, _resumes, _logger);
     }
+
+    private static ScheduleRule WednesdayMorning(string cameraId) => new()
+    {
+        Kind = ScheduleRuleKind.Privacy,
+        DaysOfWeek = "[3]",
+        StartTime = "08:00",
+        EndTime = "12:00",
+        Targets = [new ScheduleRuleTarget { TargetId = cameraId }],
+    };
 
     private static Camera MakeCamera(string id = "cam1", PrivacyStrategy strategy = PrivacyStrategy.SoftwareBlur) => new()
     {
@@ -486,6 +499,62 @@ public class ToggleCameraPrivacyModeUseCaseTests
 
         Assert.Null(result);
     }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldHoldAResume_WhenTheSurveillanceIsResumedByHandInsideARange()
+    {
+        // Arrange
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(MakeCamera());
+        _schedules.GetByKindAsync(ScheduleRuleKind.Privacy, Arg.Any<CancellationToken>()).Returns([WednesdayMorning("cam1")]);
+
+        // Act
+        await _sut.ExecuteAsync("cam1", active: false);
+
+        // Assert
+        Assert.True(_resumes.Holds("cam1"));
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldHoldNoResume_WhenTheSurveillanceIsResumedOutsideAnyRange()
+    {
+        // Arrange
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(MakeCamera());
+        _schedules.GetByKindAsync(ScheduleRuleKind.Privacy, Arg.Any<CancellationToken>()).Returns([WednesdayMorning("cam2")]);
+
+        // Act
+        await _sut.ExecuteAsync("cam1", active: false);
+
+        // Assert
+        Assert.False(_resumes.Holds("cam1"));
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldHoldNoResume_WhenTheScheduleEndsPrivacy()
+    {
+        // Arrange
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(MakeCamera());
+        _schedules.GetByKindAsync(ScheduleRuleKind.Privacy, Arg.Any<CancellationToken>()).Returns([WednesdayMorning("cam1")]);
+
+        // Act
+        await _sut.ExecuteAsync("cam1", active: false, PrivacyModeSource.Schedule);
+
+        // Assert
+        Assert.False(_resumes.Holds("cam1"));
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldEndTheResume_WhenTheCameraIsCutAgain()
+    {
+        // Arrange
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(MakeCamera());
+        _resumes.Resume("cam1", [WednesdayMorning("cam1")]);
+
+        // Act
+        await _sut.ExecuteAsync("cam1", active: true);
+
+        // Assert
+        Assert.False(_resumes.Holds("cam1"));
+    }
 }
 
 public class BatchToggleCameraPrivacyModeUseCaseTests
@@ -497,11 +566,51 @@ public class BatchToggleCameraPrivacyModeUseCaseTests
     private readonly IPrivacyCapabilityProvider _privacyProvider = Substitute.For<IPrivacyCapabilityProvider>();
     private readonly BatchToggleCameraPrivacyModeUseCase _sut;
     private readonly ILiveStreamRelay _live = Substitute.For<ILiveStreamRelay>();
+    private readonly IScheduleRuleRepository _schedules = Substitute.For<IScheduleRuleRepository>();
+    // 2026-09-23 is a Wednesday, inside the morning range below.
+    private readonly PrivacyResumes _resumes = new(TimeZoneInfo.Utc, new FakeTimeProvider(DateTimeOffset.Parse("2026-09-23T10:30:00+00:00", System.Globalization.CultureInfo.InvariantCulture)));
 
     public BatchToggleCameraPrivacyModeUseCaseTests()
     {
         _registry.ResolvePrivacy(Arg.Any<SupportedProtocol>()).Returns(_privacyProvider);
-        _sut = new BatchToggleCameraPrivacyModeUseCase(_cameras, _bindings, _registry, _frigateConfig, Substitute.For<IPtzPresetRepository>(), new PtzManagedPositions(TimeProvider.System, NullLogger<PtzManagedPositions>.Instance), _live);
+        _sut = new BatchToggleCameraPrivacyModeUseCase(_cameras, _bindings, _registry, _frigateConfig, Substitute.For<IPtzPresetRepository>(), new PtzManagedPositions(TimeProvider.System, NullLogger<PtzManagedPositions>.Instance), _live, _schedules, _resumes);
+    }
+
+    private static ScheduleRule WednesdayMorning(string cameraId) => new()
+    {
+        Kind = ScheduleRuleKind.Privacy,
+        DaysOfWeek = "[3]",
+        StartTime = "08:00",
+        EndTime = "12:00",
+        Targets = [new ScheduleRuleTarget { TargetId = cameraId }],
+    };
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldHoldAResumeOnlyForTheCamerasInsideARange_WhenTheBatchResumesSurveillance()
+    {
+        // Arrange
+        _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns([MakeCamera("cam1"), MakeCamera("cam2")]);
+        _schedules.GetByKindAsync(ScheduleRuleKind.Privacy, Arg.Any<CancellationToken>()).Returns([WednesdayMorning("cam1")]);
+
+        // Act
+        await _sut.ExecuteAsync(["cam1", "cam2"], active: false);
+
+        // Assert
+        Assert.Equal((true, false), (_resumes.Holds("cam1"), _resumes.Holds("cam2")));
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldEndTheResumes_WhenTheBatchCutsTheCameras()
+    {
+        // Arrange
+        _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns([MakeCamera("cam1")]);
+        _resumes.Resume("cam1", [WednesdayMorning("cam1")]);
+
+        // Act
+        await _sut.ExecuteAsync(["cam1"], active: true);
+
+        // Assert
+        Assert.False(_resumes.Holds("cam1"));
     }
 
     private static Camera MakeCamera(string id, PrivacyStrategy strategy = PrivacyStrategy.SoftwareBlur) => new()

@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { makeCamera } from '../../testing/camera_fixture'
-import { formatStreamFailureLine, formatStreamWorkingLine } from './cameras.formatters'
+import {
+  formatPrivacyResume,
+  formatStreamFailureLine,
+  formatStreamWorkingLine,
+} from './cameras.formatters'
 
 describe('formatStreamFailureLine', () => {
   it.each([
@@ -65,5 +69,25 @@ describe('formatStreamWorkingLine', () => {
 
     // Assert
     expect(said).toBeNull()
+  })
+})
+
+describe('formatPrivacyResume', () => {
+  it('formatPrivacyResume_ShouldNameTheDayAndTimeTheRangeEnds_WhenTheRangesEnd', () => {
+    // Act
+    const line = formatPrivacyResume({ until: { dayOfWeek: 0, time: '07:30' } })
+
+    // Assert
+    expect(line).toBe(
+      'Surveillance reprise jusqu’à la fin de la plage, dimanche à 07:30, heure de la maison.',
+    )
+  })
+
+  it('formatPrivacyResume_ShouldSayItHoldsDespiteTheRanges_WhenTheRangesNeverEnd', () => {
+    // Act
+    const line = formatPrivacyResume({ until: null })
+
+    // Assert
+    expect(line).toBe('Surveillance reprise malgré les plages en cours.')
   })
 })

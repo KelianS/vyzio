@@ -77,6 +77,34 @@ describe('CameraPrivacyView', () => {
     )
   })
 
+  it('onLoad_ShouldSayUntilWhenTheSurveillanceIsResumed_WhenItWasResumedInsideARange', async () => {
+    // Arrange
+    fakeNetwork({ [RULES]: ok([makeRule()]) })
+    const resumed = makeCamera({ privacyResume: { until: { dayOfWeek: 2, time: '06:00' } } })
+
+    // Act
+    renderScreen(<CameraPrivacyView />, { ...PRIVACY_TAB, outletContext: resumed })
+
+    // Assert
+    expect(
+      await screen.findByText(
+        'Surveillance reprise jusqu’à la fin de la plage, mardi à 06:00, heure de la maison.',
+      ),
+    ).toBeInTheDocument()
+  })
+
+  it('onLoad_ShouldSayNothingOfAResume_WhenTheSurveillanceWasNotResumed', async () => {
+    // Arrange
+    fakeNetwork({ [RULES]: ok([makeRule()]) })
+
+    // Act
+    renderScreen(<CameraPrivacyView />, PRIVACY_TAB)
+
+    // Assert
+    expect(await screen.findByText('1 plage « Vie privée » s’applique')).toBeInTheDocument()
+    expect(screen.queryByText(/Surveillance reprise/)).not.toBeInTheDocument()
+  })
+
   it('onLoad_ShouldSayTheRangesCouldNotBeReadWhereTheCountWouldBe_WhenTheReadFails', async () => {
     // Arrange
     fakeNetwork({ [RULES]: failure(500) })

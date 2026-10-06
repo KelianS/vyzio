@@ -7,9 +7,10 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Application.UseCases.Cameras;
 
-// Evaluates the privacy rules every minute; a manual activation is never overridden (ADR-20, ADR-63).
+// Evaluates the privacy rules every minute; a manual cut, or a manual resume until its range ends, is never overridden (ADR-20, ADR-63).
 public sealed class PrivacySchedulerService(
     IServiceScopeFactory scopeFactory,
+    PrivacyResumes resumes,
     TimeZoneInfo timeZone,
     TimeProvider time,
     ILogger<PrivacySchedulerService> logger) : BackgroundService
@@ -68,6 +69,12 @@ public sealed class PrivacySchedulerService(
     {
         // Manual activations are never overridden by the scheduler
         if (camera.PrivacyModeSource == PrivacyModeSource.Manual)
+            return;
+
+        // A resume lasts while a range covers the camera, then the next range applies (SPECS 9.2).
+        if (!shouldBeActive)
+            resumes.End(camera.Id);
+        else if (resumes.Holds(camera.Id))
             return;
 
         var currentlyActive = camera.PrivacyModeActive;

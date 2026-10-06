@@ -1,6 +1,6 @@
-using System.Globalization;
 using System.Text.Json;
 using Vyzio.Application.DTOs.Scheduling;
+using Vyzio.Application.UseCases.Cameras;
 using Vyzio.Core.Common;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
@@ -63,7 +63,7 @@ public sealed class GetScheduleRuleUseCase(IScheduleRuleRepository rules)
         => await rules.GetByIdAsync(id, ct) is { } rule ? ScheduleRuleDto.From(rule) : null;
 }
 
-public sealed class CreateScheduleRuleUseCase(IScheduleRuleRepository rules, ScheduleRuleValidator validator)
+public sealed class CreateScheduleRuleUseCase(IScheduleRuleRepository rules, ScheduleRuleValidator validator, PrivacyResumes resumes)
 {
     public async Task<ScheduleRuleDto> ExecuteAsync(CreateScheduleRuleRequest request, CancellationToken ct = default)
     {
@@ -84,11 +84,12 @@ public sealed class CreateScheduleRuleUseCase(IScheduleRuleRepository rules, Sch
         rule.ReplaceTargets(targetIds);
 
         await rules.AddAsync(rule, ct);
+        resumes.EndFor(rule);
         return ScheduleRuleDto.From(rule);
     }
 }
 
-public sealed class UpdateScheduleRuleUseCase(IScheduleRuleRepository rules, ScheduleRuleValidator validator)
+public sealed class UpdateScheduleRuleUseCase(IScheduleRuleRepository rules, ScheduleRuleValidator validator, PrivacyResumes resumes)
 {
     public async Task<ScheduleRuleDto?> ExecuteAsync(string id, UpdateScheduleRuleRequest request, CancellationToken ct = default)
     {
@@ -106,6 +107,7 @@ public sealed class UpdateScheduleRuleUseCase(IScheduleRuleRepository rules, Sch
         rule.ReplaceTargets(targetIds);
 
         await rules.UpdateAsync(rule, ct);
+        resumes.EndFor(rule);
         return ScheduleRuleDto.From(rule);
     }
 }
@@ -126,14 +128,25 @@ public static class ScheduleRuleCoverage
 {
     public static bool Covers(IEnumerable<ScheduleRule> rules, string targetId, DateTimeOffset localMoment)
         => rules.Any(rule => rule.IsTargeting(targetId) && rule.Covers(localMoment));
+
+    /// <summary>The first moment after this one the target is out of every range, or null when the ranges never let it out.</summary>
+    public static DateTimeOffset? EndOf(IReadOnlyList<ScheduleRule> rules, string targetId, DateTimeOffset localMoment)
+    {
+        var targeting = rules.Where(rule => rule.IsTargeting(targetId)).ToList();
+        // Coverage can only stop where one of its ranges ends, so only those moments are tried, over a week and a day.
+        return Enumerable.Range(0, 9)
+            .SelectMany(day => targeting
+                .Where(rule => rule.End.HasValue)
+                .Select(rule => new DateTimeOffset(localMoment.Date.AddDays(day) + rule.End!.Value, localMoment.Offset)))
+            .Where(end => end > localMoment)
+            .Order()
+            .Select(end => (DateTimeOffset?)end)
+            .FirstOrDefault(end => !Covers(targeting, targetId, end!.Value));
+    }
 }
 
 /// <summary>The current moment in the house's clock, for the week to mark: the device consulting may sit elsewhere (ADR-63).</summary>
 public sealed class GetHouseClockUseCase(TimeZoneInfo timeZone, TimeProvider time)
 {
-    public HouseClockDto Execute()
-    {
-        var now = TimeZoneInfo.ConvertTime(time.GetUtcNow(), timeZone);
-        return new HouseClockDto((int)now.DayOfWeek, now.ToString("HH:mm", CultureInfo.InvariantCulture));
-    }
+    public HouseClockDto Execute() => HouseClockDto.Of(TimeZoneInfo.ConvertTime(time.GetUtcNow(), timeZone));
 }

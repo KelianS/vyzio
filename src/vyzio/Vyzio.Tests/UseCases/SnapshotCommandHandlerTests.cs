@@ -18,7 +18,7 @@ public class SnapshotCommandHandlerTests
     {
         _bindings.GetAllVerifiedAsync(Arg.Any<CancellationToken>()).Returns([]);
         _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns(cameras);
-        return new SnapshotCommandHandler(new GetCamerasUseCase(_cameras, _bindings), _frames);
+        return new SnapshotCommandHandler(new GetCamerasUseCase(_cameras, _bindings, Substitute.For<IScheduleRuleRepository>(), new PrivacyResumes(TimeZoneInfo.Utc, TimeProvider.System)), _frames);
     }
 
     private static Camera Camera(string slug, string displayName, bool privacy = false) => new()

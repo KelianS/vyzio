@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Time.Testing;
 using NSubstitute;
 using Vyzio.Application.DTOs.Scheduling;
+using Vyzio.Application.UseCases.Cameras;
 using Vyzio.Application.UseCases.Scheduling;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
@@ -12,6 +13,8 @@ public class ScheduleRuleUseCaseTests
 {
     private readonly ICameraRepository _cameras = Substitute.For<ICameraRepository>();
     private readonly IScheduleRuleRepository _rules = Substitute.For<IScheduleRuleRepository>();
+    // 2026-09-23 is a Wednesday, inside the range Saved() holds.
+    private readonly PrivacyResumes _resumes = new(TimeZoneInfo.Utc, new FakeTimeProvider(new DateTimeOffset(2026, 9, 23, 10, 30, 0, TimeSpan.Zero)));
 
     public ScheduleRuleUseCaseTests()
     {
@@ -41,9 +44,9 @@ public class ScheduleRuleUseCaseTests
     private ScheduleRuleValidator Validator() =>
         new(_cameras, new NotificationChannelCatalog([Sender(NotificationChannel.Telegram), Sender(NotificationChannel.Discord)]));
 
-    private CreateScheduleRuleUseCase Create() => new(_rules, Validator());
+    private CreateScheduleRuleUseCase Create() => new(_rules, Validator(), _resumes);
 
-    private UpdateScheduleRuleUseCase Update() => new(_rules, Validator());
+    private UpdateScheduleRuleUseCase Update() => new(_rules, Validator(), _resumes);
 
     private static ScheduleRule Saved()
     {
@@ -202,5 +205,107 @@ public class ScheduleRuleUseCaseTests
 
         // Assert
         Assert.Equal(new HouseClockDto(1, "01:30"), clock);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldEndTheResume_WhenAPrivacyRangeTargetingTheCameraIsCreated()
+    {
+        // Arrange
+        _resumes.Resume("cam1", [Saved()]);
+        var request = new CreateScheduleRuleRequest("privacy", ["cam1"], [3], "09:00", "18:00");
+
+        // Act
+        await Create().ExecuteAsync(request);
+
+        // Assert
+        Assert.False(_resumes.Holds("cam1"));
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldEndTheResume_WhenAPrivacyRangeTargetingTheCameraIsUpdated()
+    {
+        // Arrange
+        _rules.GetByIdAsync("r1", Arg.Any<CancellationToken>()).Returns(Saved());
+        _resumes.Resume("cam1", [Saved()]);
+
+        // Act
+        await Update().ExecuteAsync("r1", new UpdateScheduleRuleRequest(["cam1"], [3], "08:00", "13:00"));
+
+        // Assert
+        Assert.False(_resumes.Holds("cam1"));
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldKeepTheResume_WhenTheCreatedRangeIsANotificationOne()
+    {
+        // Arrange
+        _resumes.Resume("cam1", [Saved()]);
+        var request = new CreateScheduleRuleRequest("mute_notifications", ["telegram"], [3], "09:00", "18:00");
+
+        // Act
+        await Create().ExecuteAsync(request);
+
+        // Assert
+        Assert.True(_resumes.Holds("cam1"));
+    }
+
+    private static ScheduleRule Range(string days, string start, string end)
+    {
+        var rule = new ScheduleRule { Kind = ScheduleRuleKind.Privacy, DaysOfWeek = days, StartTime = start, EndTime = end };
+        rule.ReplaceTargets(["cam1"]);
+        return rule;
+    }
+
+    [Fact]
+    public void EndOf_ShouldAnswerTheEndOfTheRange_WhenOneRangeCoversTheTarget()
+    {
+        // Arrange
+        var wednesday = new DateTimeOffset(2026, 9, 23, 10, 30, 0, TimeSpan.Zero);
+
+        // Act
+        var end = ScheduleRuleCoverage.EndOf([Range("[3]", "08:00", "12:00")], "cam1", wednesday);
+
+        // Assert
+        Assert.Equal(new DateTimeOffset(2026, 9, 23, 12, 0, 0, TimeSpan.Zero), end);
+    }
+
+    [Fact]
+    public void EndOf_ShouldAnswerTheEndOfTheLastRange_WhenTheRangesFollowEachOther()
+    {
+        // Arrange
+        var wednesday = new DateTimeOffset(2026, 9, 23, 10, 30, 0, TimeSpan.Zero);
+
+        // Act
+        var end = ScheduleRuleCoverage.EndOf([Range("[3]", "08:00", "12:00"), Range("[3]", "11:00", "14:00")], "cam1", wednesday);
+
+        // Assert
+        Assert.Equal(new DateTimeOffset(2026, 9, 23, 14, 0, 0, TimeSpan.Zero), end);
+    }
+
+    [Fact]
+    public void EndOf_ShouldAnswerTheNextMorning_WhenTheRangeCrossesMidnight()
+    {
+        // Arrange
+        var wednesdayNight = new DateTimeOffset(2026, 9, 23, 23, 0, 0, TimeSpan.Zero);
+
+        // Act
+        var end = ScheduleRuleCoverage.EndOf([Range("[3]", "22:00", "06:00")], "cam1", wednesdayNight);
+
+        // Assert
+        Assert.Equal(new DateTimeOffset(2026, 9, 24, 6, 0, 0, TimeSpan.Zero), end);
+    }
+
+    [Fact]
+    public void EndOf_ShouldAnswerNull_WhenTheRangesCoverTheWholeWeek()
+    {
+        // Arrange
+        var wednesday = new DateTimeOffset(2026, 9, 23, 10, 30, 0, TimeSpan.Zero);
+        var everyDay = "[0,1,2,3,4,5,6]";
+
+        // Act
+        var end = ScheduleRuleCoverage.EndOf([Range(everyDay, "00:00", "12:00"), Range(everyDay, "12:00", "00:00")], "cam1", wednesday);
+
+        // Assert
+        Assert.Null(end);
     }
 }

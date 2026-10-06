@@ -99,7 +99,7 @@ CREATE INDEX idx_privacy_schedules_camera ON camera_privacy_schedules(camera_id,
 
 - `privacy_mode_source = "manual"` : la planification ne peut pas desactiver automatiquement ; seul un toggle manuel repasse la source a `null` et rend le controle au scheduler.
 - `privacy_mode_source = "schedule"` : le scheduler desactive a la fin de la fenetre.
-- Quand l'utilisateur reactive manuellement pendant une fenetre planifiee, la source repasse a `null` (suivi de planification repris).
+- Quand l'utilisateur reactive manuellement pendant une fenetre planifiee, la source repasse a `null` et le scheduler ne recoupe pas la camera avant la fin de cette fenetre (SPECS 9.2).
 
 ## Flux d'activation
 
