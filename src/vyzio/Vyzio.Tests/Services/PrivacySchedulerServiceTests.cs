@@ -26,14 +26,19 @@ public class PrivacySchedulerServiceTests
             .Returns(new FrigateConfigApplyResult(true, "ok", "frigate.yml"));
     }
 
-    private PrivacySchedulerService CreateSut(FakeTimeProvider time) => new(
-        BackgroundLoop.Scopes(services => services
-            .AddSingleton(_schedules)
-            .AddSingleton(_cameras)
-            .AddSingleton(new ToggleCameraPrivacyModeUseCase(_cameras, _bindings, _registry, _frigateConfig, Substitute.For<IPtzPresetRepository>(), new PtzManagedPositions(TimeProvider.System, NullLogger<PtzManagedPositions>.Instance), Substitute.For<ILiveStreamRelay>()))),
-        TimeZoneInfo.Utc,
-        time,
-        NullLogger<PrivacySchedulerService>.Instance);
+    private PrivacySchedulerService CreateSut(FakeTimeProvider time, PrivacyResumes? resumes = null)
+    {
+        resumes ??= new PrivacyResumes(TimeZoneInfo.Utc, time);
+        return new(
+            BackgroundLoop.Scopes(services => services
+                .AddSingleton(_schedules)
+                .AddSingleton(_cameras)
+                .AddSingleton(new ToggleCameraPrivacyModeUseCase(_cameras, _bindings, _registry, _frigateConfig, Substitute.For<IPtzPresetRepository>(), new PtzManagedPositions(TimeProvider.System, NullLogger<PtzManagedPositions>.Instance), Substitute.For<ILiveStreamRelay>(), _schedules, resumes))),
+            resumes,
+            TimeZoneInfo.Utc,
+            time,
+            NullLogger<PrivacySchedulerService>.Instance);
+    }
 
     // 2026-09-23 is a Wednesday.
     private static ScheduleRule WednesdayMorning(params string[] cameraIds) => new()
@@ -229,6 +234,57 @@ public class PrivacySchedulerServiceTests
 
         // Assert
         Assert.False(camera.PrivacyModeActive);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldLeaveTheCameraOn_WhenItsSurveillanceWasResumedByHandInsideTheRange()
+    {
+        // Arrange
+        var time = BackgroundLoop.ClockAt("2026-09-23T10:30:00+00:00");
+        KnownCamera();
+        var resumes = new PrivacyResumes(TimeZoneInfo.Utc, time);
+        resumes.Resume("cam1", [WednesdayMorning("cam1")]);
+        var secondPass = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var passes = 0;
+        _schedules.GetByKindAsync(ScheduleRuleKind.Privacy, Arg.Any<CancellationToken>()).Returns(_ =>
+        {
+            if (++passes == 2) secondPass.TrySetResult();
+            return Task.FromResult<IReadOnlyList<ScheduleRule>>([WednesdayMorning("cam1")]);
+        });
+        var sut = CreateSut(time, resumes);
+
+        // Act
+        await sut.StartAsync(CancellationToken.None);
+        await time.AdvanceUntilAsync(secondPass.Task, Step);
+        await sut.StopAsync(CancellationToken.None);
+
+        // Assert
+        await _cameras.DidNotReceive().UpdateAsync(Arg.Any<Camera>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldCutTheCameraAtTheNextRange_WhenTheResumedRangeHasEnded()
+    {
+        // Arrange
+        var time = BackgroundLoop.ClockAt("2026-09-23T11:59:30+00:00");
+        var camera = KnownCamera();
+        var afternoon = WednesdayMorning("cam1");
+        afternoon.StartTime = "12:01";
+        afternoon.EndTime = "13:00";
+        _schedules.GetByKindAsync(ScheduleRuleKind.Privacy, Arg.Any<CancellationToken>()).Returns([WednesdayMorning("cam1"), afternoon]);
+        var resumes = new PrivacyResumes(TimeZoneInfo.Utc, time);
+        resumes.Resume("cam1", [WednesdayMorning("cam1")]);
+        var updated = SignalOnUpdate(time);
+        var sut = CreateSut(time, resumes);
+
+        // Act
+        await sut.StartAsync(CancellationToken.None);
+        await time.AdvanceUntilAsync(updated.Task, Step);
+        await sut.StopAsync(CancellationToken.None);
+
+        // Assert
+        Assert.True(camera.PrivacyModeActive);
+        Assert.True(await updated.Task >= DateTimeOffset.Parse("2026-09-23T12:01:00+00:00", CultureInfo.InvariantCulture));
     }
 
     [Fact]

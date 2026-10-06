@@ -1,3 +1,4 @@
+using System.Globalization;
 using Vyzio.Core.Common;
 using Vyzio.Core.Entities;
 
@@ -40,4 +41,8 @@ public sealed record UpdateScheduleRuleRequest(
 
 /// <param name="DayOfWeek">0 = Sunday, as a rule's days.</param>
 /// <param name="Time">"HH:mm" in the house's clock.</param>
-public sealed record HouseClockDto(int DayOfWeek, string Time);
+public sealed record HouseClockDto(int DayOfWeek, string Time)
+{
+    public static HouseClockDto Of(DateTimeOffset houseMoment) =>
+        new((int)houseMoment.DayOfWeek, houseMoment.ToString("HH:mm", CultureInfo.InvariantCulture));
+}

@@ -24,6 +24,7 @@ export function makeCamera(overrides: Partial<Camera> = {}): Camera {
     privacyMissDetail: null,
     ptzSupported: false,
     privacyStrategy: 'software_blur',
+    privacyResume: null,
     connected: true,
     verifiedCapabilities: [],
     liveQualities: ['low'],

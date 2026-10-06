@@ -1,4 +1,5 @@
-import { CameraState, type Camera } from '../../domain/entities/camera.entity'
+import { CameraState, type Camera, type PrivacyResume } from '../../domain/entities/camera.entity'
+import { WEEK_DAYS } from '../../common/schedule/schedule_types'
 import type { Capability } from '../../domain/entities/camera_capability_binding.entity'
 
 /** Plain names, the words the rest of the product uses for each capability (DESIGN SYSTEM § Shared words). */
@@ -61,3 +62,10 @@ export function formatCheckedAt(iso: string): string {
 
 /** One read, one sentence: the saved positions, wherever their read fails. */
 export const POSITIONS_UNREAD = 'Les positions de cette caméra n’ont pas pu être lues.'
+
+/** Until when a surveillance resumed inside a range holds, in the house's clock (SPECS 9.2). */
+export function formatPrivacyResume({ until }: PrivacyResume): string {
+  const day = WEEK_DAYS.find((d) => d.value === until?.dayOfWeek)
+  if (!until || !day) return 'Surveillance reprise malgré les plages en cours.'
+  return `Surveillance reprise jusqu’à la fin de la plage, ${day.name.toLocaleLowerCase('fr')} à ${until.time}, heure de la maison.`
+}

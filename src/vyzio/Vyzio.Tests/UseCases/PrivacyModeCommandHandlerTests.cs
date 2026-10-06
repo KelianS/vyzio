@@ -21,9 +21,9 @@ public class PrivacyModeCommandHandlerTests
             _cameras.GetByIdAsync(camera.Id, Arg.Any<CancellationToken>()).Returns(camera);
 
         return new PrivacyModeCommandHandler(
-            new GetCamerasUseCase(_cameras, _bindings),
+            new GetCamerasUseCase(_cameras, _bindings, Substitute.For<IScheduleRuleRepository>(), new PrivacyResumes(TimeZoneInfo.Utc, TimeProvider.System)),
             new ToggleCameraPrivacyModeUseCase(
-                _cameras, _bindings, Substitute.For<ICapabilityProviderRegistry>(), _frigate, Substitute.For<IPtzPresetRepository>(), new PtzManagedPositions(TimeProvider.System, NullLogger<PtzManagedPositions>.Instance), Substitute.For<ILiveStreamRelay>()));
+                _cameras, _bindings, Substitute.For<ICapabilityProviderRegistry>(), _frigate, Substitute.For<IPtzPresetRepository>(), new PtzManagedPositions(TimeProvider.System, NullLogger<PtzManagedPositions>.Instance), Substitute.For<ILiveStreamRelay>(), Substitute.For<IScheduleRuleRepository>(), new PrivacyResumes(TimeZoneInfo.Utc, TimeProvider.System)));
     }
 
     private static Camera Camera(string slug, string displayName, bool privacy = false) => new()

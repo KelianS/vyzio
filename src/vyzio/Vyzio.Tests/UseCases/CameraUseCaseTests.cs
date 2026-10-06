@@ -11,12 +11,33 @@ public class GetCamerasUseCaseTests
 {
     private readonly ICameraRepository _repo = Substitute.For<ICameraRepository>();
     private readonly ICameraCapabilityBindingRepository _bindings = Substitute.For<ICameraCapabilityBindingRepository>();
+    private readonly IScheduleRuleRepository _schedules = Substitute.For<IScheduleRuleRepository>();
+    // 2026-09-23 is a Wednesday, inside the morning range of the resume test.
+    private readonly PrivacyResumes _resumes = new(TimeZoneInfo.Utc, new Microsoft.Extensions.Time.Testing.FakeTimeProvider(DateTimeOffset.Parse("2026-09-23T10:30:00+00:00", CultureInfo.InvariantCulture)));
     private readonly GetCamerasUseCase _sut;
 
     public GetCamerasUseCaseTests()
     {
         _bindings.GetAllVerifiedAsync(Arg.Any<CancellationToken>()).Returns([]);
-        _sut = new GetCamerasUseCase(_repo, _bindings);
+        _schedules.GetByKindAsync(ScheduleRuleKind.Privacy, Arg.Any<CancellationToken>()).Returns([]);
+        _sut = new GetCamerasUseCase(_repo, _bindings, _schedules, _resumes);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldSayUntilWhenTheSurveillanceIsResumed_WhenTheCameraWasResumedInsideARange()
+    {
+        // Arrange
+        var morning = new ScheduleRule { Kind = ScheduleRuleKind.Privacy, DaysOfWeek = "[3]", StartTime = "08:00", EndTime = "12:00" };
+        morning.ReplaceTargets(["cam1"]);
+        _schedules.GetByKindAsync(ScheduleRuleKind.Privacy, Arg.Any<CancellationToken>()).Returns([morning]);
+        _repo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "192.168.1.10" }]);
+        _resumes.Resume("cam1", [morning]);
+
+        // Act
+        var result = await _sut.ExecuteAsync();
+
+        // Assert
+        Assert.Equal(new PrivacyResumeDto(new Vyzio.Application.DTOs.Scheduling.HouseClockDto(3, "12:00")), result.Single().PrivacyResume);
     }
 
     [Fact]

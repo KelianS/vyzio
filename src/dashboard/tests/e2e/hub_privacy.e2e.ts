@@ -25,6 +25,25 @@ test.describe('HubView privacy', () => {
     await expect(page.getByRole('button', { name: 'Reprendre la surveillance' })).toBeVisible()
   })
 
+  test('CameraPrivacyView_ShouldSayUntilWhenTheSurveillanceIsResumed_WhenItWasResumedInsideARange', async ({
+    page,
+  }) => {
+    const resumed = makeFakeCamera({
+      id: 'camera-1',
+      displayName: 'Salon',
+      privacyResume: { until: { dayOfWeek: 2, time: '12:00' } },
+    })
+    await installFakeBackend(page, createFakeBackendState({ cameras: [resumed] }))
+
+    await page.goto('/settings/cameras/camera-1/vie-privee')
+
+    await expect(
+      page.getByText(
+        'Surveillance reprise jusqu’à la fin de la plage, mardi à 12:00, heure de la maison.',
+      ),
+    ).toBeVisible()
+  })
+
   test('CameraLiveThumbnail_ShouldLeadToWhy_WhenTheCameraDidNotFollowPrivacy', async ({ page }) => {
     const parked = makeFakeCamera({
       id: 'camera-1',

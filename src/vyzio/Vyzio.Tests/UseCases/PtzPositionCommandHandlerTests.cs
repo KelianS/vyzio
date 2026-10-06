@@ -23,7 +23,7 @@ public class PtzPositionCommandHandlerTests
             _cameras.GetByIdAsync(camera.Id, Arg.Any<CancellationToken>()).Returns(camera);
 
         return new PtzPositionCommandHandler(
-            new GetCamerasUseCase(_cameras, _bindings),
+            new GetCamerasUseCase(_cameras, _bindings, Substitute.For<IScheduleRuleRepository>(), new PrivacyResumes(TimeZoneInfo.Utc, TimeProvider.System)),
             new GetPtzPresetsUseCase(_cameras, _bindings, _providers, _presets, Substitute.For<IPtzThumbnailStore>(), _positions),
             new PtzGoToPresetUseCase(_cameras, _bindings, _providers, _presets, _positions));
     }
