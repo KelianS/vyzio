@@ -2,11 +2,26 @@ name: CI
 
 on:
   push:
-    branches: [main, dev]
+    branches: [main]
   pull_request:
-    branches: [main, dev]
+    branches: [main]
 
 jobs:
+  rules:
+    name: Rules — index and citations
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      - uses: go-task/setup-task@v2
+
+      - name: Check
+        run: task rules:check
+
   backend:
     name: Backend — build & test
     # Floor to respect if this ever moves to a container: SQLitePCLRaw 3.x needs GLIBC >= 2.33.

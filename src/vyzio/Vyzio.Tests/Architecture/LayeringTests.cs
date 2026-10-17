@@ -5,7 +5,7 @@ using Vyzio.Infrastructure.Persistence;
 
 namespace Vyzio.Tests.Architecture;
 
-// Enforces the dependency direction stated in src/vyzio/CLAUDE.md.
+// Enforces the dependency direction of BACKEND-01.
 public class LayeringTests
 {
     private static readonly Assembly Core = typeof(Camera).Assembly;

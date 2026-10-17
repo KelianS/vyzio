@@ -43,7 +43,7 @@ export default defineConfig(({ mode }) => {
           'src/**/*.d.ts', // ambient types, erased at build
           'src/domain/ports/**', // interfaces only, erased at build
         ],
-        // Rule in src/dashboard/CLAUDE.md, Tests.
+        // DASHBOARD-29.
         thresholds: { statements: 80, branches: 80, functions: 80, lines: 80 },
       },
     },

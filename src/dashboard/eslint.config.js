@@ -40,6 +40,54 @@ const fileNames = {
   },
 }
 
+// A test reads `{Subject}_Should{Effect}_When{Condition}`, its parameters in brackets after it (COMMON-10).
+const TEST_NAME = /^[A-Za-z][A-Za-z0-9_]*?_Should[A-Z][A-Za-z0-9]*_When[A-Z][A-Za-z0-9]*( \(.*\))?$/
+// A parametrised name is only known at run time: its static part must open on the convention.
+const EACH_NAME_START = /^[A-Za-z][A-Za-z0-9_]*?_Should[A-Z][A-Za-z0-9]*_When[A-Z]/
+const EACH_PLACEHOLDER = /\$[A-Za-z0-9.]+|%[sdifjoc#%]/g
+const TEST_MODIFIERS = new Set(['each', 'only', 'skip', 'fails', 'concurrent', 'todo', 'fixme'])
+const isTestCall = (callee) => {
+  const called = callee.type === 'CallExpression' ? callee.callee : callee
+  const base =
+    called.type === 'MemberExpression' && TEST_MODIFIERS.has(called.property.name)
+      ? called.object
+      : called
+  return base.type === 'Identifier' && (base.name === 'it' || base.name === 'test')
+}
+const staticName = (node) => {
+  if (node?.type === 'Literal' && typeof node.value === 'string') return node.value
+  if (node?.type === 'TemplateLiteral') return node.quasis.map((q) => q.value.cooked).join('x')
+  return null
+}
+const testNames = {
+  rules: {
+    convention: {
+      meta: {
+        type: 'problem',
+        messages: { badName: 'Name the test Subject_ShouldEffect_WhenCondition: "{{name}}".' },
+      },
+      create(context) {
+        return {
+          CallExpression(node) {
+            if (!isTestCall(node.callee)) return
+            const name = staticName(node.arguments[0])
+            if (name === null) return
+            const parametrised = node.callee.type === 'CallExpression'
+            // A name drawn wholly from the table rows is left to review.
+            if (parametrised && /^[$%]/.test(name)) return
+            const valid = parametrised
+              ? EACH_NAME_START.test(name.replace(EACH_PLACEHOLDER, 'X'))
+              : TEST_NAME.test(name)
+            if (!valid) {
+              context.report({ node: node.arguments[0], messageId: 'badName', data: { name } })
+            }
+          },
+        }
+      },
+    },
+  },
+}
+
 export default defineConfig([
   globalIgnores(['dist', 'coverage']),
   {
@@ -191,6 +239,13 @@ export default defineConfig([
     plugins: { 'file-names': fileNames },
     rules: {
       'file-names/snake-case': 'error',
+    },
+  },
+  {
+    files: ['src/**/*.test.{ts,tsx}', 'tests/**/*.e2e.ts'],
+    plugins: { 'test-names': testNames },
+    rules: {
+      'test-names/convention': 'error',
     },
   },
   {

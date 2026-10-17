@@ -164,8 +164,7 @@ An error reads at two levels ([SPECS](SPECS.md) 1.5).
   do. It is all the user needs.
 - **The diagnostic line** sits under it in `font-mono text-xs`, a step quieter (`text-muted-foreground`
   in place, the toast's own foreground at 70 % on the dark toast), selectable to be copied. Its content
-  comes from the error pipeline ([`src/dashboard/CLAUDE.md`](../src/dashboard/CLAUDE.md) § Error
-  handling). It never replaces the sentence.
+  comes from the error pipeline ([DASHBOARD-18](rules/dashboard.md)). It never replaces the sentence.
 - **A toast carrying a diagnostic line stays until dismissed**, long enough to be photographed. Any
   other toast closes by itself, and the same failure raised twice shows once.
 - **A read that fails shows where its data would have been**, with `Réessayer`, never an empty or

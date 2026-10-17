@@ -31,9 +31,10 @@ order; starting the implementation before the upstream documents are aligned is 
 | Type | Role | Home | Stability |
 |---|---|---|---|
 | **SPECS** | Need, journeys, product scope | [`SPECS.md`](SPECS.md) | medium |
+| **Rules** | The constraints a diff is checked against, with their level and what verifies them | [`rules/`](rules/), routed by [`rules/README.md`](rules/README.md) | follows the code |
 | **SAD** | The system overview, and what the code does not easily show (§ The SAD) | [`SAD.md`](SAD.md) | high |
-| **ADR** | One structural decision per file (Context, Options, Decision, Consequences), § Writing discipline | [`adr/`](adr/), one `NNNN-slug.md` per decision, index [`adr/README.md`](adr/README.md) | frozen once `accepted` |
-| **Design system** | The dashboard's design system, never one feature (§ Writing discipline) | [`DESIGN SYSTEM.md`](DESIGN%20SYSTEM.md) | high |
+| **ADR** | One structural decision per file (Context, Options, Decision, Consequences), within the bar of DOCS-07 | [`adr/`](adr/), one `NNNN-slug.md` per decision, index [`adr/README.md`](adr/README.md) | frozen once `accepted` |
+| **Design system** | The dashboard's design system, never one feature (DOCS-13) | [`DESIGN SYSTEM.md`](DESIGN%20SYSTEM.md) | high |
 | **Hardware sheet** | The raw measurements of one camera model, each dated; measurements only, no decision and no *how* | [`hardware/`](hardware/), one `.md` per model | grows with each measurement |
 | **Investigation** | Exploration, trials, reverse engineering, captures | [`investigations/`](investigations/) | disposable |
 | **User help** | How to use a delivered feature | the screen that carries it, in code (ADR-53) | follows the feature |
@@ -46,13 +47,7 @@ level between the ADR and the code. Each has its own home, nothing is copied.
 **Scaling rules:**
 - The body of the SAD does not move when a decision is added: a new ADR is a file in `adr/` plus one
   index line. The SAD **points at** the index, it does not copy it.
-- A superseded ADR is never deleted: its status becomes `superseded by ADR-NNNN`, and the decision
-  that replaces it summarises the abandoned option under its own "Options rejected" heading.
-- **An accepted ADR is frozen**: only its status line changes. Three exceptions: a link whose target no
-  longer exists is fixed mechanically, repointed to the new home of what it pointed at, or removed
-  with the sentence that only pointed at it; a secret or personal data published by mistake is
-  replaced by a neutral value; and a statement that contradicts the delivered product is corrected in
-  place, in the present tense. Nothing else in the ADR changes.
+- An accepted ADR is frozen (DOCS-09); a superseded one is marked, never deleted (DOCS-10).
 
 ## The SAD
 
@@ -63,43 +58,13 @@ constraint), data ownership and retention, the deployment, the threat model, and
 questions, each linked to its issue. It describes the system as a whole and states what the code does
 not easily show.
 
-**What it never holds:** a class or type name, a file path, the organisation of the code (layers,
-folders, projects), a constant copied from the code, a paraphrase of the code, or a restated ADR: it
-names the ADR instead. The ports of its network flow matrix are the one exception: they are the
-system's contract with the network, and the matrix is where they are reviewed.
+**What it never holds and when it must change:** DOCS-05, DOCS-06 and DOCS-03 of
+[`rules/docs.md`](rules/docs.md).
 
-**When it must change:** a pull request that adds, removes or changes a container, an external system,
-a network flow (port, protocol, direction, authentication), the ownership or retention of data, or a
-quality attribute updates the SAD in the same pull request.
+## Writing discipline
 
-## Writing discipline (the nature of each document)
-
-Each document has a **nature**; respecting it is what stops it from swelling and going stale.
-
-- **A SAD is the target, not the history.** The SAD describes the **intended** architecture, in the
-  present tense, never what was done before nor the road travelled. The one place where "what was done
-  before" may appear is the **"Options rejected"** heading of an ADR, whose value is explaining *why
-  not*. Forbidden: stacking chronological "Correction (a)(b)(c)..." entries in an ADR; merge them into
-  the target decision. An ADR title states the target ("X rejected, Y chosen"), not the history ("X
-  attempted then abandoned").
-- **An ADR records a structural decision only**: one is written only when reversing the decision
-  costs a migration, a contract change, a new container or a new dependency, or when it opens or
-  closes a flow leaving the home network (privacy first, e.g. ADR-70). An ADR never describes a state,
-  a wording or a screen: that is SPECS; what a camera model does is its hardware sheet; the *how* is
-  the code and its tests.
-- **The DESIGN SYSTEM describes the design system only**: intent, tokens, components, reusable
-  patterns, the shared UX vocabulary and the bans. Never one feature's behaviour: that is SPECS, or
-  the code and its tests.
-- **Do not paraphrase the code, in any document.** The SQL schema, signatures, byte frames, route lists
-  and every tuned value have their home in the code. No document copies a code constant (a timeout, a
-  port, a slot number, a topic): it names the behaviour, and the code holds the value. **An ADR
-  decides with no code constant either**: a value is named by its role, never by its number. ADRs
-  accepted before this rule stay frozen as they are.
-- **Do not restate an ADR.** Any other document names the ADR (`ADR-NN`) and says at most in a few
-  words what it settles; the decision itself is told once, in the ADR.
-- **Exploration history** (trials, network captures, reverse engineering) goes to
-  [`investigations/`](investigations/), never into the SAD. **What a camera model was measured to do**
-  goes to its hardware sheet, dated; the code handles it, and a test named after that model pins it.
+Each document has a **nature**; respecting it is what stops it from swelling and going stale. The
+rules that hold each document to its nature are [`rules/docs.md`](rules/docs.md).
 
 ## Precedence (one piece of information, one home)
 
@@ -107,75 +72,45 @@ Vision goes to [`../README.md`](../README.md) · the need to `SPECS.md` · the s
 `SAD.md` · a decision to its ADR · the execution plan to **the issues** · how to use a feature to
 **the screen itself** (ADR-53).
 
-Every document states its own role in its header. When in doubt, climb to the right level: vision,
-need, architecture, execution, use. Never copy information from one document into another, see the
-supreme zero-duplication rule in [`../CLAUDE.md`](../CLAUDE.md).
+Every document states its own role in its header (DOCS-15). When in doubt, climb to the right level: vision,
+need, architecture, execution, use. Never copy information from one document into another (COMMON-05).
 
 ## Language
 
-**The repository is written in English**, code and prose alike: comments, commits, pull requests,
-issues, templates, labels, and every framing document. Two things are French: [`SPECS.md`](SPECS.md),
-because it frames the product for a French market and is read as much by non-engineers as by
-contributors; and what the interface shows the user, wherever it is written, the strings of the
-dashboard as well as the vendor sheets `src/vyzio/vendors/*.md`, which the interface serves as vendor
-assistance.
-
-One gap remains, and it is deliberate. The **bodies of the ADRs are still in French**, while their
-filenames are already English. Renaming is the operation that breaks links, so it was done once, on its
-own, ahead of any translation of the content. Until that translation lands, an existing ADR is read in
-French. **A new ADR is written in English**, like everything else.
+The repository is written in English, with the exceptions of COMMON-01: `SPECS.md`, what the
+interface shows the user, and the bodies of the ADRs accepted in French until they are translated.
 
 ## Git
 
-- Branches: `main` (stable), `dev` (integration), `feature/*` (work in progress).
+- Branches: `main`, stable and the target of every pull request; a work branch is named
+  `<type>/<issue>-<slug>`, `type` being a commit type of GIT-01 (`feat/47-live-video-stream`).
 - Pull requests: review and green tests are mandatory.
 
 ### Delivery gate, before a pull request is opened
 
-1. `task check` is green. It runs the steps of the backend and frontend CI jobs; the image build and
-   its Trivy scan stay CI-only.
+1. `task check` is green (GIT-08). It runs the steps of the backend and frontend CI jobs; the image
+   build and its Trivy scan stay CI-only.
 2. The review agents of [`.claude/agents/`](../.claude/agents/) have run on the branch:
    `delivery-reviewer` always, `framing-guardian` when the change alters behaviour, architecture or
-   `docs/`, `product-guardian` when it touches what a user sees or walks through.
+   `docs/`, `product-guardian` when it touches what a user sees or walks through. They judge against
+   [`rules/`](rules/) and the product sources only, never against anyone's personal instructions.
 3. Their blocking findings are fixed, not argued away in the pull request description.
-4. A change to what the interface shows carries its screenshots in the pull request description: the
-   screen after the change, and the same screen before it when an existing one changes, at the phone
-   width the interface is designed for ([SPECS](SPECS.md) 7.2). The owner validates the screen
-   without running the stack. They are shot on the fake backend of the e2e suite, never on a real
-   installation, so they carry no footage and no credential. How:
-   [`CONTRIBUTING.md`](../CONTRIBUTING.md) § Pull request screenshots.
+4. A change to what the interface shows carries its screenshots (GIT-07), so the owner validates the
+   screen without running the stack.
 
-The agents are instructions, not hooks: the gate holds because it is followed. What is enforced is
-narrower: [`.claude/settings.json`](../.claude/settings.json) denies the assistant merging and
-force-pushing, and only branch protection on `main` would deny it to everyone.
+The [`deliver`](../.claude/skills/deliver/SKILL.md) skill runs this gate for the assistant: the
+check, the reviewers in parallel, one merged report, a re-review on the delta, then the pull
+request. A change to an agent, the skill or a rule page runs the cases of
+[`tools/review-cases/`](../tools/review-cases/README.md) first. What is enforced beyond it is narrower: the tools `task check` runs, and
+[`.claude/settings.json`](../.claude/settings.json), which denies the assistant merging and
+force-pushing; only branch protection on `main` would deny it to everyone.
 
 ### Commits and pull requests, English and conventional
 
-A commit and a pull request address the tooling and third parties rather than the framing documents, so
-they follow the language of the code, **English**, and the [Conventional
-Commits](https://www.conventionalcommits.org/en/v1.0.0/) format: subject, body, pull request title and
-description alike.
-
-```
-type(scope): imperative subject, lowercase, no trailing period (72 characters or fewer)
-
-The body says the *why*: what the diff does not show. A blank line separates
-it from the subject. ASCII only.
-
-Co-Authored-By: ...
-```
-
-- **type**: `feat`, `fix`, `refactor`, `perf`, `test`, `docs`, `build`, `chore`. A breaking change is
-  written `type(scope)!: ...`.
-- **scope**: the subject touched, optional but preferred: `api`, `dashboard`, `access`, `onboarding`,
-  `recording`. Exactly one, the one that carries the change. **The scope carries the theme**: there is
-  no theme label, the grouping reads from the title and is searched through it.
-- **subject**: the effect obtained, not the mechanism used. What it changes for whoever reads it, never
-  "adds an X method".
-- **pull request**: title in the same format as a commit subject, description in English, saying the
-  *why*, the scope, and what was verified. Template:
-  [`pull_request_template.md`](../.github/pull_request_template.md), which also carries the
-  **definition of done**, whose home is there, where it gets ticked.
+A commit and a pull request address the tooling and third parties, so they follow the language of
+the code and the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format:
+[`rules/git.md`](rules/git.md). The **definition of done** lives in
+[`pull_request_template.md`](../.github/pull_request_template.md), where it gets ticked.
 
 ### Issues, two templates and one state
 
