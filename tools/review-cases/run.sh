@@ -25,13 +25,16 @@ base="$(git -C "$root" rev-parse HEAD)"
 
 # Applies the case on a detached worktree of HEAD, commits it, and asks the case's agent to review it.
 run_one() {
-  local case=$1 n=$2 work agent
+  local case=$1 n=$2 work agent prompt
   work="$(mktemp -d)/repo"
   agent="$(sed -n 's/^agent: //p' "$here/$case/expect.txt" | tr -d '\r')"
+  prompt="$(sed -n 's/^prompt: //p' "$here/$case/expect.txt" | tr -d '\r')"
+  prompt="${prompt:-review the current branch against base $base; task check was not run}"
   git -C "$root" worktree add --quiet --detach "$work" "$base" >"$out/$case-$n.log" 2>&1
-  if (cd "$work" && bash "$here/$case/setup.sh" && git add -A && git commit --quiet -m "test(review): apply the $case review case") >>"$out/$case-$n.log" 2>&1; then
-    (cd "$work" && claude -p "Use the $agent agent to review the current branch against base $base; task check was not run. Print the agent's report verbatim, nothing else." \
-      --allowedTools Read Grep Glob Agent "Bash(git *)" "Bash(gh issue view *)" \
+  if (cd "$work" && bash "$here/$case/setup.sh" && git add -A && git commit --quiet --allow-empty -m "test(review): apply the $case review case") >>"$out/$case-$n.log" 2>&1; then
+    (cd "$work" && claude -p "Use the $agent agent to $prompt. Print the agent's report verbatim, nothing else." \
+      --allowedTools Read Grep Glob Agent WebSearch WebFetch "Bash(git *)" "Bash(gh issue view *)" \
+      "Bash(gh issue list *)" "Bash(dotnet list *)" "Bash(pnpm --prefix src/dashboard outdated*)" \
       --disallowedTools Edit Write NotebookEdit) >"$out/$case-$n.md" 2>>"$out/$case-$n.log"
   else
     echo "setup failed" >"$out/$case-$n.md"

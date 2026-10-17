@@ -100,7 +100,7 @@ interface shows the user, and the bodies of the ADRs accepted in French until th
 
 The [`deliver`](../.claude/skills/deliver/SKILL.md) skill runs this gate for the assistant: the
 check, the reviewers in parallel, one merged report, a re-review on the delta, then the pull
-request. A change to an agent, the skill or a rule page runs the cases of
+request. A change to an agent, a skill or a rule page runs the cases of
 [`tools/review-cases/`](../tools/review-cases/README.md) first. What is enforced beyond it is narrower: the tools `task check` runs, and
 [`.claude/settings.json`](../.claude/settings.json), which denies the assistant merging and
 force-pushing; only branch protection on `main` would deny it to everyone.
@@ -134,3 +134,12 @@ milestone is out of that release. Before work on a milestone starts, all its iss
 **one batch**: the open questions are gathered and put to the owner together, each with its options
 and a recommendation, so no product question comes back once the work has started. The
 milestone starts once none of its issues still carries `needs-framing`.
+
+## Technology watch
+
+Dependabot proposes the version bumps it is configured for, weekly. What it cannot propose, a
+package replaced under another name, an end of support, a deprecation, a major it is told to ignore,
+a tool that would verify a rule, comes from the technology watch: on the owner's request, through
+the [`tech-watch`](../.claude/skills/tech-watch/SKILL.md) skill. A proposal carries its fetched
+evidence, its gain and its cost. Only the proposals the owner validates, in their exact text, become
+issues, labelled `needs-framing` and `tech-watch`; they are then framed like any other.

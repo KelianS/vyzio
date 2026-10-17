@@ -81,7 +81,19 @@
       "PowerShell(gh pr create *)",
       "PowerShell(gh run view *)",
       "PowerShell(gh run list *)",
-      "PowerShell(node tools/rules/check.mjs)"
+      "PowerShell(node tools/rules/check.mjs)",
+      "WebSearch",
+      "WebFetch(domain:www.nuget.org)",
+      "WebFetch(domain:api.nuget.org)",
+      "WebFetch(domain:www.npmjs.com)",
+      "WebFetch(domain:registry.npmjs.org)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:learn.microsoft.com)",
+      "WebFetch(domain:dotnet.microsoft.com)",
+      "WebFetch(domain:endoflife.date)",
+      "WebFetch(domain:xunit.net)",
+      "WebFetch(domain:nodejs.org)",
+      "WebFetch(domain:docs.frigate.video)"
     ],
     "deny": [
       "Bash(gh pr merge *)",
