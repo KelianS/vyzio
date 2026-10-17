@@ -29,7 +29,7 @@ run_one() {
   work="$(mktemp -d)/repo"
   agent="$(sed -n 's/^agent: //p' "$here/$case/expect.txt" | tr -d '\r')"
   git -C "$root" worktree add --quiet --detach "$work" "$base" >"$out/$case-$n.log" 2>&1
-  if (cd "$work" && bash "$here/$case/setup.sh" && git add -A && git commit --quiet -m "case: $case") >>"$out/$case-$n.log" 2>&1; then
+  if (cd "$work" && bash "$here/$case/setup.sh" && git add -A && git commit --quiet -m "test(review): apply the $case review case") >>"$out/$case-$n.log" 2>&1; then
     (cd "$work" && claude -p "Use the $agent agent to review the current branch against base $base; task check was not run. Print the agent's report verbatim, nothing else." \
       --allowedTools Read Grep Glob Agent "Bash(git *)" "Bash(gh issue view *)" \
       --disallowedTools Edit Write NotebookEdit) >"$out/$case-$n.md" 2>>"$out/$case-$n.log"

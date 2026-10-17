@@ -43,9 +43,9 @@ which carries the target only. A rule finding without one of these sources is no
 | **Rule** | A breach of a rule of the routed pages; a rule that requires something the change does not bring (the test of a new screen) | The rule ID |
 | **Definition of done** | A line of the template the diff should satisfy and does not | The line |
 
-For a rule verified by `Tool`, do not hunt for breaches: check that the tool is still in place and
-not weakened (COMMON-07). Whether `task check` is green is given in the request; not given → say so
-under Uncertainties.
+For a rule verified by `Tool`, never report a breach from reading the code: the tool reports it.
+Check only that the tool is still in place and not weakened (COMMON-07). Whether `task check` is
+green is given in the request; not given → say so under Uncertainties.
 
 ## What you return
 
