@@ -5,6 +5,8 @@ allowBuilds:
 overrides:
   # Pulls in the GHSA-rgw5-rvv9-x895 fix that ESLint still lacks through minimatch.
   brace-expansion: '>=5.0.9'
+  # Pulls in the GHSA-8r5x-fm3f-whwj and GHSA-p8wg-vrv2-v86f fixes that eslint-plugin-boundaries pins out.
+  handlebars: '^4.7.10'
 
 auditConfig:
   ignoreGhsas:
