@@ -152,6 +152,13 @@ tasks:
     cmds:
       - dotnet run
 
+  # --- Rules ---
+
+  rules:check:
+    desc: Checks docs/rules (IDs, level lines, routing, citations)
+    cmds:
+      - node tools/rules/check.mjs
+
   # --- Agrege backend + frontend ---
 
   test:
@@ -172,10 +179,11 @@ tasks:
       - task: front:lint
       - task: back:format:check
 
-  # Steps of the backend and frontend jobs of ci.yml, in their order; the image build stays CI-only.
+  # Steps of the rules, backend and frontend jobs of ci.yml, in their order; the image build stays CI-only.
   check:
-    desc: Runs the backend and frontend CI checks locally, e2e included
+    desc: Runs the rules, backend and frontend CI checks locally, e2e included
     cmds:
+      - task: rules:check
       - task: back:format:check
       - task: back:test
       - task: front:typecheck

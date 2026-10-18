@@ -1,6 +1,6 @@
 <!--
 Title: type(scope): subject, imperative, lowercase, no final period (<= 72 chars).
-Format and vocabulary: docs/WORKFLOW.md section Git. English, like this whole description.
+Format and vocabulary: docs/rules/git.md. English, like this whole description.
 -->
 
 ## Why
@@ -17,20 +17,18 @@ Closes #
 
 ## Screenshots
 
-<!-- Any change to what the interface shows: before and after, rule in docs/WORKFLOW.md section
-Delivery gate. Otherwise strike the heading through with the reason. -->
+<!-- Any change to what the interface shows: before and after (GIT-07). Otherwise strike the heading through with the reason. -->
 
 ## Definition of done
 
 Tick what the diff actually shows. A line that does not apply is struck through with the reason on
 it -- never ticked to keep the list tidy.
 
-- [ ] unit tests added or updated for the behaviour this changes
-- [ ] e2e test added or updated for the happy path a user walks through
-- [ ] comments follow CLAUDE.md: English, one line, the non-deducible *why*, an ADR reference where
-      there is one
-- [ ] `docs/` describes the target only -- no history, no "used to be", a rejected option living in
-      the 'Options ecartees' of its ADR
-- [ ] nothing duplicated: what is new has exactly one home, referenced from anywhere else it comes up
-- [ ] no dead code, no unused export, no flag on a path nothing takes any more
+- [ ] a test that fails without the change, for the behaviour it changes (COMMON-15)
+- [ ] e2e test added or updated for the journey a user walks through (DASHBOARD-30)
+- [ ] comments: one line, the non-deducible *why*, no story (COMMON-02, COMMON-03)
+- [ ] `docs/` describes the target only, a rejected option living under the 'Options rejected' of
+      its ADR (DOCS-06, DOCS-08)
+- [ ] nothing duplicated: what is new has exactly one home (COMMON-05)
+- [ ] nothing left that nothing reaches (COMMON-08)
 - [ ] no implicit dependency on an option that was not retained

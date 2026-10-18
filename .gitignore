@@ -65,3 +65,6 @@ config/frigate.generated.yml
 
 # Business framing, kept out of the public repository
 docs/BUSINESS_PLAN.md
+
+# Review cases (tools/review-cases)
+tools/review-cases/results/

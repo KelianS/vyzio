@@ -40,6 +40,64 @@ const fileNames = {
   },
 }
 
+// A test reads `{Subject}_Should{Effect}_When{Condition}`, its parameters in brackets after it (COMMON-10).
+const TEST_NAME = /^[A-Za-z][A-Za-z0-9_]*?_Should[A-Z][A-Za-z0-9]*_When[A-Z][A-Za-z0-9]*( \(.*\))?$/
+// A parametrised name is only known at run time: its static part must open on the convention.
+const EACH_NAME_START = /^[A-Za-z][A-Za-z0-9_]*?_Should[A-Z][A-Za-z0-9]*_When[A-Z]/
+const EACH_PLACEHOLDER = /\$[A-Za-z0-9.]+|%[sdifjoc#%]/g
+const WHOLE_PLACEHOLDER = /^(\$[A-Za-z0-9.]+|%[sdifjoc#])$/
+const TEST_MODIFIERS = new Set(['each', 'only', 'skip', 'fails', 'concurrent', 'todo', 'fixme'])
+// Walks `it.skip.each([...])`, `it.each\`table\`` and the like down to `it` or `test`.
+const testRoot = (callee) => {
+  let node = callee
+  for (;;) {
+    if (node.type === 'CallExpression') node = node.callee
+    else if (node.type === 'TaggedTemplateExpression') node = node.tag
+    else if (node.type === 'MemberExpression' && TEST_MODIFIERS.has(node.property.name))
+      node = node.object
+    else return node
+  }
+}
+const isTestCall = (callee) => {
+  const base = testRoot(callee)
+  return base.type === 'Identifier' && (base.name === 'it' || base.name === 'test')
+}
+const staticName = (node) => {
+  if (node?.type === 'Literal' && typeof node.value === 'string') return node.value
+  if (node?.type === 'TemplateLiteral') return node.quasis.map((q) => q.value.cooked).join('X')
+  return null
+}
+const testNames = {
+  rules: {
+    convention: {
+      meta: {
+        type: 'problem',
+        messages: { badName: 'Name the test Subject_ShouldEffect_WhenCondition: "{{name}}".' },
+      },
+      create(context) {
+        return {
+          CallExpression(node) {
+            if (!isTestCall(node.callee)) return
+            const name = staticName(node.arguments[0])
+            if (name === null) return
+            const parametrised =
+              node.callee.type === 'CallExpression' ||
+              node.callee.type === 'TaggedTemplateExpression'
+            // A name drawn wholly from the table rows is left to review.
+            if (parametrised && WHOLE_PLACEHOLDER.test(name)) return
+            const valid = parametrised
+              ? EACH_NAME_START.test(name.replace(EACH_PLACEHOLDER, 'X'))
+              : TEST_NAME.test(name)
+            if (!valid) {
+              context.report({ node: node.arguments[0], messageId: 'badName', data: { name } })
+            }
+          },
+        }
+      },
+    },
+  },
+}
+
 export default defineConfig([
   globalIgnores(['dist', 'coverage']),
   {
@@ -191,6 +249,13 @@ export default defineConfig([
     plugins: { 'file-names': fileNames },
     rules: {
       'file-names/snake-case': 'error',
+    },
+  },
+  {
+    files: ['src/**/*.test.{ts,tsx}', 'tests/**/*.e2e.ts'],
+    plugins: { 'test-names': testNames },
+    rules: {
+      'test-names/convention': 'error',
     },
   },
   {

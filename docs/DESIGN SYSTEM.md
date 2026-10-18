@@ -3,7 +3,7 @@
 The dashboard's design system: intent, tokens, components, the patterns every screen reuses, the
 shared UX vocabulary and the bans. It never describes one feature's behaviour, which is
 [SPECS](SPECS.md) or the code and its tests, and never paraphrases the code
-([WORKFLOW](WORKFLOW.md) § Writing discipline). The French labels quoted are the product's own copy,
+([DOCS-11, DOCS-13](rules/docs.md)). The French labels quoted are the product's own copy,
 reproduced verbatim.
 
 ## Intent
@@ -164,8 +164,7 @@ An error reads at two levels ([SPECS](SPECS.md) 1.5).
   do. It is all the user needs.
 - **The diagnostic line** sits under it in `font-mono text-xs`, a step quieter (`text-muted-foreground`
   in place, the toast's own foreground at 70 % on the dark toast), selectable to be copied. Its content
-  comes from the error pipeline ([`src/dashboard/CLAUDE.md`](../src/dashboard/CLAUDE.md) § Error
-  handling). It never replaces the sentence.
+  comes from the error pipeline ([DASHBOARD-18](rules/dashboard.md)). It never replaces the sentence.
 - **A toast carrying a diagnostic line stays until dismissed**, long enough to be photographed. Any
   other toast closes by itself, and the same failure raised twice shows once.
 - **A read that fails shows where its data would have been**, with `Réessayer`, never an empty or

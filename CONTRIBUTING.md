@@ -35,7 +35,7 @@ Docker commands run via `wsl docker compose ...` under the hood, since Docker is
 
 ### Pull request screenshots
 
-The rule is in [`docs/WORKFLOW.md`](docs/WORKFLOW.md) § Delivery gate. Write a
+The rule is GIT-07 of [`docs/rules/git.md`](docs/rules/git.md). Write a
 `*.capture.ts` in `src/dashboard/tools/pr-capture/`, on the model of
 `tools/docs-capture/onboarding.capture.ts` (fake backend, phone viewport, a wait on what makes the
 screen recognisable), writing its images to `tools/pr-capture/out/`. The folder is git-ignored: a
@@ -71,7 +71,7 @@ frontend only, the backend having no equivalent.
 
 Two things are deliberately out of the denominator, and nothing else is: EF Core migrations, which are generated rather than written, and files that emit no runtime code (ambient types, interface-only ports). A file that executes stays measured even when no test touches it, which is why the frontend rate is what it is.
 
-CI reports both rates on every pull request, in one comment kept up to date, and refreshes the README badges from `main`. Only the frontend has a floor: `thresholds` in `src/dashboard/vite.config.ts`, so `task front:test -- --coverage` fails below it, locally as in CI. Its rule is in [`src/dashboard/CLAUDE.md`](src/dashboard/CLAUDE.md) § Tests.
+CI reports both rates on every pull request, in one comment kept up to date, and refreshes the README badges from `main`. Only the frontend has a floor: `thresholds` in `src/dashboard/vite.config.ts`, so `task front:test -- --coverage` fails below it, locally as in CI. Its rule is DASHBOARD-29 of [`docs/rules/dashboard.md`](docs/rules/dashboard.md).
 
 ### Environment variables reference
 

@@ -1,8 +1,8 @@
 # Architecture decision records (ADR)
 
 One architectural decision, one file. Format: Context, Options compared, Decision, Consequences
-(including "Options rejected"). Writing rules and lifecycle:
-[`../WORKFLOW.md`](../WORKFLOW.md). The SAD ([`../SAD.md`](../SAD.md)) sets the boundaries and
+(including "Options rejected"). Writing rules and lifecycle: DOCS-07 to DOCS-10 of
+[`../rules/docs.md`](../rules/docs.md). The SAD ([`../SAD.md`](../SAD.md)) sets the boundaries and
 references these ADRs rather than copying them.
 
 > The ADR bodies are still French, the filenames are English. Content translation is tracked as a

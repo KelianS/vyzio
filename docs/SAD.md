@@ -3,7 +3,7 @@
 The overview of the system: what runs, what talks to what, where the data lives and what threatens it.
 It holds what the code does not easily show. Each decision is an ADR, named here by its number
 ([index](adr/README.md)); how a part works is in the code and its tests. What this document may and
-may not hold, and when it must change: [`WORKFLOW.md`](WORKFLOW.md) § The SAD.
+may not hold, and when it must change: DOCS-05, DOCS-06 and DOCS-03 of [`rules/docs.md`](rules/docs.md).
 
 Vyzio is a product layer on top of Frigate (ADR-01): Frigate runs the video pipeline, Vyzio makes it
 usable by a non-technical household and keeps it invisible.
