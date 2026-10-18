@@ -45,6 +45,7 @@ const TEST_NAME = /^[A-Za-z][A-Za-z0-9_]*?_Should[A-Z][A-Za-z0-9]*_When[A-Z][A-Z
 // A parametrised name is only known at run time: its static part must open on the convention.
 const EACH_NAME_START = /^[A-Za-z][A-Za-z0-9_]*?_Should[A-Z][A-Za-z0-9]*_When[A-Z]/
 const EACH_PLACEHOLDER = /\$[A-Za-z0-9.]+|%[sdifjoc#%]/g
+const WHOLE_PLACEHOLDER = /^(\$[A-Za-z0-9.]+|%[sdifjoc#])$/
 const TEST_MODIFIERS = new Set(['each', 'only', 'skip', 'fails', 'concurrent', 'todo', 'fixme'])
 // Walks `it.skip.each([...])`, `it.each\`table\`` and the like down to `it` or `test`.
 const testRoot = (callee) => {
@@ -63,7 +64,7 @@ const isTestCall = (callee) => {
 }
 const staticName = (node) => {
   if (node?.type === 'Literal' && typeof node.value === 'string') return node.value
-  if (node?.type === 'TemplateLiteral') return node.quasis.map((q) => q.value.cooked).join('x')
+  if (node?.type === 'TemplateLiteral') return node.quasis.map((q) => q.value.cooked).join('X')
   return null
 }
 const testNames = {
@@ -83,7 +84,7 @@ const testNames = {
               node.callee.type === 'CallExpression' ||
               node.callee.type === 'TaggedTemplateExpression'
             // A name drawn wholly from the table rows is left to review.
-            if (parametrised && /^[$%]/.test(name)) return
+            if (parametrised && WHOLE_PLACEHOLDER.test(name)) return
             const valid = parametrised
               ? EACH_NAME_START.test(name.replace(EACH_PLACEHOLDER, 'X'))
               : TEST_NAME.test(name)

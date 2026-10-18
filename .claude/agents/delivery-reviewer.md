@@ -77,5 +77,5 @@ Needs another guardian
   observable outside the changed code (API contract, route, configuration, persisted data, what a
   screen shows).
 - **Feedback on the rules**: only what really got in the way of this review, in the types of
-  `docs/rules/README.md` § Feedback; the existing code is never proof against a rule.
+  `docs/rules/README.md` § Feedback on the rules; the existing code is never proof against a rule.
 - No finding without a location. An empty section is written `none`.

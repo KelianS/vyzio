@@ -17,13 +17,8 @@ session; the review starts on a green branch.
 
 ## 2. Review
 
-Pick the reviewers from the diff (`git diff --stat origin/main...HEAD`):
-
-| Reviewer | When |
-| --- | --- |
-| `delivery-reviewer` | always |
-| `framing-guardian` | the diff touches `docs/`, `README.md`, a compose file, `nginx.conf`, an endpoint, a migration, a listener or an outbound client, or changes a behaviour; in doubt, run it |
-| `product-guardian` | the diff touches what a user sees or walks through: `src/dashboard/src/presentation/`, `src/dashboard/src/common/components/`, a user-facing string, a notification, `src/vyzio/vendors/*.md` |
+Pick the reviewers from the diff (`git diff --stat origin/main...HEAD`), by the triggers of WORKFLOW
+§ Delivery gate, step 2.
 
 Launch them **in parallel**, in one message. The request to each carries the target only: the base
 (`origin/main`), the commit range for a re-review, the issue number, and whether `task check` was

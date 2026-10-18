@@ -62,5 +62,5 @@ Notes
 ```
 
 Blocking means a breach of a `Required` rule of `docs.md`; a `Recommended` one is a note. Feedback
-types: `docs/rules/README.md` § Feedback. Cite a location for every finding. An empty section is
-written `none`.
+types: `docs/rules/README.md` § Feedback on the rules. Cite a location for every finding. An empty
+section is written `none`.

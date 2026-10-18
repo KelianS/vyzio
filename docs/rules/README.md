@@ -39,7 +39,7 @@ constraint>`, followed by its level and what verifies it.
 - Only what the change adds or modifies is judged. Code written before a rule is not a model, and
   not a finding either, unless the change touches it.
 - A rule is cited by its ID, which gives its place: `BACKEND-07` is rule 07 of `backend.md`.
-- A case no rule settles is not a finding: it is feedback on the rules (§ Feedback below), never
+- A case no rule settles is not a finding: it is feedback on the rules (§ Feedback on the rules below), never
   an invented rule.
 
 ## Feedback on the rules
@@ -55,8 +55,8 @@ A reviewer reports what got in its way, with its proof, and nothing else:
 
 The rules keep the last word: a doubtful rule still applies, the feedback asks for it to be
 reexamined. Only once the owner has validated its text does it become a GitHub issue labelled
-`agent-feedback`, titled `[rules] <page> § <ID>` or `[agents] <agent or skill>`; an open issue on
-the same subject gets a comment instead.
+`agent-feedback`, titled `[rules] <page> § <ID>`, `[rules] <topic>` for a missing rule with no page,
+or `[agents] <agent or skill>`; an open issue on the same subject gets a comment instead.
 
 ## Writing a rule
 
