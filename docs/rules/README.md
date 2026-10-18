@@ -54,9 +54,9 @@ A reviewer reports what got in its way, with its proof, and nothing else:
 | **Tooling** | An instruction of an agent or a skill failed or did not match reality |
 
 The rules keep the last word: a doubtful rule still applies, the feedback asks for it to be
-reexamined. With the owner's agreement it becomes a GitHub issue labelled `agent-feedback`, titled
-`[rules] <page> § <ID>` or `[agents] <agent or skill>`; an open issue on the same subject gets a
-comment instead.
+reexamined. Only once the owner has validated its text does it become a GitHub issue labelled
+`agent-feedback`, titled `[rules] <page> § <ID>` or `[agents] <agent or skill>`; an open issue on
+the same subject gets a comment instead.
 
 ## Writing a rule
 

@@ -65,8 +65,10 @@ commit reviewed `PASS` (`<sha>..HEAD`); no `PASS` yet → the whole branch.
 
 ## 5. Feedback on the rules
 
-Gather the reviewers' feedback, duplicates merged, and show it. **Record nothing without the user's
-explicit agreement**, item by item or as a whole. For each accepted item:
+Gather the reviewers' feedback, duplicates merged, and show it. **Nothing is ever recorded without
+the user's validation**: show the exact title and body of each issue or comment, and run `gh issue
+create` or `gh issue comment` only once the user has approved that text. No validation, nothing
+recorded, whatever else the session allows. For each approved item:
 
 1. Search an open issue on the subject: `gh issue list --label agent-feedback --search "<page or agent>"`.
 2. Found → `gh issue comment`: the type, the branch, the finding, its proof.
