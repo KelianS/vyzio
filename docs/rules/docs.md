@@ -70,8 +70,8 @@ camera model does is its hardware sheet; the *how* is the code and its tests.
 **Level**: Required · **Verified by**: Review
 
 Its title says the target ("X rejected, Y chosen"), not the history ("X attempted then abandoned").
-Corrections are merged into the decision, never stacked as "Correction (a)(b)(c)". The format:
-Context, Options compared, Decision, Consequences, Options rejected.
+Corrections are merged into the decision, never stacked as "Correction (a)(b)(c)". The format is
+the one of the [ADR index](../adr/README.md).
 
 ### DOCS-09 · An accepted ADR is frozen but for its status line
 

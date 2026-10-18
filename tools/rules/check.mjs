@@ -9,7 +9,6 @@ const INDEX = path.posix.join(RULES_DIR, 'README.md')
 const RULE_HEADING = /^### ([A-Z]+)-(\d{2}) · \S/
 const LOOKS_LIKE_RULE = /^#{1,6} [A-Z]+-\d+\b/
 const LEVEL_LINE = /^\*\*Level\*\*: (Required|Recommended) · \*\*Verified by\*\*: (Review|Tool: )/
-const CITED_EXTENSIONS = new Set(['.md', '.cs', '.ts', '.tsx', '.js', '.mjs', '.json', '.jsonc', '.yml', '.yaml'])
 
 const problems = []
 const defined = new Map()
@@ -47,7 +46,7 @@ for (const page of pages) {
 const cited = new RegExp(`\\b(?:${prefixes.join('|')})-\\d{2}\\b`, 'g')
 const tracked = execFileSync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard'], { encoding: 'utf8' })
   .split('\0')
-  .filter((f) => CITED_EXTENSIONS.has(path.extname(f)))
+  .filter(Boolean)
 
 for (const file of tracked) {
   let text
@@ -56,6 +55,7 @@ for (const file of tracked) {
   } catch {
     continue // Listed by git but deleted in the working tree.
   }
+  if (text.includes('\0')) continue // Binary.
   text.split(/\r?\n/).forEach((line, i) => {
     for (const id of line.match(cited) ?? []) {
       if (!defined.has(id)) problems.push(`${file}:${i + 1}: cites ${id}, which no rule page defines`)

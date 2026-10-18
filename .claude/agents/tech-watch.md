@@ -28,7 +28,7 @@ patch update it proposes is never a proposal of yours.
 
 | Kind | What |
 | --- | --- |
-| **Successor** | A package replaced under another name, which no version bump will ever propose (`xunit` → `xunit.v3`) |
+| **Successor** | A package replaced under another name, which no version bump will ever propose |
 | **End of support** | A runtime, an image or a framework whose support ends, with its date |
 | **Deprecation** | A package or an API marked deprecated, or a vulnerability without a fix on the current line |
 | **Major** | A major Dependabot is told to ignore (a runtime, Frigate's minor): what it brings, what it breaks |

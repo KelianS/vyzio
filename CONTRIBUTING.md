@@ -35,7 +35,7 @@ Docker commands run via `wsl docker compose ...` under the hood, since Docker is
 
 ### Pull request screenshots
 
-The rule is in [`docs/WORKFLOW.md`](docs/WORKFLOW.md) § Delivery gate. Write a
+The rule is GIT-07 of [`docs/rules/git.md`](docs/rules/git.md). Write a
 `*.capture.ts` in `src/dashboard/tools/pr-capture/`, on the model of
 `tools/docs-capture/onboarding.capture.ts` (fake backend, phone viewport, a wait on what makes the
 screen recognisable), writing its images to `tools/pr-capture/out/`. The folder is git-ignored: a

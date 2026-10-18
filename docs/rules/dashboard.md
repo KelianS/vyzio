@@ -222,11 +222,11 @@ the sentence the user reads.
 Reducers, validations, a formatter or mapper with a branch. Declarative code (action creators, uido,
 containers) gets none.
 
-### DASHBOARD-29 · Coverage holds 80 % on every metric
+### DASHBOARD-29 · Coverage holds its floor on every metric
 
 **Level**: Required · **Verified by**: Tool: `coverage.thresholds` in `vite.config.ts`
 
-A fixed floor, with no ratchet. The exclude list never widens to meet it (COMMON-07).
+The floor is the one `coverage.thresholds` sets, fixed, with no ratchet. The exclude list never widens to meet it (COMMON-07).
 
 ### DASHBOARD-30 · E2E tests cover the journeys, against the production build
 

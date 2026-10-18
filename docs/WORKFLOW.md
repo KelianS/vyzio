@@ -88,8 +88,8 @@ interface shows the user, and the bodies of the ADRs accepted in French until th
 
 ### Delivery gate, before a pull request is opened
 
-1. `task check` is green (GIT-08). It runs the steps of the backend and frontend CI jobs; the image
-   build and its Trivy scan stay CI-only.
+1. `task check` is green (GIT-08). It runs the steps of the rules, backend and frontend CI jobs; the
+   image build and its Trivy scan stay CI-only.
 2. The review agents of [`.claude/agents/`](../.claude/agents/) have run on the branch:
    `delivery-reviewer` always, `framing-guardian` when the change alters behaviour, architecture or
    `docs/`, `product-guardian` when it touches what a user sees or walks through. They judge against

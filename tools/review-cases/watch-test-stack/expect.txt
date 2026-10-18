@@ -1,3 +1,4 @@
 agent: tech-watch
 prompt: run a tech watch on the backend test stack only, the test packages of src/vyzio/Directory.Packages.props
 cites: xunit.v3
+cites: https://www.nuget.org/packages/xunit

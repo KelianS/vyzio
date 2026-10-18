@@ -46,12 +46,19 @@ const TEST_NAME = /^[A-Za-z][A-Za-z0-9_]*?_Should[A-Z][A-Za-z0-9]*_When[A-Z][A-Z
 const EACH_NAME_START = /^[A-Za-z][A-Za-z0-9_]*?_Should[A-Z][A-Za-z0-9]*_When[A-Z]/
 const EACH_PLACEHOLDER = /\$[A-Za-z0-9.]+|%[sdifjoc#%]/g
 const TEST_MODIFIERS = new Set(['each', 'only', 'skip', 'fails', 'concurrent', 'todo', 'fixme'])
+// Walks `it.skip.each([...])`, `it.each\`table\`` and the like down to `it` or `test`.
+const testRoot = (callee) => {
+  let node = callee
+  for (;;) {
+    if (node.type === 'CallExpression') node = node.callee
+    else if (node.type === 'TaggedTemplateExpression') node = node.tag
+    else if (node.type === 'MemberExpression' && TEST_MODIFIERS.has(node.property.name))
+      node = node.object
+    else return node
+  }
+}
 const isTestCall = (callee) => {
-  const called = callee.type === 'CallExpression' ? callee.callee : callee
-  const base =
-    called.type === 'MemberExpression' && TEST_MODIFIERS.has(called.property.name)
-      ? called.object
-      : called
+  const base = testRoot(callee)
   return base.type === 'Identifier' && (base.name === 'it' || base.name === 'test')
 }
 const staticName = (node) => {
@@ -72,7 +79,9 @@ const testNames = {
             if (!isTestCall(node.callee)) return
             const name = staticName(node.arguments[0])
             if (name === null) return
-            const parametrised = node.callee.type === 'CallExpression'
+            const parametrised =
+              node.callee.type === 'CallExpression' ||
+              node.callee.type === 'TaggedTemplateExpression'
             // A name drawn wholly from the table rows is left to review.
             if (parametrised && /^[$%]/.test(name)) return
             const valid = parametrised

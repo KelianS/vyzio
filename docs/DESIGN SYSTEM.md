@@ -3,7 +3,7 @@
 The dashboard's design system: intent, tokens, components, the patterns every screen reuses, the
 shared UX vocabulary and the bans. It never describes one feature's behaviour, which is
 [SPECS](SPECS.md) or the code and its tests, and never paraphrases the code
-([WORKFLOW](WORKFLOW.md) § Writing discipline). The French labels quoted are the product's own copy,
+([DOCS-11, DOCS-13](rules/docs.md)). The French labels quoted are the product's own copy,
 reproduced verbatim.
 
 ## Intent
