@@ -45,7 +45,7 @@ run_one() {
 # Prints one line per unmet expectation of a report.
 check() {
   local report=$1 expect=$2 kind value verdict
-  verdict="$(grep -oE '\**Verdict\**: *\**(BLOCKING|PASS)' "$report" | head -1 | grep -oE '(BLOCKING|PASS)$')"
+  verdict="$(grep -oE '\**Verdict(\**:|:\**) *\**(BLOCKING|PASS)' "$report" | head -1 | grep -oE '(BLOCKING|PASS)$')"
   while IFS=': ' read -r kind value; do
     value="${value%$'\r'}"
     case $kind in

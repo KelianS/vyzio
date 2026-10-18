@@ -1,6 +1,6 @@
 ---
 name: framing-guardian
-description: Check that framing documents lead the code. Use when a change alters behaviour, architecture, boundaries or a documented decision, or touches docs/. Applies the documentation rules of docs/rules/docs.md and the mandated order of docs/WORKFLOW.md, and returns what is missing or misplaced.
+description: Check that framing documents lead the code, on the triggers of docs/WORKFLOW.md § Delivery gate, or when framing an issue. Applies the documentation rules of docs/rules/docs.md and the mandated order of docs/WORKFLOW.md, and returns what is missing or misplaced.
 tools: Read, Grep, Glob, Bash
 model: inherit
 omitClaudeMd: true

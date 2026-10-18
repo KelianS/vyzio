@@ -39,8 +39,8 @@ constraint>`, followed by its level and what verifies it.
 - Only what the change adds or modifies is judged. Code written before a rule is not a model, and
   not a finding either, unless the change touches it.
 - A rule is cited by its ID, which gives its place: `BACKEND-07` is rule 07 of `backend.md`.
-- A case no rule settles is not a finding: it is feedback on the rules (§ Feedback on the rules below), never
-  an invented rule.
+- A case no rule settles is not a finding: it is feedback on the rules (§ Feedback on the rules
+  below), never an invented rule.
 
 ## Feedback on the rules
 

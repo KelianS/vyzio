@@ -98,8 +98,8 @@ interface shows the user, and the bodies of the ADRs accepted in French until th
    - `product-guardian` when it touches what a user sees or walks through: the screens and shared
      components of the dashboard, a user-facing string, a notification, the vendor sheets.
 
-   They judge against
-   [`rules/`](rules/) and the product sources only, never against anyone's personal instructions.
+   They judge against [`rules/`](rules/) and the product sources only, never against anyone's
+   personal instructions.
 3. Their blocking findings are fixed, not argued away in the pull request description.
 4. A change to what the interface shows carries its screenshots (GIT-07), so the owner validates the
    screen without running the stack.

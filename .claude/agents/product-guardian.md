@@ -1,6 +1,6 @@
 ---
 name: product-guardian
-description: Product coherence check. Use when framing an issue labelled needs-framing, when weighing product options, or when a diff touches what a user sees or walks through (screens, wording, journeys, notifications). Confronts it with the product principles, docs/SPECS.md and README.md and reports contradictions. It never decides.
+description: Product coherence check. Use when framing an issue labelled needs-framing, when weighing product options, or on the triggers of docs/WORKFLOW.md § Delivery gate. Confronts it with the product principles, docs/SPECS.md and README.md and reports contradictions. It never decides.
 tools: Read, Grep, Glob, Bash
 model: inherit
 omitClaudeMd: true
