@@ -12,7 +12,7 @@ RUN dotnet restore ./src/vyzio/Vyzio.Api/Vyzio.Api.csproj
 COPY src/vyzio ./src/vyzio
 RUN dotnet publish ./src/vyzio/Vyzio.Api/Vyzio.Api.csproj -c Release -o /app/publish
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine@sha256:819bd3649d8bf53f35527c68d62e17b348ef6f24ae73073f497f00a878348062 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine@sha256:254fe017495996d3abcc487ffacdcce2b73affb380d3af87af12c8dff41fe0b0 AS runtime
 WORKDIR /app
 
 # The revision is the one thing an operator cannot recover from the image otherwise: a version tag
