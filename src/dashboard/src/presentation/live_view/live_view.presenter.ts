@@ -11,8 +11,8 @@ import type { PtzDirection } from './live_view.uido'
 // Well within the few seconds after which the server stops a hold it no longer hears about (ADR-60).
 const HOLD_SIGNAL_MS = 1000
 const MOVE_SPEED = 50
-// The camera is still settling when the move answers: capture once it stands still.
-const CAPTURE_DELAY_MS = 1500
+// A native preset move goes on after the camera acknowledges it: capture once a full move has had time to end (ADR-26).
+const CAPTURE_DELAY_MS = 6000
 
 export interface LiveViewPresenterContext {
   container: CamerasContainer
@@ -31,6 +31,13 @@ export function buildLiveViewPresenter({ container, dispatch, toast }: LiveViewP
   let hold: Hold | null = null
   // A press sends up to three calls: a failure is shown once per press, not once per call.
   let failureShown = false
+  // A go-to, a joystick press or a calibration cancels a pending capture; a newer capture replaces it.
+  let pendingCapture: ReturnType<typeof setTimeout> | null = null
+
+  function cancelPendingCapture() {
+    if (pendingCapture) clearTimeout(pendingCapture)
+    pendingCapture = null
+  }
 
   function reportMoveFailure(e: unknown) {
     if (failureShown) return
@@ -82,7 +89,9 @@ export function buildLiveViewPresenter({ container, dispatch, toast }: LiveViewP
 
   // A missed capture fails under a thumbnail already shown: it stays, and a toast says so (DESIGN SYSTEM § Errors).
   function captureThumbnailSoon(cameraId: string, presetId: number, label: string) {
-    setTimeout(() => {
+    cancelPendingCapture()
+    pendingCapture = setTimeout(() => {
+      pendingCapture = null
       container.capturePtzPresetThumbnail
         .execute(cameraId, presetId)
         .then(() => dispatch({ type: 'THUMBNAIL_CAPTURED', presetId, version: Date.now() }))
@@ -149,6 +158,7 @@ export function buildLiveViewPresenter({ container, dispatch, toast }: LiveViewP
     onPress(cameraId: string, direction: PtzDirection) {
       if (hold) return
       failureShown = false
+      cancelPendingCapture()
       dispatch({ type: 'MOVE_STARTED' })
       startHold(cameraId, direction)
     },
@@ -158,6 +168,7 @@ export function buildLiveViewPresenter({ container, dispatch, toast }: LiveViewP
     onRelease: endHold,
 
     async onGoTo(cameraId: string, presetId: number, label: string) {
+      cancelPendingCapture()
       dispatch({ type: 'GOTO_STARTED', presetId })
       try {
         await container.ptzGoToPreset.execute(cameraId, presetId)
@@ -186,6 +197,7 @@ export function buildLiveViewPresenter({ container, dispatch, toast }: LiveViewP
     },
 
     async onCalibrate(cameraId: string) {
+      cancelPendingCapture()
       dispatch({ type: 'CALIBRATE_STARTED' })
       try {
         await container.ptzCalibrate.execute(cameraId)
