@@ -24,9 +24,10 @@ public sealed class DeleteDetectionUseCase(
 
         // The messages already delivered stay where they were received; only Vyzio's trace of them goes.
         var removed = await notifications.DeleteForEventAsync(frigateEventId, ct);
+        // The id comes from the route: no line break of it reaches the log (cs/log-forging).
         logger.LogInformation(
             "Detection {EventId} {Erasure}, with {NotificationCount} notification rows removed",
-            frigateEventId, erasure, removed);
+            frigateEventId.Replace("\r", string.Empty).Replace("\n", string.Empty), erasure, removed);
         return erasure;
     }
 }

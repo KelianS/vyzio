@@ -52,7 +52,9 @@ public sealed class FrigateClipProvider(
     private FrigateClipUnreadableException Unreadable(string detail, Exception? inner = null)
     {
         var failure = new FrigateClipUnreadableException(detail, inner);
-        logger.LogError(failure, "Reading a clip failed: {Detail}", detail);
+        // The detail carries the id from the route: no line break of it reaches the log (cs/log-forging).
+        logger.LogError(failure, "Reading a clip failed: {Detail}",
+            detail.Replace("\r", string.Empty).Replace("\n", string.Empty));
         return failure;
     }
 }

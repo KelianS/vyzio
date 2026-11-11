@@ -111,7 +111,9 @@ public sealed class FrigateDetectionEraser(HttpClient httpClient, ILogger<Frigat
     private DetectionErasureFailedException Fail(string detail, Progress progress, Exception? inner = null)
     {
         var failure = new DetectionErasureFailedException(detail, progress.PartlyErased, inner);
-        logger.LogError(failure, "Erasing a detection failed: {Detail}", detail);
+        // The detail carries the id from the route: no line break of it reaches the log (cs/log-forging).
+        logger.LogError(failure, "Erasing a detection failed: {Detail}",
+            detail.Replace("\r", string.Empty).Replace("\n", string.Empty));
         return failure;
     }
 
