@@ -31,6 +31,13 @@ export function buildLiveViewPresenter({ container, dispatch, toast }: LiveViewP
   let hold: Hold | null = null
   // A press sends up to three calls: a failure is shown once per press, not once per call.
   let failureShown = false
+  // Only the latest move may be captured: another move before the delay would put its view under the wrong position.
+  let pendingCapture: ReturnType<typeof setTimeout> | null = null
+
+  function cancelPendingCapture() {
+    if (pendingCapture) clearTimeout(pendingCapture)
+    pendingCapture = null
+  }
 
   function reportMoveFailure(e: unknown) {
     if (failureShown) return
@@ -82,7 +89,9 @@ export function buildLiveViewPresenter({ container, dispatch, toast }: LiveViewP
 
   // A missed capture fails under a thumbnail already shown: it stays, and a toast says so (DESIGN SYSTEM § Errors).
   function captureThumbnailSoon(cameraId: string, presetId: number, label: string) {
-    setTimeout(() => {
+    cancelPendingCapture()
+    pendingCapture = setTimeout(() => {
+      pendingCapture = null
       container.capturePtzPresetThumbnail
         .execute(cameraId, presetId)
         .then(() => dispatch({ type: 'THUMBNAIL_CAPTURED', presetId, version: Date.now() }))
@@ -97,6 +106,7 @@ export function buildLiveViewPresenter({ container, dispatch, toast }: LiveViewP
   }
 
   async function save(cameraId: string, presetId: number, label: string) {
+    cancelPendingCapture()
     dispatch({ type: 'SAVE_STARTED', presetId })
     try {
       await container.ptzSaveCurrentAsPreset.execute(cameraId, presetId)
@@ -149,15 +159,20 @@ export function buildLiveViewPresenter({ container, dispatch, toast }: LiveViewP
     onPress(cameraId: string, direction: PtzDirection) {
       if (hold) return
       failureShown = false
+      cancelPendingCapture()
       dispatch({ type: 'MOVE_STARTED' })
       startHold(cameraId, direction)
     },
 
-    // Closing the view mid-press stops the camera.
-    onClose: endHold,
+    // Closing the view mid-press stops the camera, and no capture outlives it.
+    onClose() {
+      cancelPendingCapture()
+      endHold()
+    },
     onRelease: endHold,
 
     async onGoTo(cameraId: string, presetId: number, label: string) {
+      cancelPendingCapture()
       dispatch({ type: 'GOTO_STARTED', presetId })
       try {
         await container.ptzGoToPreset.execute(cameraId, presetId)

@@ -17,6 +17,8 @@ const SAVE = 'POST /api/cameras/camera-1/ptz/preset/save'
 const GOTO = 'POST /api/cameras/camera-1/ptz/preset/goto'
 const CALIBRATE = 'POST /api/cameras/camera-1/ptz/calibrate'
 const CAPTURE = 'POST /api/cameras/camera-1/ptz/presets/1/snapshot'
+const CAPTURE_PARKING = 'POST /api/cameras/camera-1/ptz/presets/2/snapshot'
+const PARKING = /^Parking \(appui/
 const SURVEILLANCE = /^Surveillance \(appui/
 const EMPTY_SLOT = 'Enregistrer la position actuelle ici'
 
@@ -189,6 +191,57 @@ describe('LiveView', () => {
     // Assert
     expect(sentBeforeTheDelay).not.toContainEqual(expect.objectContaining({ route: CAPTURE }))
     expect(network.sent).toContainEqual(expect.objectContaining({ route: CAPTURE }))
+  })
+
+  it('onGoTo_ShouldCaptureOnlyTheLastPosition_WhenAnotherGoToStartsBeforeTheDelay', async () => {
+    // Arrange
+    useCaptureClock()
+    const network = fakeNetwork({
+      [PRESETS]: presetsRead({
+        presets: [makePreset(), makePreset({ presetId: 2, label: 'Parking' })],
+      }),
+      [GOTO]: ok(),
+      [CAPTURE]: ok(),
+      [CAPTURE_PARKING]: ok(),
+    })
+    renderLiveView()
+    await userEvent.click(await screen.findByTitle(SURVEILLANCE))
+    await screen.findByText('Caméra en position « Surveillance ».')
+    await waitFor(() => expect(screen.getByTitle(SURVEILLANCE)).toBeEnabled())
+
+    // Act
+    await userEvent.click(screen.getByTitle(PARKING))
+    await screen.findByText('Caméra en position « Parking ».')
+    await waitFor(() => expect(screen.getByTitle(PARKING)).toBeEnabled())
+    await act(() => vi.advanceTimersByTimeAsync(6000))
+
+    // Assert
+    expect(network.sent).toContainEqual(expect.objectContaining({ route: CAPTURE_PARKING }))
+    expect(network.sent).not.toContainEqual(expect.objectContaining({ route: CAPTURE }))
+  })
+
+  it('onPress_ShouldCancelThePendingCapture_WhenTheUserMovesTheCameraBeforeTheDelay', async () => {
+    // Arrange
+    useCaptureClock()
+    const network = fakeNetwork({
+      [PRESETS]: presetsRead({ presets: [makePreset()] }),
+      [GOTO]: ok(),
+      [CAPTURE]: ok(),
+      [START]: ok(),
+      [STOP]: ok(),
+    })
+    renderLiveView()
+    await userEvent.click(await screen.findByTitle(SURVEILLANCE))
+    await screen.findByText('Caméra en position « Surveillance ».')
+    await waitFor(() => expect(screen.getByTitle(SURVEILLANCE)).toBeEnabled())
+
+    // Act
+    await userEvent.click(screen.getByTitle('Gauche'))
+    await act(() => vi.advanceTimersByTimeAsync(6000))
+
+    // Assert
+    expect(network.sent).toContainEqual(expect.objectContaining({ route: START }))
+    expect(network.sent).not.toContainEqual(expect.objectContaining({ route: CAPTURE }))
   })
 
   it('onGoTo_ShouldSayThePreviewWasNotUpdated_WhenTheCaptureFails', async () => {
