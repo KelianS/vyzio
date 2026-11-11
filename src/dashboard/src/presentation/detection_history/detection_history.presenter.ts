@@ -1,11 +1,12 @@
 import type { ToastTone } from '../../common/components/toast'
-import { toastError } from '../../common/errors/app_error'
+import { ApiErrorCode, AppErrorKind, toastError } from '../../common/errors/app_error'
 import { toAppError } from '../../common/errors/to_app_error'
 import type { DetectionHistoryQuery } from '../../domain/entities/detection_history.entity'
 import type { Profile } from '../../domain/entities/profile.entity'
 import type { DetectionHistoryContainer } from '../../infrastructure/providers/detection_history.container'
 import type { DetectionHistoryAction } from './detection_history.actions'
-import type { DetectionMedia } from './detection_history.uido'
+import type { DetectionMedia } from '../../common/detection/detection_preview'
+import { explainVideoFailure } from '../../common/detection/explain_video_failure'
 
 export interface DetectionHistoryPresenterContext {
   container: DetectionHistoryContainer
@@ -91,5 +92,59 @@ export function buildDetectionHistoryPresenter({
         toastError(toast, toAppError(e), 'La correction de l’identité n’a pas abouti.')
       }
     },
+
+    onAskDelete(eventId: string) {
+      dispatch({ type: 'DELETE_ASKED', eventId })
+    },
+    onDismissDelete() {
+      dispatch({ type: 'DELETE_DISMISSED' })
+    },
+
+    onVideoFailed(eventId: string): Promise<void> {
+      return explainVideoFailure(
+        container.checkDetectionClip,
+        eventId,
+        () => dispatch({ type: 'CLIP_GONE', eventId }),
+        toast,
+      )
+    },
+
+    async onDelete(eventId: string): Promise<void> {
+      try {
+        await container.deleteDetection.execute(eventId)
+        dispatch({ type: 'DELETE_SUCCEEDED', eventId })
+        toast('Détection supprimée.', 'info')
+      } catch (e) {
+        const error = toAppError(e)
+        // Already gone is the outcome asked for, said as such, never a failure to retry.
+        if (error.kind === AppErrorKind.NotFound) {
+          dispatch({ type: 'DELETE_SUCCEEDED', eventId })
+          toast('Cette détection n’existe plus.', 'info')
+          return
+        }
+        dispatch({ type: 'DELETE_DISMISSED' })
+        // A detection still being filmed is a rule to wait for, not a breakdown to photograph.
+        if (
+          error.code === ApiErrorCode.DetectionInProgress &&
+          error.kind === AppErrorKind.Unknown
+        ) {
+          toast(error.message, 'info')
+          return
+        }
+        toastError(toast, error, failureSentence(error.code))
+      }
+    },
+  }
+}
+
+/** Whether anything is already gone decides what a retry means (SPECS 6.2). */
+function failureSentence(code: string | undefined): string | undefined {
+  switch (code) {
+    case ApiErrorCode.ErasureFailed:
+      return 'La surveillance n’a pas pu supprimer cette détection : rien n’a été effacé. Réessayez dans un instant.'
+    case ApiErrorCode.ErasureIncomplete:
+      return 'La détection n’a été effacée qu’en partie. Réessayez pour terminer.'
+    default:
+      return undefined
   }
 }

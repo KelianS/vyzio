@@ -10,4 +10,7 @@ public interface INotificationRepository
     Task<DateTimeOffset?> GetLastSentAtForAsync(NotificationChannel channel, string camera, string label, CancellationToken ct = default);
     Task AddAsync(Notification notification, CancellationToken ct = default);
     Task<IReadOnlyList<Notification>> GetRecentAsync(NotificationChannel channel, int limit, CancellationToken ct = default);
+
+    /// <summary>Removes every row about one detection, on every channel; returns how many went.</summary>
+    Task<int> DeleteForEventAsync(string frigateEventId, CancellationToken ct = default);
 }
