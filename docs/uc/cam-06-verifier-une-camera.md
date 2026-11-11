@@ -64,7 +64,7 @@
 
 ### E3 · La caméra est hors ligne
 
-1. La caméra cesse de répondre (CAM-07, CAM-27).
+1. La caméra cesse de répondre (CAM-07).
 2. Son état le dit partout où il s'affiche, et ce qui demande une connexion active est suspendu, avec un message explicite (CAM-08).
 
 ## Règles locales

@@ -24,7 +24,7 @@ public sealed class PrivacyResumes(TimeZoneInfo timeZone, TimeProvider time)
 
     public void End(string cameraId) => _resumed.TryRemove(cameraId, out _);
 
-    /// <summary>A Privacy range saved applies within SCHED-04, resumed or not (PRIV-07).</summary>
+    /// <summary>A Privacy range saved applies without waiting for its next start, resumed or not (SCHED-09, PRIV-07).</summary>
     public void EndFor(ScheduleRule rule)
     {
         if (rule.Kind != ScheduleRuleKind.Privacy) return;

@@ -31,7 +31,7 @@
 
 1. Le propriétaire trouve le réglage à son emplacement prévisible, à la portée qu'il lit sans explication (UI-07, UI-08), présenté comme les réglages de même nature (UI-18), l'aide à portée de doigt (UI-19).
 2. Il le modifie : rien ne change encore ; il voit ce qu'il a modifié (UI-11).
-3. Il enregistre : la main lui revient aussitôt (UI-12, UI-20).
+3. Il enregistre : la main lui revient aussitôt (UI-12).
 4. En quittant les réglages, la question de redémarrer se pose quand un réglage l'exige (UI-13, UI-15) ; il redémarre.
 
 ### A1 · Renoncer

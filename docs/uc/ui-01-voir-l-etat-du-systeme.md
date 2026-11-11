@@ -22,7 +22,7 @@
 | N1 | Lire l'état du système à l'accueil | Nominal | L'utilisateur ouvre l'interface |
 | A1 | Mettre Vyzio en service | Alternative | Aucune caméra n'est encore ajoutée |
 | A2 | Le moteur de détection redémarre ou est indisponible | Alternative | La surveillance applique une configuration, ou ne répond plus |
-| A3 | Le stockage devient critique | Alternative | Le disque atteint le seuil d'HIST-02 |
+| A3 | Le stockage devient critique | Alternative | Le disque est presque plein |
 
 ## Détail des chemins
 
@@ -38,7 +38,7 @@
 
 ### A2 · Le moteur de détection redémarre ou est indisponible
 
-1. L'accueil dit l'état du moteur, sur ses trois paliers, sans nommer le composant (SYS-01) ; il suit son état réel (SYS-05).
+1. L'accueil dit l'état du moteur, sur ses trois paliers, sans nommer le composant (SYS-01).
 
 ### A3 · Le stockage devient critique
 

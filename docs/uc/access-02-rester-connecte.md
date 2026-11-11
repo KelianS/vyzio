@@ -31,7 +31,7 @@
 
 ### A1 · Rouvrir l'interface sans rien ressaisir
 
-1. L'utilisateur rouvre l'interface depuis le même appareil : rien ne lui est redemandé (ACCESS-07, ACCESS-04).
+1. L'utilisateur rouvre l'interface depuis le même appareil : rien ne lui est redemandé (ACCESS-07).
 
 ### E1 · La session est terminée
 
@@ -40,7 +40,7 @@
 
 ## Règles locales
 
-- **ACCESS-07** · une fois connecte, l'utilisateur le reste : rouvrir l'interface depuis le meme appareil ne redemande rien pendant la duree d'ACCESS-04 ;
+- **ACCESS-07** · une fois connecte, l'utilisateur le reste : rouvrir l'interface depuis le meme appareil ne redemande rien pendant plusieurs semaines ;
 - **ACCESS-08** · une session terminee ramene a l'ecran de connexion en le disant, jamais sur un ecran vide ou une erreur technique.
 
 ## Points ouverts

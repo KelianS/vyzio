@@ -35,7 +35,7 @@
 ### N1 · Essayer la capacité et répondre oui
 
 1. L'utilisateur choisit d'essayer la capacité depuis sa carte.
-2. Vyzio annonce ce qui va se passer, puis fait l'essai (CAM-49, CAM-28).
+2. Vyzio annonce ce qui va se passer, puis fait l'essai (CAM-49).
 3. Vyzio pose la question ; l'utilisateur répond oui.
 4. La capacité est vérifiée, confirmée par lui à cette date (CAM-16).
 
@@ -63,7 +63,7 @@
 
 ## Règles locales
 
-- **CAM-49** · l'utilisateur essaie une capacite a confirmer depuis sa carte : Vyzio annonce ce qui va se passer, puis fait tourner la camera un peu et la ramene, ou la coupe, le temps de CAM-28, puis l'utilisateur repond a une question simple (« La caméra a bougé ? ») ;
+- **CAM-49** · l'utilisateur essaie une capacite a confirmer depuis sa carte : Vyzio annonce ce qui va se passer, puis fait tourner la camera un peu et la ramene, ou la coupe quelques secondes, puis l'utilisateur repond a une question simple (« La caméra a bougé ? ») ;
 - **CAM-50** · apres un non, la carte dit comment en sortir : l'essayer a nouveau, volontairement, ce qui repose la question, ou passer par un autre protocole, ou la retirer (ajoutee de nouveau a la main, elle repart a confirmer).
 
 ## Points ouverts

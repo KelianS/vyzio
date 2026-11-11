@@ -69,7 +69,7 @@ const TONE_ICON_CLASS: Record<ToastTone, string> = {
 }
 
 function ToastChip({ item, onDismiss }: { item: ToastItem; onDismiss: (id: number) => void }) {
-  // A failure with a diagnostic stays until dismissed: it may have to be photographed (UI-21).
+  // A failure with a diagnostic stays until dismissed: it may have to be photographed (UI-03).
   const closesItself = item.diagnostic === undefined
   useEffect(() => {
     if (!closesItself) return

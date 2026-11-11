@@ -20,14 +20,14 @@
 | ID | Libellé | Type | Déclencheur |
 | --- | --- | --- | --- |
 | N1 | Remettre le mot de passe à zéro | Nominal | Le propriétaire a oublié son mot de passe |
-| E1 | Personne ne choisit de mot de passe à temps | Échec | Le délai d'ACCESS-05 passe sans nouveau mot de passe |
+| E1 | Personne ne choisit de mot de passe à temps | Échec | Le temps laissé passe sans nouveau mot de passe |
 
 ## Détail des chemins
 
 ### N1 · Remettre le mot de passe à zéro
 
 1. Le propriétaire remet le mot de passe à zéro depuis la machine qui héberge Vyzio (ACCESS-11).
-2. L'installation rouvre sur l'écran de choix du mot de passe (ACCESS-05) ; le chemin reprend à UC-ACCESS-01 N1, pas 2.
+2. L'installation rouvre sur l'écran de choix du mot de passe (ACCESS-11) ; le chemin reprend à UC-ACCESS-01 N1, pas 2.
 
 ### E1 · Personne ne choisit de mot de passe à temps
 
@@ -35,7 +35,7 @@
 
 ## Règles locales
 
-- **ACCESS-11** · un mot de passe oublie se remet a zero **depuis la machine qui heberge Vyzio**, sans compte cloud ni envoi de courriel. La remise a zero *retire* le mot de passe : l'installation reouvre sur l'ecran de choix pendant la duree d'ACCESS-05, sans rien perdre de ses cameras ni de son historique, puis se reverrouille si personne n'en choisit un.
+- **ACCESS-11** · un mot de passe oublie se remet a zero **depuis la machine qui heberge Vyzio**, sans compte cloud ni envoi de courriel. La remise a zero *retire* le mot de passe : l'installation reouvre sur l'ecran de choix pendant un temps limite, sans rien perdre de ses cameras ni de son historique, puis se reverrouille si personne n'en choisit un.
 
 ## Points ouverts
 

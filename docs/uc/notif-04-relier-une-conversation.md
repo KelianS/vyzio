@@ -41,7 +41,7 @@
 
 ### E1 · Le code ne vaut plus
 
-1. Le code a expiré, ou trop d'essais ont échoué (NOTIF-24, NOTIF-14).
+1. Le code a expiré, ou trop d'essais ont échoué (NOTIF-24).
 2. La conversation n'est pas reliée ; le propriétaire relance la liaison.
 
 ### E2 · Le canal n'écoute plus
@@ -51,7 +51,7 @@
 
 ## Règles locales
 
-- **NOTIF-24** · le code qui relie une conversation doit etre a duree de vie courte **et** cesser de valoir apres quelques essais infructueux (NOTIF-14) : un code court que l'on peut deviner sans fin ne protege rien.
+- **NOTIF-24** · le code qui relie une conversation doit etre a duree de vie courte **et** cesser de valoir apres quelques essais infructueux : un code court que l'on peut deviner sans fin ne protege rien.
 
 ## Points ouverts
 

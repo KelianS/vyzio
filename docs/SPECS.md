@@ -71,7 +71,7 @@ Chaque exigence porte un identifiant `<DOMAINE>-NN`, et chaque cas d'utilisation
 
 - **UI-01** · Une erreur se lit a deux niveaux : une **phrase claire**, sans jargon, qui dit ce qui se passe et, quand il y a quelque chose a faire, quoi faire ; en dessous, le **detail technique complet** : ce qui a ete demande, ce qui a repondu, le code et la raison recus. Le second niveau s'adresse au support, pas a l'utilisateur : une demande d'aide arrive souvent sous forme de photo de l'ecran, sans journaux, et cette photo doit suffire au diagnostic. Un utilisateur averti doit aussi pouvoir le lire et ouvrir un ticket.
 - **UI-02** · Le detail technique d'une erreur est, avec les replis ou le protocole se choisit par son nom (le repli **Avance** de la page, qui porte les protocoles de la camera, le repli **Options** de chaque carte de capacite et le formulaire d'ajout d'une capacite, cf. CAM-23), le seul endroit de l'interface ou un nom technique peut apparaitre ; il reste discret et ne remplace jamais la phrase claire.
-- **UI-03** · Le detail ne contient jamais de secret : ni mot de passe, ni jeton, ni identifiant de compte camera. Une erreur reste affichee le temps d'etre lue et photographiee (UI-21).
+- **UI-03** · Le detail ne contient jamais de secret : ni mot de passe, ni jeton, ni identifiant de compte camera. Une erreur reste affichee le temps d'etre lue et photographiee : celle qui porte un detail technique, jusqu'a ce que l'utilisateur la ferme.
 - **UI-04** · les parcours camera, profils, historique et reglages doivent etre accessibles sans configuration manuelle de fichiers ;
 - **UI-05** · l'interface doit employer un vocabulaire comprehensible pour un utilisateur non-specialiste ;
 - **UI-06** · le libelle d'une entree de navigation doit dire la nature de l'ecran : **consulter** ou **regler** ; les deux ne se melangent pas dans une meme entree ;
@@ -80,7 +80,7 @@ Chaque exigence porte un identifiant `<DOMAINE>-NN`, et chaque cas d'utilisation
 - **UI-09** · les reglages rares doivent rester **atteignables sans mode a activer** : ils sont mis en profondeur, jamais masques derriere un palier « expert » ;
 - **UI-10** · l'interface doit etre **concue pour le telephone d'abord**, le grand ecran developpant la meme structure ; les actions principales doivent rester faisables sur les deux ;
 - **UI-11** · modifier un reglage ne doit produire **aucun effet** tant que l'utilisateur n'a pas valide ; avant de valider, il doit voir **ce qu'il a modifie** et pouvoir **renoncer** ;
-- **UI-12** · enregistrer un reglage doit **rendre la main immediatement** (UI-20) et ne jamais interrompre la surveillance de sa propre initiative ;
+- **UI-12** · enregistrer un reglage doit **rendre la main immediatement** et ne jamais interrompre la surveillance de sa propre initiative ;
 - **UI-13** · l'interruption de la surveillance doit rester un **acte de l'utilisateur** : il choisit quand redemarrer, le declencheur est atteignable depuis n'importe ou (la vue en direct plein ecran le masque jusqu'au retour), et il ne s'affiche que lorsqu'un reglage l'exige reellement ;
 - **UI-14** · un reglage enregistre mais pas encore repris par la surveillance doit se voir et **dire lesquels** ; l'ecart est autorise et n'oblige a rien, mais ne doit jamais etre silencieux ;
 - **UI-15** · la question de redemarrer ne doit se poser qu'en **quittant les reglages**, jamais en passant d'une page de reglages a une autre ;
@@ -97,15 +97,15 @@ Chaque exigence porte un identifiant `<DOMAINE>-NN`, et chaque cas d'utilisation
 - **CAM-04** · une camera est « À configurer » tant qu'elle n'est pas entree en surveillance (flux video qui n'a jamais fonctionne, puis flux fonctionnel en attente du redemarrage), partout ou son etat s'affiche (liste des cameras, en-tete de sa page, accueil, ou sa vignette mene a sa page sans tenter d'image) ; cet etat dit deja qu'elle ne surveille pas encore, et avant un premier fonctionnement du flux il est son seul etat (hors ligne ou erreur de configuration n'ont pas de sens avant) ; il ne revient jamais une fois la camera en surveillance, et une fois le flux fonctionnel, une panne ulterieure, changement de protocole du flux compris, se lit avec les etats habituels ;
 - **CAM-05** · une camera « À configurer » peut deja etre visee par une plage de la planification ou par le choix de cameras d'une personne, qui s'appliquent a son entree en surveillance ; elle n'a pas de vue en direct, et l'historique n'a rien pour elle ; une fois son flux fonctionnel, elle entre en surveillance par le declencheur de redemarrage, qui ne la concerne qu'a partir de la ; d'ici la elle reste « À configurer » (et non « Connectée »), et sa vignette d'accueil mene encore a sa page sans tenter d'image ni ouvrir de vue en direct ; le declencheur « Appliquer les changements » dit ce qui reste a faire ;
 - **CAM-06** · ce qui n'est pas encore regle garde ses valeurs par defaut, sans rien signaler : l'utilisateur n'est pas pousse a tout regler et peut commencer vite ; la detection, la conservation et la vie privee se reglent sans flux, et s'appliquent quand la camera entre en surveillance ; seul ce qui demande une capacite verifiee attend le flux, comme toute verification (CAM-08) ;
-- **CAM-07** · une perte de flux doit etre detectee (CAM-27) et visible sans diagnostic technique avance ;
-- **CAM-08** · lorsqu'une camera est hors ligne, l'interface doit le refleter immediatement (CAM-27) : le flux live ne doit pas tenter de se charger, et les actions qui requierent une connexion active (controle PTZ, reglages image, test de capacite) doivent etre suspendues avec un message explicite ; les tests de capacite le sont aussi tant que la verification du flux video ne passe pas, ou n'a pas ete refaite depuis un changement de connexion ;
+- **CAM-07** · une perte de flux doit etre detectee et visible sans diagnostic technique avance ;
+- **CAM-08** · lorsqu'une camera est hors ligne, l'interface doit le refleter immediatement : le flux live ne doit pas tenter de se charger, et les actions qui requierent une connexion active (controle PTZ, reglages image, test de capacite) doivent etre suspendues avec un message explicite ; les tests de capacite le sont aussi tant que la verification du flux video ne passe pas, ou n'a pas ete refaite depuis un changement de connexion ;
 - **CAM-09** · lorsque Vyzio modifie de sa propre initiative un reglage de la camera pour ameliorer les performances du systeme (et non a la demande de l'utilisateur), il doit memoriser la valeur d'origine et pouvoir la restaurer si la fonction est desactivee ou la camera retiree ; une telle modification ne doit jamais degrader la qualite des enregistrements.
 
 ### Vie privee (`PRIV`)
 
 - **PRIV-01** · le mode vie privee doit empecher toute ingestion du flux camera par le moteur de detection ; aucun enregistrement, aucune detection, aucune notification ne doit etre genere pour une camera en mode vie privee ;
 - **PRIV-02** · le flux RTSP de la camera ne doit pas etre accessible depuis Vyzio ni depuis Frigate pendant la periode de vie privee ;
-- **PRIV-03** · le mode vie privee peut etre active manuellement (bascule instantanee, PRIV-13) ou via une plage recurrente (jours de la semaine + heures de debut et de fin) planifiee dans la planification de la maison (SCHED-01), qui peut viser plusieurs cameras a la fois ;
+- **PRIV-03** · le mode vie privee peut etre active manuellement (bascule instantanee) ou via une plage recurrente (jours de la semaine + heures de debut et de fin) planifiee dans la planification de la maison (SCHED-01), qui peut viser plusieurs cameras a la fois ;
 - **PRIV-04** · le statut vie privee de chaque camera doit etre clairement visible dans l'interface (icone ou badge distinct de l'etat "hors ligne") ; le badge dit ce que la camera a repondu, jamais ce que la strategie promet : "Coupure materielle confirmee" quand la camera a confirme la coupure, "Camera orientee, enregistrement desactive" quand elle a accepte le mouvement vers sa position Parking, "Enregistrement desactive" quand rien n'est demande a la camera ou que sa reponse n'est pas arrivee ;
 - **PRIV-05** · quand la camera ne suit pas (coupure ou mouvement refuse, camera qui ne repond pas, position non enregistree, capacite non verifiee), l'enregistrement reste coupe (ADR-20) et l'interface le dit : le badge nomme ce qui n'a pas eu lieu ("Camera non tournee, enregistrement desactive" pour le parking, "Objectif non coupe, enregistrement desactive" pour la coupure materielle), la vignette le signale avec un lien vers l'ecran vie privee de la camera, et cet ecran affiche une phrase qui dit ce qui s'est passe et quoi faire, avec le detail technique (UI-01) ; de meme a la desactivation, quand la camera ne revient pas sur sa position Surveillance ; quand la demande est interrompue avant la reponse de la camera, l'interface dit que Vyzio ne sait pas ce qu'elle a fait, sans pretendre qu'elle a refuse ;
 - **PRIV-06** · la vignette d'une camera en mode vie privee affiche un etat explicite, avec les mots du badge, plutot qu'un echec de chargement ; la vue live ne s'ouvre pas tant que dure le mode vie privee ;
@@ -115,6 +115,7 @@ Chaque exigence porte un identifiant `<DOMAINE>-NN`, et chaque cas d'utilisation
 - **PRIV-10** · chaque caméra peut avoir une stratégie de mode vie privée indépendante : `software_blur` (« Arrêt logiciel », désactivation Frigate uniquement), `ptz_parking` (mouvement physique + désactivation Frigate), `hardware` (coupure native firmware, ex. Tapo) ;
 - **PRIV-11** · `software_blur` est la stratégie par défaut d'une caméra ; il n'existe pas de stratégie « aucune » : le mode vie privée arrête toujours au moins l'enregistrement, la détection et les notifications de Vyzio (PRIV-01), et chaque stratégie ajoute ce que la caméra fait en plus ;
 - **PRIV-12** · le mode `ptz_parking` est **toujours cumulatif avec le fallback software** : la caméra pivote vers sa position Parking (preset 2) ET Frigate est désactivé ; la double couche garantit la protection même si le mouvement PTZ échoue ; à la désactivation, la caméra revient sur sa position Surveillance (preset 1) et l'enregistrement reprend, même si ce retour échoue, ce que l'interface dit (PRIV-05) ;
+- **PRIV-13** · tant que dure le mode vie privee, aucune image de la camera n'est montree ni enregistree ;
 - **PRIV-18** · la page de la caméra propose le mode vie privée et les positions Surveillance et Parking dès l'ajout, sans étape d'ajout dédiée ; seules attendent, la vie privée se réglant sans flux (CAM-06), les stratégies qui demandent une capacité vérifiée (CAM-08 suspend les vérifications tant que le flux ne fonctionne pas), et le parking PTZ, dont les positions s'enregistrent depuis la vue live, qui ne s'ouvre qu'une fois la caméra en surveillance : l'écran vie privée et l'écran de pilotage le disent et mènent à ce qui manque, la connexion tant que le flux ne fonctionne pas, puis le déclencheur de redémarrage ; une orientation à confirmer s'essaie d'abord depuis sa carte (UC-CAM-04), puis ses positions se règlent depuis la vue live.
 
 ### Pilotage (`PTZ`)
@@ -146,14 +147,14 @@ Chaque exigence porte un identifiant `<DOMAINE>-NN`, et chaque cas d'utilisation
 - **NOTIF-08** · une meme commande doit se comporter de la meme facon sur tous les canaux ; seule sa presentation s'adapte a ce que le canal sait afficher ;
 - **NOTIF-09** · **la configuration ne se fait pas depuis un canal de messagerie** : un fil de discussion ne peut porter ni brouillon, ni provenance d'une valeur, ni retour arriere (cf. UI-11) ; les reglages restent dans l'interface. Une conversation est plafonnee au role **resident** (ACCESS-01) quel que soit celui qui l'a appairee, et ne revele jamais un secret ([ADR-54](adr/0054-interface-access-guarded-by-an-owner-account-server-session-in-a-cookie.md)) ;
 - **NOTIF-10** · un canal de messagerie transporte des images fixes et des clips, jamais un flux video continu ;
-- **NOTIF-11** · lorsqu'un canal externe revient, les regles de reprise doivent eviter les rafales de notifications inutiles (NOTIF-13) ;
+- **NOTIF-11** · lorsqu'un canal externe revient, les regles de reprise doivent eviter les rafales de notifications inutiles ;
 - **NOTIF-15** · une notification de personne part pendant que la personne est encore dans le champ de la camera (NOTIF-12) ;
 - **NOTIF-23** · seule une conversation appairee explicitement depuis l'interface doit etre acceptee ; l'appairage doit etre revocable, et un message d'une autre origine doit rester sans reponse ;
 - **NOTIF-25** · des qu'une conversation est reliee ou en cours de liaison, l'interface doit dire si le canal **ecoute encore**, et pourquoi il a cesse : une conversation reliee ne prouve rien, elle survit a la panne qui rend le canal muet. Tant qu'aucune ne l'est, une commande reste sans reponse de toute facon.
 
 ### Historique (`HIST`)
 
-- **HIST-01** · l'utilisateur doit etre informe si la capacite de stockage devient critique (HIST-02) ;
+- **HIST-01** · l'utilisateur doit etre informe si la capacite de stockage devient critique ;
 - **HIST-11** · la video d'une detection dont l'enregistrement a ete efface avec une autre ne s'affiche pas en panne : son lecteur dit que la video de ce moment a ete supprimee.
 
 ### Planification (`SCHED`)
@@ -177,7 +178,7 @@ Chaque exigence porte un identifiant `<DOMAINE>-NN`, et chaque cas d'utilisation
 
 ### Systeme (`SYS`)
 
-- **SYS-01** · l'etat du moteur de detection interne doit etre visible sur trois paliers — actif, redemarrage en cours, indisponible — sans jamais nommer le composant technique sous-jacent ; le palier "redemarrage en cours" s'affiche pendant l'application d'une nouvelle configuration (ex. changement de reglages, activation du mode vie privee) et se resout automatiquement des que le moteur redevient joignable (SYS-05), sans action de l'utilisateur ;
+- **SYS-01** · l'etat du moteur de detection interne doit etre visible sur trois paliers — actif, redemarrage en cours, indisponible — sans jamais nommer le composant technique sous-jacent ; le palier "redemarrage en cours" s'affiche pendant l'application d'une nouvelle configuration (ex. changement de reglages, activation du mode vie privee) et se resout automatiquement des que le moteur redevient joignable, sans action de l'utilisateur ;
 - **SYS-02** · le moteur de detection interne doit s'adapter automatiquement au materiel disponible (accelerateur dedie, puis carte graphique, puis processeur en dernier recours), sans configuration manuelle ; en l'absence d'accelerateur dedie ou de carte graphique, la frequence d'analyse est reduite automatiquement selon le nombre de cameras actives, dans une plage bornee (SYS-06) garantissant une detection utile sans saturer le processeur ;
 - **SYS-03** · la surveillance locale doit continuer sans Internet ;
 - **SYS-04** · une indisponibilite reseau ne doit pas empecher l'enregistrement local des evenements.
@@ -211,26 +212,12 @@ Les fonctionnalites avancees d'une camera sont des capacites, decouvertes et pro
 
 ## Niveaux de service
 
-Chaque niveau de service fixe une cible mesurable, sur le reseau domestique et avec le materiel de l'appliance ; les regles et les cas d'utilisation le citent par son identifiant.
+Un niveau de service est une promesse a l'utilisateur qui pourrait regresser sans qu'une revue de code le voie ; il fixe une cible mesurable, sur le reseau domestique et avec le materiel de l'appliance (DOCS-20). Les regles et les cas d'utilisation le citent par son identifiant.
 
 | ID | Ce qui est mesure | Cible |
 | --- | --- | --- |
-| **UI-20** | Delai avant que l'enregistrement d'un reglage rende la main | 1 s au plus |
-| **UI-21** | Duree d'affichage d'une erreur qui porte un detail technique | jusqu'a ce que l'utilisateur la ferme |
-| **CAM-27** | Delai avant qu'une camera qui cesse de repondre soit montree hors ligne | 70 s au plus |
-| **CAM-28** | Duree de l'essai d'une capacite a confirmer | orientation : un mouvement de moins d'1 s, puis le retour ; coupure materielle : 4 s |
 | **LIVE-01** | Retard de la video en direct sur la scene | 1,5 s au plus |
-| **LIVE-02** | Delai avant que les commandes posees sur l'image s'effacent sans geste | 3 s |
-| **LIVE-03** | Rafraichissement de l'image de secours de la vue en direct | toutes les secondes |
-| **PRIV-13** | Delai d'effet d'une bascule en mode vie privee | aucune image montree des que la bascule rend la main ; enregistrement et detection coupes en 90 s au plus |
 | **NOTIF-12** | Delai entre la reconnaissance d'une personne et le depart de sa notification | 10 s au plus avec une photo, 25 s au plus avec un clip |
-| **NOTIF-13** | Notifications rejouees au retour d'un canal externe | aucune |
-| **NOTIF-14** | Validite du code qui relie une conversation de messagerie | 10 min, et 5 essais infructueux |
-| **HIST-02** | Seuil a partir duquel le stockage est critique | plus de 90 % du disque occupe |
-| **SCHED-04** | Delai d'application d'une plage enregistree, meme deja commencee | 60 s au plus |
-| **ACCESS-04** | Duree pendant laquelle un appareil connecte le reste sans rien redemander | 30 jours apres sa derniere ouverture |
-| **ACCESS-05** | Duree pendant laquelle une installation remise a zero attend un nouveau mot de passe | 30 min |
-| **SYS-05** | Delai avant que l'etat du moteur de detection suive son etat reel | 10 s au plus |
 | **SYS-06** | Frequence d'analyse par camera sans accelerateur dedie ni carte graphique | de 1 a 5 images par seconde |
 
 ---

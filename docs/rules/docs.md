@@ -81,8 +81,9 @@ every service level, live in the SPECS; a journey and a rule only it needs live 
 
 **Level**: Required · **Verified by**: Review
 
-A timing or a quantity the product promises is a row of the SPECS' service levels, with a value and
-its unit, never "about a second" or "within the minute"; a rule or a use case cites that row.
+A timing or a quantity promised to the user that could regress unnoticed in a code review is a row
+of the SPECS' service levels, with a value and its unit, never "about a second"; a rule or a use
+case cites that row. Any other value lives in the code alone and is not restated (COMMON-05).
 
 ## The SAD
 

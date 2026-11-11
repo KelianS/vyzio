@@ -11,7 +11,7 @@
 
 - le propriétaire a ouvert la Planification, dans les réglages (SCHED-01).
 
-**Résultat en succès** : la plage est enregistrée, visible dans la semaine (SCHED-05), et s'applique à ses cibles (SCHED-04).
+**Résultat en succès** : la plage est enregistrée, visible dans la semaine (SCHED-05), et s'applique à ses cibles (SCHED-09).
 
 **Résultats en échec** :
 
@@ -36,7 +36,7 @@
 
 1. Le propriétaire lit la semaine, à l'heure de la maison (SCHED-05, SCHED-03), et ajoute une plage.
 2. Il choisit son type, dont l'effet reste visible (SCHED-02), ses cibles (SCHED-07), ses jours et ses heures.
-3. Il enregistre (SCHED-09) ; la plage s'applique (SCHED-04) et apparaît dans la semaine.
+3. Il enregistre (SCHED-09) ; la plage s'applique (SCHED-09) et apparaît dans la semaine.
 
 ### A1 · Créer une plage qui passe minuit
 
@@ -73,7 +73,7 @@
 - **SCHED-06** · une plage vide (debut = fin), sans jour, sans cible ou mal formee est refusee avec une phrase qui dit quoi changer, jamais comme une erreur du serveur ;
 - **SCHED-07** · une plage vise plusieurs choses a la fois, plusieurs cameras ou plusieurs canaux, qu'elle nomme ; viser toutes les cameras revient a cocher celles qui existent, une camera ajoutee ensuite n'est pas visee d'office ; une plage dont toutes les cibles ont disparu reste visible, sans effet, et le dit ;
 - **SCHED-08** · une camera ou un canal dit combien de plages s'appliquent a lui, avec le chemin vers la Planification ; la bascule manuelle (couper une camera ou reprendre sa surveillance maintenant) reste sur la camera et garde sa priorite (PRIV-07) : la planification ne fait que programmer ;
-- **SCHED-09** · une plage se modifie avec le meme cycle qu'un reglage (UI-11) : rien ne change avant d'avoir enregistre, et l'on peut renoncer ; son type se choisit a sa creation et ne change plus ; une plage enregistree, meme deja commencee, s'applique dans le delai de SCHED-04 ; supprimer une plage demande une confirmation qui nomme son type et ses cibles.
+- **SCHED-09** · une plage se modifie avec le meme cycle qu'un reglage (UI-11) : rien ne change avant d'avoir enregistre, et l'on peut renoncer ; son type se choisit a sa creation et ne change plus ; une plage enregistree, meme deja commencee, s'applique sans attendre son prochain debut ; supprimer une plage demande une confirmation qui nomme son type et ses cibles.
 
 ## Points ouverts
 

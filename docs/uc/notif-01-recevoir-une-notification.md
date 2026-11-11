@@ -54,7 +54,7 @@
 ### E1 · Le canal externe est indisponible
 
 1. Le réseau ou le service du canal ne répond pas : la surveillance et l'enregistrement locaux continuent (SYS-03, SYS-04).
-2. Au retour du canal, aucune rafale (NOTIF-11, NOTIF-13).
+2. Au retour du canal, aucune rafale (NOTIF-11) : rien de ce qui est tombé pendant la panne n'est rejoué.
 
 ## Règles locales
 
