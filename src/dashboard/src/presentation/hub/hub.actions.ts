@@ -12,3 +12,4 @@ export type HubAction =
   | { type: 'PRIVACY_TOGGLE_STARTED' }
   | { type: 'PRIVACY_TOGGLE_SUCCEEDED' }
   | { type: 'PRIVACY_TOGGLE_FAILED' }
+  | { type: 'CLIP_GONE'; eventId: string }

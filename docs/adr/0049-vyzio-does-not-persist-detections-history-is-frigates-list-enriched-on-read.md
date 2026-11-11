@@ -138,6 +138,6 @@ il ne conditionne pas ce chantier et n'est pas le mécanisme interne du pipeline
 - **Le port Frigate remonte dans `Core`.** Il n'est plus un client HTTP posé à côté des endpoints
   mais la frontière du domaine avec Frigate — le seul endroit où une évolution de son API se traduit,
   au lieu de se propager.
-- **Le modèle *review* de Frigate reste inexploité** (regroupement des objets d'un même passage,
+- **Le modèle *review* de Frigate n'est pas lu par l'historique** (regroupement des objets d'un même passage,
   sévérité `alert`/`detection`) : chantier produit distinct, il change ce que l'historique montre, pas
-  d'où il tient sa vérité.
+  d'où il tient sa vérité. Vyzio ne touche une *review* que pour effacer une détection (SPECS 6.2).

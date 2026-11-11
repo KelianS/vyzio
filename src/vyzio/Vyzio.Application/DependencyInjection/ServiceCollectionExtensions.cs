@@ -115,6 +115,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<GetProfileDetectionEventsUseCase>();
         services.AddScoped<GetDetectionHistoryUseCase>();
         services.AddScoped<CorrectDetectionIdentityUseCase>();
+        services.AddScoped<DeleteDetectionUseCase>();
 
         // Hub
         services.AddScoped<GetHubOverviewUseCase>();
