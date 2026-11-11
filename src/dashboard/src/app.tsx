@@ -5,9 +5,16 @@ import { AppContainerProvider } from './infrastructure/providers/app_container.c
 import { OWN_HEADER, OWN_HEADER_ONLY } from './presentation/settings/settings.rubrics'
 import { AccessGate } from './presentation/access/access_gate.component'
 import { AppShell } from './presentation/shell/app_shell.component'
+import { FULL_SCREEN } from './presentation/shell/app_shell.handle'
+import { LIVE_VIEW_ROUTE } from './presentation/live_view/live_view.route'
 
 const HubView = lazy(() =>
   import('./presentation/hub/hub.component').then((m) => ({ default: m.HubView })),
+)
+const LiveViewScreen = lazy(() =>
+  import('./presentation/live_view/live_view.component').then((m) => ({
+    default: m.LiveViewScreen,
+  })),
 )
 const DetectionHistoryView = lazy(() =>
   import('./presentation/detection_history/detection_history.component').then((m) => ({
@@ -138,6 +145,8 @@ const router = createBrowserRouter([
       // Consultation
       { path: '/', element: <HubView /> },
       { path: '/history', element: <DetectionHistoryView /> },
+      // A screen of its own, without the header: the picture takes the whole viewport (SPECS 7.2).
+      { path: LIVE_VIEW_ROUTE, element: <LiveViewScreen />, handle: FULL_SCREEN },
 
       // Settings - a two-level tree (ADR-40). The route carries the selection: it,
       // and not a screen-held state, is what says where one is.

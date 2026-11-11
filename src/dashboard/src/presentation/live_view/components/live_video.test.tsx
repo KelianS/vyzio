@@ -17,6 +17,8 @@ describe('LiveVideo', () => {
         quality="high"
         qualities={['low']}
         soundOn={false}
+        layout="portrait"
+        bar={() => null}
         onOpen={() => () => undefined}
         onChooseQuality={onChooseQuality}
         onToggleSound={vi.fn()}
@@ -38,6 +40,8 @@ describe('LiveVideo', () => {
         quality="high"
         qualities={['low', 'high']}
         soundOn={false}
+        layout="portrait"
+        bar={() => null}
         onOpen={(_video, _camera, _quality, _sound, onPlayback) => {
           onPlayback({
             kind: 'failed',
@@ -55,7 +59,7 @@ describe('LiveVideo', () => {
     expect(
       screen.getByText('Cette qualité n’est plus proposée : image rafraîchie chaque seconde.'),
     ).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Haute qualité' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'HD haute qualité' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Réessayer' })).not.toBeInTheDocument()
   })
 })

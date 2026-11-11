@@ -80,24 +80,24 @@ describe('CameraLiveThumbnail', () => {
   })
 
   it.each([
-    { connected: true, status: 'online', buttons: 1 },
-    { connected: false, status: 'offline', buttons: 0 },
+    { connected: true, status: 'online', links: 1 },
+    { connected: false, status: 'offline', links: 0 },
   ])(
     'CameraLiveThumbnail_ShouldOpenTheLiveViewOnlyWhenTheCameraAnswers_WhenItIs $status',
-    ({ connected, status, buttons }) => {
+    ({ connected, status, links }) => {
       // Arrange & Act
       render(
         <MemoryRouter>
           <CameraLiveThumbnail
             camera={makeCamera({ connected, status })}
             apiBaseUrl=""
-            onExpand={() => undefined}
+            liveTo="/cameras/camera-1/direct"
           />
         </MemoryRouter>,
       )
 
       // Assert
-      expect(screen.queryAllByRole('button', { name: 'Front Door' })).toHaveLength(buttons)
+      expect(screen.queryAllByRole('link', { name: 'Front Door' })).toHaveLength(links)
     },
   )
 })

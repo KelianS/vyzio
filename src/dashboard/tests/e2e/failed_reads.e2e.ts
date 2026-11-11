@@ -115,7 +115,7 @@ test.describe('Failed reads', () => {
     )
     await failRead(page, '/api/cameras/camera-1/ptz/presets')
     await page.goto('/')
-    await page.getByRole('button', { name: 'Salon' }).click()
+    await page.getByRole('link', { name: 'Salon' }).click()
 
     await expect(
       page.getByText('Les positions de cette caméra n’ont pas pu être lues.'),

@@ -791,7 +791,7 @@ describe('CameraConnectionView', () => {
     // Assert
     expect(
       orientation.getByText(
-        'Cette caméra ne sait pas garder ses positions : Vyzio les retient à sa place, de façon moins fiable. Après chaque démarrage de Vyzio, calibrez-la depuis la vue live.',
+        'Cette caméra ne sait pas garder ses positions : Vyzio les retient à sa place, de façon moins fiable. Après chaque démarrage de Vyzio, calibrez-la depuis la vue en direct.',
       ),
     ).toBeVisible()
     expect(orientation.queryByText(/garde elle-même/)).toBeNull()
