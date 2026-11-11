@@ -17,15 +17,24 @@ const SAVE = 'POST /api/cameras/camera-1/ptz/preset/save'
 const GOTO = 'POST /api/cameras/camera-1/ptz/preset/goto'
 const CALIBRATE = 'POST /api/cameras/camera-1/ptz/calibrate'
 const CAPTURE = 'POST /api/cameras/camera-1/ptz/presets/1/snapshot'
+const CAPTURE_PARKING = 'POST /api/cameras/camera-1/ptz/presets/2/snapshot'
+const PARKING = /^Parking \(appui/
+const SURVEILLANCE = /^Surveillance \(appui/
+const EMPTY_SLOT = 'Enregistrer la position actuelle ici'
 
-// The thumbnail is captured once the camera stands still, 1.5 s after the move answers.
-async function theThumbnailIsCaptured(network: ReturnType<typeof fakeNetwork>) {
-  await waitFor(
-    () => expect(network.sent).toContainEqual(expect.objectContaining({ route: CAPTURE })),
-    {
-      timeout: 3000,
-    },
-  )
+// The capture is scheduled as the tile frees up, then waits CAPTURE_DELAY_MS: the fake clock skips that wait.
+async function theThumbnailIsCaptured(
+  network: ReturnType<typeof fakeNetwork>,
+  tile: string | RegExp = SURVEILLANCE,
+) {
+  await waitFor(() => expect(screen.getAllByTitle(tile)[0]).toBeEnabled())
+  await act(() => vi.advanceTimersByTimeAsync(6000))
+  expect(network.sent).toContainEqual(expect.objectContaining({ route: CAPTURE }))
+}
+
+// The real clock still runs underneath, so the screen's own waits and user events keep working.
+function useCaptureClock() {
+  vi.useFakeTimers({ shouldAdvanceTime: true })
 }
 
 function makePreset(overrides: Partial<PtzPreset> = {}): PtzPreset {
@@ -72,6 +81,10 @@ function renderLiveView() {
 }
 
 describe('LiveView', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('LiveView_ShouldSayOrientationIsUnavailableAndPointAtConnexion_WhenTheCameraWouldRefuseTheMoves', () => {
     // Arrange
     const network = fakeNetwork({})
@@ -120,6 +133,7 @@ describe('LiveView', () => {
 
   it('onSave_ShouldSaveTheEmptyPositionAndCaptureIt_WhenTheUserTapsIt', async () => {
     // Arrange
+    useCaptureClock()
     const network = fakeNetwork({ [PRESETS]: presetsRead(), [SAVE]: ok(), [CAPTURE]: ok() })
     renderLiveView()
     const empty = await screen.findAllByTitle('Enregistrer la position actuelle ici')
@@ -132,11 +146,12 @@ describe('LiveView', () => {
     expect(network.sent).toContainEqual(
       expect.objectContaining({ route: SAVE, body: { presetId: 1 } }),
     )
-    await theThumbnailIsCaptured(network)
+    await theThumbnailIsCaptured(network, EMPTY_SLOT)
   })
 
   it('onGoTo_ShouldAcknowledgeTheArrivalAndRecapture_WhenTheCameraReachesTheSavedPosition', async () => {
     // Arrange
+    useCaptureClock()
     const network = fakeNetwork({
       [PRESETS]: presetsRead({ presets: [makePreset()] }),
       [GOTO]: ok(),
@@ -156,9 +171,127 @@ describe('LiveView', () => {
     await theThumbnailIsCaptured(network)
   })
 
+  it('onGoTo_ShouldCaptureTheThumbnailOnlyAfterTheDelay_WhenTheCameraAcknowledgesTheMove', async () => {
+    // Arrange
+    useCaptureClock()
+    const network = fakeNetwork({
+      [PRESETS]: presetsRead({ presets: [makePreset()] }),
+      [GOTO]: ok(),
+      [CAPTURE]: ok(),
+    })
+    renderLiveView()
+    await userEvent.click(await screen.findByTitle(/^Surveillance \(appui/))
+    await screen.findByText('Caméra en position « Surveillance ».')
+
+    // Act
+    await act(() => vi.advanceTimersByTimeAsync(5000))
+    const sentBeforeTheDelay = [...network.sent]
+    await act(() => vi.advanceTimersByTimeAsync(1000))
+
+    // Assert
+    expect(sentBeforeTheDelay).not.toContainEqual(expect.objectContaining({ route: CAPTURE }))
+    expect(network.sent).toContainEqual(expect.objectContaining({ route: CAPTURE }))
+  })
+
+  it('onGoTo_ShouldCaptureOnlyTheLastPosition_WhenAnotherGoToStartsBeforeTheDelay', async () => {
+    // Arrange
+    useCaptureClock()
+    const network = fakeNetwork({
+      [PRESETS]: presetsRead({
+        presets: [makePreset(), makePreset({ presetId: 2, label: 'Parking' })],
+      }),
+      [GOTO]: ok(),
+      [CAPTURE]: ok(),
+      [CAPTURE_PARKING]: ok(),
+    })
+    renderLiveView()
+    await userEvent.click(await screen.findByTitle(SURVEILLANCE))
+    await screen.findByText('Caméra en position « Surveillance ».')
+    await waitFor(() => expect(screen.getByTitle(SURVEILLANCE)).toBeEnabled())
+    // The second move answers after the first capture would have fired.
+    network.answer(GOTO, late(ok(), 7000))
+
+    // Act
+    await userEvent.click(screen.getByTitle(PARKING))
+    await act(() => vi.advanceTimersByTimeAsync(14_000))
+
+    // Assert
+    expect(network.sent).toContainEqual(expect.objectContaining({ route: CAPTURE_PARKING }))
+    expect(network.sent).not.toContainEqual(expect.objectContaining({ route: CAPTURE }))
+  })
+
+  it('onPress_ShouldCancelThePendingCapture_WhenTheUserMovesTheCameraBeforeTheDelay', async () => {
+    // Arrange
+    useCaptureClock()
+    const network = fakeNetwork({
+      [PRESETS]: presetsRead({ presets: [makePreset()] }),
+      [GOTO]: ok(),
+      [CAPTURE]: ok(),
+      [START]: ok(),
+      [STOP]: ok(),
+    })
+    renderLiveView()
+    await userEvent.click(await screen.findByTitle(SURVEILLANCE))
+    await screen.findByText('Caméra en position « Surveillance ».')
+    await waitFor(() => expect(screen.getByTitle(SURVEILLANCE)).toBeEnabled())
+
+    // Act
+    await userEvent.click(screen.getByTitle('Gauche'))
+    await act(() => vi.advanceTimersByTimeAsync(6000))
+
+    // Assert
+    expect(network.sent).toContainEqual(expect.objectContaining({ route: START }))
+    expect(network.sent).not.toContainEqual(expect.objectContaining({ route: CAPTURE }))
+  })
+
+  it('onCalibrate_ShouldCancelThePendingCapture_WhenACalibrationStartsBeforeTheDelay', async () => {
+    // Arrange
+    useCaptureClock()
+    const network = fakeNetwork({
+      [PRESETS]: presetsRead({ presets: [makePreset()], calibrated: false }),
+      [GOTO]: ok(),
+      [CAPTURE]: ok(),
+      [CALIBRATE]: ok(),
+    })
+    renderLiveView()
+    await userEvent.click(await screen.findByTitle(SURVEILLANCE))
+    await screen.findByText('Caméra en position « Surveillance ».')
+    await waitFor(() => expect(screen.getByTitle(SURVEILLANCE)).toBeEnabled())
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Calibrer maintenant' }))
+    await act(() => vi.advanceTimersByTimeAsync(6000))
+
+    // Assert
+    expect(network.sent).toContainEqual(expect.objectContaining({ route: CALIBRATE }))
+    expect(network.sent).not.toContainEqual(expect.objectContaining({ route: CAPTURE }))
+  })
+
+  it('onClose_ShouldStillCaptureTheThumbnail_WhenTheViewClosesBeforeTheDelay', async () => {
+    // Arrange
+    useCaptureClock()
+    const network = fakeNetwork({
+      [PRESETS]: presetsRead({ presets: [makePreset()] }),
+      [GOTO]: ok(),
+      [CAPTURE]: ok(),
+    })
+    const { unmount } = renderLiveView()
+    await userEvent.click(await screen.findByTitle(SURVEILLANCE))
+    await screen.findByText('Caméra en position « Surveillance ».')
+    await waitFor(() => expect(screen.getByTitle(SURVEILLANCE)).toBeEnabled())
+
+    // Act
+    unmount()
+    await act(() => vi.advanceTimersByTimeAsync(6000))
+
+    // Assert
+    expect(network.sent).toContainEqual(expect.objectContaining({ route: CAPTURE }))
+  })
+
   it('onGoTo_ShouldSayThePreviewWasNotUpdated_WhenTheCaptureFails', async () => {
     // Arrange
-    fakeNetwork({
+    useCaptureClock()
+    const network = fakeNetwork({
       [PRESETS]: presetsRead({ presets: [makePreset()] }),
       [GOTO]: ok(),
       [CAPTURE]: failure(500),
@@ -168,13 +301,13 @@ describe('LiveView', () => {
 
     // Act
     await userEvent.click(tile)
+    await screen.findByText('Caméra en position « Surveillance ».')
+    await theThumbnailIsCaptured(network)
 
     // Assert
     expect(
       await screen.findByText(
         'La miniature de la position « Surveillance » n’a pas été mise à jour.',
-        undefined,
-        { timeout: 3000 },
       ),
     ).toBeInTheDocument()
     expect(
@@ -294,6 +427,7 @@ describe('LiveView', () => {
 
   it('onGoTo_ShouldMoveThereAndTakeTheThumbnail_WhenTheUserTapsAHeldSlotWithoutOne', async () => {
     // Arrange
+    useCaptureClock()
     const network = fakeNetwork({
       [PRESETS]: presetsRead({ presets: [makePreset({ thumbnail: false })] }),
       [GOTO]: ok(),
@@ -309,6 +443,7 @@ describe('LiveView', () => {
     expect(network.sent).toContainEqual(
       expect.objectContaining({ route: GOTO, body: { presetId: 1 } }),
     )
+    expect(await screen.findByText('Caméra en position « Surveillance ».')).toBeInTheDocument()
     await theThumbnailIsCaptured(network)
   })
 
@@ -529,6 +664,7 @@ describe('LiveView', () => {
 
   it('onConfirmOverride_ShouldRedefineThePosition_WhenTheUserConfirms', async () => {
     // Arrange
+    useCaptureClock()
     const network = fakeNetwork({
       [PRESETS]: presetsRead({ presets: [makePreset()] }),
       [SAVE]: ok(),

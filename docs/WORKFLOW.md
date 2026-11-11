@@ -9,7 +9,8 @@ order; starting the implementation before the upstream documents are aligned is 
 2. **ADR** ([`adr/`](adr/)) for a structural choice (§ Writing discipline), and the **SAD**
    ([`SAD.md`](SAD.md)) when the system's shape changes (§ The SAD).
 3. **Issues** ([GitHub](https://github.com/KelianS/vyzio/issues)) for execution order, slicing,
-   dependencies, definition of done. An issue leans on the documents above, it does not re-decide them.
+   dependencies, and, once framed, the observable behaviour that closes each (§ Issues). An issue
+   leans on the documents above, it does not re-decide them.
 4. **Implementation**, minimal code, consistent with the validated documents.
 5. **Tests**, targeted validation of the modified slice, mandatory.
 6. **Help inside the interface**: every deliverable feature is documented **in the screen that carries
@@ -118,20 +119,30 @@ the code and the [Conventional Commits](https://www.conventionalcommits.org/en/v
 [`rules/git.md`](rules/git.md). The **definition of done** lives in
 [`pull_request_template.md`](../.github/pull_request_template.md), where it gets ticked.
 
-### Issues, two templates and one state
+### Issues, a problem to solve
 
 The **title** is always English and conventional: it becomes the pull request title as it stands, then
 the commit subject, written once and reused.
 
-Two templates in [`.github/ISSUE_TEMPLATE/`](../.github/ISSUE_TEMPLATE/): **Feature** and **Bug**.
+An issue is a **problem to solve**, never the expected implementation: months later it still says
+why the work was done, and whoever implements it stays free to find a better way. It has two kinds,
+which are two moments of the same issue:
 
-There is **no "idea" template**: an idea is a feature whose direction has not been settled yet, which
-makes it a **state**, not a category. The issue is opened with the objective alone and the
-`needs-framing` label; the SPECS or an ADR settle it; the rest is filled in and the label removed.
-Nothing gets built while it is up, which is the mandated order above, made visible.
+- **Problem**: the need or the defect, and the facts observed. It carries `needs-framing` while its
+  direction is not settled, and never a technical definition of done.
+- **Framed**: once the SPECS or an ADR settle the direction, the issue links them, and its
+  **Done when** lists the observable behaviours that close it, each in **Given / When / Then**, never
+  a technical task list. The `needs-framing` label is removed; nothing gets built while it is up,
+  which is the mandated order above, made visible.
 
-A template **reminds, it does not enforce**: GitHub imposes it neither on the web nor through
-`gh issue create`. What would truly enforce the format is an integration check, and there is none.
+In both, **leads** are welcome, under their own heading, as leads: never the expected implementation.
+
+The forms of [`.github/ISSUE_TEMPLATE/`](../.github/ISSUE_TEMPLATE/) open a problem: a need, a bug,
+or a camera report, whose observed facts feed the model's sheet under [`hardware/`](hardware/)
+(DOCS-14). An idea is a need whose direction is not settled yet: a state, not another form.
+
+On the web, a form makes its required fields mandatory; `gh issue create` bypasses it. What would
+enforce the shape of a framed issue is an integration check, and there is none.
 
 ### Releases, one milestone each
 
