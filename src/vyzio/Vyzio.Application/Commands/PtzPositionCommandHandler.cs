@@ -54,8 +54,10 @@ public sealed class PtzPositionCommandHandler(
         }
 
         if (known.Count == 0)
+        {
             return CommandResult.Text($"{camera.DisplayName} n'a aucune position enregistree",
                 ["Enregistrez-en une depuis l'interface."]);
+        }
 
         var wanted = Resolve(known, invocation.Argument(PositionParameter));
         if (wanted is null) return WhichPosition(camera, known);

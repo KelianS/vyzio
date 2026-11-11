@@ -24,7 +24,7 @@ export function CameraList({
   const unread = error !== null && cameras.length === 0
 
   return (
-    <SettingsPage lede="Choisissez une caméra pour la régler.">
+    <SettingsPage>
       {cameras.length > 0 ? (
         <ul className="divide-y divide-border">
           {cameras.map((camera) => (

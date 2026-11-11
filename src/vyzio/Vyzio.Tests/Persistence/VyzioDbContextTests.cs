@@ -2,7 +2,6 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Vyzio.Core.Entities;
 using Vyzio.Infrastructure.Persistence;
-using Vyzio.Infrastructure.Persistence.Repositories;
 
 namespace Vyzio.Tests.Persistence;
 
