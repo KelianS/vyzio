@@ -105,7 +105,7 @@ export function ScheduleWeekView() {
   const orphans = uido.rules.filter((rule) => targetsOf(rule) === null)
 
   return (
-    <SettingsPage lede="Ce qui se passe à heure fixe dans la maison, aux heures de la maison.">
+    <SettingsPage lede="Aux heures de la maison.">
       <HourMarks />
       <ol className="mt-1 flex flex-col gap-2">
         {weekOf(uido.rules).map((day) => (
