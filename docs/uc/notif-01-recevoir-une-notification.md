@@ -33,8 +33,8 @@
 
 ### N1 · Être notifié d'une personne connue
 
-1. Une personne connue est reconnue, l'événement passant le tri entre prioritaire et bruit (DET-01) et la certitude minimale (NOTIF-20).
-2. Vyzio envoie la notification sur les canaux actifs, avec son contexte et le format choisi (NOTIF-03, NOTIF-22), pendant que la personne est encore dans le champ (NOTIF-15).
+1. Une personne connue est reconnue, l'événement passant le tri entre prioritaire et bruit (DET-01) et la certitude minimale choisie (UC-NOTIF-03).
+2. Vyzio envoie la notification sur les canaux actifs, avec son contexte et le format choisi (NOTIF-03, UC-NOTIF-03), pendant que la personne est encore dans le champ (NOTIF-15).
 
 ### A1 · Être notifié d'un visage inconnu
 
@@ -58,7 +58,7 @@
 
 ## Règles locales
 
-- **NOTIF-15** · une notification de personne part pendant que la personne est encore dans le champ de la camera (NOTIF-12).
+Aucune.
 
 ## Points ouverts
 

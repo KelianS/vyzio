@@ -79,4 +79,4 @@ or `[agents] <agent or skill>`, or a comment on an open issue on the same subjec
 
 `task rules:check` fails on a malformed or duplicated ID, a rule without its level line, a page the
 routing does not name, or an ID cited anywhere in the repository that does not exist; it holds the
-SPECS and its use cases to DOCS-17 the same way. CI runs it.
+SPECS and its use cases to DOCS-17, and to the citations of DOCS-19, the same way. CI runs it.

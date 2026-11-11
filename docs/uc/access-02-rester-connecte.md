@@ -2,7 +2,7 @@
 
 | Champ | Valeur |
 | --- | --- |
-| **Acteur** | L'utilisateur, propriétaire ou résident (ACCESS-01) |
+| **Acteur** | L'utilisateur ; ACCESS-01 dit ce que peut le résident |
 | **Objectif** | **En tant qu'utilisateur**, je veux que mon telephone reste connecte, afin de ne pas ressaisir un mot de passe chaque fois que je jette un oeil a mes cameras. |
 
 ## Conditions

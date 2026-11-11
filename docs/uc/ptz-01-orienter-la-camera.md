@@ -2,7 +2,7 @@
 
 | Champ | Valeur |
 | --- | --- |
-| **Acteur** | L'utilisateur, propriétaire ou résident (ACCESS-01) |
+| **Acteur** | L'utilisateur ; ACCESS-01 dit ce que peut le résident |
 | **Objectif** | **En tant qu'utilisateur**, je veux pouvoir contrôler ma caméra PTZ directement depuis la vue live, sans passer par un menu de configuration, afin de réorienter la caméra facilement au quotidien. |
 
 ## Conditions
@@ -56,7 +56,6 @@
 ## Règles locales
 
 - **PTZ-01** · les contrôles PTZ doivent être accessibles depuis la vue live de la caméra (pas seulement depuis les paramètres) : c'est le parcours d'usage quotidien ;
-- **PTZ-02** · les contrôles et les positions n'apparaissent, dans la vue live comme dans la section Pilotage des réglages de la caméra, que si l'orientation fonctionne, prouvée ou confirmée par l'utilisateur (CAM-15, CAM-16) ; tant qu'elle ne fonctionne pas, aucune commande inerte : une ligne renvoie vers la page « Connexion » de la caméra, où sa carte dit pourquoi et comment en sortir (CAM-24) ; une orientation désactivée par l'utilisateur n'y laisse rien ;
 - **PTZ-03** · certaines caméras tournent à l'envers de la flèche pressée (leur firmware inverse le sens horizontal) : l'utilisateur peut inverser gauche et droite sur la capacité PTZ de la caméra ; Vyzio ne devine pas ce sens, et le réglage ne change ni le haut et le bas, ni les positions enregistrées.
 
 ## Points ouverts

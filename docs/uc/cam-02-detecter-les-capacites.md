@@ -22,7 +22,7 @@
 
 | ID | Libellé | Type | Déclencheur |
 | --- | --- | --- | --- |
-| N1 | Détecter automatiquement | Nominal | L'utilisateur choisit « Détecter automatiquement », ou la page le lance à l'arrivée (CAM-40) |
+| N1 | Détecter automatiquement | Nominal | L'utilisateur choisit « Détecter automatiquement », ou la page le lance à l'arrivée (UC-CAM-01 N1) |
 | A1 | Rechercher les protocoles seulement | Alternative | L'utilisateur choisit « Rechercher les protocoles » dans Avancé |
 | A2 | Une capacité reste à confirmer | Alternative | Un protocole répond avec le compte mais aucune lecture ne prouve la capacité |
 | E1 | La caméra ne liste pas ses flux en RTSP | Échec | Aucun protocole ne convient pour le flux vidéo faute de liste de flux |
@@ -35,8 +35,8 @@
 1. L'utilisateur choisit « Détecter automatiquement », sous les capacités (CAM-43).
 2. Vyzio cherche les protocoles habituels de la caméra, demande à chacun s'il répond avec son compte et garde ceux qui répondent (CAM-19).
 3. Si la caméra n'a pas de flux vidéo, Vyzio le choisit (CAM-44).
-4. Vyzio essaie chaque autre capacité sur les protocoles qui répondent, dans l'ordre fixe (CAM-42), et ne la garde que prouvée par une lecture (CAM-15).
-5. Chaque capacité gardée a sa carte, avec ses mots d'état (CAM-21) ; Vyzio dit ce qui répond (CAM-40).
+4. Vyzio essaie chaque autre capacité sur les protocoles qui répondent, dans l'ordre fixe (CAM-42), et garde le premier qui la prouve par une lecture (CAM-15), ou sur lequel elle est à confirmer (CAM-42).
+5. Chaque capacité gardée a sa carte, avec ses mots d'état (CAM-21) ; Vyzio dit ce qui répond.
 
 ### A1 · Rechercher les protocoles seulement
 

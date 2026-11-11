@@ -3,7 +3,7 @@
 | Champ | Valeur |
 | --- | --- |
 | **Acteur** | Le propriétaire |
-| **Objectif** | **En tant qu'utilisateur**, je veux configurer mes destinations de notification depuis l'interface, afin de ne jamais modifier un fichier a la main. **En tant qu'utilisateur**, je veux etre guide pour configurer un canal, tester l'envoi et comprendre les compromis du canal choisi. |
+| **Objectif** | **En tant qu'utilisateur**, je veux configurer mes destinations de notification depuis l'interface, afin de ne jamais modifier un fichier a la main. **En tant qu'utilisateur**, je veux etre guide pour configurer un canal, tester l'envoi et comprendre les compromis du canal choisi. **En tant qu'utilisateur**, je veux que mes images ne quittent pas mon reseau sans mon accord explicite. |
 
 ## Conditions
 

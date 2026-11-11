@@ -9,7 +9,7 @@
 
 **Préalables** :
 
-- la caméra existe ; son écran « Vie privée » est ouvert (CAM-03). Le mode vie privée se règle sans flux (PRIV-18).
+- la caméra existe ; son écran « Vie privée » est ouvert (CAM-03, CAM-06).
 
 **Résultat en succès** : la stratégie choisie est enregistrée (PRIV-10), et l'écran vie privée dit ce qu'elle fait (PRIV-16).
 
@@ -62,8 +62,7 @@
 
 - **PRIV-15** · l'option `ptz_parking` ne peut être choisie que si l'orientation de la caméra est vérifiée et activée (capacité détectée automatiquement sur la page de la caméra et configurable manuellement) et une fois les positions Surveillance (preset 1) et Parking (preset 2) enregistrées ; l'option `hardware` ne peut être choisie que si la coupure matérielle de la caméra est vérifiée (CAM-15, CAM-16) ; une stratégie qui ne peut pas encore être choisie reste dans la liste, grisée, avec la raison et l'endroit où y remédier (enregistrer les positions, vérifier ou essayer la capacité), jamais retirée ([DESIGN SYSTEM](../DESIGN%20SYSTEM.md) § Settings screens) ;
 - **PRIV-16** · l'écran vie privée ne dit que ce que fait la stratégie choisie ; quand celle-ci ne peut plus agir (positions ou capacité manquantes), il dit ce qui manque et ce qui reste garanti en attendant, sans promettre son effet ;
-- **PRIV-17** · lorsque l'utilisateur sélectionne la stratégie `ptz_parking`, l'interface doit afficher un avertissement explicite précisant que le flux vidéo reste techniquement accessible sur le réseau local — seul Vyzio est désactivé et la caméra pivote vers sa position Parking ; cet avertissement est un pré-requis non négociable avant d'enregistrer le choix ;
-- **PRIV-18** · la page de la caméra propose le mode vie privée et les positions Surveillance et Parking dès l'ajout, sans étape d'ajout dédiée ; le mode vie privée se règle sans flux ; seules attendent les stratégies qui demandent une capacité vérifiée (CAM-08 suspend les vérifications tant que le flux ne fonctionne pas), et le parking PTZ, dont les positions s'enregistrent depuis la vue live, qui ne s'ouvre qu'une fois la caméra en surveillance : l'écran vie privée et l'écran de pilotage le disent et mènent à ce qui manque, la connexion tant que le flux ne fonctionne pas, puis le déclencheur de redémarrage ; une orientation à confirmer s'essaie d'abord depuis sa carte (UC-CAM-04), puis ses positions se règlent depuis la vue live.
+- **PRIV-17** · lorsque l'utilisateur sélectionne la stratégie `ptz_parking`, l'interface doit afficher un avertissement explicite précisant que le flux vidéo reste techniquement accessible sur le réseau local — seul Vyzio est désactivé et la caméra pivote vers sa position Parking ; cet avertissement est un pré-requis non négociable avant d'enregistrer le choix.
 
 ## Points ouverts
 

@@ -2,7 +2,7 @@
 
 | Champ | Valeur |
 | --- | --- |
-| **Acteur** | L'utilisateur, propriétaire ou résident (ACCESS-01) |
+| **Acteur** | L'utilisateur ; ACCESS-01 dit ce que peut le résident |
 | **Objectif** | **En tant qu'utilisateur**, je veux consulter l'historique recent des evenements, afin de comprendre ce qu'il s'est passe. **En tant qu'utilisateur**, je veux pouvoir recuperer un clip pertinent, afin de le conserver ou le partager si necessaire. |
 
 ## Conditions

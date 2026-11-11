@@ -2,7 +2,7 @@
 
 | Champ | Valeur |
 | --- | --- |
-| **Acteur** | L'utilisateur, propriétaire ou résident (ACCESS-01) |
+| **Acteur** | L'utilisateur ; ACCESS-01 dit ce que peut le résident |
 | **Objectif** | **En tant qu'utilisateur**, je veux voir ce que filme une camera en video fluide, avec le son quand elle en a, pour suivre ce qui se passe au moment ou ca se passe. **En tant qu'utilisateur sur mon telephone**, je veux que la vue en direct occupe tout l'ecran, pour voir l'image en grand et piloter la camera sans qu'une page reste autour. |
 
 ## Conditions

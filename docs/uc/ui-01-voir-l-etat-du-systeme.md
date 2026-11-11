@@ -2,7 +2,7 @@
 
 | Champ | Valeur |
 | --- | --- |
-| **Acteur** | L'utilisateur, propriétaire ou résident (ACCESS-01) |
+| **Acteur** | L'utilisateur ; ACCESS-01 dit ce que peut le résident |
 | **Objectif** | **En tant qu'utilisateur**, je veux voir rapidement si mon systeme fonctionne correctement. **En tant qu'utilisateur**, je veux retrouver les derniers evenements sans passer par plusieurs menus. **En tant qu'utilisateur**, je veux gerer mes cameras, mes profils et mes notifications depuis la meme interface. **En tant qu'utilisateur**, je veux pouvoir utiliser le systeme depuis un navigateur sur telephone ou ordinateur. |
 
 ## Conditions

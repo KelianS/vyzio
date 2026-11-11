@@ -48,7 +48,7 @@
 ### A2 · Changer le protocole d'une capacité
 
 1. L'utilisateur ouvre les options de la carte et choisit un autre protocole (CAM-47, CAM-23).
-2. Vyzio teste aussitôt la capacité sur ce protocole ; la détection ne reviendra pas sur ce choix (CAM-42).
+2. Vyzio teste aussitôt la capacité sur ce protocole ; la détection ne reviendra pas sur ce choix (UC-CAM-02).
 
 ### A3 · Retirer un protocole
 

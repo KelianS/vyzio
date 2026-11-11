@@ -73,8 +73,8 @@ number, and its citations are fixed in the same change.
 
 **Level**: Required · **Verified by**: Review
 
-A rule that holds for the whole product or that more than one use case cites, and every service
-level, live in the SPECS; a journey and a rule only it needs live in its use case, written to
+A rule that holds for the whole product, or that the SPECS or more than one use case cites, and
+every service level, live in the SPECS; a journey and a rule only it needs live in its use case, written to
 [`uc/TEMPLATE.md`](../uc/TEMPLATE.md). A use case cites a rule of the SPECS, it never restates it.
 
 ### DOCS-20 · A service level states a measurable target
@@ -105,8 +105,7 @@ network and are reviewed there.
 One is written only when reversing the decision costs a migration, a contract change, a new
 container or a new dependency, or when it opens or closes a flow leaving the home network (privacy
 first, ADR-70). An ADR never describes a state, a wording or a screen: that is the SPECS or a use
-case; what a
-camera model does is its hardware sheet; the *how* is the code and its tests.
+case; what a camera model does is its hardware sheet; the *how* is the code and its tests.
 
 ### DOCS-08 · An ADR states its target, its history only under "Options rejected"
 

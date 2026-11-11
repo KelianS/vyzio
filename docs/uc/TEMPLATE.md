@@ -11,7 +11,8 @@ service, reste dans SPECS ; un cas le cite par son identifiant, sans le redire (
 - **Un fichier par objectif**, `<domaine>-<nn>-<objet>.md` dans ce dossier, son titre
   `# UC-<DOMAINE>-<NN> · <objectif>`, et une ligne dans l'index de [SPECS](../SPECS.md). Les
   domaines sont ceux de SPECS § Identifiants, les numéros ne sont jamais recyclés (DOCS-18).
-- **Objectif** : la ou les user stories qu'il sert, telles quelles.
+- **Objectif** : la ou les user stories qu'il sert, telles quelles ; à défaut de story, l'objectif
+  en une phrase, tiré des règles qu'il déroule.
 - **Préalables** : ce qui est vrai avant que le cas commence, sans quoi il ne démarre pas. Un
   préalable n'est pas une règle.
 - **Chemins** : un seul nominal `N1`, des alternatives `A1`, `A2`… qui réussissent autrement, des
@@ -20,8 +21,8 @@ service, reste dans SPECS ; un cas le cite par son identifiant, sans le redire (
 - **Détail d'un chemin** : des pas courts, « l'utilisateur… », « Vyzio… ». Un pas que régit une
   règle cite son identifiant au lieu de la redire.
 - **Règles locales** : une contrainte que Vyzio applique, vérifiable, propre à ce seul cas, sous
-  un identifiant `<DOMAINE>-NN` (DOCS-18). Une règle qu'un second cas doit citer remonte dans
-  SPECS, avec son identifiant (DOCS-19).
+  un identifiant `<DOMAINE>-NN` (DOCS-18). Une règle que SPECS ou un second cas doit citer
+  remonte dans SPECS, avec son identifiant (DOCS-19) ; `task rules:check` le vérifie.
 - **Points ouverts** : une question sans réponse ; tranchée, elle devient une règle, un préalable
   ou un chemin.
 - Ni composant, ni stockage, ni code d'erreur, ni numéro de version, ni issue : le SAD, les ADR et
@@ -34,7 +35,7 @@ service, reste dans SPECS ; un cas le cite par son identifiant, sans le redire (
 
 | Champ | Valeur |
 | --- | --- |
-| **Acteur** | <un rôle d'ACCESS-01, ou « l'utilisateur » quand les deux rôles le peuvent> |
+| **Acteur** | <« Le propriétaire » pour un réglage ou un secret (ACCESS-01), sinon « L'utilisateur ; ACCESS-01 dit ce que peut le résident »> |
 | **Objectif** | <la ou les user stories, telles quelles> |
 
 ## Conditions

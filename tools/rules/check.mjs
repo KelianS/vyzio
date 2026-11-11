@@ -132,7 +132,11 @@ for (const file of tracked) {
       if (!defined.has(id)) problems.push(`${where}: cites ${id}, which no rule page defines`)
     }
     for (const id of line.match(citedRequirement) ?? []) {
-      if (!requirements.has(id)) problems.push(`${where}: cites ${id}, which neither ${SPECS} nor a use case defines`)
+      const home = requirements.get(id)?.split(':')[0]
+      if (!home) problems.push(`${where}: cites ${id}, which neither ${SPECS} nor a use case defines`)
+      else if (home !== SPECS && home !== file && productFiles.includes(file)) {
+        problems.push(`${where}: cites ${id}, local to ${home}; a rule cited beyond its use case lives in ${SPECS} (DOCS-19)`)
+      }
     }
     for (const [, domain, number, step] of line.matchAll(citedUseCase)) {
       const useCase = useCases.get(`UC-${domain}-${number}`)

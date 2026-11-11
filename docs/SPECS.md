@@ -98,7 +98,7 @@ Chaque exigence porte un identifiant `<DOMAINE>-NN`, et chaque cas d'utilisation
 - **CAM-05** · une camera « À configurer » peut deja etre visee par une plage de la planification ou par le choix de cameras d'une personne, qui s'appliquent a son entree en surveillance ; elle n'a pas de vue en direct, et l'historique n'a rien pour elle ; une fois son flux fonctionnel, elle entre en surveillance par le declencheur de redemarrage, qui ne la concerne qu'a partir de la ; d'ici la elle reste « À configurer » (et non « Connectée »), et sa vignette d'accueil mene encore a sa page sans tenter d'image ni ouvrir de vue en direct ; le declencheur « Appliquer les changements » dit ce qui reste a faire ;
 - **CAM-06** · ce qui n'est pas encore regle garde ses valeurs par defaut, sans rien signaler : l'utilisateur n'est pas pousse a tout regler et peut commencer vite ; la detection, la conservation et la vie privee se reglent sans flux, et s'appliquent quand la camera entre en surveillance ; seul ce qui demande une capacite verifiee attend le flux, comme toute verification (CAM-08) ;
 - **CAM-07** · une perte de flux doit etre detectee (CAM-27) et visible sans diagnostic technique avance ;
-- **CAM-08** · lorsqu'une camera est hors ligne, l'interface doit le refleter immediatement : le flux live ne doit pas tenter de se charger, et les actions qui requierent une connexion active (controle PTZ, reglages image, test de capacite) doivent etre suspendues avec un message explicite ; les tests de capacite le sont aussi tant que la verification du flux video ne passe pas, ou n'a pas ete refaite depuis un changement de connexion ;
+- **CAM-08** · lorsqu'une camera est hors ligne, l'interface doit le refleter immediatement (CAM-27) : le flux live ne doit pas tenter de se charger, et les actions qui requierent une connexion active (controle PTZ, reglages image, test de capacite) doivent etre suspendues avec un message explicite ; les tests de capacite le sont aussi tant que la verification du flux video ne passe pas, ou n'a pas ete refaite depuis un changement de connexion ;
 - **CAM-09** · lorsque Vyzio modifie de sa propre initiative un reglage de la camera pour ameliorer les performances du systeme (et non a la demande de l'utilisateur), il doit memoriser la valeur d'origine et pouvoir la restaurer si la fonction est desactivee ou la camera retiree ; une telle modification ne doit jamais degrader la qualite des enregistrements.
 
 ### Vie privee (`PRIV`)
@@ -114,7 +114,13 @@ Chaque exigence porte un identifiant `<DOMAINE>-NN`, et chaque cas d'utilisation
 - **PRIV-09** · la desactivation du mode vie privee (manuelle ou fin de plage) doit restaurer le flux camera sans intervention utilisateur supplementaire ;
 - **PRIV-10** · chaque caméra peut avoir une stratégie de mode vie privée indépendante : `software_blur` (« Arrêt logiciel », désactivation Frigate uniquement), `ptz_parking` (mouvement physique + désactivation Frigate), `hardware` (coupure native firmware, ex. Tapo) ;
 - **PRIV-11** · `software_blur` est la stratégie par défaut d'une caméra ; il n'existe pas de stratégie « aucune » : le mode vie privée arrête toujours au moins l'enregistrement, la détection et les notifications de Vyzio (PRIV-01), et chaque stratégie ajoute ce que la caméra fait en plus ;
-- **PRIV-12** · le mode `ptz_parking` est **toujours cumulatif avec le fallback software** : la caméra pivote vers sa position Parking (preset 2) ET Frigate est désactivé ; la double couche garantit la protection même si le mouvement PTZ échoue ; à la désactivation, la caméra revient sur sa position Surveillance (preset 1) et l'enregistrement reprend, même si ce retour échoue, ce que l'interface dit (PRIV-05).
+- **PRIV-12** · le mode `ptz_parking` est **toujours cumulatif avec le fallback software** : la caméra pivote vers sa position Parking (preset 2) ET Frigate est désactivé ; la double couche garantit la protection même si le mouvement PTZ échoue ; à la désactivation, la caméra revient sur sa position Surveillance (preset 1) et l'enregistrement reprend, même si ce retour échoue, ce que l'interface dit (PRIV-05) ;
+- **PRIV-18** · la page de la caméra propose le mode vie privée et les positions Surveillance et Parking dès l'ajout, sans étape d'ajout dédiée ; seules attendent, la vie privée se réglant sans flux (CAM-06), les stratégies qui demandent une capacité vérifiée (CAM-08 suspend les vérifications tant que le flux ne fonctionne pas), et le parking PTZ, dont les positions s'enregistrent depuis la vue live, qui ne s'ouvre qu'une fois la caméra en surveillance : l'écran vie privée et l'écran de pilotage le disent et mènent à ce qui manque, la connexion tant que le flux ne fonctionne pas, puis le déclencheur de redémarrage ; une orientation à confirmer s'essaie d'abord depuis sa carte (UC-CAM-04), puis ses positions se règlent depuis la vue live.
+
+### Pilotage (`PTZ`)
+
+- **PTZ-02** · les contrôles et les positions n'apparaissent, dans la vue live comme dans la section Pilotage des réglages de la caméra, que si l'orientation fonctionne, prouvée ou confirmée par l'utilisateur (CAM-15, CAM-16) ; tant qu'elle ne fonctionne pas, aucune commande inerte : une ligne renvoie vers la page « Connexion » de la caméra, où sa carte dit pourquoi et comment en sortir (CAM-24) ; une orientation désactivée par l'utilisateur n'y laisse rien ;
+- **PTZ-08** · quand la caméra ne répond pas à la lecture de ses positions, l'interface remplace les slots par un message disant qu'elles n'ont pas pu être lues, jamais qu'elles manquent, avec « Réessayer » et le détail technique (UI-01) ; l'écran vie privée le dit de même : une stratégie `ptz_parking` déjà choisie est gardée, et la choisir attend que les positions aient pu être lues.
 
 ### Detection (`DET`)
 
@@ -124,7 +130,9 @@ Chaque exigence porte un identifiant `<DOMAINE>-NN`, et chaque cas d'utilisation
 
 ### Profils (`PROF`)
 
-- **PROF-01** · les profils doivent etre modifiables et supprimables depuis l'interface.
+- **PROF-01** · les profils doivent etre modifiables et supprimables depuis l'interface ;
+- **PROF-03** · la politique de notification d'une personne ne regle que les notifications : une personne reglee sur « ne pas me notifier » ne declenche aucune notification, et reste reconnue et nommee dans l'historique ;
+- **PROF-04** · une personne peut etre limitee a certaines cameras pour ses notifications : sans choix, elle est notifiee sur toutes les cameras, y compris une camera ajoutee plus tard ; avec un choix, seulement sur les cameras cochees, et cocher toutes les cameras fige la liste ; la reconnaissance et l'historique ne changent pas selon la camera.
 
 ### Notifications (`NOTIF`)
 
@@ -138,11 +146,15 @@ Chaque exigence porte un identifiant `<DOMAINE>-NN`, et chaque cas d'utilisation
 - **NOTIF-08** · une meme commande doit se comporter de la meme facon sur tous les canaux ; seule sa presentation s'adapte a ce que le canal sait afficher ;
 - **NOTIF-09** · **la configuration ne se fait pas depuis un canal de messagerie** : un fil de discussion ne peut porter ni brouillon, ni provenance d'une valeur, ni retour arriere (cf. UI-11) ; les reglages restent dans l'interface. Une conversation est plafonnee au role **resident** (ACCESS-01) quel que soit celui qui l'a appairee, et ne revele jamais un secret ([ADR-54](adr/0054-interface-access-guarded-by-an-owner-account-server-session-in-a-cookie.md)) ;
 - **NOTIF-10** · un canal de messagerie transporte des images fixes et des clips, jamais un flux video continu ;
-- **NOTIF-11** · lorsqu'un canal externe revient, les regles de reprise doivent eviter les rafales de notifications inutiles (NOTIF-13).
+- **NOTIF-11** · lorsqu'un canal externe revient, les regles de reprise doivent eviter les rafales de notifications inutiles (NOTIF-13) ;
+- **NOTIF-15** · une notification de personne part pendant que la personne est encore dans le champ de la camera (NOTIF-12) ;
+- **NOTIF-23** · seule une conversation appairee explicitement depuis l'interface doit etre acceptee ; l'appairage doit etre revocable, et un message d'une autre origine doit rester sans reponse ;
+- **NOTIF-25** · des qu'une conversation est reliee ou en cours de liaison, l'interface doit dire si le canal **ecoute encore**, et pourquoi il a cesse : une conversation reliee ne prouve rien, elle survit a la panne qui rend le canal muet. Tant qu'aucune ne l'est, une commande reste sans reponse de toute facon.
 
 ### Historique (`HIST`)
 
-- **HIST-01** · l'utilisateur doit etre informe si la capacite de stockage devient critique (HIST-02).
+- **HIST-01** · l'utilisateur doit etre informe si la capacite de stockage devient critique (HIST-02) ;
+- **HIST-11** · la video d'une detection dont l'enregistrement a ete efface avec une autre ne s'affiche pas en panne : son lecteur dit que la video de ce moment a ete supprimee.
 
 ### Planification (`SCHED`)
 
@@ -157,8 +169,6 @@ Chaque exigence porte un identifiant `<DOMAINE>-NN`, et chaque cas d'utilisation
 - **ACCESS-03** · l'acces a l'interface et aux donnees doit etre protege.
 
 ### Securite et confidentialite (`SEC`)
-
-> **En tant qu'utilisateur**, je veux que mes images ne quittent pas mon reseau sans mon accord explicite.
 
 - **SEC-01** · aucune transmission d'image ou de donnee sensible ne doit etre activee par defaut vers un service tiers ;
 - **SEC-02** · aucun compte cloud ne doit etre obligatoire pour le fonctionnement nominal local ;
@@ -178,7 +188,7 @@ Chaque exigence porte un identifiant `<DOMAINE>-NN`, et chaque cas d'utilisation
 
 Les fonctionnalites avancees d'une camera sont des capacites, decouvertes et prouvees par les cas d'utilisation UC-CAM-02 a UC-CAM-05 ; les regles ci-dessous valent pour toutes.
 
-- **CAM-10** · les fonctionnalites avancees (flux video, PTZ, mode vie privee materiel, reglages image, reglages de flux, info systeme) sont des **capacites independantes de la marque** : la marque ne sert qu'a choisir la notice de l'ecran d'ajout (CAM-38), aucune marque n'a de preconfiguration ni de fonctionnalite reservee (voir [ADR-71](adr/0071-the-vendor-is-a-help-hint.md)) ;
+- **CAM-10** · les fonctionnalites avancees (flux video, PTZ, mode vie privee materiel, reglages image, reglages de flux, info systeme) sont des **capacites independantes de la marque** : la marque ne sert qu'a choisir la notice de l'ecran d'ajout (UC-CAM-01), aucune marque n'a de preconfiguration ni de fonctionnalite reservee (voir [ADR-71](adr/0071-the-vendor-is-a-help-hint.md)) ;
 - **CAM-11** · toute camera accede aux capacites que son materiel permet reellement, par la meme detection ; quand la detection ne trouve pas une capacite, le parcours est plus long (declaration et verification manuelle de la capacite) mais jamais bloquant par principe ;
 - **CAM-12** · le parcours manuel est presente comme une alternative quand la detection ne trouve pas une capacite, pas comme le parcours par defaut ;
 - **CAM-13** · l'utilisateur doit pouvoir declarer manuellement, capacite par capacite, comment y acceder (ex. protocole PTZ : ONVIF ou DVRIP, avec ses parametres de connexion) ; Vyzio doit verifier la capacite par un test reel avant de la proposer activable dans l'interface, jamais sur simple declaration non verifiee ;
@@ -194,7 +204,8 @@ Les fonctionnalites avancees d'une camera sont des capacites, decouvertes et pro
 - **CAM-23** · les capacites se lisent comme une liste de cartes, le flux video en premier, puisque toutes les autres en dependent ; le choix du protocole d'une capacite et ses reglages sont dans les options de sa carte, et changer de protocole le teste aussitot ; un protocole se verifie sans passer par une capacite, et n'est donc jamais suspendu par un flux en echec ;
 - **CAM-24** · une capacite en echec dit comment en sortir : quand son protocole ne repond pas, reveiller la camera ou verifier qu'elle est branchee ; quand il refuse le compte, revoir le compte ; sinon la verifier de nouveau ou passer par un autre protocole ; un flux video qui ne repond pas nomme les deux endroits ou cela se corrige, l'acces (adresse, compte) dans Avance, le protocole et les flux dans les options de sa carte ; apres un non, la carte rappelle ce que l'utilisateur a dit avoir vu ; une orientation jamais utilisee se retire (« Retirer »), une orientation en service se desactive (« Désactiver ») ;
 - **CAM-25** · un protocole porte le meme nom partout ou il apparait ; seul le protocole par defaut d'une capacite le precise dans son choix (ex. « RTSP (par défaut) » pour le flux video) ;
-- **CAM-26** · une camera est creee sans protocole ni flux video (CAM-39) et ne depend jamais de RTSP : aucune n'est refusee faute de chemin RTSP, c'est la carte du flux video qui le demande quand il le faut.
+- **CAM-26** · une camera est creee sans protocole ni flux video (UC-CAM-01) et ne depend jamais de RTSP : aucune n'est refusee faute de chemin RTSP, c'est la carte du flux video qui le demande quand il le faut ;
+- **CAM-56** · sous la carte du flux video, chaque flux de la camera est une ligne : sa qualite, son protocole et son chemin, son role, son etat et sa propre verification ; un flux garde sans servir a le role « Aucun », et un flux se retire comme une capacite ; la carte garde un seul etat, qui dit si l'enregistrement et la detection sont assures ; la verification d'une ligne verifie ce seul flux, sauf pour le flux qui enregistre, dont la verification est celle de la camera, et celle de la carte verifie la camera et tous ses flux ; l'echec du flux qui enregistre est celui de la camera, que la carte explique deja ; retirer un flux demande confirmation, qui dit, pour le flux qui detecte, que la detection passe sur le flux qui enregistre ; changer le role d'un flux, en ajouter ou en retirer prend effet aussitot, comme une action (UI-16), alors que l'adresse, les ports et les comptes suivent le brouillon de la page.
 
 ---
 

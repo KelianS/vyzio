@@ -51,9 +51,7 @@
 
 ## Règles locales
 
-- **NOTIF-23** · seule une conversation appairee explicitement depuis l'interface doit etre acceptee ; l'appairage doit etre revocable, et un message d'une autre origine doit rester sans reponse ;
-- **NOTIF-24** · le code qui relie une conversation doit etre a duree de vie courte **et** cesser de valoir apres quelques essais infructueux (NOTIF-14) : un code court que l'on peut deviner sans fin ne protege rien ;
-- **NOTIF-25** · des qu'une conversation est reliee ou en cours de liaison, l'interface doit dire si le canal **ecoute encore**, et pourquoi il a cesse : une conversation reliee ne prouve rien, elle survit a la panne qui rend le canal muet. Tant qu'aucune ne l'est, une commande reste sans reponse de toute facon.
+- **NOTIF-24** · le code qui relie une conversation doit etre a duree de vie courte **et** cesser de valoir apres quelques essais infructueux (NOTIF-14) : un code court que l'on peut deviner sans fin ne protege rien.
 
 ## Points ouverts
 

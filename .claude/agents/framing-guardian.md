@@ -39,8 +39,8 @@ Each rule of `docs.md` that can apply, and in particular:
    network flow, the ownership or retention of data, or a quality attribute? Look at the compose
    files, `nginx.conf`, outbound clients, listeners and persisted data, not only `docs/`.
 3. **Nature of each document** (DOCS-05 to DOCS-16): the SPECS, the use cases and the SAD state the
-   target, never its history or its delivery; the SAD names no code; an ADR stays within its bar, states its
-   target and is frozen once accepted; no document copies the code or restates an ADR; the DESIGN
+   target, never its history or its delivery; the SAD names no code; an ADR stays within its bar,
+   states its target and is frozen once accepted; no document copies the code or restates an ADR; the DESIGN
    SYSTEM describes no feature.
 4. **Requirements** (DOCS-17 to DOCS-20): a behaviour the change adds, moves or drops lives in the
    SPECS or in one use case, never in both; a use case cites a rule of the SPECS instead of

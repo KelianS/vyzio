@@ -2,7 +2,7 @@
 
 | Champ | Valeur |
 | --- | --- |
-| **Acteur** | L'utilisateur connecté |
+| **Acteur** | L'utilisateur ; ACCESS-01 dit ce que peut le résident |
 | **Objectif** | **En tant qu'utilisateur**, je veux pouvoir deconnecter un appareil perdu, afin qu'il cesse d'acceder a mes images. |
 
 ## Conditions
@@ -11,7 +11,7 @@
 
 - l'utilisateur est connecté (UC-ACCESS-02).
 
-**Résultat en succès** : l'appareil visé n'accède plus à l'interface ; une nouvelle ouverture y demande le mot de passe (ACCESS-08).
+**Résultat en succès** : l'appareil visé n'accède plus à l'interface ; une nouvelle ouverture y demande le mot de passe (UC-ACCESS-02 E1).
 
 **Résultats en échec** : aucun propre à ce cas.
 
