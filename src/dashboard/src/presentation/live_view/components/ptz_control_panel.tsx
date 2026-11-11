@@ -178,8 +178,7 @@ function PresetTile({
       // The long press is our gesture: without this the mobile browser opens its menu over it.
       onContextMenu={(e) => e.preventDefault()}
       className={cn(
-        'relative size-14 shrink-0 touch-none overflow-hidden rounded-md border bg-muted transition-colors select-none',
-        '[-webkit-touch-callout:none]',
+        'relative size-14 shrink-0 touch-none overflow-hidden rounded-md border bg-muted transition-colors',
         active ? 'border-primary ring-2 ring-primary' : 'border-border',
         'disabled:opacity-60',
       )}

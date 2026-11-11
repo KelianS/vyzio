@@ -324,6 +324,8 @@ export interface FakeBackendState {
   liveRefusal?: number
   /** Set, the camera stops sending: the open streams go quiet, the new ones close as unreachable. */
   liveSilent?: boolean
+  /** Set, the camera films in 4:3 rather than 16:9. */
+  liveFourThirds?: boolean
   /** Where the installation stands on its password, and where this browser stands with it. */
   access: FakeAccessState
   /** Saved settings that surveillance has not picked up yet (ADR-44). */
@@ -412,6 +414,7 @@ const SCENES = ['entrance', 'garden', 'garage', 'driveway'].map((name) =>
 
 // One second of the entrance scene, H.264 in fragmented MP4, the way go2rtc sends a stream over MSE.
 const LIVE_CLIP = readFileSync(join(import.meta.dirname, 'scenes', 'entrance.mp4'))
+const LIVE_CLIP_4X3 = readFileSync(join(import.meta.dirname, 'scenes', 'entrance_4x3.mp4'))
 const LIVE_CLIP_MIME = 'video/mp4; codecs="avc1.42C01E"'
 
 /** What a camera films, found by any name the API gives it; an unknown one gets the first scene. */
@@ -704,10 +707,11 @@ export async function installFakeBackend(
         void socket.close({ code: 4503, reason: 'stream_unreachable' })
         return
       }
+      const clip = state.liveFourThirds ? LIVE_CLIP_4X3 : LIVE_CLIP
       socket.send(JSON.stringify({ type: 'mse', value: LIVE_CLIP_MIME }))
-      socket.send(LIVE_CLIP)
+      socket.send(clip)
       filming = setInterval(() => {
-        if (!state.liveSilent) socket.send(LIVE_CLIP)
+        if (!state.liveSilent) socket.send(clip)
       }, 1000)
     })
   })

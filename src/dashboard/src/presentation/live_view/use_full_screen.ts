@@ -58,6 +58,8 @@ export function useFullScreen(wanted: boolean) {
   return {
     offered,
     enter,
+    /** Leaving is offered only while the browser hides its bars. */
+    leave: active ? leave : undefined,
     onGesture: () => {
       if (offered && !asked.current) enter()
     },
