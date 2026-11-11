@@ -32,6 +32,7 @@ public sealed class SnapshotCommandHandler(GetCamerasUseCase cameras, IFrigateLi
         var camera = CommandCameraLookup.Resolve(known, asked);
 
         if (camera is null)
+        {
             return new CommandResult(
                 ChannelMessage.Plain(asked is null
                     ? "De quelle camera ?"
@@ -40,16 +41,21 @@ public sealed class SnapshotCommandHandler(GetCamerasUseCase cameras, IFrigateLi
                     candidate.DisplayName,
                     RemoteCommandName.Snapshot,
                     new Dictionary<string, string> { [CameraParameter] = candidate.Slug }))]);
+        }
 
         // A camera whose privacy mode is on is not blinded by accident: saying so beats sending a black frame.
         if (camera.PrivacyModeActive)
+        {
             return CommandResult.Text($"🔒 {camera.DisplayName} est en mode vie privee",
                 ["Elle ne regarde rien pour l'instant."]);
+        }
 
         var frame = await frames.TryGetLatestFrameAsync(camera.FrigateCameraName, ct);
         if (frame is null)
+        {
             return CommandResult.Text($"Je n'arrive pas a voir {camera.DisplayName} en ce moment",
                 ["Reessayez dans un instant."]);
+        }
 
         return new CommandResult(
             ChannelMessage.Plain($"📷 {camera.DisplayName} — a l'instant"),

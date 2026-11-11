@@ -23,11 +23,13 @@ public sealed class HandleIncomingCommandUseCase(
 
         var descriptor = incoming.Command is { } command ? registry.HandlerFor(command)?.Descriptor : null;
         if (descriptor is null)
+        {
             // Not understood: the paired conversation is told what it may ask, a stranger still hears nothing.
             return isPaired
                 ? new CommandResult(CommandCatalogue.Describe(
                     registry, "Je n'ai pas compris — voici ce que vous pouvez me demander"))
                 : CommandResult.Silence;
+        }
 
         if (!isPaired && descriptor.Authorization != CommandAuthorization.Pairing)
         {

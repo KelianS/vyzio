@@ -65,7 +65,7 @@ Gain: ...
 Cost: files, tests, rules and ADRs touched; breaking changes
 Draft issue
   Title: <type(scope): subject, per GIT-01>
-  Body: ## Goal / ## Decided direction (empty: to be framed) / ## Done when
+  Body: a problem issue (docs/WORKFLOW.md § Issues): ## Problem / ## Leads
 
 Checked, nothing to propose
 - <dependency or area> -- why

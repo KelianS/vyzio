@@ -144,7 +144,7 @@ not from how fast.
 
 ### BACKEND-17 · The backend follows `.editorconfig`
 
-**Level**: Required · **Verified by**: Tool: `task back:format:check`
+**Level**: Required · **Verified by**: Tool: `task back:format:check` (whitespace, code style and analyzers), and `EnforceCodeStyleInBuild` in `Directory.Build.props`
 
 ## Reference: a typical flow
 
