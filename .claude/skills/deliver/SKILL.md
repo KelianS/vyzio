@@ -20,15 +20,15 @@ session; the review starts on a green branch.
 Pick the reviewers from the diff (`git diff --stat origin/main...HEAD`), by the triggers of WORKFLOW
 § Delivery gate, step 2.
 
-Launch them **in parallel**, in one message. The request to each carries the target only: the base
-(`origin/main`), the commit range for a re-review, the issue number, and whether `task check` was
-green. Never a rule, a preference or an instruction of the user: the review must be the same
-whoever runs it.
+Launch them **in parallel**, in one message, each request carrying the target only (AGENTS-03): the
+base (`origin/main`), the commit range for a re-review, the issue number, what was run with its
+result. A change to an agent, a skill or a rule page runs its review cases first (AGENTS-08).
 
 ## 3. One report
 
 ```
 Review on `<short sha>`: PASS | BLOCKING · <n> blocking · <n> worth fixing · <n> uncertainties
+Not read: <reviewer> -- <source> -- <reason>     (every Not read line of the verdicts, AGENTS-04)
 
 | # | Severity | Reviewer | Where | Finding -> fix | Rule |
 | --- | --- | --- | --- | --- | --- |
@@ -60,17 +60,16 @@ commit reviewed `PASS` (`<sha>..HEAD`); no `PASS` yet → the whole branch.
 
 ## 5. Feedback on the rules
 
-Gather the reviewers' feedback, duplicates merged, and show it. **Nothing is ever recorded without
-the user's validation**: show the exact title and body of each issue or comment, and run `gh issue
-create` or `gh issue comment` only once the user has approved that text. No validation, nothing
-recorded, whatever else the session allows. For each approved item:
+Gather the reviewers' feedback, duplicates merged, and show it. Recording follows AGENTS-05 and
+AGENTS-06, the title and label of [`docs/rules/README.md`](../../../docs/rules/README.md) § Feedback
+on the rules. For each item:
 
-1. Search an open issue on the subject: `gh issue list --label agent-feedback --search "<page or agent>"`.
-2. Found → `gh issue comment`: the type, the branch, the finding, its proof.
-3. Otherwise → `gh issue create --label agent-feedback`, titled `[rules] <page> § <ID>` (a missing rule
-   with no page: `[rules] <topic>`) or `[agents] <agent or skill>`; the body gives the first case and
-   what the rule or the instruction should settle. The label missing → create it once with
-   `gh label create agent-feedback`.
+1. Search: `gh issue list --label agent-feedback --state all --search "<page or agent>"`.
+2. Show the exact text: a comment on the open issue found (the type, the branch, the finding, its
+   proof), otherwise a new issue whose body gives the first case and what the rule or the
+   instruction should settle.
+3. Once approved, `gh issue comment` or `gh issue create --label agent-feedback`. The label missing →
+   create it once with `gh label create agent-feedback`.
 4. List what was created or commented, with the links.
 
 ## 6. Open the pull request
@@ -79,15 +78,12 @@ Only on the user's request, and only after a `PASS` on the last commit.
 
 1. Push the branch (`git push -u origin <branch>`); never `main`, never forced.
 2. Title: the issue's title as it stands, otherwise per GIT-01.
-3. Body from [`.github/pull_request_template.md`](../../../.github/pull_request_template.md), written to a
-   file and passed with `gh pr create --base main --body-file <file>`:
-   - **Why**: the effect obtained and for whom, the behaviour changes of the report included;
+3. Body per GIT-05, written to a file and passed with `gh pr create --base main --body-file <file>`:
+   - **Why**: the behaviour changes of the report included;
    - **Scope**: `Closes #<issue>`;
-   - **Checked**: `task check` green, the review verdict and its sha, anything else actually run;
+   - **Checked**: `task check`, the review verdict and its sha, the runs that show the issue's Done
+     when (GIT-09), the review cases (AGENTS-08);
    - **Screenshots**: GIT-07, shot with `task pr:capture` then published with `task pr:screenshots`
-     ([`CONTRIBUTING.md`](../../../CONTRIBUTING.md) § Pull request screenshots); no screen changed →
-     the heading struck through with the reason;
-   - **Definition of done**: ticked only from what the diff shows, a line that does not apply struck
-     through with its reason.
+     ([`CONTRIBUTING.md`](../../../CONTRIBUTING.md) § Pull request screenshots).
 4. A later commit that changes the scope, a behaviour or a screen → update the body and the
    screenshots (GIT-06), on request.

@@ -17,6 +17,7 @@ names [`git.md`](git.md).
 | `src/vyzio/**`: `*.cs`, `*.csproj`, `*.props`, `*.slnx`, `.editorconfig` | [`backend.md`](backend.md) |
 | `src/dashboard/**`: `*.ts`, `*.tsx`, `*.css`, `eslint.config.js`, `vite.config.ts`, `knip.jsonc` | [`dashboard.md`](dashboard.md) |
 | `docs/**`, `README.md`, or a change to the system's shape: compose files, `nginx.conf`, a listener, an outbound client, persisted data | [`docs.md`](docs.md) |
+| `.claude/**`, `tools/review-cases/**`, `docs/rules/**` | [`agents.md`](agents.md) |
 
 A page opens with the line saying when it applies; within a page, read the rules that can apply
 to the change.
@@ -44,19 +45,20 @@ constraint>`, followed by its level and what verifies it.
 
 ## Feedback on the rules
 
-A reviewer reports what got in its way, with its proof, and nothing else:
+A reviewer reports what got in its way, with its proof, and nothing else; feedback without the
+proof its type requires is not reported:
 
-| Type | When |
-| --- | --- |
-| **Missing** | No rule settles a case of the diff |
-| **Unclear** | A rule reads two ways for a case of the diff |
-| **Doubtful** | A rule goes against a recognised reference (Microsoft, React, an RFC, OWASP) |
-| **Tooling** | An instruction of an agent or a skill failed or did not match reality |
+| Type | When | Proof required |
+| --- | --- | --- |
+| **Missing** | No rule settles a case of the diff | The `path:line` of the case, and what a rule would have to settle |
+| **Unclear** | A rule reads two ways for a case of the diff | The rule ID, the `path:line` of the case, and the two readings |
+| **Doubtful** | A rule goes against a recognised reference (Microsoft, React, an RFC, OWASP) | The rule ID, and the reference's page fetched in this review with what it says |
+| **Tooling** | An instruction of an agent or a skill failed or did not match reality | The instruction (`file:line`), what was run, and what came out |
 
 The rules keep the last word: a doubtful rule still applies, the feedback asks for it to be
-reexamined. Only once the owner has validated its text does it become a GitHub issue labelled
+reexamined. Once the owner has validated its text (AGENTS-05), it becomes a GitHub issue labelled
 `agent-feedback`, titled `[rules] <page> § <ID>`, `[rules] <topic>` for a missing rule with no page,
-or `[agents] <agent or skill>`; an open issue on the same subject gets a comment instead.
+or `[agents] <agent or skill>`, or a comment on an open issue on the same subject (AGENTS-06).
 
 ## Writing a rule
 

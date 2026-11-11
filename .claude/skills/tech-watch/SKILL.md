@@ -11,8 +11,8 @@ watch. This skill only says how the assistant runs it.
 
 ## 1. Watch
 
-Launch the `tech-watch` agent. The request carries the scope the user gave (the whole stack
-otherwise) and today's date, nothing else: no preference, no expected answer.
+Launch the `tech-watch` agent. The request carries its target only (AGENTS-03): the scope the user
+gave (the whole stack otherwise) and today's date.
 
 ## 2. Report
 
@@ -21,18 +21,13 @@ proposal the main agent disputes, with its reason; it removes nothing from the r
 
 ## 3. Record, only what the owner validates
 
-**Nothing is ever recorded without the user's validation**: show the exact title and body of each
-issue, and run `gh issue create` only once the user has approved that text, proposal by proposal.
-No validation, nothing recorded, whatever else the session allows.
+Recording follows AGENTS-05 and AGENTS-06, proposal by proposal:
 
-For each approved proposal:
-
-1. Search an open issue on the subject: `gh issue list --search "<subject>"`. Found → show it and ask
-   whether to comment it instead; a comment follows the same validation.
-2. Otherwise `gh issue create --label needs-framing --label tech-watch` with the approved text. The
-   `tech-watch` label missing → create it once with `gh label create tech-watch`, as part of that
-   approved recording.
-3. List what was created, with the links.
+1. Search: `gh issue list --state all --search "<subject>"`.
+2. Show the exact text: a comment on the open issue found, otherwise the draft issue.
+3. Once approved, `gh issue comment`, or `gh issue create --label needs-framing --label tech-watch`.
+   The `tech-watch` label missing → create it once with `gh label create tech-watch`.
+4. List what was created, with the links.
 
 A proposal is never implemented from here: once recorded, it is framed like any `needs-framing`
 issue.

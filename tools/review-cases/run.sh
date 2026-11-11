@@ -30,6 +30,7 @@ run_one() {
   agent="$(sed -n 's/^agent: //p' "$here/$case/expect.txt" | tr -d '\r')"
   prompt="$(sed -n 's/^prompt: //p' "$here/$case/expect.txt" | tr -d '\r')"
   prompt="${prompt:-review the current branch against base $base; task check was not run}"
+  prompt="${prompt//\{base\}/$base}"
   git -C "$root" worktree add --quiet --detach "$work" "$base" >"$out/$case-$n.log" 2>&1
   if (cd "$work" && bash "$here/$case/setup.sh" && git add -A && git commit --quiet --allow-empty -m "test(review): apply the $case review case") >>"$out/$case-$n.log" 2>&1; then
     (cd "$work" && claude -p "Use the $agent agent to $prompt. Print the agent's report verbatim, nothing else." \

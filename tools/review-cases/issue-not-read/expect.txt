@@ -1,0 +1,3 @@
+agent: delivery-reviewer
+prompt: review the current branch against base {base}, for issue #99999; task check was green
+cites: Not read
