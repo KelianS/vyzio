@@ -236,8 +236,7 @@ body::before {
 
   /* A field inside its label stays typed into and pasted into. */
   input,
-  textarea,
-  [contenteditable='true'] {
+  textarea {
     -webkit-user-select: text;
     user-select: text;
     -webkit-touch-callout: default;
