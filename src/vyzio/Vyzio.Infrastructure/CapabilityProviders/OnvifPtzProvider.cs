@@ -3,7 +3,6 @@ using System.Globalization;
 using System.Xml;
 using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
-using Vyzio.Core.Common;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 using Vyzio.Infrastructure.VendorAdapters;

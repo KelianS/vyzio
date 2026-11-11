@@ -4,7 +4,7 @@ namespace Vyzio.Infrastructure.Configuration;
 
 public class VyzioRuntimeSettings
 {
-    public string? TimeZone { get; init; }
+    public TimeZoneInfo TimeZone { get; init; } = TimeZoneInfo.Local;
     public DatabaseSettings Database { get; init; } = new();
     public FrigateSettings Frigate { get; init; } = new();
     public DiscoverySettings Discovery { get; init; } = new();
@@ -13,6 +13,7 @@ public class VyzioRuntimeSettings
     public sealed class DatabaseSettings
     {
         public string ConnectionString { get; init; } = "Data Source=./data/vyzio.db";
+        public string DataDirectory { get; init; } = string.Empty;
     }
 
     public sealed class FrigateSettings

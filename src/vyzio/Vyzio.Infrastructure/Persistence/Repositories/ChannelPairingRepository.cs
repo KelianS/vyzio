@@ -17,7 +17,9 @@ public sealed class ChannelPairingRepository(VyzioDbContext db) : IChannelPairin
             .FirstOrDefaultAsync(candidate => candidate.Channel == pairing.Channel, ct);
 
         if (existing is null)
+        {
             db.ChannelPairings.Add(pairing);
+        }
         else if (!ReferenceEquals(existing, pairing))
         {
             pairing.Id = existing.Id; // the channel identifies the row, the key only stores it

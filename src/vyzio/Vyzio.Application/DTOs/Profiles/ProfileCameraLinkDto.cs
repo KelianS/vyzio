@@ -1,5 +1,3 @@
-using Vyzio.Core.Entities;
-
 namespace Vyzio.Application.DTOs.Profiles;
 
 public sealed record ProfileCameraLinkDto(

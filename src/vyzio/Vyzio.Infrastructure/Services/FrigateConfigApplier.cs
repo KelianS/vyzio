@@ -237,7 +237,7 @@ public sealed class FrigateConfigApplier(
         };
 
         // On with the first active camera; the small model's files ship with Vyzio, the large one stays off (ADR-70).
-        FrigateFaceRecognitionConfig? faceRecognition = activeCameras.Any(c => c.Value.Enabled)
+        var faceRecognition = activeCameras.Any(c => c.Value.Enabled)
             ? new FrigateFaceRecognitionConfig { Enabled = true, ModelSize = "small" }
             : null;
 

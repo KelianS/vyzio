@@ -46,7 +46,7 @@ jobs:
 
       - uses: go-task/setup-task@v2
 
-      - name: Format check
+      - name: Format and code style check
         run: task back:format:check
 
       - name: Test

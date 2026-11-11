@@ -6,7 +6,7 @@
 2. From the repo root, run `task up` to start the local runtime (API, Frigate, MQTT...).
 3. Run `task front:dev` to start the frontend dev server.
 
-All Vyzio settings default to production-ready values. Override any of them via `VYZIO_*` environment variables in `docker-compose.yml` (prod) or `docker-compose.dev.yml` (dev only).
+All Vyzio settings default to production-ready values. Override any of them via `VYZIO_*` environment variables in `docker-compose.yml` (prod) or `docker-compose.dev.yml` (dev only). A number out of its range, an unknown time zone, a malformed Frigate address or SQLite connection string stops the API at startup, with one log line naming the variable and the value it expects.
 
 ### Task runner
 
@@ -20,7 +20,8 @@ All Vyzio settings default to production-ready values. Override any of them via 
 | `task check` | Run the backend and frontend CI checks locally, e2e included |
 | `task front:test` / `task back:test` / `task test` | Run frontend / backend / both test suites |
 | `task front:lint` | ESLint |
-| `task back:format` / `task back:format:check` | Format the backend to `.editorconfig` / check it without changing it |
+| `task back:format` / `task back:format:check` | Bring the backend to `.editorconfig` (whitespace, code style, analyzers) / check it without changing it |
+| `task back:migration:add -- Name` | Add an EF Core migration with the `dotnet-ef` pinned in `src/vyzio/.config/dotnet-tools.json`, never a global one |
 | `task front:knip` | Dead code detection (Knip) |
 | `task front:build` / `task back:build` / `task build` | Build frontend / backend / both |
 | `task back:run` | Run the API locally outside docker |
@@ -112,10 +113,6 @@ CI reports both rates on every pull request, in one comment kept up to date, and
 |---|---|---|
 | `VYZIO_DISCOVERY_PROBE_HOSTS` | *(none)* | Comma-separated hosts to always probe, e.g. `192.168.1.10,192.168.1.20` |
 | `VYZIO_DISCOVERY_PROBE_CIDRS` | *(none)* | Comma-separated default CIDRs for the unicast scan, e.g. `192.168.1.0/24`; discovery adds the /24 of the private IPv4 address the dashboard is opened by (ADR-71) |
-| `VYZIO_DISCOVERY_RTSP_PORTS` | `554` | Comma-separated RTSP ports to test |
-| `VYZIO_DISCOVERY_RTSP_PATHS` | `/stream1,/stream2,/Streaming/Channels/101,...` | Comma-separated RTSP paths to probe |
-| `VYZIO_DISCOVERY_HTTP_PORTS` | `80,443,8080` | Comma-separated HTTP ports to test |
-| `VYZIO_DISCOVERY_ONVIF_PORTS` | `80,2020` | Comma-separated ONVIF ports to test |
 | `VYZIO_DISCOVERY_PROBE_TIMEOUT_MS` | `250` | Per-host connection timeout in ms (50–5000) |
 | `VYZIO_DISCOVERY_MAX_CONCURRENT_PROBES` | `32` | Max parallel probes (1–256) |
 
