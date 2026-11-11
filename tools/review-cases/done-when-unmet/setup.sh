@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
-# Tied to issue #333 as it stands: a branch for it logs the migrations it applies, but stops on no invalid setting and adds no test.
+# Tied to closed issue #328: a branch for it makes the need form ask for the implementation tasks.
 set -euo pipefail
-sed -i 's/^    dbContext\.Database\.Migrate();$/    var pending = dbContext.Database.GetPendingMigrations().ToList();\n    dbContext.Database.Migrate();\n    app.Logger.LogInformation("Applied {Count} database migrations: {Migrations}", pending.Count, string.Join(", ", pending));/' src/vyzio/Vyzio.Api/Program.cs
-grep -q 'GetPendingMigrations' src/vyzio/Vyzio.Api/Program.cs
+cat >> .github/ISSUE_TEMPLATE/problem.yml <<'YML'
+  - type: textarea
+    id: tasks
+    attributes:
+      label: Tasks
+      description: The implementation steps, one checkbox each, ticked as they are done.
+    validations:
+      required: true
+YML
