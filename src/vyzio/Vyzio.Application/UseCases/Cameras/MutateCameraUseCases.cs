@@ -1,6 +1,5 @@
 ﻿using System.Text;
 using Vyzio.Application.DTOs.Cameras;
-using Vyzio.Core.Common;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 

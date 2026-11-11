@@ -109,8 +109,10 @@ public sealed class PtzManagedPositions(TimeProvider time, ILogger<PtzManagedPos
         var moved = await MoveAsync(camera, () => motion.MoveForAsync(direction, ReplaySpeed, asked, ct));
         Add(camera.Id, direction, moved);
         if (moved < asked)
+        {
             throw new CameraCommandRefusedException(string.Create(CultureInfo.InvariantCulture,
                 $"PTZ go-to over {provider.Protocol} stopped {(asked - moved).TotalMilliseconds:0} ms short: another move was running."));
+        }
     }
 
     private async Task HomeAsync(Camera camera, IPtzCapabilityProvider provider, IPtzMotion motion, CancellationToken ct)
@@ -126,8 +128,10 @@ public sealed class PtzManagedPositions(TimeProvider time, ILogger<PtzManagedPos
         // Short of the margin, the camera may not have reached its limit: no calibration is claimed (ADR-59 d).
         var moved = await MoveAsync(camera, () => motion.MoveForAsync(PtzDirection.UpLeft, ReplaySpeed, duration, ct));
         if (moved < duration - HomingMargin)
+        {
             throw new CameraCommandRefusedException(string.Create(CultureInfo.InvariantCulture,
                 $"PTZ homing over {provider.Protocol}: the camera moved {moved.TotalMilliseconds:0} of the {duration.TotalMilliseconds:0} ms toward its limit."));
+        }
 
         _positions[camera.Id] = (0, 0);
         logger.LogInformation("PTZ homing complete for {Camera}: {Moved} ms moved, position reset to (0, 0).",

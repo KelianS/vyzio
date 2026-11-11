@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Security.Cryptography;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
@@ -567,9 +566,12 @@ internal sealed class OnvifClient(
         {
             logger.LogWarning(ex, "ONVIF {Service} call error for {Host}.", service, camera.Host);
             if (throwOnFailure)
+            {
                 throw ex is HttpRequestException transport
                     ? TransportFailure(service, url, transport)
                     : new CameraUnreachableException($"ONVIF {service} at {url}: {ex.GetType().Name} ({ex.Message})", ex);
+            }
+
             return null;
         }
     }

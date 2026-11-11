@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.RateLimiting;
 using Vyzio.Api.Access;
 using Vyzio.Application.DTOs.Access;
 using Vyzio.Application.UseCases.Access;

@@ -1,7 +1,6 @@
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
-using Vyzio.Core.Common;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 
