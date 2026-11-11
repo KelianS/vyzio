@@ -33,7 +33,7 @@
 
 ### N1 · Couper une caméra
 
-1. L'utilisateur coupe la caméra ; c'est une action, qui prend effet tout de suite (UI-16, PRIV-03, PRIV-13).
+1. L'utilisateur coupe la caméra ; c'est une action, qui prend effet tout de suite (UI-16, PRIV-03).
 2. Vyzio arrête l'enregistrement, la détection et les notifications de la caméra (PRIV-01, PRIV-02), et lui demande ce que sa stratégie ajoute (PRIV-10, PRIV-12).
 3. Le badge dit ce que la caméra a répondu (PRIV-04) ; sa vignette l'affiche avec les mêmes mots, et la vue en direct ne s'ouvre plus (PRIV-06).
 

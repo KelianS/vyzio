@@ -44,8 +44,8 @@ Each rule of `docs.md` that can apply, and in particular:
    SYSTEM describes no feature.
 4. **Requirements** (DOCS-17 to DOCS-20): a behaviour the change adds, moves or drops lives in the
    SPECS or in one use case, never in both; a use case cites a rule of the SPECS instead of
-   restating it; an identifier is never recycled; a number stands in the SPECS only as a service
-   level with its target.
+   restating it; an identifier is never recycled; a promised timing or quantity is a service level
+   row with its target (DOCS-20).
 5. **Help** (DASHBOARD-26): a user-facing feature carries its help in its screen, not in a markdown
    file.
 
