@@ -1,4 +1,4 @@
 skill: deliver
-prompt: feedback. The one feedback to record: [Unclear] COMMON-15 -- reads two ways for a translated Taskfile description -- proof Taskfile.yml:12. Run § 5 up to showing the exact text; the owner approves nothing
-cites: [rules] common.md § COMMON-15
+prompt: feedback. The one feedback a reviewer returned: [Unclear] COMMON-15 -- Taskfile.yml:12, the translated description of the default task -- reading A: what `task --list` prints changes, so it is a behaviour change that needs a test; reading B: a wording change in a developer tool is no behaviour change. Run § 5 up to showing the exact text; the owner approves nothing
+cites: COMMON-15
 cites: agent-feedback

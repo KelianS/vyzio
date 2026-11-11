@@ -1,3 +1,5 @@
 #!/usr/bin/env bash
-# No change: the skill records one reviewer feedback, without the owner's approval of its text.
+# A task description is translated to English, with no other change.
 set -euo pipefail
+sed -i 's/desc: Liste les tasks disponibles/desc: Lists the available tasks/' Taskfile.yml
+grep -q 'desc: Lists the available tasks' Taskfile.yml
