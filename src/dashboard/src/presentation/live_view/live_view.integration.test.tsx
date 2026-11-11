@@ -864,7 +864,7 @@ describe('LiveView video', () => {
     await waitFor(() => expect(FakeSocket.opened).toHaveLength(2))
   })
 
-  it('LiveView_ShouldSayTheCameraNoLongerAnswersAtOnceThenReconnect_WhenAPlayingStreamIsCut', async () => {
+  it('LiveView_ShouldSayTheCameraNoLongerAnswersAtOnceThenReconnect_WhenTheCameraEndsAPlayingStream', async () => {
     // Arrange
     stubBrowserMse()
     renderVideo()
