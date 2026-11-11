@@ -6,7 +6,7 @@
 2. From the repo root, run `task up` to start the local runtime (API, Frigate, MQTT...).
 3. Run `task front:dev` to start the frontend dev server.
 
-All Vyzio settings default to production-ready values. Override any of them via `VYZIO_*` environment variables in `docker-compose.yml` (prod) or `docker-compose.dev.yml` (dev only). A number out of its range, an unknown time zone, a malformed Frigate address or SQLite connection string stops the API at startup, with one log line naming the variable and the value it expects.
+All Vyzio settings default to production-ready values. Override any of them via `VYZIO_*` environment variables under `vyzio-api` in `compose.yml`; the ones an installer changes come from `.env` ([`.env.example`](.env.example)). `task up` reads your `.env`, or `.env.example` when there is none. A number out of its range, an unknown time zone, a malformed Frigate address or SQLite connection string stops the API at startup, with one log line naming the variable and the value it expects.
 
 ### Task runner
 
@@ -158,7 +158,7 @@ docker push ghcr.io/kelians/vyzio-dashboard:latest
 
 ## Mock video stream
 > If you don't have a physical camera available, you can still work on Frigate integration and related features using a synthetic RTSP stream.
-- Start the synthetic RTSP stack with `docker compose -f docker-compose.yml -f docker-compose.mock.yml up -d`.
+- Start the synthetic RTSP stack with `task mock:up`.
 - This swaps Frigate onto `config/frigate.mock.yml`, enables `test_camera`, and publishes a synthetic 1280x720 RTSP stream at `rtsp://mediamtx:8554/test-camera`.
 
 ## Workflow
@@ -173,4 +173,4 @@ Use it as the single source of truth for sequencing documentation, implementatio
 - MQTT is provided by a dedicated Mosquitto broker on the Docker network; Frigate publishes there and Vyzio can consume the same broker in later slices.
 - The sample camera stays disabled until a real RTSP stream is available; enabling it is the only manual step needed to validate a test stream locally.
 - The mock overlay can enable `test_camera` automatically against a synthetic RTSP source when no physical camera is available.
-- The effective product config is always Vyzio-managed: `FrigateConfigApplier` generates `config.yml` from the camera list, written to the shared `vyzio-config` volume.
+- The effective product config is always Vyzio-managed: `FrigateConfigApplier` generates `config.yml` from the camera list, written to the `config` folder it shares with Frigate under the data folder.

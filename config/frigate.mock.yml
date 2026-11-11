@@ -1,6 +1,6 @@
 # Mock-stream Frigate config used for local development and future end-to-end
 # transport tests. It replaces the fallback dev config only when
-# docker-compose.mock.yml is enabled.
+# compose.mock.yml is enabled.
 
 mqtt:
   host: mqtt

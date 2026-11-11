@@ -61,7 +61,7 @@ updates:
       prefix: build
       include: scope
     groups:
-      # The fake camera of docker-compose.mock.yml: development only, never shipped.
+      # The fake camera of compose.mock.yml: development only, never shipped.
       mock-camera:
         patterns: ["*ffmpeg", "*mediamtx"]
     ignore:

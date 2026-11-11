@@ -14,7 +14,7 @@ d'une fréquence d'analyse réduite pour ne pas saturer le processeur (SPECS §7
 Deux contraintes façonnent la décision :
 
 - **Image Docker déployée.** Sur la version Frigate pinnée (`0.17.1`,
-  [`docker-compose.yml`](../../docker-compose.yml)), Coral (edgetpu) et Intel (OpenVINO/onnx)
+  [`compose.yml`](../../compose.yml)), Coral (edgetpu) et Intel (OpenVINO/onnx)
   fonctionnent avec l'image `ghcr.io/blakeblackshear/frigate:0.17.1` déjà déployée. Nvidia (`tensorrt`)
   et AMD (`rocm`) exigent un **variant d'image Docker différent** — recréer le conteneur, pas
   seulement réécrire sa config et le redémarrer (`FrigateConfigApplier.ApplyAsync` fait uniquement ce

@@ -1,8 +1,11 @@
 version: '3'
 
 vars:
-  COMPOSE_DEV: docker compose -f docker-compose.yml -f docker-compose.dev.yml
-  COMPOSE_MOCK: docker compose -f docker-compose.yml -f docker-compose.mock.yml
+  # A clone without its own .env runs the dev stack on the example settings.
+  ENV_FILE:
+    sh: test -f .env && echo .env || echo .env.example
+  COMPOSE_DEV: docker compose --env-file {{.ENV_FILE}} -f compose.yml -f compose.dev.yml
+  COMPOSE_MOCK: docker compose --env-file {{.ENV_FILE}} -f compose.yml -f compose.mock.yml
   DASHBOARD_DIR: src/dashboard
   BACKEND_DIR: src/vyzio
   BACKEND_SLN: Vyzio.slnx

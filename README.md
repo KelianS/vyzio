@@ -112,14 +112,18 @@ commitment.
 > **Requirements.** Linux with Docker Engine 25+ and Docker Compose v2.
 
 ```bash
-curl -O https://raw.githubusercontent.com/KelianS/vyzio/main/docker-compose.yml
+curl -O https://raw.githubusercontent.com/KelianS/vyzio/main/compose.yml
+curl -o .env https://raw.githubusercontent.com/KelianS/vyzio/main/.env.example
 docker compose up -d
 ```
+
+`.env` names the release, the data folder (`./data` beside it), the port, the time zone and the
+networks searched for cameras: adjust it before starting.
 
 Open `http://<SERVER_IP>:8080`. Vyzio first asks you to choose a password, which guards the
 interface and therefore the cameras. Everything else is configured from there.
 
-To update:
+To update, set the new release in `VYZIO_VERSION` of `.env`, then:
 
 ```bash
 docker compose pull
@@ -128,8 +132,8 @@ docker compose up -d
 
 ### Configuration
 
-Every value ships with a production-ready default. The `VYZIO_*` variables that override one in
-`docker-compose.yml`, such as the time zone, are listed in [`CONTRIBUTING.md`](CONTRIBUTING.md).
+Every other value ships with a production-ready default. The `VYZIO_*` variables that override one
+in `compose.yml` are listed in [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ### Recommended hardware
 
