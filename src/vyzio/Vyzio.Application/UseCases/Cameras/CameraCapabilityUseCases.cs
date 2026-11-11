@@ -185,7 +185,9 @@ public sealed class ConfigureCameraCapabilityUseCase(
         // A new stream protocol lays the streams out again over it; nothing is applied without them (ADR-65 e).
         if (capability == CameraCapability.Stream && protocolChanged
             && !await StreamLayout.TryLayOutAsync(camera, binding, protocol, request.StreamPath, streamEnumerator, time, ct))
+        {
             throw new StreamPathRequiredException();
+        }
 
         // The user's confirmation held for the former protocol only (ADR-66).
         CapabilityVerdict.Reset(binding, protocol);

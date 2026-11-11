@@ -227,7 +227,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
     {
         var stream = new YamlStream();
         stream.Load(new StringReader(yaml));
-        YamlNode? node = stream.Documents[0].RootNode;
+        var node = stream.Documents[0].RootNode;
         foreach (var key in path)
         {
             node = node is YamlMappingNode mapping && mapping.Children.TryGetValue(new YamlScalarNode(key), out var child) ? child : null;

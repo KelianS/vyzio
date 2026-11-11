@@ -90,8 +90,10 @@ internal sealed class DvripSession : IAsyncDisposable
         try
         {
             while (await DvripClient.ReceivePacketAsync(_stream, _closing.Token) is { } packet)
+            {
                 if (_pending.TryDequeue(out var answer))
                     answer.TrySetResult(packet);
+            }
         }
         catch (Exception ex) when (ex is IOException or SocketException)
         {

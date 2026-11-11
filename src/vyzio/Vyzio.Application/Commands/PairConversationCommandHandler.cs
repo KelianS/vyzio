@@ -30,8 +30,10 @@ public sealed class PairConversationCommandHandler(
         // Landing on the catalogue rather than on a congratulation: the first question is always
         // "et maintenant, qu'est-ce que je fais ?".
         if (pairing.Accepts(invocation.Origin.ConversationId))
+        {
             return new CommandResult(CommandCatalogue.Describe(
                 registry(), "✅ Cette conversation est deja reliee a votre installation"));
+        }
 
         var now = DateTimeOffset.UtcNow;
         if (!pairing.CodeMatches(invocation.Argument(CodeParameter), now))
