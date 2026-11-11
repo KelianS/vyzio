@@ -47,10 +47,11 @@ describe('DetectionList', () => {
     fireEvent.click(screen.getByRole('button', { name: /Voir l’aperçu/ }))
 
     // Assert
-    expect(onOpenMedia).toHaveBeenCalledWith(
-      'image',
-      'http://api/api/detection-events/evt-1/snapshot',
-    )
+    expect(onOpenMedia).toHaveBeenCalledWith({
+      type: 'image',
+      url: 'http://api/api/detection-events/evt-1/snapshot',
+      eventId: 'evt-1',
+    })
   })
 
   it('DetectionList_ShouldSayTheMediaIsErasedWithNothingToClick_WhenItExpired', () => {
@@ -69,5 +70,25 @@ describe('DetectionList', () => {
     expect(screen.getByText(/au-delà de la durée de conservation/i)).toBeInTheDocument()
     expect(screen.queryByRole('presentation')).not.toBeInTheDocument()
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+
+  it('DetectionList_ShouldOpenARowWithNothingToShow_WhenTheScreenOffersActionsOnIt', () => {
+    // Arrange
+    const onOpenMedia = vi.fn()
+    render(
+      <DetectionList
+        events={[{ ...event, mediaExpired: true }]}
+        labels={[]}
+        apiBaseUrl="http://api"
+        onOpenMedia={onOpenMedia}
+        openWithoutMedia
+      />,
+    )
+
+    // Act
+    fireEvent.click(screen.getByRole('button', { name: /Ouvrir la détection/ }))
+
+    // Assert
+    expect(onOpenMedia).toHaveBeenCalledWith({ type: 'none', eventId: 'evt-1', expired: true })
   })
 })

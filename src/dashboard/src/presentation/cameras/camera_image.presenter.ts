@@ -88,8 +88,8 @@ export function buildCameraImagePresenter({
     const isLatest = nextPtzRead()
     container.getPtzPresets
       .execute(cameraId)
-      .then(({ calibrated, currentPosition }) => {
-        if (isLatest()) dispatch({ type: 'PTZ_LOADED', calibrated, currentPosition })
+      .then(({ calibrated }) => {
+        if (isLatest()) dispatch({ type: 'PTZ_LOADED', calibrated })
       })
       .catch((e: unknown) => {
         if (isLatest()) dispatch({ type: 'PTZ_FAILED', error: toAppError(e) })
@@ -121,16 +121,6 @@ export function buildCameraImagePresenter({
       } finally {
         dispatch({ type: 'SAVE_FINISHED' })
       }
-    },
-
-    onOpenLiveView() {
-      dispatch({ type: 'LIVE_VIEW_OPENED' })
-    },
-
-    // The live view may have calibrated or moved the camera: read again when closing it.
-    onCloseLiveView(cameraId: string) {
-      dispatch({ type: 'LIVE_VIEW_CLOSED' })
-      readPtz(cameraId)
     },
   }
 }

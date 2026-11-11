@@ -20,5 +20,7 @@ export function hubReducer(state: HubUido, action: HubAction): HubUido {
     case 'PRIVACY_TOGGLE_FAILED':
       // The request stays on screen: the user sees what the error is about, and can try again.
       return { ...state, privacyLoading: false }
+    case 'CLIP_GONE':
+      return { ...state, clipGoneEventId: action.eventId }
   }
 }

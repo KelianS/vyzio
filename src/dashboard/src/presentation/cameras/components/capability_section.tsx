@@ -425,7 +425,7 @@ const TRY_REFUSED_IN_PRIVACY = 'Rendez la vue à la caméra pour l’essayer.'
 /** Where a camera's positions are kept, and what it costs when Vyzio keeps them (SPECS 9.3). */
 const POSITIONS_IN_CAMERA = 'Cette caméra garde elle-même ses positions enregistrées.'
 const POSITIONS_KEPT_BY_VYZIO =
-  'Cette caméra ne sait pas garder ses positions : Vyzio les retient à sa place, de façon moins fiable. Après chaque démarrage de Vyzio, calibrez-la depuis la vue live.'
+  'Cette caméra ne sait pas garder ses positions : Vyzio les retient à sa place, de façon moins fiable. Après chaque démarrage de Vyzio, calibrez-la depuis la vue en direct.'
 
 /** The left and right swap of a camera that turns the other way (SPECS 11), in the settings grammar (ADR-43). */
 function panInvertedSetting(

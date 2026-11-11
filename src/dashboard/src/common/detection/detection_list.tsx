@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react'
-import { CalendarOff, Play } from 'lucide-react'
+import { CalendarOff, ImageOff, Play } from 'lucide-react'
 import { Button } from '../ui/button'
 import { DetectionThumbnail } from '../components/detection_thumbnail'
+import { MEDIA_EXPIRED, type DetectionMedia } from './detection_preview'
 import type { DetectionEvent } from '../../domain/entities/detection_event.entity'
 import type { DetectionLabel } from '../../domain/entities/detection_label.entity'
 import {
@@ -16,10 +17,15 @@ interface DetectionListProps {
   /** What names a detection nobody was recognised in. */
   labels: readonly DetectionLabel[]
   apiBaseUrl: string
-  onOpenMedia: (type: 'image' | 'video', url: string) => void
+  onOpenMedia: (media: DetectionMedia) => void
   /** What the screen adds to a row - the identity correction, on the history only. */
   renderExtra?: (event: DetectionEvent) => ReactNode
+  /** A row with nothing to show still opens, for a screen that offers actions on it. */
+  openWithoutMedia?: boolean
 }
+
+const BARE_TILE =
+  'flex size-14 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground'
 
 /**
  * The detection list, the same on the home screen and in the history: home is only the latest
@@ -31,19 +37,34 @@ export function DetectionList({
   apiBaseUrl,
   onOpenMedia,
   renderExtra,
+  openWithoutMedia = false,
 }: DetectionListProps) {
   return (
     <ul className="divide-y divide-border">
       {events.map((event) => (
         <li key={event.eventId} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
-          {/* Un media expire n'est pas une panne : rien a retenter, donc rien a cliquer. */}
-          {event.mediaExpired && (
-            <span
-              aria-hidden="true"
-              className="flex size-14 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground"
-            >
+          {/* Un media expire n'est pas une panne : rien a retenter, donc rien a cliquer pour le revoir. */}
+          {event.mediaExpired && !openWithoutMedia && (
+            <span aria-hidden="true" className={BARE_TILE}>
               <CalendarOff className="size-4" />
             </span>
+          )}
+
+          {openWithoutMedia && (event.mediaExpired || (!event.hasSnapshot && !event.hasClip)) && (
+            <button
+              type="button"
+              aria-label={`Ouvrir la détection : ${formatEventTitle(event, labels)}`}
+              className={`${BARE_TILE} focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring`}
+              onClick={() =>
+                onOpenMedia({ type: 'none', eventId: event.eventId, expired: event.mediaExpired })
+              }
+            >
+              {event.mediaExpired ? (
+                <CalendarOff aria-hidden="true" className="size-4" />
+              ) : (
+                <ImageOff aria-hidden="true" className="size-4" />
+              )}
+            </button>
           )}
 
           {event.hasSnapshot && !event.mediaExpired && (
@@ -52,7 +73,13 @@ export function DetectionList({
               aria-label={`Voir l’aperçu — ${formatEventTitle(event, labels)}`}
               className="shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
               // The tile shows the crop, opening shows the wide shot: two images, not two sizes.
-              onClick={() => onOpenMedia('image', snapshotUrl(apiBaseUrl, event.eventId))}
+              onClick={() =>
+                onOpenMedia({
+                  type: 'image',
+                  url: snapshotUrl(apiBaseUrl, event.eventId),
+                  eventId: event.eventId,
+                })
+              }
             >
               <DetectionThumbnail src={thumbnailUrl(apiBaseUrl, event.eventId)} />
             </button>
@@ -62,9 +89,7 @@ export function DetectionList({
             <span className="block font-medium">{formatEventTitle(event, labels)}</span>
             <span className="block text-sm text-muted-foreground">{formatEventDetail(event)}</span>
             {event.mediaExpired && (
-              <span className="block text-sm text-muted-foreground">
-                Aperçu et vidéo effacés — au-delà de la durée de conservation.
-              </span>
+              <span className="block text-sm text-muted-foreground">{MEDIA_EXPIRED}</span>
             )}
             {renderExtra?.(event)}
           </span>
@@ -75,7 +100,11 @@ export function DetectionList({
               variant="ghost"
               size="sm"
               onClick={() =>
-                onOpenMedia('video', `${apiBaseUrl}/api/detection-events/${event.eventId}/clip`)
+                onOpenMedia({
+                  type: 'video',
+                  url: `${apiBaseUrl}/api/detection-events/${event.eventId}/clip`,
+                  eventId: event.eventId,
+                })
               }
             >
               <Play aria-hidden="true" />

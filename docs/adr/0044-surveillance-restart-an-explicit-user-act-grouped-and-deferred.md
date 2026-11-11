@@ -78,8 +78,9 @@ une pastille muette à côté, qui serait l'état opaque que le principe produit
 
 ### Le déclencheur est toujours atteignable, et la question se pose en sortant des réglages
 
-Le déclencheur est visible depuis n'importe où, et n'apparaît que lorsqu'il y a quelque chose à
-redémarrer : son absence est alors une information positive.
+Le déclencheur est atteignable depuis n'importe où (la vue en direct plein écran le masque jusqu'au
+retour), et n'apparaît que lorsqu'il y a quelque chose à redémarrer : son absence est alors une
+information positive.
 
 La question « redémarrer maintenant ? » **ne se pose pas au changement de page**. Passer de Détection
 à Conservation est le geste le plus courant quand on règle, et le brouillon y a déjà sa propre

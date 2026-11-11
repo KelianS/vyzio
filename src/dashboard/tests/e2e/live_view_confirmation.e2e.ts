@@ -34,7 +34,7 @@ async function isOnTop(locator: Locator) {
 }
 
 async function longPressTheSavedPosition(page: Page) {
-  await page.getByRole('button', { name: 'Piloter la caméra' }).click()
+  await page.getByRole('link', { name: 'Piloter la caméra' }).click()
   await page.getByTitle(/^Surveillance \(appui/).hover()
   await page.mouse.down()
   const question = page.getByRole('alertdialog', { name: 'Redéfinir cette position ?' })
@@ -42,12 +42,13 @@ async function longPressTheSavedPosition(page: Page) {
   await page.mouse.up()
 }
 
-async function closeTheLiveView(page: Page) {
-  const liveView = page.getByRole('dialog', { name: /^Pilotage/ })
-  const cross = liveView.getByRole('button', { name: 'Fermer' })
-  await expect.poll(() => isOnTop(cross)).toBe(true)
-  await cross.click()
-  await expect(liveView).toBeHidden()
+// Back where the user came from: the camera's page, which reads where the camera stands again.
+async function leaveTheLiveView(page: Page) {
+  const back = page.getByRole('button', { name: 'Retour' })
+  await expect.poll(() => isOnTop(back)).toBe(true)
+  await back.click()
+  await expect(page).toHaveURL('/settings/cameras/camera-1/image')
+  await expect(page.getByRole('link', { name: 'Piloter la caméra' })).toBeVisible()
 }
 
 // The question opened from the live view shows above it, on a phone (#216).
@@ -56,7 +57,7 @@ test.describe('Live view confirmation', () => {
     await page.setViewportSize({ width: 390, height: 844 })
   })
 
-  test('LiveView_ShouldRedefineThePositionThenClose_WhenTheUserConfirmsTheLongPress', async ({
+  test('LiveView_ShouldRedefineThePositionThenGoBack_WhenTheUserConfirmsTheLongPress', async ({
     page,
   }) => {
     const state = ptzCameraWithOneSavedPosition()
@@ -70,10 +71,10 @@ test.describe('Live view confirmation', () => {
     expect(state.ptz.presets).toEqual([
       expect.objectContaining({ presetId: 1, panMs: 7, tiltMs: 4 }),
     ])
-    await closeTheLiveView(page)
+    await leaveTheLiveView(page)
   })
 
-  test('LiveView_ShouldKeepThePositionThenClose_WhenTheUserCancelsTheLongPress', async ({
+  test('LiveView_ShouldKeepThePositionThenGoBack_WhenTheUserCancelsTheLongPress', async ({
     page,
   }) => {
     const state = ptzCameraWithOneSavedPosition()
@@ -87,6 +88,6 @@ test.describe('Live view confirmation', () => {
     expect(state.ptz.presets).toEqual([
       expect.objectContaining({ presetId: 1, panMs: 3, tiltMs: 2 }),
     ])
-    await closeTheLiveView(page)
+    await leaveTheLiveView(page)
   })
 })

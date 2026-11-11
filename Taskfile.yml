@@ -203,5 +203,5 @@ tasks:
       # With coverage, as CI runs it, so the floor holds locally too.
       - task: front:test
         vars: { CLI_ARGS: '--coverage' }
-      - task: front:build
+      # The e2e webServer builds the production bundle, so no front:build before it.
       - task: front:test:e2e
