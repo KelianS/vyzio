@@ -29,13 +29,13 @@ What it changes for whoever reads it, never "adds an X method".
 
 What the diff does not show, after a blank line.
 
-### GIT-05 · A pull request description follows its template
+### GIT-09 · A pull request description follows its template, and holds nothing more
 
 **Level**: Required · **Verified by**: Review
 
-[`pull_request_template.md`](../../.github/pull_request_template.md): the why, the scope, what was
-actually run with its result, and the definition of done ticked from what the diff shows, a line
-that does not apply struck through with its reason.
+[`pull_request_template.md`](../../.github/pull_request_template.md): the why in one sentence, the
+major changes only, and the definition of done ticked from what the diff shows, a line that does
+not apply struck through with its reason. Nothing beyond what the template asks.
 
 ### GIT-06 · A pull request description matches its last commit
 
@@ -56,12 +56,12 @@ e2e suite. How: [`CONTRIBUTING.md`](../../CONTRIBUTING.md) § Pull request scree
 
 **Level**: Required · **Verified by**: Tool: `task check` locally, the CI workflows on the pull request
 
-### GIT-09 · A pull request meets the Done when of the issue it closes
+### GIT-10 · A pull request meets the Done when of the issue it closes
 
 **Level**: Required · **Verified by**: Review
 
 Each line of the issue's "Done when" is shown by a test of the diff that fails without the change,
-or by a run stated with its result under the pull request's Checked (in the review request before
-the pull request exists, AGENTS-03). A line neither shows is a blocking finding that names it.
+or by a run stated with its result in the review request (AGENTS-03). A line neither shows is a
+blocking finding that names it.
 
 **Exceptions**: an issue with no "Done when" section.

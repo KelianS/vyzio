@@ -78,12 +78,10 @@ Only on the user's request, and only after a `PASS` on the last commit.
 
 1. Push the branch (`git push -u origin <branch>`); never `main`, never forced.
 2. Title: the issue's title as it stands, otherwise per GIT-01.
-3. Body per GIT-05, written to a file and passed with `gh pr create --base main --body-file <file>`:
-   - **Why**: the behaviour changes of the report included;
-   - **Scope**: `Closes #<issue>`;
-   - **Checked**: `task check`, the review verdict and its sha, the runs that show the issue's Done
-     when (GIT-09), the review cases (AGENTS-08);
-   - **Screenshots**: GIT-07, shot with `task pr:capture` then published with `task pr:screenshots`
-     ([`CONTRIBUTING.md`](../../../CONTRIBUTING.md) § Pull request screenshots).
+3. Body: [`.github/pull_request_template.md`](../../../.github/pull_request_template.md), filled as
+   its comments say and no longer, written to a file and passed with
+   `gh pr create --base main --body-file <file>`. The behaviour changes of the report go under its
+   changes; the screenshots are shot with `task pr:capture` then published with
+   `task pr:screenshots` ([`CONTRIBUTING.md`](../../../CONTRIBUTING.md) § Pull request screenshots).
 4. A later commit that changes the scope, a behaviour or a screen → update the body and the
    screenshots (GIT-06), on request.

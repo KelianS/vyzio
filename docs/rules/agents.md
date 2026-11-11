@@ -84,5 +84,6 @@ rule it changes, when one does.
 
 **Level**: Required · **Verified by**: Review
 
-`bash tools/review-cases/run.sh` is run on the branch, the cases it touches at least, and its result
-is stated under the pull request's Checked (GIT-05). It calls Claude, so it runs locally, never in CI.
+`bash tools/review-cases/run.sh` is run on the branch, every case whose agent, skill or harness the
+change touches at least, and its result is stated in the review request (AGENTS-03). It calls
+Claude, so it runs locally, never in CI.

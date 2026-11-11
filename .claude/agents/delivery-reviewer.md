@@ -43,7 +43,7 @@ read goes under Not read (AGENTS-04).
 | **Over-engineering** | An abstraction with no second use, a needless layer or setting, a duplicate of something that exists | The simpler code, or the existing one to reuse |
 | **Rule** | A breach of a rule of the routed pages; a rule that requires something the change does not bring (the test of a new screen) | The rule ID |
 | **Definition of done** | A line of the template the diff should satisfy and does not | The line |
-| **Done when** | A line of the issue's "Done when" shown neither by a test of the diff nor by a run the request states (GIT-09) | The line, quoted |
+| **Done when** | A line of the issue's "Done when" shown neither by a test of the diff nor by a run the request states (GIT-10) | The line, quoted |
 
 For a rule verified by `Tool`, never report a breach from reading the code: the tool reports it.
 Check only that the tool is still in place and not weakened (COMMON-07). Whether `task check` is
