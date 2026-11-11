@@ -26,18 +26,6 @@ public class CameraReachabilityPollerServiceTests
         _time,
         logger ?? NullLogger<CameraReachabilityPollerService>.Instance);
 
-    private sealed class CapturingLogger : ILogger<CameraReachabilityPollerService>
-    {
-        public List<(LogLevel Level, string Message)> Entries { get; } = [];
-
-        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
-
-        public bool IsEnabled(LogLevel logLevel) => true;
-
-        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
-            => Entries.Add((logLevel, formatter(state, exception)));
-    }
-
     private static Camera ValidatedCamera(int port, string status) => new Camera
     {
         Id = "cam-1",
@@ -163,7 +151,7 @@ public class CameraReachabilityPollerServiceTests
         var camera = ValidatedCamera(refusing.PortOf(), "online");
         _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns([camera]);
         var updated = SignalOnUpdate();
-        var logger = new CapturingLogger();
+        var logger = new LogLines<CameraReachabilityPollerService>();
         var sut = CreateSut(logger);
 
         // Act
@@ -172,7 +160,7 @@ public class CameraReachabilityPollerServiceTests
         await sut.StopAsync(CancellationToken.None);
 
         // Assert
-        var entry = Assert.Single(logger.Entries);
+        var entry = Assert.Single(logger.Lines);
         Assert.Equal(LogLevel.Information, entry.Level);
         Assert.Contains("status changed: online → offline.", entry.Message, StringComparison.Ordinal);
     }
@@ -186,7 +174,7 @@ public class CameraReachabilityPollerServiceTests
         var camera = ValidatedCamera(((IPEndPoint)listener.LocalEndpoint).Port, "offline");
         _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns([camera]);
         var updated = SignalOnUpdate();
-        var logger = new CapturingLogger();
+        var logger = new LogLines<CameraReachabilityPollerService>();
         var sut = CreateSut(logger);
 
         // Act
@@ -196,7 +184,7 @@ public class CameraReachabilityPollerServiceTests
         listener.Stop();
 
         // Assert
-        var entry = Assert.Single(logger.Entries);
+        var entry = Assert.Single(logger.Lines);
         Assert.Equal(LogLevel.Information, entry.Level);
         Assert.Contains("status changed: offline → online.", entry.Message, StringComparison.Ordinal);
     }
