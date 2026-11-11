@@ -30,6 +30,10 @@ jobs:
     env:
       BLOCKING: ${{ github.event_name != 'pull_request' }}
       LOCAL_TAG: vyzio-${{ matrix.image }}:scan
+      # One copy for the build and the push, so the push reuses every layer of what was scanned.
+      BUILD_ARGS: |
+        VYZIO_VERSION=${{ inputs.version }}
+        VYZIO_REVISION=${{ github.sha }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -43,9 +47,7 @@ jobs:
           push: false
           load: true
           tags: ${{ env.LOCAL_TAG }}
-          build-args: |
-            VYZIO_VERSION=${{ inputs.version }}
-            VYZIO_REVISION=${{ github.sha }}
+          build-args: ${{ env.BUILD_ARGS }}
           cache-from: type=gha,scope=${{ matrix.image }}
           cache-to: type=gha,mode=max,scope=${{ matrix.image }}
 
@@ -111,9 +113,7 @@ jobs:
           context: .
           file: ${{ matrix.dockerfile }}
           outputs: type=image,name=ghcr.io/kelians/vyzio-${{ matrix.image }},push-by-digest=true,name-canonical=true,push=true
-          build-args: |
-            VYZIO_VERSION=${{ inputs.version }}
-            VYZIO_REVISION=${{ github.sha }}
+          build-args: ${{ env.BUILD_ARGS }}
 
       - name: Record the digest
         if: inputs.push
