@@ -18,14 +18,18 @@ const GOTO = 'POST /api/cameras/camera-1/ptz/preset/goto'
 const CALIBRATE = 'POST /api/cameras/camera-1/ptz/calibrate'
 const CAPTURE = 'POST /api/cameras/camera-1/ptz/presets/1/snapshot'
 
-// The thumbnail is captured once the camera stands still, 1.5 s after the move answers.
+// The capture waits 6 s after the move answers (CAPTURE_DELAY_MS): the fake clock skips that wait.
 async function theThumbnailIsCaptured(network: ReturnType<typeof fakeNetwork>) {
-  await waitFor(
-    () => expect(network.sent).toContainEqual(expect.objectContaining({ route: CAPTURE })),
-    {
-      timeout: 3000,
-    },
-  )
+  const captured = () => network.sent.some(({ route }) => route === CAPTURE)
+  for (let tries = 0; tries < 10 && !captured(); tries++) {
+    await act(() => vi.advanceTimersByTimeAsync(6000))
+  }
+  expect(network.sent).toContainEqual(expect.objectContaining({ route: CAPTURE }))
+}
+
+// The real clock still runs underneath, so the screen's own waits and user events keep working.
+function useCaptureClock() {
+  vi.useFakeTimers({ shouldAdvanceTime: true })
 }
 
 function makePreset(overrides: Partial<PtzPreset> = {}): PtzPreset {
@@ -72,6 +76,10 @@ function renderLiveView() {
 }
 
 describe('LiveView', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('LiveView_ShouldSayOrientationIsUnavailableAndPointAtConnexion_WhenTheCameraWouldRefuseTheMoves', () => {
     // Arrange
     const network = fakeNetwork({})
@@ -120,6 +128,7 @@ describe('LiveView', () => {
 
   it('onSave_ShouldSaveTheEmptyPositionAndCaptureIt_WhenTheUserTapsIt', async () => {
     // Arrange
+    useCaptureClock()
     const network = fakeNetwork({ [PRESETS]: presetsRead(), [SAVE]: ok(), [CAPTURE]: ok() })
     renderLiveView()
     const empty = await screen.findAllByTitle('Enregistrer la position actuelle ici')
@@ -137,6 +146,7 @@ describe('LiveView', () => {
 
   it('onGoTo_ShouldAcknowledgeTheArrivalAndRecapture_WhenTheCameraReachesTheSavedPosition', async () => {
     // Arrange
+    useCaptureClock()
     const network = fakeNetwork({
       [PRESETS]: presetsRead({ presets: [makePreset()] }),
       [GOTO]: ok(),
@@ -156,9 +166,32 @@ describe('LiveView', () => {
     await theThumbnailIsCaptured(network)
   })
 
+  it('onGoTo_ShouldCaptureTheThumbnailOnlyAfterTheDelay_WhenTheCameraAcknowledgesTheMove', async () => {
+    // Arrange
+    useCaptureClock()
+    const network = fakeNetwork({
+      [PRESETS]: presetsRead({ presets: [makePreset()] }),
+      [GOTO]: ok(),
+      [CAPTURE]: ok(),
+    })
+    renderLiveView()
+    await userEvent.click(await screen.findByTitle(/^Surveillance \(appui/))
+    await screen.findByText('Caméra en position « Surveillance ».')
+
+    // Act
+    await act(() => vi.advanceTimersByTimeAsync(5000))
+    const sentBeforeTheDelay = [...network.sent]
+    await act(() => vi.advanceTimersByTimeAsync(1000))
+
+    // Assert
+    expect(sentBeforeTheDelay).not.toContainEqual(expect.objectContaining({ route: CAPTURE }))
+    expect(network.sent).toContainEqual(expect.objectContaining({ route: CAPTURE }))
+  })
+
   it('onGoTo_ShouldSayThePreviewWasNotUpdated_WhenTheCaptureFails', async () => {
     // Arrange
-    fakeNetwork({
+    useCaptureClock()
+    const network = fakeNetwork({
       [PRESETS]: presetsRead({ presets: [makePreset()] }),
       [GOTO]: ok(),
       [CAPTURE]: failure(500),
@@ -168,14 +201,12 @@ describe('LiveView', () => {
 
     // Act
     await userEvent.click(tile)
+    await screen.findByText('Caméra en position « Surveillance ».')
+    await theThumbnailIsCaptured(network)
 
     // Assert
     expect(
-      await screen.findByText(
-        'La miniature de la position « Surveillance » n’a pas été mise à jour.',
-        undefined,
-        { timeout: 3000 },
-      ),
+      await screen.findByText('La miniature de la position « Surveillance » n’a pas été mise à jour.'),
     ).toBeInTheDocument()
     expect(
       screen.getByText(/POST \/api\/cameras\/camera-1\/ptz\/presets\/1\/snapshot · 500/),
@@ -294,6 +325,7 @@ describe('LiveView', () => {
 
   it('onGoTo_ShouldMoveThereAndTakeTheThumbnail_WhenTheUserTapsAHeldSlotWithoutOne', async () => {
     // Arrange
+    useCaptureClock()
     const network = fakeNetwork({
       [PRESETS]: presetsRead({ presets: [makePreset({ thumbnail: false })] }),
       [GOTO]: ok(),
@@ -529,6 +561,7 @@ describe('LiveView', () => {
 
   it('onConfirmOverride_ShouldRedefineThePosition_WhenTheUserConfirms', async () => {
     // Arrange
+    useCaptureClock()
     const network = fakeNetwork({
       [PRESETS]: presetsRead({ presets: [makePreset()] }),
       [SAVE]: ok(),
