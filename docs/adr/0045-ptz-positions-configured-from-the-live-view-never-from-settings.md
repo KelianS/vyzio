@@ -29,7 +29,7 @@ laissant où elle se trouvait par hasard, jamais en la choisissant.
 
 **Option 2.** Une position PTZ ne se configure qu'à un seul endroit : `PtzControlPanel`, dans la vue
 live. La fiche caméra ne porte plus que `PtzCalibrationSection` — statut de calibration, bouton de
-calibration, et un bouton « Configurer les positions » qui ouvre la vue live en overlay.
+calibration, et un bouton « Configurer les positions » qui ouvre la vue live.
 
 ### Un geste, deux actions
 

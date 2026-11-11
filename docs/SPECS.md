@@ -305,6 +305,8 @@ Le detail ne contient jamais de secret : ni mot de passe, ni jeton, ni identifia
 
 > **En tant qu'utilisateur**, je veux voir ce que filme une camera en video fluide, avec le son quand elle en a, pour suivre ce qui se passe au moment ou ca se passe.
 
+> **En tant qu'utilisateur sur mon telephone**, je veux que la vue en direct occupe tout l'ecran, pour voir l'image en grand et piloter la camera sans qu'une page reste autour.
+
 > **En tant qu'utilisateur non-technicien**, je veux trouver un reglage sans savoir comment le produit est construit.
 
 > **En tant qu'utilisateur exigeant**, je veux acceder aux reglages fins sans qu'ils encombrent le parcours courant.
@@ -330,6 +332,11 @@ Le detail ne contient jamais de secret : ni mot de passe, ni jeton, ni identifia
 - la vue en direct d'une camera montre une **video fluide**, a peu pres une seconde derriere la scene, en qualite economique a l'ouverture ; l'utilisateur passe en haute qualite le temps de la regarder, sans que ce choix soit retenu ni change le reglage de la camera ; une camera qui n'a qu'une qualite n'offre pas ce choix ;
 - le son de la vue en direct est coupe a l'ouverture et s'active d'un geste ; une camera dont le navigateur ne lit pas le son n'offre pas ce geste ;
 - regarder le direct ne doit pas perturber la surveillance de la camera ;
+- la vue en direct est un ecran a part entiere, jamais une fenetre posee sur la page : elle s'ouvre depuis la vignette d'une camera a l'accueil et depuis le pilotage de la page de la camera ; le retour du navigateur la referme et ramene la ou l'on etait, ou a l'accueil quand on l'a atteinte par son adresse ; l'ouvrir depuis les reglages n'est pas quitter les reglages : la question du redemarrage attend qu'on les quitte, alors que des modifications non enregistrees sont signalees comme a tout depart de la page ;
+- une barre posee sur l'image ramene en arriere, nomme la camera et porte la qualite et le son ;
+- telephone tenu droit, la video occupe toute la largeur en haut de l'ecran, le pilotage puis les positions en dessous ; sur grand ecran, la video prend toute la place disponible, le pilotage et les positions a cote ; sans pilotage, cette place ne garde que la ligne qui dit pourquoi, quand il y en a une (§11) ;
+- telephone tenu en paysage, la video occupe tout l'ecran : la barre, le pilotage et les positions, enregistrement compris, sont poses dessus, s'effacent apres quelques secondes sans geste, jamais pendant un appui, et reviennent d'un appui sur l'image ; ce qui explique un etat (la raison de l'image de secours, des positions non lues, une calibration a faire, une orientation indisponible) ne s'efface jamais ; le navigateur y masque ses propres barres des le premier geste quand il le permet, avec un bouton pour le lui redemander, et sinon la vue occupe tout ce qu'il laisse visible ;
+- atteinte par son adresse, la vue en direct d'une camera en mode vie privee, hors ligne, a configurer ou qui n'existe plus le dit en une phrase, sans image ni tentative de flux, avec le chemin utile (la page de la camera pour une camera a configurer) ; la vignette, elle, ne l'ouvre que pour une camera surveillee qui repond (§2.2, §9.2) ;
 - si la video ne peut pas etre lue, parce que le navigateur ne la lit pas ou que le flux n'arrive pas, la vue en direct montre une image rafraichie chaque seconde, dit pourquoi en une phrase et propose de reessayer quand la cause peut passer ; en mode vie privee, ou pour une camera qui n'existe plus, elle le dit sans image ; les vignettes restent des images rafraichies ;
 - l'interface doit etre **concue pour le telephone d'abord**, le grand ecran developpant la meme structure ; les actions principales doivent rester faisables sur les deux ;
 - modifier un reglage ne doit produire **aucun effet** tant que l'utilisateur n'a pas valide ; avant de valider, il doit voir **ce qu'il a modifie** et pouvoir **renoncer** ;
@@ -475,7 +482,7 @@ Deux roles existent, et un seul est livre pour l'instant — le **proprietaire**
 - la miniature est persistée côté serveur et survit à un rechargement de l'interface ;
 - la première miniature n'est disponible qu'après le premier GoTo ; avant, le slot d'une position enregistrée montre qu'une position existe (§9.3), jamais le signe d'un slot vide ni une image générique ;
 - la capture est déclenchée après le retour de la commande GoTo (attendre un délai court pour laisser la caméra atteindre physiquement sa position) ;
-- la miniature est mise à jour à chaque nouveau GoTo, quelle que soit la vue depuis laquelle l'utilisateur navigue (fiche caméra ou modale live).
+- la miniature est mise à jour à chaque nouveau GoTo.
 
 ---
 
