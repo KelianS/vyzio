@@ -81,8 +81,8 @@ follows the library's scale from the small screen upwards; another breakpoint mu
 
 **A press never selects.** What the user acts on, a button, a link, a tab, a field's label or a strip
 of controls marked `data-press-only`, never selects its text nor opens the phone's callout on a long
-press; text to read stays selectable. One base rule in `src/index.css` carries it, never a class per
-component.
+press; text to read, and a field even inside its label, stays selectable. One base rule in
+`src/index.css` carries it, never a class per component.
 
 ## Patterns
 

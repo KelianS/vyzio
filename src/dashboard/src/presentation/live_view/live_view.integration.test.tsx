@@ -1390,7 +1390,7 @@ describe('LiveView layouts', () => {
     expect(screen.queryByRole('button', { name: 'Plein écran' })).not.toBeInTheDocument()
   })
 
-  it('onLeaveFullScreen_ShouldGiveTheBrowserBarsBackAndStayOnTheLiveView_WhenTheUserPressesIt', async () => {
+  it('LiveView_ShouldGiveTheBrowserBarsBackAndStayOpen_WhenTheUserLeavesFullScreen', async () => {
     // Arrange
     holdTheDevice('landscape')
     const { exit } = offerFullScreen()
