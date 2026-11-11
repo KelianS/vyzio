@@ -52,7 +52,7 @@ proof its type requires is not reported:
 | --- | --- | --- |
 | **Missing** | No rule settles a case of the diff | The `path:line` of the case, and what a rule would have to settle |
 | **Unclear** | A rule reads two ways for a case of the diff | The rule ID, the `path:line` of the case, and the two readings |
-| **Doubtful** | A rule goes against a recognised reference (Microsoft, React, an RFC, OWASP) | The rule ID, and the reference's page fetched in this review with what it says |
+| **Doubtful** | A rule goes against a recognised reference (Microsoft, React, an RFC, OWASP) | The rule ID, and the reference's URL with what it says |
 | **Tooling** | An instruction of an agent or a skill failed or did not match reality | The instruction (`file:line`), what was run, and what came out |
 
 The rules keep the last word: a doubtful rule still applies, the feedback asks for it to be

@@ -65,7 +65,7 @@ AGENTS-06, the title and label of [`docs/rules/README.md`](../../../docs/rules/R
 on the rules. For each item:
 
 1. Search: `gh issue list --label agent-feedback --state all --search "<page or agent>"`.
-2. Show the exact text, its title and labels included, as AGENTS-06 shapes it: a comment gives the
+2. Show the exact text, its title and labels included, as AGENTS-05 and AGENTS-06 shape it: a comment gives the
    type, the branch, the finding and its proof; a new issue gives the first case and what the rule
    or the instruction should settle.
 3. Once approved, `gh issue comment` or `gh issue create --label agent-feedback`. The label missing →
