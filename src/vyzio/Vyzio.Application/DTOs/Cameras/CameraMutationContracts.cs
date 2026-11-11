@@ -1,4 +1,3 @@
-using System.Linq;
 using Vyzio.Core.Common;
 using Vyzio.Core.Entities;
 

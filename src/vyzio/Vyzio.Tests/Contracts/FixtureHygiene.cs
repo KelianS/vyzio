@@ -67,8 +67,11 @@ internal sealed partial class FixtureHygiene
         {
             case JsonValueKind.Object:
                 foreach (var property in element.EnumerateObject())
+                {
                     foreach (var item in Strings(property.Value, property.Name))
                         yield return item;
+                }
+
                 break;
             case JsonValueKind.Array:
                 foreach (var item in element.EnumerateArray().SelectMany(child => Strings(child, propertyName)))
@@ -85,7 +88,11 @@ internal sealed partial class FixtureHygiene
         if (PrivateIp().IsMatch(text)) yield return "private IP address";
         if (PrivateIpv6().IsMatch(text)) yield return "private IPv6 address";
         if (Mac().Matches(text).Select(mac => mac.Value).Concat(BareMacField().Matches(text).Select(mac => mac.Groups[1].Value))
-            .Any(mac => !Bare(mac).StartsWith(_macPrefix, StringComparison.Ordinal))) yield return "MAC address";
+            .Any(mac => !Bare(mac).StartsWith(_macPrefix, StringComparison.Ordinal)))
+        {
+            yield return "MAC address";
+        }
+
         if (PrivateKey().IsMatch(text)) yield return "private key";
         if (WsUsername().Matches(text).Any(match => match.Groups[1].Value != _username)) yield return "WS-Security username";
         if (DvripUsername().Matches(text).Any(match => match.Groups[1].Value != _username && match.Groups[1].Value != _probeUsername)) yield return "DVRIP username";

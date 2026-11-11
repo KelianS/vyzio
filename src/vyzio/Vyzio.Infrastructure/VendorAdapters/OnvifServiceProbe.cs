@@ -36,8 +36,11 @@ internal static class OnvifServiceProbe
     {
         if (status == 404) return false;
         if (status == 401)
+        {
             return body.Contains("onvif", StringComparison.OrdinalIgnoreCase)
                 || wwwAuthenticate.Contains("onvif", StringComparison.OrdinalIgnoreCase);
+        }
+
         return LooksLikeOnvif(body);
     }
 

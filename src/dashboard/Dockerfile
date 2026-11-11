@@ -1,4 +1,4 @@
-FROM node:24-alpine@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f AS build
+FROM node:24-alpine@sha256:a34ab6d7f6f4813f4d0c5469d74685604b962fbdbf5793a7bc7b4998ecb867c8 AS build
 WORKDIR /app
 
 RUN corepack enable pnpm
@@ -9,7 +9,7 @@ RUN pnpm install --frozen-lockfile
 COPY src/dashboard/ .
 RUN pnpm build
 
-FROM nginxinc/nginx-unprivileged:alpine@sha256:26b0bf6fbf07297983cb341998d79c831508787de26627dd2a112321b9c3a4af AS runtime
+FROM nginxinc/nginx-unprivileged:alpine@sha256:b5047b9b76845eac124358373c6852377c52e4b05834a47647e955dd91cb8f1e AS runtime
 
 # The revision is the one thing an operator cannot recover from the image otherwise: a version tag
 # is a name someone chose, a commit is what actually built. Defaults keep a local build working.
@@ -24,11 +24,11 @@ LABEL org.opencontainers.image.version="${VYZIO_VERSION}"
 LABEL org.opencontainers.image.revision="${VYZIO_REVISION}"
 
 # Root only for the two lines below, back to the image's own user right after.
-# pcre2: floored to the CVE-2026-103111 fix, which Alpine ships and the base image does not yet.
+# apk upgrade: the base image lags Alpine's security fixes (musl, zlib, libexpat, brotli...), so take them all.
 # curl: dropped with its dependency chain. Nothing here calls it, the healthcheck uses busybox
 # wget, and a package that is not shipped never needs patching again.
 USER root
-RUN apk add --no-cache 'pcre2>=10.49-r0' \
+RUN apk upgrade --no-cache \
 	&& apk del curl
 USER 101
 

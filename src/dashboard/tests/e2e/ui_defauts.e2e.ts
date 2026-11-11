@@ -116,7 +116,8 @@ test.describe('LiveView PTZ positions', () => {
     await tile.click()
 
     await expect(page.getByRole('status')).toContainText('Caméra en position « Parking ».')
-    await expect.poll(() => state.ptz.presets[0].thumbnail, { timeout: 5000 }).toBe(true)
+    // The capture waits CAPTURE_DELAY_MS after the acknowledgement, on the real clock here.
+    await expect.poll(() => state.ptz.presets[0].thumbnail, { timeout: 10_000 }).toBe(true)
     await expect(page.getByTitle(/^Parking \(appui : y aller, appui long/)).toBeVisible()
   })
 
