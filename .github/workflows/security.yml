@@ -1,22 +1,14 @@
 name: Security
 
+# Called by CI, so its jobs run on every pull request, on main and on the daily schedule, under ci-ok.
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-  schedule:
-    - cron: '0 6 * * 1'
-
-# A new push to a pull request cancels the run it supersedes; on main every commit keeps its own run.
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  workflow_call:
 
 jobs:
   codeql-backend:
     name: CodeQL — C#
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       security-events: write
       contents: read
@@ -24,17 +16,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: actions/setup-dotnet@v6
-        with:
-          global-json-file: global.json
-
+      # No build: CodeQL reads the sources directly, so the job needs no .NET SDK.
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
           languages: csharp
-
-      - name: Build
-        run: dotnet build src/vyzio/Vyzio.slnx -c Release
+          build-mode: none
 
       - name: Analyze
         uses: github/codeql-action/analyze@v4
@@ -42,6 +29,7 @@ jobs:
   codeql-frontend:
     name: CodeQL — TypeScript
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       security-events: write
       contents: read
@@ -53,6 +41,7 @@ jobs:
         uses: github/codeql-action/init@v4
         with:
           languages: javascript-typescript
+          build-mode: none
 
       - name: Analyze
         uses: github/codeql-action/analyze@v4
@@ -60,19 +49,41 @@ jobs:
   semgrep:
     name: Semgrep — SAST
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      security-events: write
+      contents: read
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Install Semgrep
         run: pip3 install semgrep==1.177.0 --break-system-packages
 
+      # On a pull request only the findings absent from its base fail the job, so a rule newly
+      # published to the registry never blocks a change that did not introduce what it finds.
       # A false positive is silenced where it stands with a nosemgrep comment, never by letting the step pass.
       - name: Scan
-        run: semgrep scan --config auto --error src/
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: semgrep scan --config auto --error --sarif-output=semgrep.sarif ${BASE_SHA:+--baseline-commit "$BASE_SHA"} src/
+
+      # A fork's pull request gets a read-only token, so the upload is skipped; the job verdict stands.
+      - name: Upload to code scanning
+        if: always() && !github.event.pull_request.head.repo.fork && hashFiles('semgrep.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
 
   dependency-audit:
     name: Dependency audit
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # A new advisory reaches every pull request at once: it warns there and fails main and its daily run.
+    env:
+      BLOCKING: ${{ github.event_name != 'pull_request' }}
     steps:
       - uses: actions/checkout@v7
 
@@ -87,14 +98,18 @@ jobs:
       - name: Check .NET vulnerable packages
         run: |
           set -euo pipefail
+          verdict() {
+            if [ "$BLOCKING" = true ]; then echo "::error::$1"; exit 1; fi
+            echo "::warning::$1 (informational on a pull request)"
+          }
           dotnet list src/vyzio/Vyzio.slnx package --vulnerable --include-transitive --format json > vulnerable.json
           jq -r '.projects[] | .path as $p | .frameworks[]? | (.topLevelPackages // []) + (.transitivePackages // []) | .[]
                  | "\($p): \(.id) \(.resolvedVersion) \([.vulnerabilities[]?.severity] | join(","))"' vulnerable.json | tee findings.txt
-          if [ -s findings.txt ]; then echo "::error::Vulnerable .NET packages found"; exit 1; fi
+          if [ -s findings.txt ]; then verdict "Vulnerable .NET packages found"; fi
           # An unreachable vulnerability source lists nothing and records a problem: that is not a pass.
           if jq -e '[.problems[]?] | length > 0' vulnerable.json > /dev/null; then
             jq -r '.problems[] | .text' vulnerable.json
-            echo "::error::The vulnerability audit could not complete"; exit 1
+            verdict "The vulnerability audit could not complete"
           fi
 
       - uses: pnpm/action-setup@v6
@@ -106,4 +121,8 @@ jobs:
           node-version: '24'
 
       - name: Frontend dependency audit
-        run: pnpm --prefix src/dashboard audit --audit-level high
+        run: |
+          if ! pnpm --prefix src/dashboard audit --audit-level high; then
+            if [ "$BLOCKING" = true ]; then echo "::error::Vulnerable frontend packages found"; exit 1; fi
+            echo "::warning::Vulnerable frontend packages found (informational on a pull request)"
+          fi

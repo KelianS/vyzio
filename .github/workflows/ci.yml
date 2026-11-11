@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # Daily on main, so an advisory published without any code change turns the run red.
+  schedule:
+    - cron: '0 5 * * *'
+  workflow_dispatch:
 
 # A new push to a pull request cancels the run it supersedes; on main every commit keeps its own run.
 concurrency:
@@ -249,6 +253,12 @@ jobs:
     name: Docker — build images (no push)
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
+    # A new advisory reaches every pull request at once: it warns there and fails main and its daily run.
+    env:
+      BLOCKING: ${{ github.event_name != 'pull_request' }}
     steps:
       - uses: actions/checkout@v7
 
@@ -264,12 +274,6 @@ jobs:
           build-args: VYZIO_REVISION=${{ github.sha }}
           load: true
 
-      - name: Install Trivy
-        run: curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/v0.74.0/contrib/install.sh | sh -s -- -b /usr/local/bin v0.74.0
-
-      - name: Scan API image
-        run: trivy image --exit-code 1 --severity HIGH,CRITICAL --no-progress vyzio-api:ci
-
       - name: Build dashboard image
         uses: docker/build-push-action@v7
         with:
@@ -280,5 +284,58 @@ jobs:
           build-args: VYZIO_REVISION=${{ github.sha }}
           load: true
 
-      - name: Scan dashboard image
-        run: trivy image --exit-code 1 --severity HIGH,CRITICAL --no-progress vyzio-dashboard:ci
+      - name: Install Trivy
+        run: curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/v0.74.0/contrib/install.sh | sh -s -- -b /usr/local/bin v0.74.0
+
+      - name: Scan the images
+        run: |
+          set -uo pipefail
+          failed=''
+          for image in api dashboard; do
+            trivy image --severity HIGH,CRITICAL --no-progress --format sarif --output "trivy-$image.sarif" "vyzio-$image:ci"
+            trivy image --exit-code 1 --severity HIGH,CRITICAL --no-progress --skip-db-update "vyzio-$image:ci" || failed="$failed $image"
+          done
+          if [ -n "$failed" ]; then
+            if [ "$BLOCKING" = true ]; then echo "::error::Image scan failed:$failed"; exit 1; fi
+            echo "::warning::Image scan failed:$failed (informational on a pull request)"
+          fi
+
+      # A fork's pull request gets a read-only token, so the uploads are skipped; the job verdict stands.
+      - name: Upload the API scan to code scanning
+        if: always() && !github.event.pull_request.head.repo.fork && hashFiles('trivy-api.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-api.sarif
+          category: trivy-api
+
+      - name: Upload the dashboard scan to code scanning
+        if: always() && !github.event.pull_request.head.repo.fork && hashFiles('trivy-dashboard.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-dashboard.sarif
+          category: trivy-dashboard
+
+  security:
+    name: Security
+    uses: ./.github/workflows/security.yml
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+
+  # The one check the ruleset of main requires: red as soon as any job fails or is cancelled.
+  ci-ok:
+    name: ci-ok
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: always()
+    needs: [rules, backend, frontend, playwright-version, e2e, coverage, docker-build-check, security]
+    steps:
+      - name: Verdict
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Results: $RESULTS"
+          case " $RESULTS " in
+            *' failure '*|*' cancelled '*) echo "::error::A required job failed or was cancelled"; exit 1 ;;
+          esac

@@ -3,7 +3,6 @@
 > **Your home watches. Your footage stays home.**
 
 [![CI](https://github.com/KelianS/vyzio/actions/workflows/ci.yml/badge.svg)](https://github.com/KelianS/vyzio/actions/workflows/ci.yml)
-[![Security](https://github.com/KelianS/vyzio/actions/workflows/security.yml/badge.svg)](https://github.com/KelianS/vyzio/actions/workflows/security.yml)
 [![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 [![Backend coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FKelianS%2Fvyzio%2Fbadges%2Fbadge-coverage-backend.json)](https://github.com/KelianS/vyzio/actions/workflows/ci.yml)
 [![Frontend coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FKelianS%2Fvyzio%2Fbadges%2Fbadge-coverage-frontend.json)](https://github.com/KelianS/vyzio/actions/workflows/ci.yml)

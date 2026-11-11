@@ -83,11 +83,13 @@ Tracked in [issue #247](https://github.com/KelianS/vyzio/issues/247).
 
 ## What runs on every change
 
-The [Security workflow](.github/workflows/security.yml) runs on every push and pull request, and
-weekly: Semgrep static analysis, and a dependency audit on both the .NET and the frontend package
-trees. Each fails the build on what it finds, the frontend audit from high severity up. The
-[CI workflow](.github/workflows/ci.yml) scans both images with Trivy and fails on a high or critical
-finding. [Dependabot](.github/dependabot.yml) proposes updates for every dependency ecosystem,
-base images included, as pull requests, except a runtime major or a Frigate minor or major, which an
-issue decides. CodeQL on C# and TypeScript is configured in the same workflow and runs as soon as the
-repository is public, which is what its free tier requires.
+The [CI workflow](.github/workflows/ci.yml) runs on every pull request, on every push to `main` and
+daily, and calls the [Security workflow](.github/workflows/security.yml): CodeQL on C# and
+TypeScript, Semgrep static analysis, a dependency audit on both the .NET and the frontend package
+trees, and a Trivy scan of both images, from high severity up. What depends on the change blocks a
+pull request: Semgrep fails on a finding its base did not have, and CodeQL on a new alert. What
+depends on advisories published since, the dependency audit and the image scan, only warns on a pull
+request and fails `main` and its daily run. Semgrep, CodeQL and Trivy report to code scanning.
+[Dependabot](.github/dependabot.yml) proposes updates for every dependency ecosystem, base images
+and workflow actions included, as pull requests, except a runtime major or a Frigate minor or major,
+which an issue decides.
