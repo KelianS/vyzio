@@ -9,8 +9,8 @@ order; starting the implementation before the upstream documents are aligned is 
 2. **ADR** ([`adr/`](adr/)) for a structural choice (§ Writing discipline), and the **SAD**
    ([`SAD.md`](SAD.md)) when the system's shape changes (§ The SAD).
 3. **Issues** ([GitHub](https://github.com/KelianS/vyzio/issues)) for execution order, slicing,
-   dependencies, and, once framed, the observable behaviour that closes each (§ Issues). An issue leans on the
-   documents above, it does not re-decide them.
+   dependencies, and, once framed, the observable behaviour that closes each (§ Issues). An issue
+   leans on the documents above, it does not re-decide them.
 4. **Implementation**, minimal code, consistent with the validated documents.
 5. **Tests**, targeted validation of the modified slice, mandatory.
 6. **Help inside the interface**: every deliverable feature is documented **in the screen that carries
