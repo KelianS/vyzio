@@ -28,7 +28,7 @@ result. A change to an agent, a skill or a rule page runs its review cases first
 
 ```
 Review on `<short sha>`: PASS | BLOCKING · <n> blocking · <n> worth fixing · <n> uncertainties
-Not read: <reviewer> -- <source> -- <reason>     (every Not read line of the verdicts, AGENTS-04)
+Not read: <reviewer> -- <source> -- <reason>     (only if any: every Not read line of the verdicts, AGENTS-04)
 
 | # | Severity | Reviewer | Where | Finding -> fix | Rule |
 | --- | --- | --- | --- | --- | --- |
