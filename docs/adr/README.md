@@ -1,7 +1,6 @@
 # Architecture decision records (ADR)
 
-One architectural decision, one file. Format: Context, Options compared, Decision, Consequences
-(including "Options rejected"). Writing rules and lifecycle: DOCS-07 to DOCS-10 of
+One structural decision, one file, written to [`TEMPLATE.md`](TEMPLATE.md). Writing rules and lifecycle: DOCS-07 to DOCS-10 of
 [`../rules/docs.md`](../rules/docs.md). The SAD ([`../SAD.md`](../SAD.md)) sets the boundaries and
 references these ADRs rather than copying them.
 

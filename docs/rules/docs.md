@@ -114,23 +114,23 @@ case; what a camera model does is its hardware sheet; the *how* is the code and 
 
 Its title says the target ("X rejected, Y chosen"), not the history ("X attempted then abandoned").
 Corrections are merged into the decision, never stacked as "Correction (a)(b)(c)". The format is
-the one of the [ADR index](../adr/README.md).
+the one of [`adr/TEMPLATE.md`](../adr/TEMPLATE.md).
 
-### DOCS-09 · An accepted ADR is frozen but for its status line
-
-**Level**: Required · **Verified by**: Review
-
-**Exceptions**: a link whose target no longer exists is fixed mechanically, repointed to the new
-home of what it pointed at, or removed with the sentence that only pointed at it; a secret or
-personal data published by mistake is replaced by a neutral value; a statement that contradicts the
-delivered product is corrected in place, in the present tense.
-
-### DOCS-10 · A superseded ADR is marked, never deleted
+### DOCS-09 · An ADR is rewritten to its new target, never amended by another
 
 **Level**: Required · **Verified by**: Review
 
-Its status becomes `superseded by ADR-NNNN`; the decision that replaces it summarises the abandoned
-option under its own "Options rejected". The [index](../adr/README.md) is updated in the same change.
+When the decision it records moves, the ADR is rewritten in the same branch as the change, in the
+present tense, and the option it leaves goes under its "Options rejected" (DOCS-08). No "amended
+by" in its status, no correction stacked at its end, no ADR written only to amend another.
+
+### DOCS-10 · A replaced or merged ADR is deleted, its number never reused
+
+**Level**: Required · **Verified by**: Review
+
+The ADR that takes the decision over summarises it under its own "Options rejected"; the old file
+is deleted in the same change, every citation of its number is repointed, and the
+[index](../adr/README.md) is updated. Git keeps the history.
 
 ## Every document
 
@@ -143,7 +143,7 @@ document names the behaviour, the code holds the value. An ADR names a value by 
 its number.
 
 **Exceptions**: the SAD's network flow matrix (DOCS-05); the service levels of the SPECS, the
-target the code must meet (DOCS-20); ADRs accepted before this rule, frozen as they are.
+target the code must meet (DOCS-20); ADRs accepted before this rule, until they are rewritten.
 
 ### DOCS-12 · No document restates an ADR
 
