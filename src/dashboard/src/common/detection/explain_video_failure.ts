@@ -5,7 +5,7 @@ import type { CheckDetectionClip } from '../../domain/usecases/check_detection_c
 
 const UNREADABLE = 'La vidéo n’a pas pu être lue.'
 
-/** A player that fails asks why: a video erased with another detection is said, not shown broken (SPECS 6.2). */
+/** A player that fails asks why: a video erased with another detection is said, not shown broken (HIST-11). */
 export async function explainVideoFailure(
   checkDetectionClip: CheckDetectionClip,
   eventId: string,

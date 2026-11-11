@@ -3,7 +3,7 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Api;
 
-// A clip Frigate failed to serve is not a clip that no longer exists: the screen says them apart (SPECS 6.2).
+// A clip Frigate failed to serve is not a clip that no longer exists: the screen says them apart (HIST-11).
 internal sealed class FrigateClipUnreadableExceptionHandler : IExceptionHandler
 {
     public async ValueTask<bool> TryHandleAsync(

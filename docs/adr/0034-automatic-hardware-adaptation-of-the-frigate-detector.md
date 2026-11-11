@@ -9,7 +9,7 @@ cet ADR, elle était figée : un seul détecteur `cpu1` de type `cpu`, `detect.f
 les caméras, quel que soit le matériel présent et le nombre de caméras. Cela contredit le principe
 produit #5 (plug & play) : un utilisateur disposant d'un accélérateur dédié (Coral) ou d'une carte
 graphique doit en bénéficier sans rien configurer, et un hôte CPU-only avec plusieurs caméras a besoin
-d'une fréquence d'analyse réduite pour ne pas saturer le processeur (SPECS §7.2).
+d'une fréquence d'analyse réduite pour ne pas saturer le processeur (SYS-02).
 
 Deux contraintes façonnent la décision :
 

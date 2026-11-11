@@ -41,7 +41,7 @@ export interface CameraCapabilityBinding {
   verifiedAt: string | null
   lastError: string | null
   isConfigured: boolean
-  /** Whether left and right are swapped; null for a capability that does not move (SPECS 11). */
+  /** Whether left and right are swapped; null for a capability that does not move (PTZ-03). */
   panInverted: boolean | null
   /** Whether the camera keeps its positions itself, else Vyzio counts them; null for any other capability (ADR-64). */
   nativePositions: boolean | null

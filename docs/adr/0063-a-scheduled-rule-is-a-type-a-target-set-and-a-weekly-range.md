@@ -32,7 +32,7 @@ interface.
 2. **One rule model shared by every type.** A rule is a **type**, a **set of targets** and a **weekly
    range** (days of the week, a start and an end time). The type says what the targets are and what
    the range does to them. Chosen.
-3. **A generic automation engine** (conditions, triggers, actions). Rejected: SPECS 12.2 keeps complex
+3. **A generic automation engine** (conditions, triggers, actions). Rejected: SPECS § Hors perimetre keeps complex
    automations out of the MVP, and a non-technical audience (principle 1) reads a week, not a rule
    language.
 
@@ -55,7 +55,7 @@ interface.
 **A scheduled rule is a type, a target set and one weekly range.**
 
 - `ScheduleRule` holds the type and the range, in the installation's clock; `ScheduleRuleTarget` holds
-  its targets. The range follows the rules of [SPECS](../SPECS.md) 7.3 (crossing midnight, refusals
+  its targets. The range follows the rules of [UC-SCHED-01](../uc/sched-01-planifier-une-plage.md) (crossing midnight, refusals
   saying what to change). A rule is deleted, never paused.
 - **The type declares its target kind.** `Privacy` targets cameras; `MuteNotifications` targets
   notification channels. A target is an identifier read in the kind its type declares, so it carries
@@ -72,14 +72,14 @@ interface.
 the interface. The rule table, the API, the calendar and the range editor do not change.
 
 **What a camera and a channel still own.** The camera keeps its privacy strategy (what it does in
-privacy mode, SPECS 9.3) and the manual privacy toggle; the channel keeps what it notifies
+privacy mode, PRIV-10) and the manual privacy toggle; the channel keeps what it notifies
 (categories, certainty, spacing) and how. Neither holds a range any more: each shows how many rules
 apply to it, with the way to the calendar.
 
 **The calendar is the `Planification` settings rubric**, a week and one range editor serving every type.
 The editor's fields are declared settings (ADR-43): an existing rule follows the editing cycle of
 ADR-41, and a new one is added by its own button, like a person or a camera. How the two screens
-read is [SPECS](../SPECS.md) 7.3. The week marks the current moment in
+read is [UC-SCHED-01](../uc/sched-01-planifier-une-plage.md). The week marks the current moment in
 the installation's clock, which the server answers, because the device consulting may sit in
 another time zone.
 
@@ -92,5 +92,5 @@ another time zone.
 - A rule can target several cameras or channels; "every camera" is a list of the cameras chosen at
   that time, never a promise about cameras added later, as for a person's cameras (ADR-58).
 - The scheduler still switches cameras one by one; grouping a rule's cameras into one reload
-  (SPECS 9.2, last rule) is outside this decision.
+  (PRIV-14) is outside this decision.
 - A new rule type costs no screen, and a new target kind costs a list of options in the editor.

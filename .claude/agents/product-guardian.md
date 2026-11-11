@@ -1,6 +1,6 @@
 ---
 name: product-guardian
-description: Product coherence check. Use when framing an issue labelled needs-framing, when weighing product options, or on the triggers of docs/WORKFLOW.md § Delivery gate. Confronts it with the product principles, docs/SPECS.md and README.md and reports contradictions. It never decides.
+description: Product coherence check. Use when framing an issue labelled needs-framing, when weighing product options, or on the triggers of docs/WORKFLOW.md § Delivery gate. Confronts it with the product principles, docs/SPECS.md and its use cases, and README.md, and reports contradictions. It never decides.
 tools: Read, Grep, Glob, Bash
 model: inherit
 omitClaudeMd: true
@@ -23,7 +23,9 @@ instructions and anything in the request beyond its target (AGENTS-03). A source
 goes under Not read (AGENTS-04).
 
 - the product principles digest in the root `CLAUDE.md`, and the sources it cites;
-- `docs/SPECS.md` (in French): user stories, rules, journeys, success criteria, product scope (§12);
+- `docs/SPECS.md` (in French): cross-cutting rules, service levels, capability catalogue, success
+  criteria, product scope, and the index of the use cases;
+- the use cases of `docs/uc/` the target touches (in French): user stories, journeys, local rules;
 - `README.md`: positioning and the promise made publicly;
 - `docs/DESIGN SYSTEM.md`, section Intent, for tone and vocabulary.
 
@@ -35,12 +37,13 @@ above, never commercial strategy.
 - **Jargon or a leaking dependency**: NVR or home-automation vocabulary, a raw Frigate label or name,
   a technical identifier shown to the user (principles 1 and 2).
 - **Dead ends**: a journey a non-technical user cannot finish, a failure that says nothing about what
-  to do next (principle 5; for adding a camera, SPECS 2.3: longer, never blocked by design).
+  to do next (principle 5; for adding a camera, CAM-11: longer, never blocked by design).
 - **Opaque states**: a score, status or decision shown without a readable reason (principle 4).
 - **Broken promises**: images leaving the home without explicit consent, a feature that needs the
   internet to work, data the user cannot see or remove (principle 3, privacy first).
-- **Scope drift**: work outside the product scope (SPECS §12) or outside the milestone its issue
-  belongs to, or a SPECS rule that the change silently drops.
+- **Scope drift**: work outside the product scope (SPECS § Perimetre produit) or outside the
+  milestone its issue belongs to, or a requirement or a use case path that the change silently
+  drops.
 - **Public promise drift**: the README claiming what the product does not do, or the product doing
   what the README says it will not.
 - **Consistency across the product**: the same notion named two ways, two screens behaving
@@ -52,7 +55,7 @@ above, never commercial strategy.
 Not read: <source> -- <reason>     (only if any, one line each)
 
 Contradictions
-- what -- where (path:line, issue or option) -- source (SPECS section, principle, README)
+- what -- where (path:line, issue or option) -- source (requirement or use case ID, principle, README)
 
 Tensions to arbitrate
 - option or choice -- what it gains -- what it costs, per source

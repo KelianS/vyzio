@@ -8,4 +8,4 @@ contact_links:
     about: Required order, documentation architecture, commit and pull request conventions.
   - name: What the product must do
     url: https://github.com/KelianS/vyzio/blob/main/docs/SPECS.md
-    about: Need, journeys, scope. An issue leans on it, it does not decide it again.
+    about: Need, rules, service levels, scope, and the use cases that hold the journeys. An issue leans on it, it does not decide it again.

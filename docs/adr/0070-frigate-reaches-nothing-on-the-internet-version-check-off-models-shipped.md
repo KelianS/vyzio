@@ -4,8 +4,8 @@
 
 ## Context
 
-Vyzio promises that nothing leaves the house unless the user set it up ([SPECS](../SPECS.md) 8.2),
-and that local surveillance keeps working without internet ([SPECS](../SPECS.md) 5.3). Vyzio decides
+Vyzio promises that nothing leaves the house unless the user set it up ([SPECS](../SPECS.md) SEC-01),
+and that local surveillance keeps working without internet ([SPECS](../SPECS.md) SYS-03). Vyzio decides
 what its own code sends; Frigate, which it runs as an implementation detail (ADR-01), also opens
 connections of its own. Read in the code of the pinned Frigate (0.17.2) with the configuration Vyzio
 generates (#250):
@@ -85,7 +85,7 @@ generated configuration, or decided in an ADR.
 ## Options rejected
 
 **Accepting and documenting the calls (A).** It keeps two flows the user never asked for, one at every
-start, and makes the first recognition depend on internet: the opposite of SPECS 5.3 and 8.2.
+start, and makes the first recognition depend on internet: the opposite of SYS-03 and SEC-01.
 
 **Accepting the one-time download (B).** A hub installed without internet would never recognise a
 face, with no visible reason; explaining it would name a component the user must never see

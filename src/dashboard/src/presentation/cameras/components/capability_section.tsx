@@ -98,10 +98,10 @@ interface CapabilitySectionProps {
   detecting: boolean
   /** Detection ran since the page opened: a stream it left unchosen says why. */
   detected: boolean
-  /** What the last detection found, kept under its button to be read and photographed (SPECS 1.5). */
+  /** What the last detection found, kept under its button to be read and photographed (UI-03). */
   detection: DetectionResult | null
   verifyingStream: boolean
-  /** Every other test goes through the stream's camera: while its check does not pass, they wait (SPECS 2.2). */
+  /** Every other test goes through the stream's camera: while its check does not pass, they wait (CAM-08). */
   testsSuspended: boolean
   pending: Partial<Record<Capability, CapabilityTask>>
   /** The capabilities tried, whose card asks whether it worked. */
@@ -194,7 +194,7 @@ export function CapabilitySection({
         />
       )}
 
-      {/* Adding a capability closes the list: it is a capability's own action (SPECS 2.3). */}
+      {/* Adding a capability closes the list: it is a capability's own action (CAM-45). */}
       <div className="flex flex-wrap items-center gap-2">
         <ManualCapability
           bindings={bindings}
@@ -280,7 +280,7 @@ function StreamCard({
     return NO_PROTOCOL_YET
   }
 
-  /** The line under the pill names which part fails: the stream's own check, or detection (SPECS 1.5). */
+  /** The line under the pill names which part fails: the stream's own check, or detection (UI-01). */
   function stateLine(shown: CapabilityState) {
     const coverage = streamCoverageLine(streams.lineup)
     switch (shown) {
@@ -301,7 +301,7 @@ function StreamCard({
                   {streamProtocolFailureLine(protocol?.status ?? null) ??
                     formatStreamFailureLine(camera)}
                 </p>
-                {/* The verifier's own reason is support detail, kept since the last check (SPECS 1.5). */}
+                {/* The verifier's own reason is support detail, kept since the last check (UI-01). */}
                 {binding?.lastError && <DiagnosticLine text={scrubSecrets(binding.lastError)} />}
               </div>
             ) : (
@@ -422,12 +422,12 @@ const USERS_NO: Record<Capability, string | null> = {
 
 const TRY_REFUSED_IN_PRIVACY = 'Rendez la vue à la caméra pour l’essayer.'
 
-/** Where a camera's positions are kept, and what it costs when Vyzio keeps them (SPECS 9.3). */
+/** Where a camera's positions are kept, and what it costs when Vyzio keeps them (PTZ-09). */
 const POSITIONS_IN_CAMERA = 'Cette caméra garde elle-même ses positions enregistrées.'
 const POSITIONS_KEPT_BY_VYZIO =
   'Cette caméra ne sait pas garder ses positions : Vyzio les retient à sa place, de façon moins fiable. Après chaque démarrage de Vyzio, calibrez-la depuis la vue en direct.'
 
-/** The left and right swap of a camera that turns the other way (SPECS 11), in the settings grammar (ADR-43). */
+/** The left and right swap of a camera that turns the other way (PTZ-03), in the settings grammar (ADR-43). */
 function panInvertedSetting(
   inverted: boolean,
   saving: boolean,
@@ -526,7 +526,7 @@ function BindingCard({
           </div>
         )
       case CapabilityState.Failed:
-        // The camera's answer is support detail: a plain sentence leads (SPECS 1.5).
+        // The camera's answer is support detail: a plain sentence leads (UI-01).
         return (
           <div className="text-sm text-destructive">
             {/* Silence, a refused account or a failed test each have their own way out (ADR-61). */}
@@ -651,7 +651,7 @@ function BindingCard({
         ) : (
           <>
             {tryButton('Essayer')}
-            {/* Never in use, so nothing to switch off: a camera without it is removed (SPECS 2.3). */}
+            {/* Never in use, so nothing to switch off: a camera without it is removed (CAM-24). */}
             {removeButton()}
           </>
         )

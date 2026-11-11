@@ -65,5 +65,5 @@ public sealed record CameraDto(
         privacyResume);
 }
 
-/// <summary>A surveillance resumed by hand inside a Privacy range and the house moment it ends (null: never); only the camera list fills it (SPECS 9.2).</summary>
+/// <summary>A surveillance resumed by hand inside a Privacy range and the house moment it ends (null: never); only the camera list fills it (PRIV-07).</summary>
 public sealed record PrivacyResumeDto(HouseClockDto? Until);

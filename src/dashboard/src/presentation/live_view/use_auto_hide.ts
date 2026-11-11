@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 const HIDE_AFTER_MS = 3000
 
-/** Controls over the picture fade without a gesture, never while a finger holds one (SPECS 7.2). */
+/** Controls over the picture fade without a gesture, never while a finger holds one (LIVE-10). */
 export function useAutoHide(enabled: boolean) {
   const [hidden, setHidden] = useState(false)
   const [wasEnabled, setWasEnabled] = useState(enabled)

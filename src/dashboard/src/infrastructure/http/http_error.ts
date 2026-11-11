@@ -7,7 +7,7 @@ export function pathOf(url: string): string {
   }
 }
 
-/** What a failed answer said, kept whole so the screen can show it to support (SPECS 1.5). */
+/** What a failed answer said, kept whole so the screen can show it to support (UI-01). */
 export class HttpError extends Error {
   constructor(
     public readonly status: number,

@@ -43,7 +43,7 @@ public sealed class FrigateDetectionEraser(HttpClient httpClient, ILogger<Frigat
         var progress = NothingErased;
         if (reviewId is not null)
         {
-            // The only review deletion Frigate offers; it also erases the recording overlapping the item (SPECS 6.2).
+            // The only review deletion Frigate offers; it also erases the recording overlapping the item (HIST-10).
             using var reviewDeletion = await SendAsync(
                 HttpMethod.Post, "api/reviews/delete", JsonContent.Create(new ReviewDeleteRequest([reviewId])), NothingErased, ct);
             await EnsureSuccessAsync(reviewDeletion, NothingErased, ct);

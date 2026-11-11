@@ -28,7 +28,7 @@ export interface FakeCamera {
   privacyMissDetail: string | null
   ptzSupported: boolean
   privacyStrategy: string
-  /** Surveillance resumed by hand inside a Privacy range, and when the ranges end (SPECS 9.2). */
+  /** Surveillance resumed by hand inside a Privacy range, and when the ranges end (PRIV-07). */
   privacyResume: { until: { dayOfWeek: number; time: string } | null } | null
   verifiedCapabilities: string[]
   /** The live view's qualities (ADR-72 c). */
@@ -1246,7 +1246,7 @@ export async function installFakeBackend(
           irCutMode: 'auto',
         })
       }
-      // Like the real one: a slot serves a thumbnail only once one was taken (SPECS 9.4).
+      // Like the real one: a slot serves a thumbnail only once one was taken (PTZ-14).
       if (path.endsWith('/thumbnail')) {
         const presetId = Number(rest?.split('/')[3])
         return state.ptz.presets.some((p) => p.presetId === presetId && p.thumbnail)

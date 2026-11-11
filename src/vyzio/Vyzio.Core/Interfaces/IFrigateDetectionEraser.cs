@@ -8,7 +8,7 @@ namespace Vyzio.Core.Interfaces;
 public interface IFrigateDetectionEraser
 {
     /// <summary>
-    /// Erases the review item, which takes the overlapping recording with it, then the event (SPECS 6.2).
+    /// Erases the review item, which takes the overlapping recording with it, then the event (HIST-10).
     /// The event goes last so that a retry after a partial failure still finds it and finishes.
     /// Throws <see cref="DetectionErasureFailedException"/> when Frigate refuses or does not answer.
     /// </summary>
@@ -17,7 +17,7 @@ public interface IFrigateDetectionEraser
 
 /// <summary>
 /// Frigate refused or did not answer mid-erasure; the message says which call and what was already
-/// erased, for support (SPECS 1.5).
+/// erased, for support (HIST-14).
 /// </summary>
 public sealed class DetectionErasureFailedException(string message, bool partlyErased, Exception? inner = null)
     : Exception(message, inner)

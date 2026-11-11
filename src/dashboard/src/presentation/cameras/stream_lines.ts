@@ -13,7 +13,7 @@ import type {
 import { CAPABILITY_STATE_PILLS, CapabilityState, type StatePill } from './capability_state'
 import { PROTOCOL_LABELS } from './protocol_labels'
 
-/** Where a stream line stands, its pill (SPECS 2.3). */
+/** Where a stream line stands, its pill (CAM-21). */
 export const StreamLineState = {
   Working: 'working',
   Failed: 'failed',
@@ -21,7 +21,7 @@ export const StreamLineState = {
 } as const
 export type StreamLineState = (typeof StreamLineState)[keyof typeof StreamLineState]
 
-/** A stream line speaks the capability level's words (SPECS 2.3). */
+/** A stream line speaks the capability level's words (CAM-21). */
 export const STREAM_LINE_PILLS: Record<StreamLineState, StatePill> = {
   working: CAPABILITY_STATE_PILLS.working,
   failed: CAPABILITY_STATE_PILLS.failed,
@@ -143,7 +143,7 @@ function detectionInterrupted(lineup: CameraStreamLineup | null): boolean {
   )
 }
 
-/** The stream card's one state: its own check, failed as well while detection is interrupted (SPECS 2.3). */
+/** The stream card's one state: its own check, failed as well while detection is interrupted (CAM-56). */
 export function streamCardState(
   check: CapabilityState,
   lineup: CameraStreamLineup | null,

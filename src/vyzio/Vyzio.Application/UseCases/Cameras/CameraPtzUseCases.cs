@@ -31,7 +31,7 @@ public sealed class PtzStartMoveUseCase(
     public Task<bool> ExecuteAsync(string cameraId, PtzMoveRequest request, CancellationToken ct = default)
         => positions.StartHoldAsync(cameraId, () => ResolveAsync(cameraId, request, ct), ct);
 
-    // Null when the camera is unknown or its PTZ unverified; the direction is the one the user pressed (SPECS 11).
+    // Null when the camera is unknown or its PTZ unverified; the direction is the one the user pressed (PTZ-03).
     private async Task<PtzPress?> ResolveAsync(string cameraId, PtzMoveRequest request, CancellationToken ct)
     {
         if (await cameras.GetByIdAsync(cameraId, ct) is not { } camera) return null;
@@ -58,7 +58,7 @@ public sealed class PtzStopMoveUseCase(PtzManagedPositions positions)
     public Task ExecuteAsync(string cameraId) => positions.StopHoldAsync(cameraId);
 }
 
-// Sets whether left and right are swapped for a camera that turns the other way (SPECS 11).
+// Sets whether left and right are swapped for a camera that turns the other way (PTZ-03).
 public sealed class SetPtzPanInvertedUseCase(ICameraCapabilityBindingRepository bindings)
 {
     public async Task<CameraCapabilityBindingDto?> ExecuteAsync(string cameraId, bool inverted, CancellationToken ct = default)
@@ -311,7 +311,7 @@ public sealed class SetCameraPrivacyStrategyUseCase(
             throw new ParkingPositionsMissingException();
         }
 
-        // The last toggle's miss described the old strategy and would misname the new one (SPECS 9.2).
+        // The last toggle's miss described the old strategy and would misname the new one (PRIV-05).
         if (camera.PrivacyStrategy != strategy)
         {
             camera.PrivacyMiss = null;

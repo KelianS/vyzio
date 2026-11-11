@@ -2,7 +2,7 @@
 export interface PtzPreset {
   presetId: number
   label: string
-  /** Whether its thumbnail was taken: a held slot without one is never shown as empty (SPECS 9.4). */
+  /** Whether its thumbnail was taken: a held slot without one is never shown as empty (PTZ-14). */
   thumbnail: boolean
   /** Milliseconds of motion right, then down, from the up-left limit, when Vyzio counts it (ADR-60). */
   panMs: number | null

@@ -34,7 +34,7 @@ export const ApiErrorCode = {
   WrongPassword: 'wrong_password',
 } as const
 
-/** What support reads under the sentence (SPECS 1.5), and the code the API named, if any. */
+/** What support reads under the sentence (UI-01), and the code the API named, if any. */
 interface Diagnosable {
   diagnostic?: string
   code?: string

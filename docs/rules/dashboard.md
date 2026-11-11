@@ -141,7 +141,7 @@ No silent `catch(() => {})`, no ad hoc `try/catch + toast()`.
 **Level**: Required · **Verified by**: Review
 
 Every error reads at two levels, a sentence and a diagnostic line for support ([SPECS](../SPECS.md)
-1.5, [DESIGN SYSTEM](../DESIGN%20SYSTEM.md) § Errors). The line comes from what the answer said;
+UI-01, [DESIGN SYSTEM](../DESIGN%20SYSTEM.md) § Errors). The line comes from what the answer said;
 `toAppError` carries it and scrubs any secret. A screen never builds one and never drops it.
 
 ### DASHBOARD-19 · A presenter shows an error either in state or as a toast, never both

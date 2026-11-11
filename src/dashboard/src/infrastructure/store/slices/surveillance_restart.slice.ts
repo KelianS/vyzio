@@ -1,6 +1,6 @@
 import type { StateCreator } from 'zustand'
 
-/** Its sentence, and the diagnostic line when a call failed (SPECS 1.5). */
+/** Its sentence, and the diagnostic line when a call failed (UI-01). */
 interface RestartFailure {
   message: string
   diagnostic?: string

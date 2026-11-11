@@ -5,7 +5,9 @@ order; starting the implementation before the upstream documents are aligned is 
 
 ## Mandated order
 
-1. **SPECS** ([`SPECS.md`](SPECS.md)) if the product need changes: user stories, journeys, product scope.
+1. **SPECS and use cases** if the product need changes: the cross-cutting rules, service levels,
+   capability catalogue and product scope in [`SPECS.md`](SPECS.md), each user goal and its journeys
+   in its use case under [`uc/`](uc/) (DOCS-19).
 2. **ADR** ([`adr/`](adr/)) for a structural choice (§ Writing discipline), and the **SAD**
    ([`SAD.md`](SAD.md)) when the system's shape changes (§ The SAD).
 3. **Issues** ([GitHub](https://github.com/KelianS/vyzio/issues)) for execution order, slicing,
@@ -25,13 +27,14 @@ order; starting the implementation before the upstream documents are aligned is 
 - A feature that contradicts an existing document updates the document first, in the same branch
   (DOCS-01 to DOCS-04).
 - The backlog is never where the strategy is discovered after the fact; it expresses a strategy already
-  decided in the SPECS and the SAD.
+  decided in the SPECS, its use cases and the SAD.
 
 ## Document architecture (types of document)
 
 | Type | Role | Home | Stability |
 |---|---|---|---|
-| **SPECS** | Need, journeys, product scope | [`SPECS.md`](SPECS.md) | medium |
+| **SPECS** | The need for the whole product: overview, cross-cutting rules, service levels, capability catalogue, scope, index of the use cases | [`SPECS.md`](SPECS.md) | medium |
+| **Use case** | One user goal: its actor, conditions, nominal, alternative and failure paths, and the rules only it needs | [`uc/`](uc/), one `<domain>-<nn>-<slug>.md` per goal, written to [`uc/TEMPLATE.md`](uc/TEMPLATE.md) | medium |
 | **Rules** | The constraints a diff is checked against, with their level and what verifies them | [`rules/`](rules/), routed by [`rules/README.md`](rules/README.md) | follows the code |
 | **SAD** | The system overview, and what the code does not easily show (§ The SAD) | [`SAD.md`](SAD.md) | high |
 | **ADR** | One structural decision per file (Context, Options, Decision, Consequences), within the bar of DOCS-07 | [`adr/`](adr/), one `NNNN-slug.md` per decision, index [`adr/README.md`](adr/README.md) | frozen once `accepted` |
@@ -69,17 +72,18 @@ rules that hold each document to its nature are [`rules/docs.md`](rules/docs.md)
 
 ## Precedence (one piece of information, one home)
 
-Vision goes to [`../README.md`](../README.md) · the need to `SPECS.md` · the system overview to
-`SAD.md` · a decision to its ADR · the execution plan to **the issues** · how to use a feature to
-**the screen itself** (ADR-53).
+Vision goes to [`../README.md`](../README.md) · the need to `SPECS.md` and its use cases · the
+system overview to `SAD.md` · a decision to its ADR · the execution plan to **the issues** · how to
+use a feature to **the screen itself** (ADR-53).
 
 Every document states its own role in its header (DOCS-15). When in doubt, climb to the right level: vision,
 need, architecture, execution, use. Never copy information from one document into another (COMMON-05).
 
 ## Language
 
-The repository is written in English, with the exceptions of COMMON-01: `SPECS.md`, what the
-interface shows the user, and the bodies of the ADRs accepted in French until they are translated.
+The repository is written in English, with the exceptions of COMMON-01: `SPECS.md` and its use
+cases, what the interface shows the user, and the bodies of the ADRs accepted in French until they
+are translated.
 
 ## Git
 
@@ -133,8 +137,8 @@ which are two moments of the same issue:
 
 - **Problem**: the need or the defect, and the facts observed. It carries `needs-framing` while its
   direction is not settled, and never a technical definition of done.
-- **Framed**: once the SPECS or an ADR settle the direction, the issue links them, and its
-  **Done when** lists the observable behaviours that close it, each in **Given / When / Then**, never
+- **Framed**: once the SPECS, a use case or an ADR settle the direction, the issue links them, and
+  its **Done when** lists the observable behaviours that close it, each in **Given / When / Then**, never
   a technical task list. The `needs-framing` label is removed; nothing gets built while it is up,
   which is the mandated order above, made visible.
 

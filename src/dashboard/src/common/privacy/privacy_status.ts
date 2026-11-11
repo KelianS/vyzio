@@ -83,7 +83,7 @@ const REFUSED_ON: Record<PrivacyStrategy, string | null> = {
   [PrivacyStrategy.Hardware]: `La caméra n’a pas coupé son objectif : ${STILL_FILMING} ${CHECK_CAMERA}`,
 }
 
-/** The short line a camera tile shows, pointing at the screen that explains it (SPECS 9.2); null when nothing missed. */
+/** The short line a camera tile shows, pointing at the screen that explains it (PRIV-05); null when nothing missed. */
 export function privacyMissLabel(camera: PrivacyAnswer): string | null {
   if (camera.privacyMiss === null || !ASKS_THE_CAMERA[camera.privacyStrategy]) return null
   if (!DID_NOT_FOLLOW[camera.privacyMiss]) return 'Demande interrompue'
@@ -91,7 +91,7 @@ export function privacyMissLabel(camera: PrivacyAnswer): string | null {
   return label && (camera.privacyModeActive ? label.on : label.off)
 }
 
-/** What the camera answered, never what its strategy promises (SPECS 9.2); null while privacy is off. */
+/** What the camera answered, never what its strategy promises (PRIV-04); null while privacy is off. */
 export function privacyBadge(
   camera: PrivacyAnswer & Pick<Camera, 'privacyVendorCut'>,
 ): PrivacyBadge | null {
@@ -106,7 +106,7 @@ export function privacyBadge(
     : RECORDING_OFF
 }
 
-/** What happened and what to do, for the camera's privacy screen (SPECS 1.5, 9.2); null when it followed. */
+/** What happened and what to do, for the camera's privacy screen (UI-01, PRIV-05); null when it followed. */
 export function privacyMissSentence(camera: PrivacyAnswer): string | null {
   if (!ASKS_THE_CAMERA[camera.privacyStrategy]) return null
   const on = camera.privacyModeActive

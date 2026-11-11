@@ -13,7 +13,7 @@ import type {
 const formatDate = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long' })
 const formatTime = new Intl.DateTimeFormat('fr-FR', { timeStyle: 'short' })
 
-// Until linking starts, a command gets no answer anyway: the listening state would teach nothing (SPECS 5.4).
+// Until linking starts, a command gets no answer anyway: the listening state would teach nothing (NOTIF-25).
 const IN_USE: Record<ChannelPairing['status'], boolean> = {
   not_paired: false,
   expired: false,
@@ -69,7 +69,7 @@ export function ChannelPairingSection({
     <>
       <div className="flex flex-col gap-4">
         {inUse && listeningError ? (
-          // A linked conversation proves nothing: an unread listening state is said, never left blank (SPECS 5.4).
+          // A linked conversation proves nothing: an unread listening state is said, never left blank (NOTIF-25).
           <div className="flex flex-col gap-1">
             <p className="text-sm">Impossible de savoir si le canal est à l’écoute.</p>
             <ReadFailure error={listeningError} onRetry={onRetryListening} />

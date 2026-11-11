@@ -15,7 +15,7 @@ const ALL_PRESET_IDS = [1, 2, 3, 4]
 
 const BUSY: Record<PresetActivity, boolean> = { idle: false, saving: true, going: true }
 
-/** Where each part sits: below or beside the picture, or laid over it in landscape (SPECS 7.2). */
+/** Where each part sits: below or beside the picture, or laid over it in landscape (LIVE-09, LIVE-10). */
 const PLACE: Record<
   LiveLayout,
   {
@@ -108,7 +108,7 @@ function DirButton({
 // On a saved position a tap goes there and a long press redefines it; on an empty one a tap saves it.
 const LONG_PRESS_MS = 600
 
-/** What a tile says on hover, by whether its slot holds a position and has its thumbnail (SPECS 9.3). */
+/** What a tile says on hover, by whether its slot holds a position and has its thumbnail (PTZ-07). */
 function tileTitle(preset: PtzPreset | undefined, editable: boolean): string {
   if (!preset) return editable ? 'Enregistrer la position actuelle ici' : 'Non définie'
   return preset.thumbnail
@@ -197,7 +197,7 @@ function PresetTile({
           onError={() => {}}
         />
       ) : (
-        // Held by the camera before any thumbnail: a position, never the sign of an empty slot (SPECS 9.4).
+        // Held by the camera before any thumbnail: a position, never the sign of an empty slot (PTZ-14).
         <MapPin className="mx-auto size-4 text-foreground" aria-hidden="true" />
       )}
       {reserved && (
