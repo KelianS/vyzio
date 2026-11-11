@@ -1,12 +1,14 @@
 import { useEffect, useReducer, useState, type ReactNode } from 'react'
-import { SlidersHorizontal, UserRoundPen } from 'lucide-react'
+import { SlidersHorizontal, Trash2, UserRoundPen } from 'lucide-react'
 import { Button } from '../../common/ui/button'
 import { Input } from '../../common/ui/input'
 import { useToast } from '../../common/components/toast'
 import { HelpPanel } from '../../common/components/help_panel'
 import { Overlay } from '../../common/components/overlay'
+import { ConfirmModal } from '../../common/components/confirm_modal'
 import { DetectionList } from '../../common/detection/detection_list'
 import { carriesIdentity } from '../../common/detection/detection_formatters'
+import { DetectionPreview } from '../../common/detection/detection_preview'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import type { DetectionEvent } from '../../domain/entities/detection_event.entity'
@@ -54,6 +56,8 @@ export function DetectionHistoryView() {
     uido.filterFrom,
     uido.filterTo,
   ])
+
+  const { media, deletingEventId } = uido
 
   const filtered = Boolean(
     uido.filterCamera ||
@@ -182,7 +186,8 @@ export function DetectionHistoryView() {
             events={uido.items}
             labels={uido.detectionLabels}
             apiBaseUrl={apiBaseUrl}
-            onOpenMedia={(type, url) => presenter.onMediaSet({ type, url })}
+            onOpenMedia={presenter.onMediaSet}
+            openWithoutMedia
             renderExtra={(event) =>
               carriesIdentity(event) && (
                 <IdentityCorrection
@@ -230,14 +235,36 @@ export function DetectionHistoryView() {
         </p>
       </HelpPanel>
 
-      {uido.media && (
+      {media && (
         <Overlay label="Aperçu de la détection" onClose={() => presenter.onMediaSet(null)}>
-          {uido.media.type === 'image' ? (
-            <img src={uido.media.url} alt="" className="max-h-[85vh] rounded-lg" />
-          ) : (
-            <video src={uido.media.url} controls autoPlay className="max-h-[85vh] rounded-lg" />
-          )}
+          <DetectionPreview
+            media={media}
+            clipGone={uido.clipGoneEventId === media.eventId}
+            onVideoError={() => presenter.onVideoFailed(media.eventId)}
+          >
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => presenter.onAskDelete(media.eventId)}
+            >
+              <Trash2 aria-hidden="true" />
+              Supprimer
+            </Button>
+          </DetectionPreview>
         </Overlay>
+      )}
+
+      {/* Rendered after the preview so the question stacks above it. */}
+      {deletingEventId && (
+        <ConfirmModal
+          title="Supprimer cette détection ?"
+          body="La détection et sa vidéo seront effacées."
+          confirmLabel="Supprimer"
+          tone="danger"
+          onConfirm={() => presenter.onDelete(deletingEventId)}
+          onCancel={presenter.onDismissDelete}
+        />
       )}
     </main>
   )

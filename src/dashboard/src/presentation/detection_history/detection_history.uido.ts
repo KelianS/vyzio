@@ -1,11 +1,7 @@
 import type { DetectionEvent } from '../../domain/entities/detection_event.entity'
 import type { DetectionLabel } from '../../domain/entities/detection_label.entity'
 import type { Profile } from '../../domain/entities/profile.entity'
-
-export interface DetectionMedia {
-  type: 'image' | 'video'
-  url: string
-}
+import type { DetectionMedia } from '../../common/detection/detection_preview'
 
 export interface DetectionHistoryUido {
   items: DetectionEvent[]
@@ -29,6 +25,10 @@ export interface DetectionHistoryUido {
   filterTo: string
 
   correctingEventId: string | null
+  /** The detection whose deletion waits for its confirmation. */
+  deletingEventId: string | null
+  /** The detection whose video turned out erased with another one. */
+  clipGoneEventId: string | null
 }
 
 export function buildInitialDetectionHistoryUido(): DetectionHistoryUido {
@@ -51,5 +51,7 @@ export function buildInitialDetectionHistoryUido(): DetectionHistoryUido {
     filterTo: '',
 
     correctingEventId: null,
+    deletingEventId: null,
+    clipGoneEventId: null,
   }
 }

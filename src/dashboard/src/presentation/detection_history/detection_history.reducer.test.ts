@@ -86,4 +86,21 @@ describe('detectionHistoryReducer', () => {
     expect(next.items.map((item) => item.identity)).toEqual([null, 'Alice'])
     expect(next.correctingEventId).toBeNull()
   })
+
+  it('detectionHistoryReducer_ShouldDropOnlyTheDeletedDetectionAndCloseItsPreview_WhenTheDeletionSucceeds', () => {
+    // Arrange
+    const deleting = {
+      ...read,
+      deletingEventId: 'e2',
+      media: { type: 'image' as const, url: 'http://api/snapshot', eventId: 'e2' },
+    }
+
+    // Act
+    const next = detectionHistoryReducer(deleting, { type: 'DELETE_SUCCEEDED', eventId: 'e2' })
+
+    // Assert
+    expect(next.items.map((item) => item.eventId)).toEqual(['e1'])
+    expect(next.deletingEventId).toBeNull()
+    expect(next.media).toBeNull()
+  })
 })

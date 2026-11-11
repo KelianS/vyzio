@@ -4,6 +4,7 @@ import type { ToastTone } from '../../common/components/toast'
 import type { CamerasContainer } from '../../infrastructure/providers/cameras.container'
 import type { HubContainer } from '../../infrastructure/providers/hub.container'
 import { reloadCameraList } from '../cameras/camera_list_reload'
+import { explainVideoFailure } from '../../common/detection/explain_video_failure'
 import type { HubAction } from './hub.actions'
 import { privacyWording, type PrivacyRequest } from './privacy_request'
 
@@ -37,6 +38,15 @@ export function buildHubPresenter({
     },
 
     onReloadCameras: reloadCameras,
+
+    onVideoFailed(eventId: string): Promise<void> {
+      return explainVideoFailure(
+        container.checkDetectionClip,
+        eventId,
+        () => dispatch({ type: 'CLIP_GONE', eventId }),
+        toast,
+      )
+    },
 
     onPrivacyPendingSet(request: PrivacyRequest | null) {
       dispatch({ type: 'PRIVACY_PENDING_SET', request })

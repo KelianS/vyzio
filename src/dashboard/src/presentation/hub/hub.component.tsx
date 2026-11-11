@@ -18,6 +18,7 @@ import type { DetectionLabel } from '../../domain/entities/detection_label.entit
 import type { HubOverview } from '../../domain/entities/hub_overview.entity'
 import type { SystemStats } from '../../domain/entities/system_stats.entity'
 import { DetectionList } from '../../common/detection/detection_list'
+import { DetectionPreview, type DetectionMedia } from '../../common/detection/detection_preview'
 import { LiveView } from '../live_view/live_view.component'
 import {
   orientationControlOf,
@@ -34,7 +35,7 @@ import { alertsSummary } from './alerts_summary'
 const RECENT_EVENTS_MAX = 5
 
 type ModalMedia =
-  | { type: 'image' | 'video'; url: string }
+  | DetectionMedia
   | {
       type: 'live'
       cameraId: string
@@ -84,7 +85,7 @@ export function HubView() {
         privacyLoading={uido.privacyLoading}
         onPrivacyPendingSet={presenter.onPrivacyPendingSet}
         onTogglePrivacy={presenter.onTogglePrivacy}
-        onOpenMedia={(type, url) => setModalMedia({ type, url })}
+        onOpenMedia={setModalMedia}
         onOpenLive={(camera) =>
           setModalMedia({
             type: 'live',
@@ -105,10 +106,12 @@ export function HubView() {
               orientation={modalMedia.orientation}
               qualities={modalMedia.qualities}
             />
-          ) : modalMedia.type === 'image' ? (
-            <img src={modalMedia.url} alt="" className="max-h-[85vh] rounded-lg" />
           ) : (
-            <video src={modalMedia.url} controls autoPlay className="max-h-[85vh] rounded-lg" />
+            <DetectionPreview
+              media={modalMedia}
+              clipGone={uido.clipGoneEventId === modalMedia.eventId}
+              onVideoError={() => presenter.onVideoFailed(modalMedia.eventId)}
+            />
           )}
         </Overlay>
       )}
@@ -242,7 +245,7 @@ interface HubOperationalProps {
   privacyLoading: boolean
   onPrivacyPendingSet: (request: PrivacyRequest | null) => void
   onTogglePrivacy: (request: PrivacyRequest) => void
-  onOpenMedia: (type: 'image' | 'video', url: string) => void
+  onOpenMedia: (media: DetectionMedia) => void
   onOpenLive: (camera: Camera) => void
 }
 
