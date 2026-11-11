@@ -1,3 +1,4 @@
 skill: tech-watch
-prompt: backend test stack only, the test packages of src/vyzio/Directory.Packages.props. Stop after the report of step 2
+prompt: backend test stack only, the test packages of src/vyzio/Directory.Packages.props. Run § 3 up to showing the exact text; the owner approves nothing
 cites: xunit.v3
+cites: needs-framing

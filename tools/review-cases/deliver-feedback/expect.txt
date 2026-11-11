@@ -1,0 +1,4 @@
+skill: deliver
+prompt: feedback. The one feedback to record: [Unclear] COMMON-15 -- reads two ways for a translated Taskfile description -- proof Taskfile.yml:12. Run § 5 up to showing the exact text; the owner approves nothing
+cites: [rules] common.md § COMMON-15
+cites: agent-feedback

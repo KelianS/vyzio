@@ -24,7 +24,7 @@ proposal the main agent disputes, with its reason; it removes nothing from the r
 Recording follows AGENTS-05 and AGENTS-06, proposal by proposal:
 
 1. Search: `gh issue list --state all --search "<subject>"`.
-2. Show the exact text: a comment on the open issue found, otherwise the draft issue.
+2. Show the exact text, its title and labels included, as AGENTS-06 shapes it.
 3. Once approved, `gh issue comment`, or `gh issue create --label needs-framing --label tech-watch`.
    The `tech-watch` label missing → create it once with `gh label create tech-watch`.
 4. List what was created or commented, with the links.
