@@ -1,6 +1,6 @@
 name: Images
 
-# The one image build, called by CI (no push) and by Release (push): both images are built and scanned, then pushed.
+# The one image build, called by CI (no push) and by Release (push): both images are built and scanned, then tagged.
 on:
   workflow_call:
     inputs:
@@ -94,23 +94,49 @@ jobs:
           sarif_file: trivy.sarif
           category: trivy-${{ matrix.image }}
 
-  # Only once both images passed their scan, so latest never pairs a new image with an old one.
-  push:
-    name: push ${{ matrix.image }}
+      - name: Log in to GHCR
+        if: inputs.push
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Untagged, by digest, from the builder that just built what was scanned; the tag job names it.
+      - name: Push by digest
+        id: push
+        if: inputs.push
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          outputs: type=image,name=ghcr.io/kelians/vyzio-${{ matrix.image }},push-by-digest=true,name-canonical=true,push=true
+          build-args: |
+            VYZIO_VERSION=${{ inputs.version }}
+            VYZIO_REVISION=${{ github.sha }}
+
+      - name: Record the digest
+        if: inputs.push
+        env:
+          DIGEST: ${{ steps.push.outputs.digest }}
+        run: echo "$DIGEST" > "digest-${{ matrix.image }}"
+
+      - name: Upload the digest
+        if: inputs.push
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: digest-${{ matrix.image }}
+          retention-days: 1
+          path: digest-${{ matrix.image }}
+
+  # Once both images are scanned and pushed, one step tags both, so latest moves for the two together.
+  tag:
+    name: tag
     if: inputs.push
     needs: [image]
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    strategy:
-      matrix:
-        include:
-          - image: api
-            dockerfile: src/vyzio/Vyzio.Api/Dockerfile
-          - image: dashboard
-            dockerfile: src/dashboard/Dockerfile
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
       - name: Log in to GHCR
@@ -120,17 +146,17 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Every layer comes from the cache the scanned build wrote, base images being pinned by digest.
-      - name: Push
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          context: .
-          file: ${{ matrix.dockerfile }}
-          push: true
-          tags: |
-            ghcr.io/kelians/vyzio-${{ matrix.image }}:${{ inputs.version }}
-            ghcr.io/kelians/vyzio-${{ matrix.image }}:latest
-          build-args: |
-            VYZIO_VERSION=${{ inputs.version }}
-            VYZIO_REVISION=${{ github.sha }}
-          cache-from: type=gha,scope=${{ matrix.image }}
+          pattern: digest-*
+          merge-multiple: true
+
+      - name: Tag the version and latest
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          for image in api dashboard; do
+            repo="ghcr.io/kelians/vyzio-$image"
+            docker buildx imagetools create -t "$repo:$VERSION" -t "$repo:latest" "$repo@$(cat "digest-$image")"
+          done
