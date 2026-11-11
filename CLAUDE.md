@@ -25,7 +25,8 @@ Follow the delivery gate in [`docs/WORKFLOW.md`](docs/WORKFLOW.md) § Git, throu
 
 | You are working on… | Source |
 | --- | --- |
-| A product need, behaviour or journey | [`docs/SPECS.md`](docs/SPECS.md) |
+| A product need: cross-cutting rule, service level, capability, scope | [`docs/SPECS.md`](docs/SPECS.md), citing each requirement by its ID |
+| A user goal and its journeys (nominal, alternative, failure) | its use case under [`docs/uc/`](docs/uc/), listed in the SPECS index |
 | The rules a change must respect, and how each is verified | [`docs/rules/`](docs/rules/) (routing [`README`](docs/rules/README.md)) |
 | The system overview: containers, network flows, data ownership, threats | [`docs/SAD.md`](docs/SAD.md) |
 | One precise architectural decision (the *why* of a choice) | [`docs/adr/`](docs/adr/) (index [`README`](docs/adr/README.md)) |

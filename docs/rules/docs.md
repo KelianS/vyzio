@@ -6,12 +6,13 @@
 
 ## Order
 
-### DOCS-01 · A change to the need updates the SPECS in the same branch
+### DOCS-01 · A change to the need updates the SPECS or its use cases in the same branch
 
 **Level**: Required · **Verified by**: Review
 
-A user story, a journey, a rule or the product scope that changes is written in
-[`SPECS.md`](../SPECS.md) before the code that delivers it, in the same pull request.
+A user story, a journey, a rule, a service level or the product scope that changes is written in
+[`SPECS.md`](../SPECS.md) or in its use case under [`uc/`](../uc/) before the code that delivers
+it, in the same pull request.
 
 ### DOCS-02 · A structural decision comes with its ADR in the same branch
 
@@ -29,16 +30,16 @@ direction, authentication), the ownership or retention of data, or a quality att
 compose files, the web server configuration, outbound clients, listeners and persisted data, not
 only `docs/`.
 
-### DOCS-04 · The code never contradicts an accepted ADR, the SAD or the SPECS
+### DOCS-04 · The code never contradicts an accepted ADR, the SAD, the SPECS or a use case
 
 **Level**: Required · **Verified by**: Review
 
 A change that would is preceded by the document's update, in the same branch. Search `docs/adr/` for
 the subject, not only the files the diff touches.
 
-## The SPECS and the SAD
+## The SPECS, the use cases and the SAD
 
-### DOCS-16 · The SPECS and the SAD state the target, never its history or its delivery
+### DOCS-16 · The SPECS, the use cases and the SAD state the target, never its history or its delivery
 
 **Level**: Required · **Verified by**: Review
 
@@ -51,6 +52,37 @@ Why: a date or a status ages in silence and duplicates the issue that carries it
 
 **Exceptions**: the SAD's risks and open questions, each linked to its issue
 ([`../WORKFLOW.md`](../WORKFLOW.md) § The SAD).
+
+### DOCS-17 · A requirement is cited by its identifier, never by a section number
+
+**Level**: Required · **Verified by**: Tool: `task rules:check`
+
+A rule or service level of the SPECS, a use case, a path or a local rule is cited by the identifier
+it carries (`CAM-16`, `UC-CAM-04`, `UC-CAM-04 E1`), and only an identifier that exists is cited.
+The identifiers and their domains: [`SPECS.md`](../SPECS.md) § Identifiants.
+
+### DOCS-18 · A requirement identifier is never recycled
+
+**Level**: Required · **Verified by**: Review
+
+A new requirement takes the number after the highest ever given in its domain, the SPECS and the
+use cases together; a deleted one leaves its number dead; one whose meaning changes takes a new
+number, and its citations are fixed in the same change.
+
+### DOCS-19 · A behaviour lives in one place: the SPECS or one use case
+
+**Level**: Required · **Verified by**: Review
+
+A rule that holds for the whole product or that more than one use case cites, and every service
+level, live in the SPECS; a journey and a rule only it needs live in its use case, written to
+[`uc/TEMPLATE.md`](../uc/TEMPLATE.md). A use case cites a rule of the SPECS, it never restates it.
+
+### DOCS-20 · A service level states a measurable target
+
+**Level**: Required · **Verified by**: Review
+
+A timing or a quantity the product promises is a row of the SPECS' service levels, with a value and
+its unit, never "about a second" or "within the minute"; a rule or a use case cites that row.
 
 ## The SAD
 
@@ -72,7 +104,8 @@ network and are reviewed there.
 
 One is written only when reversing the decision costs a migration, a contract change, a new
 container or a new dependency, or when it opens or closes a flow leaving the home network (privacy
-first, ADR-70). An ADR never describes a state, a wording or a screen: that is the SPECS; what a
+first, ADR-70). An ADR never describes a state, a wording or a screen: that is the SPECS or a use
+case; what a
 camera model does is its hardware sheet; the *how* is the code and its tests.
 
 ### DOCS-08 · An ADR states its target, its history only under "Options rejected"
@@ -109,8 +142,8 @@ A timeout, a port, a slot number, a topic, a schema, a signature, a byte frame, 
 document names the behaviour, the code holds the value. An ADR names a value by its role, never by
 its number.
 
-**Exceptions**: the SAD's network flow matrix (DOCS-05); ADRs accepted before this rule, frozen as
-they are.
+**Exceptions**: the SAD's network flow matrix (DOCS-05); the service levels of the SPECS, the
+target the code must meet (DOCS-20); ADRs accepted before this rule, frozen as they are.
 
 ### DOCS-12 · No document restates an ADR
 
@@ -123,7 +156,7 @@ It names the ADR (`ADR-NN`) and says at most in a few words what it settles.
 **Level**: Required · **Verified by**: Review
 
 Intent, tokens, components, reusable patterns, the shared UX vocabulary and the bans; never one
-feature's behaviour, which is the SPECS or the code and its tests.
+feature's behaviour, which is the SPECS, a use case, or the code and its tests.
 
 ### DOCS-14 · Exploration and measurements go to their own folders
 
