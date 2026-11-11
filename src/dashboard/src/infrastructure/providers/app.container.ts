@@ -54,7 +54,7 @@ function makeAppContainer(): AppContainer {
     apiBaseUrl: runtime.apiBaseUrl,
     frigateBaseUrl: runtime.frigateBaseUrl,
     access: makeAccessContainer(accessRepository),
-    hub: makeHubContainer(hubRepository, systemRepository),
+    hub: makeHubContainer(hubRepository, systemRepository, profileRepository),
     cameras: makeCamerasContainer(
       cameraRepository,
       profileRepository,

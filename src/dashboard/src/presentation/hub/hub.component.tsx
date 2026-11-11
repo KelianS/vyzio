@@ -19,6 +19,7 @@ import type { HubOverview } from '../../domain/entities/hub_overview.entity'
 import type { SystemStats } from '../../domain/entities/system_stats.entity'
 import { DetectionList } from '../../common/detection/detection_list'
 import { liveViewPath } from '../live_view/live_view.route'
+import { DetectionPreview, type DetectionMedia } from '../../common/detection/detection_preview'
 import { SystemMonitorPanel } from './system_monitor_panel'
 import { buildHubPresenter } from './hub.presenter'
 import { hubReducer } from './hub.reducer'
@@ -30,15 +31,7 @@ import { alertsSummary } from './alerts_summary'
 const RECENT_EVENTS_MAX = 5
 
 // The live view is a screen of its own (SPECS 7.2): only a detection's media opens here.
-interface ModalMedia {
-  type: 'image' | 'video'
-  url: string
-}
-
-const MEDIA: Record<ModalMedia['type'], (url: string) => ReactNode> = {
-  image: (url) => <img src={url} alt="" className="max-h-[85vh] rounded-lg" />,
-  video: (url) => <video src={url} controls autoPlay className="max-h-[85vh] rounded-lg" />,
-}
+type ModalMedia = DetectionMedia
 
 export function HubView() {
   const { apiBaseUrl, hub: container, cameras: camerasContainer } = useAppContainer()
@@ -81,12 +74,16 @@ export function HubView() {
         privacyLoading={uido.privacyLoading}
         onPrivacyPendingSet={presenter.onPrivacyPendingSet}
         onTogglePrivacy={presenter.onTogglePrivacy}
-        onOpenMedia={(type, url) => setModalMedia({ type, url })}
+        onOpenMedia={setModalMedia}
       />
 
       {modalMedia && (
         <Overlay label="Aperçu" onClose={() => setModalMedia(null)}>
-          {MEDIA[modalMedia.type](modalMedia.url)}
+          <DetectionPreview
+            media={modalMedia}
+            clipGone={uido.clipGoneEventId === modalMedia.eventId}
+            onVideoError={() => presenter.onVideoFailed(modalMedia.eventId)}
+          />
         </Overlay>
       )}
     </>
@@ -219,7 +216,7 @@ interface HubOperationalProps {
   privacyLoading: boolean
   onPrivacyPendingSet: (request: PrivacyRequest | null) => void
   onTogglePrivacy: (request: PrivacyRequest) => void
-  onOpenMedia: (type: 'image' | 'video', url: string) => void
+  onOpenMedia: (media: DetectionMedia) => void
 }
 
 function HubOperational({

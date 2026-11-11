@@ -278,6 +278,8 @@ Le detail ne contient jamais de secret : ni mot de passe, ni jeton, ni identifia
 
 > **En tant qu'utilisateur**, je veux pouvoir recuperer un clip pertinent, afin de le conserver ou le partager si necessaire.
 
+> **En tant qu'utilisateur**, je veux supprimer une detection de l'historique, avec sa video, afin de ne pas garder chez moi une scene que je ne veux pas conserver.
+
 ### 6.2 Attendus fonctionnels
 
 - l'utilisateur doit pouvoir consulter un historique filtre par camera, personne ou type d'evenement ;
@@ -287,6 +289,12 @@ Le detail ne contient jamais de secret : ni mot de passe, ni jeton, ni identifia
 - l'enregistrement de la video complete doit rester un choix explicite, et l'ordre de grandeur de sa consommation disque doit etre annonce avant activation ;
 - une camera dont aucune nature n'est conservee ne doit rien enregistrer du tout ;
 - le systeme doit supprimer automatiquement les donnees arrivees au terme de retention ;
+- l'utilisateur doit pouvoir supprimer une detection, une a la fois, depuis son apercu ouvert dans l'historique, apres une confirmation courte qui dit que la detection et sa video seront effacees ; elle disparait alors de tout Vyzio (historique, historique d'une personne, accueil, journal d'envoi de ses notifications, reponses du canal de messagerie), et tout ce que la camera a enregistre pendant le passage qui la contient est efface aussi, video complete comme sequences de mouvement ; ce passage peut durer plus que la detection, et une autre detection du meme passage reste dans l'historique avec son apercu mais sans sa video ; les notifications deja envoyees restent la ou elles ont ete recues ;
+- la video d'une detection dont l'enregistrement a ete efface avec une autre ne s'affiche pas en panne : son lecteur dit que la video de ce moment a ete supprimee ;
+- supprimer les notifications d'une detection les retire aussi du calcul du **Silence** : la detection suivante du meme type sur cette camera peut etre notifiee sans attendre la fin de l'espacement ;
+- une detection ne se supprime pas tant que l'enregistrement de son passage est en cours, meme si elle-meme est terminee : elle reviendrait ; l'utilisateur est invite a reessayer dans quelques minutes ; une detection qui n'existe plus le dit, et quitte la liste ;
+- si la surveillance refuse ou ne repond pas, Vyzio ne retire rien de son cote et l'erreur suit 1.5 : sa phrase dit si rien n'a ete efface ou si l'effacement est seulement partiel, son detail ce qui l'etait deja ; une demande d'effacement restee sans reponse compte comme un effacement partiel ; tant que tout n'est pas efface, la detection reste dans l'historique et sa suppression se relance depuis elle pour finir le travail ;
+- restent sur le disque de la machine sans plus etre affiches nulle part : la vignette de la detection et l'image du passage, sans echeance ; les visages gardes pour l'apprentissage de la reconnaissance, jusqu'a ce que de plus recents les remplacent ;
 - l'utilisateur doit etre informe si la capacite de stockage devient critique.
 
 ---
@@ -397,7 +405,7 @@ Le detail ne contient jamais de secret : ni mot de passe, ni jeton, ni identifia
 - l'acces a l'interface et aux donnees doit etre protege ;
 - sur le reseau domestique, l'interface est servie sans chiffrement : sa confidentialite est celle de ce reseau ; depuis l'exterieur, l'acces passe par le reseau overlay chiffre ([ADR-67](adr/0067-the-home-network-stays-on-http-the-overlay-encrypts-from-outside.md)) ;
 - les fonctions d'acces distant doivent etre explicites, optionnelles et desactivables ;
-- l'utilisateur doit pouvoir supprimer ses donnees produit dans un parcours comprensible.
+- l'utilisateur doit pouvoir supprimer ses donnees produit dans un parcours comprensible ; une detection se supprime une a une depuis l'historique (6.2).
 
 ### 8.3 Acces a l'interface
 
