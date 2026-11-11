@@ -84,9 +84,9 @@ Tracked in [issue #247](https://github.com/KelianS/vyzio/issues/247).
 ## What runs on every change
 
 The [CI workflow](.github/workflows/ci.yml) runs on every pull request, on every push to `main` and
-daily, and calls the [Security workflow](.github/workflows/security.yml): CodeQL on C# and
-TypeScript, Semgrep static analysis, a dependency audit on both the .NET and the frontend package
-trees, and a Trivy scan of both images, from high severity up. What depends on the change blocks a
+daily. It scans both images it builds with Trivy, from high severity up, and calls the
+[Security workflow](.github/workflows/security.yml): CodeQL on C# and TypeScript, Semgrep static
+analysis, and a dependency audit on both the .NET and the frontend package trees. What depends on the change blocks a
 pull request: Semgrep fails on a finding its base did not have, and CodeQL on a new alert. What
 depends on advisories published since, the dependency audit and the image scan, only warns on a pull
 request and fails `main` and its daily run. Semgrep, CodeQL and Trivy report to code scanning.

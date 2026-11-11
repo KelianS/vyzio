@@ -61,13 +61,16 @@ jobs:
       - name: Install Semgrep
         run: pip3 install semgrep==1.177.0 --break-system-packages
 
-      # On a pull request only the findings absent from its base fail the job, so a rule newly
-      # published to the registry never blocks a change that did not introduce what it finds.
-      # A false positive is silenced where it stands with a nosemgrep comment, never by letting the step pass.
-      - name: Scan
+      # On a pull request only a finding its base lacks fails; a false positive gets a nosemgrep comment where it stands.
+      - name: Verdict
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: semgrep scan --config auto --error --sarif-output=semgrep.sarif ${BASE_SHA:+--baseline-commit "$BASE_SHA"} src/
+          BASELINE: ${{ github.event_name == 'pull_request' && 'HEAD^1' || '' }}
+        run: semgrep scan --config auto --error ${BASELINE:+--baseline-commit "$(git rev-parse "$BASELINE")"} src/
+
+      # After the verdict, whose baseline mode refuses a working tree with files the checkout did not bring.
+      - name: Full scan for code scanning
+        if: ${{ !cancelled() }}
+        run: semgrep scan --config auto --sarif --output semgrep.sarif src/
 
       # A fork's pull request gets a read-only token, so the upload is skipped; the job verdict stands.
       - name: Upload to code scanning
