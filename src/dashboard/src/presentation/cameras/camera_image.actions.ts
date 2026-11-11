@@ -13,9 +13,5 @@ export type CameraImageAction =
   | { type: 'CAMERA_GONE' }
   | { type: 'SAVE_STARTED' }
   | { type: 'SAVE_FINISHED' }
-  | {
-      type: 'PTZ_LOADED'
-      calibrated: boolean
-      currentPosition: { x: number; y: number } | null
-    }
+  | { type: 'PTZ_LOADED'; calibrated: boolean }
   | { type: 'PTZ_FAILED'; error: AppError }

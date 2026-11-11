@@ -28,7 +28,16 @@ export function LiveTopBar({
         fade.className,
       )}
     >
-      <button type="button" className={LIVE_CONTROL} aria-label="Retour" onClick={onBack}>
+      <button
+        type="button"
+        className={LIVE_CONTROL}
+        aria-label="Retour"
+        // Leaving is not a gesture to go full screen: the screen would ask for it as it goes.
+        onClick={(event) => {
+          event.stopPropagation()
+          onBack()
+        }}
+      >
         <ArrowLeft className="size-4" aria-hidden="true" />
       </button>
       <p className="min-w-0 flex-1 truncate font-medium">{label}</p>

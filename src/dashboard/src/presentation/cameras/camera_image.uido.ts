@@ -16,7 +16,6 @@ export interface CameraImageUido {
   ptzError: AppError | null
   /** Without a reference the camera cannot hold saved positions. */
   calibrated: boolean
-  currentPosition: { x: number; y: number } | null
 }
 
 export function buildInitialCameraImageUido(): CameraImageUido {
@@ -32,6 +31,5 @@ export function buildInitialCameraImageUido(): CameraImageUido {
     ptzLoading: true,
     ptzError: null,
     calibrated: true,
-    currentPosition: null,
   }
 }

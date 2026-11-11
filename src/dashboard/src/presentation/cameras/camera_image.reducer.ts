@@ -68,7 +68,6 @@ export function cameraImageReducer(
         ptzLoading: false,
         ptzError: null,
         calibrated: action.calibrated,
-        currentPosition: action.currentPosition,
       }
     case 'PTZ_FAILED':
       return { ...state, ptzLoading: false, ptzError: action.error }

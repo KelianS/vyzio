@@ -26,18 +26,31 @@ function leave() {
 export function useFullScreen(wanted: boolean) {
   const active = useSyncExternalStore(subscribe, isActive)
   const asked = useRef(false)
+  const mounted = useRef(true)
 
   useEffect(() => {
     asked.current = false
     if (!wanted) leave()
   }, [wanted])
 
-  useEffect(() => leave, [])
+  useEffect(() => {
+    mounted.current = true
+    return () => {
+      mounted.current = false
+      leave()
+    }
+  }, [])
 
   const enter = useCallback(() => {
     asked.current = true
-    // Refused when the browser does not count the gesture: the button stays offered.
-    document.documentElement.requestFullscreen().catch(() => undefined)
+    document.documentElement
+      .requestFullscreen()
+      // Granted after the screen was left: the page it left must not stay full screen.
+      .then(() => {
+        if (!mounted.current) leave()
+      })
+      // Refused when the browser does not count the gesture: the button stays offered.
+      .catch(() => undefined)
   }, [])
 
   const offered = wanted && !active && supported()

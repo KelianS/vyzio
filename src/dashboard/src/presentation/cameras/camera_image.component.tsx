@@ -85,7 +85,6 @@ export function CameraImageView() {
             loading={uido.ptzLoading}
             error={uido.ptzError}
             calibrated={uido.calibrated}
-            currentPosition={uido.currentPosition}
             liveTo={liveViewPath(cameraId)}
             onRetry={() => presenter.onRetryPtz(cameraId)}
           />

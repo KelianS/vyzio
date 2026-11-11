@@ -25,6 +25,12 @@ export function useAutoHide(enabled: boolean) {
     if (!held.current) timer.current = setTimeout(() => setHidden(true), HIDE_AFTER_MS)
   }, [disarm])
 
+  // A key or a focus reaching the screen brings the controls back, like a tap.
+  const reveal = useCallback(() => {
+    setHidden(false)
+    if (enabled) arm()
+  }, [enabled, arm])
+
   useEffect(() => {
     if (!enabled) return
     arm()
@@ -42,5 +48,6 @@ export function useAutoHide(enabled: boolean) {
       held.current = false
       if (enabled) arm()
     },
+    reveal,
   }
 }

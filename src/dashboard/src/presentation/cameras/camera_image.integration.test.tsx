@@ -192,7 +192,7 @@ describe('CameraImageView', () => {
     ).toBeInTheDocument()
   })
 
-  it('onLoad_ShouldSayWhereTheCameraStands_WhenItIsCalibrated', async () => {
+  it('onLoad_ShouldPointAtTheLiveViewForThePositions_WhenTheCameraIsCalibrated', async () => {
     // Arrange
     fakeNetwork({ [PRESETS]: presetsRead({ x: 3, y: 2 }) })
 
@@ -200,7 +200,12 @@ describe('CameraImageView', () => {
     renderScreen(<CameraImageView />, imageTab(ptzCamera))
 
     // Assert
-    expect(await screen.findByText('Position actuelle : 3, 2')).toBeInTheDocument()
+    expect(
+      await screen.findByText(
+        'Ouvrez la vue en direct pour définir les positions de cette caméra.',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/Position actuelle/)).not.toBeInTheDocument()
   })
 
   it('onLoad_ShouldAskForACalibration_WhenTheCameraHasNoReference', async () => {
@@ -230,7 +235,7 @@ describe('CameraImageView', () => {
     expect(screen.getByRole('button', { name: 'Réessayer' })).toBeInTheDocument()
   })
 
-  it('onRetryPtz_ShouldSayWhereTheCameraStands_WhenTheSecondReadSucceeds', async () => {
+  it('onRetryPtz_ShouldOfferToDriveTheCamera_WhenTheSecondReadSucceeds', async () => {
     // Arrange
     const network = fakeNetwork({ [PRESETS]: failure(500) })
     renderScreen(<CameraImageView />, imageTab(ptzCamera))
@@ -241,7 +246,7 @@ describe('CameraImageView', () => {
     await userEvent.click(retry)
 
     // Assert
-    expect(await screen.findByText('Position actuelle : 3, 2')).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: 'Piloter la caméra' })).toBeInTheDocument()
   })
 
   it('onLoad_ShouldSayTheSettingsCouldNotBeReadAndKeepTheControl_WhenTheReadFails', async () => {

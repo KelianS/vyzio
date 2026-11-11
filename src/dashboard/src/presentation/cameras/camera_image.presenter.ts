@@ -88,8 +88,8 @@ export function buildCameraImagePresenter({
     const isLatest = nextPtzRead()
     container.getPtzPresets
       .execute(cameraId)
-      .then(({ calibrated, currentPosition }) => {
-        if (isLatest()) dispatch({ type: 'PTZ_LOADED', calibrated, currentPosition })
+      .then(({ calibrated }) => {
+        if (isLatest()) dispatch({ type: 'PTZ_LOADED', calibrated })
       })
       .catch((e: unknown) => {
         if (isLatest()) dispatch({ type: 'PTZ_FAILED', error: toAppError(e) })

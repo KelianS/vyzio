@@ -9,14 +9,12 @@ export function PtzCalibrationSection({
   loading,
   error,
   calibrated,
-  currentPosition,
   liveTo,
   onRetry,
 }: {
   loading: boolean
   error: AppError | null
   calibrated: boolean
-  currentPosition: { x: number; y: number } | null
   /** The live view's address: coming back mounts the tab again, which reads where the camera stands. */
   liveTo: string
   onRetry: () => void
@@ -29,11 +27,9 @@ export function PtzCalibrationSection({
       {!loading && !error && (
         <>
           <span className="text-sm text-muted-foreground">
-            {!calibrated
-              ? 'Cette caméra n’a pas encore de position de référence. Ouvrez la vue live pour la calibrer, puis définir ses positions.'
-              : currentPosition
-                ? `Position actuelle : ${currentPosition.x}, ${currentPosition.y}`
-                : 'Ouvrez la vue live pour définir les positions de cette caméra.'}
+            {calibrated
+              ? 'Ouvrez la vue en direct pour définir les positions de cette caméra.'
+              : 'Cette caméra n’a pas encore de position de référence. Ouvrez la vue en direct pour la calibrer, puis définir ses positions.'}
           </span>
 
           <Button asChild variant="outline" size="sm" className="self-start">

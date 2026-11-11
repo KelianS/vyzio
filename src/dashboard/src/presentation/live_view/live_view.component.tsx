@@ -19,6 +19,7 @@ import { LiveAccess, liveAccessOf } from './live_access'
 import { LiveLayout, useLiveLayout } from './live_layout'
 import { useAutoHide } from './use_auto_hide'
 import { useFullScreen } from './use_full_screen'
+import { useViewportFitCover } from './use_viewport_fit_cover'
 import {
   MOVES,
   OrientationControl,
@@ -68,6 +69,18 @@ function useBack() {
   return () => void (reachedDirectly ? navigate('/') : navigate(-1))
 }
 
+// Where what keeps the camera from showing is said and fixed (SPECS 7.2).
+function CameraPageLink({ cameraId }: { cameraId: string }) {
+  return (
+    <Link
+      to={`/settings/cameras/${cameraId}`}
+      className="underline underline-offset-2 hover:no-underline"
+    >
+      Ouvrir sa page
+    </Link>
+  )
+}
+
 /** The live view's route: the camera its address names, once the gates a thumbnail applies are passed. */
 export function LiveViewScreen() {
   const { cameraId = '' } = useParams()
@@ -77,6 +90,7 @@ export function LiveViewScreen() {
   const loading = useRootStore((s) => s.camerasLoading)
   const error = useRootStore((s) => s.camerasError)
   const back = useBack()
+  useViewportFitCover()
 
   const camera = cameras.find((c) => c.id === cameraId)
   const access = liveAccessOf(camera, { loading, unread: error !== null })
@@ -114,16 +128,16 @@ export function LiveViewScreen() {
       return closed(
         <p>
           Cette caméra est à configurer : elle n’a pas encore de vue en direct.{' '}
-          <Link
-            to={`/settings/cameras/${cameraId}`}
-            className="underline underline-offset-2 hover:no-underline"
-          >
-            Ouvrir sa page
-          </Link>
+          <CameraPageLink cameraId={cameraId} />
         </p>,
       )
     case LiveAccess.Offline:
-      return closed(<p>Cette caméra est hors ligne : pas de vue en direct pour le moment.</p>)
+      return closed(
+        <p>
+          Cette caméra est hors ligne : pas de vue en direct pour le moment.{' '}
+          <CameraPageLink cameraId={cameraId} />
+        </p>,
+      )
     case LiveAccess.Open:
       return (
         camera && (
@@ -172,6 +186,13 @@ export function LiveView({
   }, [presenter, cameraId, usable])
 
   useEffect(() => presenter.onClose, [presenter])
+
+  // A key brings the faded controls back, wherever the focus fell when they faded.
+  const reveal = controls.reveal
+  useEffect(() => {
+    window.addEventListener('keydown', reveal)
+    return () => window.removeEventListener('keydown', reveal)
+  }, [reveal])
 
   const labelOf = (presetId: number) => presetLabel(uido.presets ?? [], presetId)
 
@@ -223,6 +244,7 @@ export function LiveView({
       onPointerDownCapture={controls.hold}
       onPointerUpCapture={controls.release}
       onPointerCancelCapture={controls.release}
+      onFocusCapture={controls.reveal}
       onClick={fullScreen.onGesture}
     >
       <div className={place.picture}>
