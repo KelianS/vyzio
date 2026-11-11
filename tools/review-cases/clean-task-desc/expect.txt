@@ -1,2 +1,3 @@
 agent: delivery-reviewer
+prompt: review the current branch against base {base}; task check was green
 verdict: PASS

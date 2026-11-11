@@ -1,0 +1,5 @@
+agent: product-guardian
+prompt: frame issue #99999
+cites: Not read:
+cites: 99999
+absent: Not read: none

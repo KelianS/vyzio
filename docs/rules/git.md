@@ -55,3 +55,13 @@ e2e suite. How: [`CONTRIBUTING.md`](../../CONTRIBUTING.md) § Pull request scree
 ### GIT-08 · `task check` is green before the pull request opens
 
 **Level**: Required · **Verified by**: Tool: `task check` locally, the CI workflows on the pull request
+
+### GIT-10 · A pull request meets the Done when of the issue it closes
+
+**Level**: Required · **Verified by**: Review
+
+Each line of the issue's "Done when" is shown by a test of the diff that fails without the change,
+or by a run stated with its result in the review request (AGENTS-03). A line neither shows is a
+blocking finding that names it.
+
+**Exceptions**: an issue with no "Done when" section.

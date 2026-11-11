@@ -1,0 +1,4 @@
+skill: deliver
+prompt: review, for issue #99999, against base {base}; task check was green. Stop after the report of step 3
+cites: Not read: delivery-reviewer
+absent: Not read: none

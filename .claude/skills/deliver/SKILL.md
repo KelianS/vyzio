@@ -20,15 +20,15 @@ session; the review starts on a green branch.
 Pick the reviewers from the diff (`git diff --stat origin/main...HEAD`), by the triggers of WORKFLOW
 § Delivery gate, step 2.
 
-Launch them **in parallel**, in one message. The request to each carries the target only: the base
-(`origin/main`), the commit range for a re-review, the issue number, and whether `task check` was
-green. Never a rule, a preference or an instruction of the user: the review must be the same
-whoever runs it.
+Launch them **in parallel**, in one message, each request carrying the target only (AGENTS-03): the
+base (`origin/main`), the commit range for a re-review, the issue number, what was run with its
+result. A change to an agent, a skill or a rule page runs its review cases first (AGENTS-08).
 
 ## 3. One report
 
 ```
 Review on `<short sha>`: PASS | BLOCKING · <n> blocking · <n> worth fixing · <n> uncertainties
+Not read: <reviewer> -- <source> -- <reason>     (only if any: every Not read line of the verdicts, AGENTS-04)
 
 | # | Severity | Reviewer | Where | Finding -> fix | Rule |
 | --- | --- | --- | --- | --- | --- |
@@ -60,17 +60,16 @@ commit reviewed `PASS` (`<sha>..HEAD`); no `PASS` yet → the whole branch.
 
 ## 5. Feedback on the rules
 
-Gather the reviewers' feedback, duplicates merged, and show it. **Nothing is ever recorded without
-the user's validation**: show the exact title and body of each issue or comment, and run `gh issue
-create` or `gh issue comment` only once the user has approved that text. No validation, nothing
-recorded, whatever else the session allows. For each approved item:
+Gather the reviewers' feedback, duplicates merged, and show it. Recording follows AGENTS-05 and
+AGENTS-06, the title and label of [`docs/rules/README.md`](../../../docs/rules/README.md) § Feedback
+on the rules. For each item:
 
-1. Search an open issue on the subject: `gh issue list --label agent-feedback --search "<page or agent>"`.
-2. Found → `gh issue comment`: the type, the branch, the finding, its proof.
-3. Otherwise → `gh issue create --label agent-feedback`, titled `[rules] <page> § <ID>` (a missing rule
-   with no page: `[rules] <topic>`) or `[agents] <agent or skill>`; the body gives the first case and
-   what the rule or the instruction should settle. The label missing → create it once with
-   `gh label create agent-feedback`.
+1. Search: `gh issue list --label agent-feedback --state all --search "<page or agent>"`.
+2. Show the exact text, its title and labels included, as AGENTS-05 and AGENTS-06 shape it: a comment gives the
+   type, the branch, the finding and its proof; a new issue gives the first case and what the rule
+   or the instruction should settle.
+3. Once approved, `gh issue comment` or `gh issue create --label agent-feedback`. The label missing →
+   create it once with `gh label create agent-feedback`.
 4. List what was created or commented, with the links.
 
 ## 6. Open the pull request

@@ -1,0 +1,5 @@
+agent: delivery-reviewer
+prompt: review the current branch against base {base}, for issue #328; task check was green, nothing else was run
+verdict: BLOCKING
+cites: GIT-10
+cites: technical task list
