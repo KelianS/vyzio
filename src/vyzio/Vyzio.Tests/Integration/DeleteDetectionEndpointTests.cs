@@ -28,15 +28,32 @@ public class DeleteDetectionEndpointTests(DeleteDetectionApiFactory factory) : I
     public async Task Delete_ShouldAnswerNoContentAndDropTheNotificationRows_WhenTheDetectionIsErased()
     {
         // Arrange
-        factory.Eraser.EraseAsync("evt-erased", Arg.Any<CancellationToken>()).Returns(DetectionErasure.Erased);
-        factory.SeedNotification("evt-erased");
+        factory.Eraser.EraseAsync("1700000000.1-erased", Arg.Any<CancellationToken>()).Returns(DetectionErasure.Erased);
+        factory.SeedNotification("1700000000.1-erased");
 
         // Act
-        var (status, _) = await DeleteAsync("evt-erased");
+        var (status, _) = await DeleteAsync("1700000000.1-erased");
 
         // Assert
         Assert.Equal(HttpStatusCode.NoContent, status);
-        Assert.Equal(0, factory.CountNotifications("evt-erased"));
+        Assert.Equal(0, factory.CountNotifications("1700000000.1-erased"));
+    }
+
+    [Theory]
+    [InlineData("not-a-frigate-id")]
+    [InlineData("1700000000.1-abc123%0D%0AFORGED")]
+    public async Task Delete_ShouldAnswerNotFoundAndCallNothing_WhenTheIdIsNotAFrigateEventId(string id)
+    {
+        // Arrange
+        factory.Eraser.ClearReceivedCalls();
+
+        // Act
+        var (status, body) = await DeleteAsync(id);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, status);
+        Assert.Equal("detection_not_found", JsonDocument.Parse(body).RootElement.GetProperty("error").GetString());
+        await factory.Eraser.DidNotReceiveWithAnyArgs().EraseAsync(default!, default);
     }
 
     [Theory]
@@ -46,10 +63,10 @@ public class DeleteDetectionEndpointTests(DeleteDetectionApiFactory factory) : I
         DetectionErasure erasure, HttpStatusCode expectedStatus, string expectedError)
     {
         // Arrange
-        factory.Eraser.EraseAsync("evt-refused", Arg.Any<CancellationToken>()).Returns(erasure);
+        factory.Eraser.EraseAsync("1700000000.2-refuse", Arg.Any<CancellationToken>()).Returns(erasure);
 
         // Act
-        var (status, body) = await DeleteAsync("evt-refused");
+        var (status, body) = await DeleteAsync("1700000000.2-refuse");
 
         // Assert
         Assert.Equal(expectedStatus, status);
@@ -63,7 +80,7 @@ public class DeleteDetectionEndpointTests(DeleteDetectionApiFactory factory) : I
         bool partlyErased, string expectedError)
     {
         // Arrange
-        var eventId = $"evt-failed-{expectedError}";
+        var eventId = partlyErased ? "1700000000.5-part01" : "1700000000.6-fail01";
         factory.Eraser.EraseAsync(eventId, Arg.Any<CancellationToken>())
             .ThrowsAsync(new DetectionErasureFailedException("DELETE /api/events/x answered 500", partlyErased));
         factory.SeedNotification(eventId);
@@ -86,11 +103,11 @@ public class DetectionClipEndpointTests(DeleteDetectionApiFactory factory) : ICl
     public async Task GetClip_ShouldAnswerNotFound_WhenFrigateSaysTheClipNoLongerExists()
     {
         // Arrange
-        factory.Clips.ReadClipAsync("evt-gone", Arg.Any<CancellationToken>()).Returns((Stream?)null);
+        factory.Clips.ReadClipAsync("1700000000.3-gone01", Arg.Any<CancellationToken>()).Returns((Stream?)null);
         using var client = factory.CreateClient();
 
         // Act
-        var response = await client.GetAsync("/api/detection-events/evt-gone/clip");
+        var response = await client.GetAsync("/api/detection-events/1700000000.3-gone01/clip");
 
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
@@ -100,18 +117,36 @@ public class DetectionClipEndpointTests(DeleteDetectionApiFactory factory) : ICl
     public async Task GetClip_ShouldAnswerBadGatewayWithTheDetail_WhenFrigateFailsToServeIt()
     {
         // Arrange
-        factory.Clips.ReadClipAsync("evt-down", Arg.Any<CancellationToken>())
+        factory.Clips.ReadClipAsync("1700000000.4-down01", Arg.Any<CancellationToken>())
             .ThrowsAsync(new FrigateClipUnreadableException("GET api/events/evt-down/clip.mp4 got no answer"));
         using var client = factory.CreateClient();
 
         // Act
-        var response = await client.GetAsync("/api/detection-events/evt-down/clip");
+        var response = await client.GetAsync("/api/detection-events/1700000000.4-down01/clip");
 
         // Assert
         var root = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
         Assert.Equal(HttpStatusCode.BadGateway, response.StatusCode);
         Assert.Equal("clip_unreadable", root.GetProperty("error").GetString());
         Assert.Equal("GET api/events/evt-down/clip.mp4 got no answer", root.GetProperty("message").GetString());
+    }
+}
+
+public class DetectionClipMalformedIdTests(DeleteDetectionApiFactory factory) : IClassFixture<DeleteDetectionApiFactory>
+{
+    [Fact]
+    public async Task GetClip_ShouldAnswerNotFoundAndAskFrigateNothing_WhenTheIdIsNotAFrigateEventId()
+    {
+        // Arrange
+        factory.Clips.ClearReceivedCalls();
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.GetAsync("/api/detection-events/1700000000.1-abc123%0AFORGED/clip");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        await factory.Clips.DidNotReceiveWithAnyArgs().ReadClipAsync(default!, default);
     }
 }
 

@@ -42,6 +42,8 @@ public static class DetectionEventsEndpoints
         // Clip proxy — streams MP4 from Frigate with Range support (ADR-17)
         group.MapGet("/{id}/clip", async (string id, IFrigateClipProvider clips, CancellationToken ct) =>
         {
+            // An id Frigate could never have issued names no clip, and reaches neither Frigate nor a log.
+            if (!FrigateEventId.IsWellFormed(id)) return Results.NotFound();
             var stream = await clips.ReadClipAsync(id, ct);
             if (stream is null) return Results.NotFound();
             return Results.Stream(stream, "video/mp4", enableRangeProcessing: true);
@@ -66,21 +68,23 @@ public static class DetectionEventsEndpoints
         });
 
         group.MapDelete("/{id}", async (string id, DeleteDetectionUseCase useCase, CancellationToken ct) =>
-            await useCase.ExecuteAsync(id, ct) switch
-            {
-                DetectionErasure.Erased => Results.NoContent(),
-                DetectionErasure.NotFound => Results.NotFound(new
+            !FrigateEventId.IsWellFormed(id)
+                ? Results.NotFound(new { error = "detection_not_found", message = "No detection has that id." })
+                : await useCase.ExecuteAsync(id, ct) switch
                 {
-                    error = "detection_not_found",
-                    message = $"No detection {id} to erase.",
-                }),
-                DetectionErasure.InProgress => Results.Conflict(new
-                {
-                    error = "detection_in_progress",
-                    message = $"Detection {id} is still being filmed; nothing was erased.",
-                }),
-                _ => throw new InvalidOperationException($"Unhandled erasure outcome for {id}."),
-            });
+                    DetectionErasure.Erased => Results.NoContent(),
+                    DetectionErasure.NotFound => Results.NotFound(new
+                    {
+                        error = "detection_not_found",
+                        message = $"No detection {id} to erase.",
+                    }),
+                    DetectionErasure.InProgress => Results.Conflict(new
+                    {
+                        error = "detection_in_progress",
+                        message = $"Detection {id} is still being filmed; nothing was erased.",
+                    }),
+                    _ => throw new InvalidOperationException($"Unhandled erasure outcome for {id}."),
+                });
 
         return app;
     }
