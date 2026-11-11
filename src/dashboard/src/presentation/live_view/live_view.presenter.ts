@@ -31,7 +31,7 @@ export function buildLiveViewPresenter({ container, dispatch, toast }: LiveViewP
   let hold: Hold | null = null
   // A press sends up to three calls: a failure is shown once per press, not once per call.
   let failureShown = false
-  // Only what moves the camera cancels a pending capture: a go-to, a joystick press or a calibration.
+  // A go-to, a joystick press or a calibration cancels a pending capture; a newer capture replaces it.
   let pendingCapture: ReturnType<typeof setTimeout> | null = null
 
   function cancelPendingCapture() {
