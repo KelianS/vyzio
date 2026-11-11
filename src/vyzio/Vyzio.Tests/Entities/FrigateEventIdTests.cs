@@ -12,6 +12,7 @@ public class FrigateEventIdTests
     [InlineData("1700000000.123456-abc12", false)]
     [InlineData("1700000000.123456-abc123\nFORGED", false)]
     [InlineData("1700000000.123456-abc123\n", false)]
+    [InlineData("١.1-abc123", false)]
     [InlineData("../config", false)]
     [InlineData("", false)]
     [InlineData(null, false)]

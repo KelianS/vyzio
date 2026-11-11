@@ -11,6 +11,6 @@ public static partial class FrigateEventId
     public static bool IsWellFormed(string? candidate)
         => candidate is not null && Shape().IsMatch(candidate);
 
-    [GeneratedRegex(@"^\d{1,12}\.\d{1,9}-[a-z0-9]{6}\z", RegexOptions.CultureInvariant)]
+    [GeneratedRegex(@"^[0-9]{1,12}\.[0-9]{1,9}-[a-z0-9]{6}\z", RegexOptions.CultureInvariant)]
     private static partial Regex Shape();
 }
