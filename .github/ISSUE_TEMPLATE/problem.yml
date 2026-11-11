@@ -1,5 +1,5 @@
 name: Need or problem
-description: Something the product should do, or does badly. The problem, never the solution.
+description: Something the product should do, or a need it does not meet. The problem, never the solution; a defect is a Bug.
 title: 'feat(scope): '
 labels: [feature, needs-framing]
 body:

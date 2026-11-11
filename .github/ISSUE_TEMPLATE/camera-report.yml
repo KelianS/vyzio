@@ -26,8 +26,8 @@ body:
     id: version
     attributes:
       label: Vyzio version
-      description: The image tag your compose file runs.
-      placeholder: v0.3.0
+      description: The VYZIO_VERSION your compose file runs; with latest, the date of your last pull.
+      placeholder: 0.3.0, or latest pulled on 2026-11-01
     validations:
       required: true
   - type: textarea
@@ -41,4 +41,9 @@ body:
     id: facts
     attributes:
       label: Observed facts
-      description: Anything else you saw, as it happened, with the technical detail block of an error screen when there was one.
+      description: Anything else you saw, as it happened, with the diagnostic line under an error sentence when there was one.
+  - type: textarea
+    id: leads
+    attributes:
+      label: Leads
+      description: Optional guesses at a cause, kept apart from the facts. Whoever implements may choose another way.
