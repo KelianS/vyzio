@@ -65,8 +65,10 @@ internal abstract class PtzSteppedMotion(PtzMoveRunner runner, Camera camera, Ti
         try
         {
             while (!released.IsCompleted)
+            {
                 if (await runner.RunAsync(Camera, t => StepAsync(direction, speed, t), CancellationToken.None))
                     _heldTaken++;
+            }
         }
         catch (CameraCommandException ex)
         {

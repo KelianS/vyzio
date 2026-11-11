@@ -76,7 +76,7 @@ public sealed class BatchToggleCameraPrivacyModeUseCase(
         var allCameras = await cameras.GetAllAsync(ct);
         var targets = allCameras.Where(c => cameraIds.Contains(c.Id)).ToList();
         var updated = new List<CameraDto>(targets.Count);
-        IReadOnlyList<ScheduleRule> privacyRules = active ? [] : await rules.GetByKindAsync(ScheduleRuleKind.Privacy, ct);
+        var privacyRules = active ? [] : await rules.GetByKindAsync(ScheduleRuleKind.Privacy, ct);
 
         try
         {

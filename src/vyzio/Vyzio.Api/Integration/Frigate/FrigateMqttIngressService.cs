@@ -1,7 +1,5 @@
 using System.Buffers;
 using System.Text;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using MQTTnet;
 using MQTTnet.Protocol;
 using Vyzio.Application.UseCases.Frigate;

@@ -19,7 +19,9 @@ public sealed class NotificationChannelConfigRepository(VyzioDbContext db) : INo
             .FirstOrDefaultAsync(c => c.Channel == config.Channel, ct);
 
         if (existing is null)
+        {
             db.NotificationChannelConfigs.Add(config);
+        }
         else if (!ReferenceEquals(existing, config))
         {
             config.Id = existing.Id; // the channel identifies the row, the key only stores it

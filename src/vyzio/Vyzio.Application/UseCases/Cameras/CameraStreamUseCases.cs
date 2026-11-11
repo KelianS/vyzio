@@ -41,7 +41,9 @@ public sealed class ListAvailableCameraStreamsUseCase(
     {
         if (!SnakeCaseEnum.TryFromSnakeCase<SupportedProtocol>(protocolName, out var protocol)
             || !registry.GetRegisteredProtocols(CameraCapability.Stream).Contains(protocol))
+        {
             return new AvailableStreamsResult(StreamOutcome.UnknownProtocol);
+        }
 
         var camera = await cameras.GetByIdAsync(cameraId, ct);
         if (camera is null) return new AvailableStreamsResult(StreamOutcome.CameraNotFound);
@@ -72,7 +74,10 @@ public sealed class AddCameraStreamUseCase(
     {
         if (!SnakeCaseEnum.TryFromSnakeCase<SupportedProtocol>(request.Protocol, out var protocol)
             || !registry.GetRegisteredProtocols(CameraCapability.Stream).Contains(protocol))
+        {
             return new StreamResult(StreamOutcome.UnknownProtocol);
+        }
+
         if (!SnakeCaseEnum.TryFromSnakeCase<StreamRole>(request.Role, out var role))
             return new StreamResult(StreamOutcome.UnknownRole);
 
@@ -200,7 +205,9 @@ internal static class CameraStreamChange
         if (camera is null) return new StreamResult(StreamOutcome.CameraNotFound);
         if (camera.StreamBinding is not { } binding
             || binding.Streams.FirstOrDefault(entry => entry.Id == streamId) is not { } stream)
+        {
             return new StreamResult(StreamOutcome.StreamNotFound);
+        }
 
         switch (change(binding, stream))
         {
