@@ -1,6 +1,4 @@
-﻿# Vyzio — Specifications Fonctionnelles
-
-> Mai 2026 — document vivant
+﻿# Vyzio, Specifications Fonctionnelles
 
 ---
 
@@ -9,6 +7,8 @@
 Ce document decrit le **besoin produit** et le **comportement attendu** du systeme du point de vue utilisateur.
 
 Il ne tranche pas les choix de stack, d'algorithmes, de protocoles internes ou d'architecture detaillee. Ces points vivent dans [SAD.md](./SAD.md).
+
+Il decrit la cible, au present : ni date, ni etat de livraison, ni historique (DOCS-16 de [rules/docs.md](rules/docs.md)).
 
 ---
 
@@ -115,7 +115,7 @@ Le detail ne contient jamais de secret : ni mot de passe, ni jeton, ni identifia
 
 **Regles fonctionnelles :**
 
-- les fonctionnalites avancees (flux video, PTZ, mode vie privee materiel, reglages image, reglages de flux, info systeme a venir) sont des **capacites independantes de la marque** : la marque ne sert qu'a choisir la notice de l'ecran d'ajout (2.2), aucune marque n'a de preconfiguration ni de fonctionnalite reservee (voir [ADR-71](adr/0071-the-vendor-is-a-help-hint.md)) ;
+- les fonctionnalites avancees (flux video, PTZ, mode vie privee materiel, reglages image, reglages de flux, info systeme) sont des **capacites independantes de la marque** : la marque ne sert qu'a choisir la notice de l'ecran d'ajout (2.2), aucune marque n'a de preconfiguration ni de fonctionnalite reservee (voir [ADR-71](adr/0071-the-vendor-is-a-help-hint.md)) ;
 - toute camera accede aux capacites que son materiel permet reellement, par la meme detection ; quand la detection ne trouve pas une capacite, le parcours est plus long (declaration et verification manuelle de la capacite) mais jamais bloquant par principe ;
 - l'utilisateur doit pouvoir declarer manuellement, capacite par capacite, comment y acceder (ex. protocole PTZ : ONVIF ou DVRIP, avec ses parametres de connexion) ; Vyzio doit verifier la capacite par un test reel avant de la proposer activable dans l'interface, jamais sur simple declaration non verifiee ;
 - si une capacite ne peut pas etre verifiee ou echoue au test, l'interface doit l'indiquer clairement et ne pas la presenter comme disponible ;
@@ -404,7 +404,7 @@ Comment cet acces est protege : [ADR-54](adr/0054-interface-access-guarded-by-an
 - un mot de passe oublie se remet a zero **depuis la machine qui heberge Vyzio**, sans compte cloud ni envoi de courriel. La remise a zero *retire* le mot de passe : l'installation reouvre sur l'ecran de choix pendant une demi-heure, sans rien perdre de ses cameras ni de son historique, puis se reverrouille si personne n'en choisit un ;
 - l'appairage d'une conversation de messagerie reste independant : il n'ouvre pas l'interface, et une session n'appaire pas une conversation (§5.4).
 
-Deux roles existent, et un seul est livre pour l'instant — le **proprietaire**. Le second, **resident**, est prevu : il consulte le direct et l'historique et peut couper une camera, mais ne touche ni aux reglages ni aux secrets. La frontiere est **utiliser / configurer**, jamais « voir / ne pas voir » : un resident voit deja toutes les images.
+Deux roles existent : le **proprietaire**, et le **resident**, qui consulte le direct et l'historique et peut couper une camera, mais ne touche ni aux reglages ni aux secrets. La frontiere est **utiliser / configurer**, jamais « voir / ne pas voir » : un resident voit deja toutes les images.
 
 ---
 

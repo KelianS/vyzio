@@ -28,7 +28,7 @@ it -- never ticked to keep the list tidy.
 - [ ] e2e test added or updated for the journey a user walks through (DASHBOARD-30)
 - [ ] comments: one line, the non-deducible *why*, no story (COMMON-02, COMMON-03)
 - [ ] `docs/` describes the target only, a rejected option living under the 'Options rejected' of
-      its ADR (DOCS-06, DOCS-08)
+      its ADR (DOCS-08, DOCS-16)
 - [ ] nothing duplicated: what is new has exactly one home (COMMON-05)
 - [ ] nothing left that nothing reaches (COMMON-08)
 - [ ] no implicit dependency on an option that was not retained

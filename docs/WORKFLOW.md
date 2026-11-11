@@ -58,7 +58,7 @@ constraint), data ownership and retention, the deployment, the threat model, and
 questions, each linked to its issue. It describes the system as a whole and states what the code does
 not easily show.
 
-**What it never holds and when it must change:** DOCS-05, DOCS-06 and DOCS-03 of
+**What it never holds and when it must change:** DOCS-05, DOCS-16 and DOCS-03 of
 [`rules/docs.md`](rules/docs.md).
 
 ## Writing discipline
