@@ -123,7 +123,7 @@ networks searched for cameras: adjust it before starting.
 Open `http://<SERVER_IP>:8080`. Vyzio first asks you to choose a password, which guards the
 interface and therefore the cameras. Everything else is configured from there.
 
-To update, set the new release in `VYZIO_VERSION` of `.env`, then:
+To update (with a release number pinned in `VYZIO_VERSION` of `.env`, set the new one first):
 
 ```bash
 docker compose pull
