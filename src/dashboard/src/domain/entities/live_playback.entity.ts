@@ -2,6 +2,16 @@
 export type LiveFailure =
   'unsupported_browser' | 'unsupported_codec' | 'unreachable' | 'privacy' | 'removed' | 'no_quality'
 
+/** A failure whose cause may pass, so trying again may succeed (ADR-72 e). */
+export const MAY_PASS: Record<LiveFailure, boolean> = {
+  unsupported_browser: false,
+  unsupported_codec: false,
+  unreachable: true,
+  no_quality: false,
+  privacy: false,
+  removed: false,
+}
+
 /** Where the live video stands; an interrupted stream played before, and is opened again. */
 export type LivePlayback =
   | { kind: 'connecting' }

@@ -265,30 +265,37 @@ describe('MseLiveStream', () => {
     ])
   })
 
-  it.each([
-    { code: 1006, reason: '', diagnostic: 'live cam1 low: close 1006' },
-    {
-      code: 4503,
-      reason: 'stream_unreachable',
+  it('open_ShouldSayTheCameraStoppedAnsweringAtOnce_WhenTheApiClosesAPlayingStreamAsUnreachable', async () => {
+    // Arrange
+    const { socket, reports } = open()
+    socket?.answer(H264_AAC)
+    socket?.segment()
+    await flushMicrotasks()
+
+    // Act
+    socket?.hangUp(4503, 'stream_unreachable')
+
+    // Assert
+    expect(reports.at(-1)).toEqual({
+      kind: 'stalled',
       diagnostic: 'live cam1 low: close 4503 stream_unreachable',
-    },
-  ])(
-    'open_ShouldSayTheCameraStoppedAnsweringAtOnce_WhenAPlayingStreamCloses (code $code)',
-    async ({ code, reason, diagnostic }) => {
-      // Arrange
-      const { socket, reports } = open()
-      socket?.answer(H264_AAC)
-      socket?.segment()
-      await flushMicrotasks()
+    })
+    expect(socket?.closed).toBe(true)
+  })
 
-      // Act
-      socket?.hangUp(code, reason)
+  it('open_ShouldReportAnInterruption_WhenTheConnectionToVyzioDropsWhilePlaying', async () => {
+    // Arrange
+    const { socket, reports } = open()
+    socket?.answer(H264_AAC)
+    socket?.segment()
+    await flushMicrotasks()
 
-      // Assert
-      expect(reports.at(-1)).toEqual({ kind: 'stalled', diagnostic })
-      expect(socket?.closed).toBe(true)
-    },
-  )
+    // Act
+    socket?.hangUp(1006)
+
+    // Assert
+    expect(reports.at(-1)).toEqual({ kind: 'interrupted' })
+  })
 
   it('open_ShouldStillSayPrivacyMode_WhenAPlayingStreamIsCutForPrivacy', async () => {
     // Arrange

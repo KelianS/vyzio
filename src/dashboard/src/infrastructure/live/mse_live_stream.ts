@@ -1,6 +1,10 @@
 import { scrubSecrets } from '../../common/errors/scrub_secrets'
 import type { LiveQuality } from '../../domain/entities/camera.entity'
-import type { LiveFailure, LivePlayback } from '../../domain/entities/live_playback.entity'
+import {
+  MAY_PASS,
+  type LiveFailure,
+  type LivePlayback,
+} from '../../domain/entities/live_playback.entity'
 import type { LiveStreamPort } from '../../domain/ports/live_stream.port'
 
 /** What the stream needs from the browser, so a test can stand in for it. */
@@ -60,16 +64,6 @@ const LIVE_EDGE_S = 0.3
 const KEPT_BUFFER_S = 10
 // The picture falling this far behind the clock means the sound held it back: the stream is opened again.
 const MAX_DRIFT_S = 2.5
-
-// Once the stream has played, a failure that may pass means the camera stopped answering.
-const STALLS_ONCE_PLAYING: Record<LiveFailure, boolean> = {
-  unsupported_browser: false,
-  unsupported_codec: false,
-  unreachable: true,
-  no_quality: false,
-  privacy: false,
-  removed: false,
-}
 
 /** The socket address of a camera's live stream, on the same host as the page. */
 export function liveStreamUrl(
@@ -241,8 +235,9 @@ export class MseLiveStream implements LiveStreamPort {
     function fail(failure: LiveFailure, detail: string) {
       if (ended) return
       release()
+      // Once the stream has played, a failure that may pass means the camera stopped answering.
       onPlayback(
-        playing && STALLS_ONCE_PLAYING[failure]
+        playing && MAY_PASS[failure]
           ? { kind: 'stalled', diagnostic: diagnosticOf(detail) }
           : failed(failure, detail),
       )
@@ -363,7 +358,14 @@ export class MseLiveStream implements LiveStreamPort {
           queue.push(event.data)
           flush()
         }
+        // A close without the API's code is the connection to Vyzio, not the camera: it reconnects.
         opened.onclose = (event) => {
+          if (ended) return
+          if (playing && !(event.code in CLOSE_FAILURES)) {
+            release()
+            onPlayback({ kind: 'interrupted' })
+            return
+          }
           fail(failureOfClose(event.code), `close ${event.code} ${event.reason}`.trim())
         }
       },

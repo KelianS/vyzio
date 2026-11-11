@@ -160,10 +160,8 @@ public sealed class Go2rtcLiveStreamRelayTests : IAsyncDisposable
         Assert.Equal((WebSocketCloseStatus)LiveStreamClose.Unreachable, browser.CloseStatus);
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task RelayAsync_ShouldCloseTheViewerAsUnreachable_WhenGo2rtcEndsTheStream(bool withAClose)
+    [Fact]
+    public async Task RelayAsync_ShouldCloseTheViewerAsUnreachable_WhenGo2rtcClosesTheStream()
     {
         // Arrange
         var (viewer, browser) = await PairAsync();
@@ -171,8 +169,27 @@ public sealed class Go2rtcLiveStreamRelayTests : IAsyncDisposable
         var relaying = MakeRelay(new FakeUpstream(relaySide)).RelayAsync(MakeCamera(), LiveQuality.Low, viewer);
 
         // Act
-        if (withAClose) await go2rtc.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, null, CancellationToken.None);
-        else go2rtc.Abort();
+        await go2rtc.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, null, CancellationToken.None);
+        var closing = await ReceiveAsync(browser);
+        await browser.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, null, CancellationToken.None);
+        await relaying;
+
+        // Assert
+        Assert.Equal(WebSocketMessageType.Close, closing.Type);
+        Assert.Equal((WebSocketCloseStatus)LiveStreamClose.Unreachable, browser.CloseStatus);
+        Assert.Equal("stream_unreachable", browser.CloseStatusDescription);
+    }
+
+    [Fact]
+    public async Task RelayAsync_ShouldCloseTheViewerAsUnreachable_WhenGo2rtcVanishes()
+    {
+        // Arrange
+        var (viewer, browser) = await PairAsync();
+        var (go2rtc, relaySide) = await PairAsync();
+        var relaying = MakeRelay(new FakeUpstream(relaySide)).RelayAsync(MakeCamera(), LiveQuality.Low, viewer);
+
+        // Act
+        go2rtc.Abort();
         var closing = await ReceiveAsync(browser);
         await browser.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, null, CancellationToken.None);
         await relaying;

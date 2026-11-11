@@ -737,7 +737,7 @@ describe('LiveView', () => {
 
 describe('LiveView video', () => {
   const H264_AAC = 'video/mp4; codecs="avc1.64001E,mp4a.40.2"'
-  const CAMERA_LOST = 'La caméra ne répond plus : la vidéo reprendra dès son retour.'
+  const CAMERA_LOST = 'Cette caméra ne répond plus : la vidéo reprendra dès son retour.'
 
   afterEach(() => {
     vi.restoreAllMocks()

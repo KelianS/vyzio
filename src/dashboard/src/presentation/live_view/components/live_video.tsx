@@ -6,7 +6,11 @@ import { DiagnosticLine } from '../../../common/components/error_message'
 import { liveWaitMessage } from '../../../common/components/live_frame'
 import { LiveWaitVeil } from '../../../common/components/live_wait_veil'
 import { LiveQuality } from '../../../domain/entities/camera.entity'
-import type { LiveFailure, LivePlayback } from '../../../domain/entities/live_playback.entity'
+import {
+  MAY_PASS,
+  type LiveFailure,
+  type LivePlayback,
+} from '../../../domain/entities/live_playback.entity'
 import type { FrigateStatus } from '../../../domain/entities/system_stats.entity'
 import { CAMERA_REMOVED, PRIVACY_STOPS_LIVE } from '../live_view.formatters'
 import { BAR_ABOVE, type LiveLayout } from '../live_layout'
@@ -17,48 +21,39 @@ const RECONNECT_MS = 2000
 // A camera that no longer answers is tried again less and less often, never further apart than this.
 const MAX_RETRY_MS = 15_000
 
-const CAMERA_LOST = 'La caméra ne répond plus : la vidéo reprendra dès son retour.'
+const CAMERA_LOST = 'Cette caméra ne répond plus : la vidéo reprendra dès son retour.'
 
 /** What each failure says, and the way out it offers (ADR-72 e). */
-const FAILURES: Record<
-  LiveFailure,
-  { sentence: string; frame: boolean; retry: boolean; otherQuality: boolean }
-> = {
+const FAILURES: Record<LiveFailure, { sentence: string; frame: boolean; otherQuality: boolean }> = {
   unsupported_browser: {
     sentence: 'Ce navigateur ne lit pas la vidéo en direct : image rafraîchie chaque seconde.',
     frame: true,
-    retry: false,
     otherQuality: false,
   },
   unsupported_codec: {
     sentence:
       'Ce navigateur ne lit pas la vidéo de cette qualité : image rafraîchie chaque seconde.',
     frame: true,
-    retry: false,
     otherQuality: true,
   },
   unreachable: {
     sentence: 'La vidéo n’arrive pas : image rafraîchie chaque seconde.',
     frame: true,
-    retry: true,
     otherQuality: true,
   },
   no_quality: {
     sentence: 'Cette qualité n’est plus proposée : image rafraîchie chaque seconde.',
     frame: true,
-    retry: false,
     otherQuality: true,
   },
   privacy: {
     sentence: PRIVACY_STOPS_LIVE,
     frame: false,
-    retry: false,
     otherQuality: false,
   },
   removed: {
     sentence: CAMERA_REMOVED,
     frame: false,
-    retry: false,
     otherQuality: false,
   },
 }
@@ -83,16 +78,6 @@ const PLAYING: Record<PlaybackKind, boolean> = {
   failed: false,
 }
 
-// While the camera no longer answers, these failures only mean it has not come back yet.
-const STILL_LOST: Record<LiveFailure, boolean> = {
-  unsupported_browser: false,
-  unsupported_codec: false,
-  unreachable: true,
-  no_quality: false,
-  privacy: false,
-  removed: false,
-}
-
 /** The playback, and since when the camera no longer answers: its last diagnostic and the retries since. */
 interface Watched {
   playback: LivePlayback
@@ -113,7 +98,7 @@ function follow(watched: Watched, playback: LivePlayback): Watched {
       return {
         playback,
         lost:
-          watched.lost && STILL_LOST[playback.failure]
+          watched.lost && MAY_PASS[playback.failure]
             ? { diagnostic: playback.diagnostic, retries: watched.lost.retries + 1 }
             : null,
       }
@@ -339,7 +324,7 @@ export function LiveVideo({
             />
           )}
           <Notice layout={layout} sentence={shown.sentence} diagnostic={failed.diagnostic}>
-            {shown.retry && (
+            {MAY_PASS[failed.failure] && (
               <Button variant="outline" size="sm" onClick={() => setAttempt((n) => n + 1)}>
                 Réessayer
               </Button>

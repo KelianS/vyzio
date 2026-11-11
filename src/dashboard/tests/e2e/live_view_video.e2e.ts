@@ -52,7 +52,7 @@ test.describe('Live view video', () => {
     await expect
       .poll(() => video.evaluate((v: HTMLVideoElement) => v.readyState))
       .toBeGreaterThanOrEqual(2)
-    const lost = page.getByText('La caméra ne répond plus : la vidéo reprendra dès son retour.')
+    const lost = page.getByText('Cette caméra ne répond plus : la vidéo reprendra dès son retour.')
 
     state.liveSilent = true
 

@@ -4,7 +4,7 @@ import type { LivePlayback } from '../../../domain/entities/live_playback.entity
 import type { FrigateStatus } from '../../../domain/entities/system_stats.entity'
 import { LiveVideo } from './live_video'
 
-const CAMERA_LOST = 'La caméra ne répond plus : la vidéo reprendra dès son retour.'
+const CAMERA_LOST = 'Cette caméra ne répond plus : la vidéo reprendra dès son retour.'
 const STALLED: LivePlayback = { kind: 'stalled', diagnostic: 'live camera-1 low: no video for 5 s' }
 const STILL_AWAY: LivePlayback = {
   kind: 'failed',
@@ -159,6 +159,29 @@ describe('LiveVideo', () => {
     // Assert
     expect(beforeTheDelay).toBe(2)
     expect(openings).toHaveLength(3)
+  })
+
+  it('LiveVideo_ShouldTryAgainEveryFifteenSecondsAtMost_WhenTheCameraStaysAway', () => {
+    // Arrange
+    vi.useFakeTimers()
+    const { openings, play } = renderWatched()
+    play(PLAYING)
+    play(STALLED)
+    act(() => vi.advanceTimersByTime(2000))
+    play(STILL_AWAY)
+    act(() => vi.advanceTimersByTime(4000))
+    play(STILL_AWAY)
+    act(() => vi.advanceTimersByTime(8000))
+    play(STILL_AWAY)
+
+    // Act
+    act(() => vi.advanceTimersByTime(14_999))
+    const beforeTheCeiling = openings.length
+    act(() => vi.advanceTimersByTime(1))
+
+    // Assert
+    expect(beforeTheCeiling).toBe(4)
+    expect(openings).toHaveLength(5)
   })
 
   it('LiveVideo_ShouldResumeOnItsOwn_WhenTheCameraAnswersAgain', () => {
