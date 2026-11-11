@@ -1,10 +1,8 @@
 import { HttpError, NetworkError, pathOf } from './http_error'
 
-const CODE = /^[a-z][a-z0-9_]*$/
-
 interface Answer {
   code?: string
-  reason?: string
+  detail?: string
   traceId?: string
 }
 
@@ -12,21 +10,22 @@ function text(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim() ? value.trim() : undefined
 }
 
-/** Whatever shape the API gave its error body, the parts support needs to read. */
+/** The API answers every error as a ProblemDetails (BACKEND-18); a proxy in between may answer anything. */
 async function readAnswer(response: Response): Promise<Answer> {
-  let body: Record<string, unknown>
+  let body: unknown
   try {
-    body = (await response.clone().json()) as Record<string, unknown>
+    body = await response.clone().json()
   } catch {
     return {}
   }
   if (typeof body !== 'object' || body === null) return {}
 
-  const error = text(body.error)
-  const code = error && CODE.test(error) ? error : undefined
-  const reason =
-    text(body.message) ?? text(body.detail) ?? (code ? undefined : error) ?? text(body.title)
-  return { code, reason, traceId: text(body.traceId) }
+  const problem = body as Record<string, unknown>
+  return {
+    code: text(problem.code),
+    detail: text(problem.detail),
+    traceId: text(problem.traceId),
+  }
 }
 
 /** `fetch`, except that a request that never got an answer says which request it was. */
@@ -48,7 +47,7 @@ export async function httpErrorFrom(
   const answer = await readAnswer(response)
   const status = [String(response.status), response.statusText].filter(Boolean).join(' ')
   const traceId = answer.traceId ? `trace ${answer.traceId}` : undefined
-  const diagnostic = [`${method} ${pathOf(url)}`, status, answer.code, answer.reason, traceId]
+  const diagnostic = [`${method} ${pathOf(url)}`, status, answer.code, answer.detail, traceId]
     .filter(Boolean)
     .join(' · ')
   return new HttpError(response.status, url, diagnostic, answer.code)

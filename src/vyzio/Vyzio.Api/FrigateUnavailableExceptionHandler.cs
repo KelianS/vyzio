@@ -17,8 +17,8 @@ internal sealed class FrigateUnavailableExceptionHandler : IExceptionHandler
             return false;
         }
 
-        httpContext.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
-        await httpContext.Response.WriteAsJsonAsync(new { error = "surveillance_unavailable" }, ct);
+        await ApiProblem.Of(StatusCodes.Status503ServiceUnavailable, "surveillance_unavailable", exception.Message)
+            .ExecuteAsync(httpContext);
         return true;
     }
 }

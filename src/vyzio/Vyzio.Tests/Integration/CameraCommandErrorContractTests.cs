@@ -31,8 +31,8 @@ public class CameraCommandErrorContractTests(CamerasApiFactory factory) : IClass
         var (status, body) = await AnswerTo(new CameraCommandRefusedException("ONVIF Ptz 400 Bad Request: Privacy mode is on"));
 
         Assert.Equal(StatusCodes.Status502BadGateway, status);
-        Assert.Equal("camera_refused", body.GetProperty("error").GetString());
-        Assert.Equal("ONVIF Ptz 400 Bad Request: Privacy mode is on", body.GetProperty("message").GetString());
+        Assert.Equal("camera_refused", body.GetProperty("code").GetString());
+        Assert.Equal("ONVIF Ptz 400 Bad Request: Privacy mode is on", body.GetProperty("detail").GetString());
     }
 
     [Fact]
@@ -41,6 +41,6 @@ public class CameraCommandErrorContractTests(CamerasApiFactory factory) : IClass
         var (status, body) = await AnswerTo(new CameraUnreachableException("No ONVIF service answered on 192.168.1.10"));
 
         Assert.Equal(StatusCodes.Status502BadGateway, status);
-        Assert.Equal("camera_unreachable", body.GetProperty("error").GetString());
+        Assert.Equal("camera_unreachable", body.GetProperty("code").GetString());
     }
 }

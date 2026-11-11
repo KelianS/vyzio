@@ -52,7 +52,7 @@ public class DeleteDetectionEndpointTests(DeleteDetectionApiFactory factory) : I
 
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, status);
-        Assert.Equal("detection_not_found", JsonDocument.Parse(body).RootElement.GetProperty("error").GetString());
+        Assert.Equal("detection_not_found", JsonDocument.Parse(body).RootElement.GetProperty("code").GetString());
         await factory.Eraser.DidNotReceiveWithAnyArgs().EraseAsync(default!, default);
     }
 
@@ -70,7 +70,7 @@ public class DeleteDetectionEndpointTests(DeleteDetectionApiFactory factory) : I
 
         // Assert
         Assert.Equal(expectedStatus, status);
-        Assert.Equal(expectedError, JsonDocument.Parse(body).RootElement.GetProperty("error").GetString());
+        Assert.Equal(expectedError, JsonDocument.Parse(body).RootElement.GetProperty("code").GetString());
     }
 
     [Theory]
@@ -91,8 +91,8 @@ public class DeleteDetectionEndpointTests(DeleteDetectionApiFactory factory) : I
         // Assert
         var root = JsonDocument.Parse(body).RootElement;
         Assert.Equal(HttpStatusCode.BadGateway, status);
-        Assert.Equal(expectedError, root.GetProperty("error").GetString());
-        Assert.Equal("DELETE /api/events/x answered 500", root.GetProperty("message").GetString());
+        Assert.Equal(expectedError, root.GetProperty("code").GetString());
+        Assert.Equal("DELETE /api/events/x answered 500", root.GetProperty("detail").GetString());
         Assert.Equal(1, factory.CountNotifications(eventId));
     }
 }
@@ -127,8 +127,8 @@ public class DetectionClipEndpointTests(DeleteDetectionApiFactory factory) : ICl
         // Assert
         var root = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
         Assert.Equal(HttpStatusCode.BadGateway, response.StatusCode);
-        Assert.Equal("clip_unreadable", root.GetProperty("error").GetString());
-        Assert.Equal("GET api/events/evt-down/clip.mp4 got no answer", root.GetProperty("message").GetString());
+        Assert.Equal("clip_unreadable", root.GetProperty("code").GetString());
+        Assert.Equal("GET api/events/evt-down/clip.mp4 got no answer", root.GetProperty("detail").GetString());
     }
 }
 

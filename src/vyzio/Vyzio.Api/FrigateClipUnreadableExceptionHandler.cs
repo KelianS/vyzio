@@ -14,8 +14,7 @@ internal sealed class FrigateClipUnreadableExceptionHandler : IExceptionHandler
             return false;
         }
 
-        httpContext.Response.StatusCode = StatusCodes.Status502BadGateway;
-        await httpContext.Response.WriteAsJsonAsync(new { error = "clip_unreadable", message = exception.Message }, ct);
+        await ApiProblem.Of(StatusCodes.Status502BadGateway, "clip_unreadable", exception.Message).ExecuteAsync(httpContext);
         return true;
     }
 }

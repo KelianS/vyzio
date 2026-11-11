@@ -15,9 +15,8 @@ internal sealed class ScheduleRuleExceptionHandler : IExceptionHandler
             return false;
         }
 
-        httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
         var error = $"schedule_{SnakeCaseEnum.ToSnakeCase(refused.Refusal)}";
-        await httpContext.Response.WriteAsJsonAsync(new { error, message = exception.Message }, ct);
+        await ApiProblem.BadRequest(error, exception.Message).ExecuteAsync(httpContext);
         return true;
     }
 }

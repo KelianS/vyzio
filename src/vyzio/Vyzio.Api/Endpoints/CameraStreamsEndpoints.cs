@@ -40,13 +40,13 @@ public static class CameraStreamsEndpoints
     private static IResult ToError(StreamOutcome outcome) => outcome switch
     {
         StreamOutcome.CameraNotFound or StreamOutcome.StreamNotFound => Results.NotFound(),
-        StreamOutcome.NotConfigured => Results.Conflict(new { error = "stream_not_configured", message = "The camera's stream protocol is not chosen yet." }),
-        StreamOutcome.UnknownProtocol => Results.BadRequest(new { error = "unknown_protocol", message = "No stream provider speaks this protocol." }),
-        StreamOutcome.UnknownRole => Results.BadRequest(new { error = "unknown_role", message = "Unknown stream role." }),
-        StreamOutcome.ProtocolNotOnCamera => Results.Conflict(new { error = "protocol_not_on_camera", message = "The camera has no row for this protocol." }),
-        StreamOutcome.StreamRecords => Results.Conflict(new { error = "stream_records", message = "This stream records: give recording to another stream first." }),
-        StreamOutcome.PathRequired => Results.BadRequest(new { error = "stream_path_required", message = "Over RTSP a stream is addressed by its path." }),
-        StreamOutcome.UnknownPath => Results.BadRequest(new { error = "unknown_stream_path", message = "Over DVRIP a stream is one of its qualities, never a typed path." }),
+        StreamOutcome.NotConfigured => ApiProblem.Conflict("stream_not_configured", "The camera's stream protocol is not chosen yet."),
+        StreamOutcome.UnknownProtocol => ApiProblem.BadRequest("unknown_protocol", "No stream provider speaks this protocol."),
+        StreamOutcome.UnknownRole => ApiProblem.BadRequest("unknown_role", "Unknown stream role."),
+        StreamOutcome.ProtocolNotOnCamera => ApiProblem.Conflict("protocol_not_on_camera", "The camera has no row for this protocol."),
+        StreamOutcome.StreamRecords => ApiProblem.Conflict("stream_records", "This stream records: give recording to another stream first."),
+        StreamOutcome.PathRequired => ApiProblem.BadRequest("stream_path_required", "Over RTSP a stream is addressed by its path."),
+        StreamOutcome.UnknownPath => ApiProblem.BadRequest("unknown_stream_path", "Over DVRIP a stream is one of its qualities, never a typed path."),
         _ => throw new InvalidOperationException($"Unhandled outcome {outcome}."),
     };
 }
