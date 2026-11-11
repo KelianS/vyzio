@@ -16,7 +16,7 @@ import { buildLiveViewPresenter } from './live_view.presenter'
 import { liveViewReducer } from './live_view.reducer'
 import { buildInitialLiveViewUido } from './live_view.uido'
 import { LiveAccess, liveAccessOf } from './live_access'
-import { LiveLayout, useLiveLayout } from './live_layout'
+import { BAR_ABOVE, LiveLayout, useLiveLayout } from './live_layout'
 import { useAutoHide } from './use_auto_hide'
 import { useFullScreen } from './use_full_screen'
 import { useViewportFitCover } from './use_viewport_fit_cover'
@@ -32,10 +32,11 @@ import type { LiveQuality } from '../../domain/entities/camera.entity'
 const SCREEN = 'fixed inset-x-0 top-0 z-40 h-dvh'
 
 const LAYOUT: Record<LiveLayout, { screen: string; picture: string; controls: string }> = {
+  // The controls take the height the picture leaves, rather than an empty band at the bottom.
   portrait: {
     screen: 'flex flex-col overflow-y-auto bg-background',
-    picture: 'relative aspect-video w-full shrink-0',
-    controls: 'px-4 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]',
+    picture: 'w-full shrink-0',
+    controls: 'flex flex-1 flex-col px-4 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]',
   },
   // The controls place themselves over the picture.
   landscape: {
@@ -261,6 +262,7 @@ export function LiveView({
             <LiveTopBar
               label={label}
               shown={controls.shown}
+              above={BAR_ABOVE[layout]}
               onBack={back}
               onFullScreen={fullScreen.offered ? fullScreen.enter : undefined}
             >

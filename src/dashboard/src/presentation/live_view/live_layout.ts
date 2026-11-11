@@ -30,6 +30,13 @@ function subscribe(onChange: () => void) {
   return () => queries.forEach((query) => query.removeEventListener('change', onChange))
 }
 
+/** Held upright, the bar sits above the picture and never covers it (SPECS 7.2). */
+export const BAR_ABOVE: Record<LiveLayout, boolean> = {
+  portrait: true,
+  landscape: false,
+  wide: false,
+}
+
 /** Follows the device as it turns. */
 export function useLiveLayout(): LiveLayout {
   return useSyncExternalStore(subscribe, currentLayout)

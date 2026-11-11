@@ -18,11 +18,24 @@ const BUSY: Record<PresetActivity, boolean> = { idle: false, saving: true, going
 /** Where each part sits: below or beside the picture, or laid over it in landscape (SPECS 7.2). */
 const PLACE: Record<
   LiveLayout,
-  { panel: string; joystick: string; positions: string; messages: string; tiles: string }
+  {
+    panel: string
+    joystick: string
+    pad: string
+    button: string
+    icon: string
+    positions: string
+    messages: string
+    tiles: string
+  }
 > = {
+  // The pad grows with the room below the picture.
   portrait: {
-    panel: 'flex flex-col items-center gap-5',
+    panel: 'flex flex-1 flex-col items-center justify-evenly gap-5',
     joystick: '',
+    pad: 'size-[min(62vw,16rem)]',
+    button: 'size-12',
+    icon: 'size-6',
     positions: 'flex w-full flex-col items-center gap-2',
     messages: 'flex flex-col items-center gap-2',
     tiles: 'flex max-w-full gap-3 overflow-x-auto px-1 pb-1',
@@ -30,7 +43,10 @@ const PLACE: Record<
   landscape: {
     panel: 'pointer-events-none absolute inset-0',
     joystick:
-      'pointer-events-auto absolute top-1/2 right-[max(1rem,env(safe-area-inset-right))] -translate-y-1/2 rounded-full bg-card/60 p-1',
+      'pointer-events-auto absolute top-1/2 right-[max(1rem,env(safe-area-inset-right))] -translate-y-1/2',
+    pad: 'size-[116px]',
+    button: 'size-[34px]',
+    icon: 'size-4',
     positions:
       'absolute bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-1/2 flex max-w-[calc(100%-18rem)] -translate-x-1/2 flex-col items-center gap-2',
     messages: 'pointer-events-auto flex flex-col gap-2 rounded-card bg-card p-2',
@@ -39,6 +55,9 @@ const PLACE: Record<
   wide: {
     panel: 'flex flex-col items-center gap-6',
     joystick: '',
+    pad: 'size-40',
+    button: 'size-10',
+    icon: 'size-5',
     positions: 'flex w-full flex-col items-center gap-2',
     messages: 'flex flex-col items-center gap-2',
     tiles: 'flex flex-wrap justify-center gap-3',
@@ -246,7 +265,6 @@ export function PtzControlPanel({
     onTouchCancel: onRelease,
   })
 
-  const buttonSize = 'size-[34px]'
   const overridePreset =
     uido.overridePresetId !== null
       ? presets?.find((p) => p.presetId === uido.overridePresetId)
@@ -259,22 +277,28 @@ export function PtzControlPanel({
   return (
     <div className={place.panel}>
       <div {...fade} className={cn(place.joystick, fade.className)}>
-        <div className="relative size-[116px] shrink-0 rounded-full border border-border bg-muted/40">
+        {/* One pad, as on a card: its own surface keeps the four directions one control on any background. */}
+        <div
+          className={cn(
+            'relative shrink-0 rounded-full border border-border bg-card shadow-[var(--shadow-soft)]',
+            place.pad,
+          )}
+        >
           <div
             className="absolute inset-[30%] rounded-full border-2 border-background/70"
             aria-hidden="true"
           />
-          <DirButton buttonSize={buttonSize} edge="Up" title="Haut" {...dir('Up')}>
-            <ArrowUp className="size-4" aria-hidden="true" />
+          <DirButton buttonSize={place.button} edge="Up" title="Haut" {...dir('Up')}>
+            <ArrowUp className={place.icon} aria-hidden="true" />
           </DirButton>
-          <DirButton buttonSize={buttonSize} edge="Left" title="Gauche" {...dir('Left')}>
-            <ArrowLeft className="size-4" aria-hidden="true" />
+          <DirButton buttonSize={place.button} edge="Left" title="Gauche" {...dir('Left')}>
+            <ArrowLeft className={place.icon} aria-hidden="true" />
           </DirButton>
-          <DirButton buttonSize={buttonSize} edge="Right" title="Droite" {...dir('Right')}>
-            <ArrowRight className="size-4" aria-hidden="true" />
+          <DirButton buttonSize={place.button} edge="Right" title="Droite" {...dir('Right')}>
+            <ArrowRight className={place.icon} aria-hidden="true" />
           </DirButton>
-          <DirButton buttonSize={buttonSize} edge="Down" title="Bas" {...dir('Down')}>
-            <ArrowDown className="size-4" aria-hidden="true" />
+          <DirButton buttonSize={place.button} edge="Down" title="Bas" {...dir('Down')}>
+            <ArrowDown className={place.icon} aria-hidden="true" />
           </DirButton>
         </div>
       </div>

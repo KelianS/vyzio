@@ -1167,6 +1167,26 @@ describe('LiveView layouts', () => {
     expect(screen.getByRole('button', { name: 'Retour' })).toBeInTheDocument()
   })
 
+  it.each([
+    { layout: 'portrait' as const, over: false },
+    { layout: 'landscape' as const, over: true },
+    { layout: 'wide' as const, over: true },
+  ])(
+    'LiveView_ShouldLayTheBarOverThePictureOnlyWhenItFillsTheScreen_WhenHeld $layout',
+    ({ layout, over }) => {
+      // Arrange
+      holdTheDevice(layout)
+      fakeNetwork({})
+
+      // Act
+      renderOn()
+
+      // Assert
+      const picture = screen.getByLabelText('Front Door', { selector: 'video' }).parentElement
+      expect(picture?.contains(screen.getByRole('button', { name: 'Retour' }))).toBe(over)
+    },
+  )
+
   it('LiveView_ShouldKeepItsControls_WhenHeldUpright', () => {
     // Arrange
     vi.useFakeTimers()

@@ -49,6 +49,19 @@ test.describe('LiveView', () => {
     await expect(page).toHaveURL('/')
   })
 
+  test('LiveView_ShouldPutTheBarAboveThePicture_WhenThePhoneIsHeldUpright', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
+    await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
+
+    await page.goto('/cameras/camera-1/direct')
+    const back = await page.getByRole('button', { name: 'Retour' }).boundingBox()
+    const picture = await page.locator('video[aria-label="Salon"]').boundingBox()
+
+    expect(back!.y + back!.height).toBeLessThanOrEqual(picture!.y)
+    expect(picture!.width).toBe(390)
+  })
+
   test('LiveView_ShouldGoBackHome_WhenTheBrowserGoesBack', async ({ page }) => {
     const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
     await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))

@@ -7,12 +7,15 @@ import { fading, LIVE_CONTROL } from './live_control'
 export function LiveTopBar({
   label,
   shown,
+  above = false,
   onBack,
   onFullScreen,
   children,
 }: {
   label: string
   shown: boolean
+  /** Above the picture rather than over it: a solid strip, nothing faded. */
+  above?: boolean
   onBack: () => void
   /** Given only while the browser can still be asked to hide its bars. */
   onFullScreen?: () => void
@@ -24,7 +27,10 @@ export function LiveTopBar({
     <div
       {...fade}
       className={cn(
-        'absolute inset-x-0 top-0 flex items-center gap-2 bg-linear-to-b from-surface-inverse/80 to-transparent pt-[max(0.5rem,env(safe-area-inset-top))] pr-[max(0.5rem,env(safe-area-inset-right))] pb-6 pl-[max(0.5rem,env(safe-area-inset-left))] text-surface-inverse-foreground',
+        'flex items-center gap-2 pt-[max(0.5rem,env(safe-area-inset-top))] pr-[max(0.5rem,env(safe-area-inset-right))] pl-[max(0.5rem,env(safe-area-inset-left))] text-surface-inverse-foreground',
+        above
+          ? 'bg-surface-inverse pb-2'
+          : 'absolute inset-x-0 top-0 bg-linear-to-b from-surface-inverse/80 to-transparent pb-6',
         fade.className,
       )}
     >

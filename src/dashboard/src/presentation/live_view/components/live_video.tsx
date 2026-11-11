@@ -9,7 +9,7 @@ import { LiveQuality } from '../../../domain/entities/camera.entity'
 import type { LiveFailure, LivePlayback } from '../../../domain/entities/live_playback.entity'
 import type { FrigateStatus } from '../../../domain/entities/system_stats.entity'
 import { CAMERA_REMOVED, PRIVACY_STOPS_LIVE } from '../live_view.formatters'
-import type { LiveLayout } from '../live_layout'
+import { BAR_ABOVE, type LiveLayout } from '../live_layout'
 import { LiveImage } from './live_image'
 import { LIVE_CONTROL } from './live_control'
 
@@ -218,8 +218,8 @@ export function LiveVideo({
   const shown = failed && FAILURES[failed.failure]
   const playing = PLAYING[playback.kind]
 
-  return (
-    <div className="relative size-full overflow-hidden bg-surface-inverse">
+  const media = (
+    <>
       <video
         ref={videoRef}
         aria-label={label}
@@ -257,6 +257,17 @@ export function LiveVideo({
           </div>
         </>
       )}
+    </>
+  )
+
+  return BAR_ABOVE[layout] ? (
+    <div className="flex flex-col">
+      {bar(controls)}
+      <div className="relative aspect-video w-full overflow-hidden bg-surface-inverse">{media}</div>
+    </div>
+  ) : (
+    <div className="relative size-full overflow-hidden bg-surface-inverse">
+      {media}
       {bar(controls)}
     </div>
   )
