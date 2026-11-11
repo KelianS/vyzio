@@ -57,7 +57,7 @@ flowchart TB
     subgraph hub["Vyzio hub, one Docker network"]
         dash["Dashboard<br/>web server and static interface"]
         api["API<br/>product logic"]
-        db[("Database<br/>one file, in the API's folder")]
+        db[("Database<br/>one file, in the API's data folder")]
         mqtt["MQTT broker"]
         subgraph frig["Frigate container"]
             frigate["Frigate<br/>video pipeline"]
@@ -102,7 +102,7 @@ Every flow the system opens. "Docker network" means a flow that never leaves the
 
 | Source | Direction | Destination | Protocol | Port | Authentication |
 |---|---|---|---|---|---|
-| Browser, home network | to | Dashboard | HTTP and the live view's WebSocket, in the clear by design (ADR-67) | 8080, the one published port | Owner session cookie (ADR-54) |
+| Browser, home network | to | Dashboard | HTTP and the live view's WebSocket, in the clear by design (ADR-67) | 8080 by default, set at install, the one published port | Owner session cookie (ADR-54) |
 | Dashboard | to | API, Docker network | HTTP, WebSocket | 8443 | The owner session cookie, passed through |
 | API | to | Frigate, Docker network | HTTP REST; WebSocket to go2rtc for the live view (ADR-72) | 5000, also bound to the host's loopback | None: unreachable from outside the hub |
 | Frigate | to | MQTT broker, Docker network | MQTT | 1883 | None, anonymous |
@@ -260,7 +260,7 @@ exception is the image of a notification, sent to the channels the user set up (
 | Frigate, with go2rtc | Frigate, a pinned version | API on the host's loopback only | Configuration folder; media folder | Privileged, for the accelerators |
 
 One Compose stack on one machine, one Docker network; its state lives in folders under one host
-folder, which `.env` names with the release to run. The API exposes two anonymous probes: liveness,
+folder the installer chooses, along with the release to run. The API exposes two anonymous probes: liveness,
 read by the container healthcheck and the only one relayed by the dashboard, and readiness (database,
 broker, Frigate), kept on the Docker network (ADR-55).
 

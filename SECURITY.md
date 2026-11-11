@@ -14,7 +14,7 @@ to an earlier tag.
 | Latest release | Yes |
 | Anything older | No, update first |
 
-Updating is `docker compose pull && docker compose up -d`, and the data survives it.
+Updating is setting the new release in `VYZIO_VERSION` of `.env`, then `docker compose pull && docker compose up -d`; the data survives it.
 
 ## Reporting a vulnerability
 
