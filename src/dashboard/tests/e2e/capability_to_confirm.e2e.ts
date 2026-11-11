@@ -61,7 +61,7 @@ test.describe('Capability to confirm', () => {
     state.ptzBinding = { protocol: 'v380', configJson: null, status: 'to_confirm' }
     await installFakeBackend(page, state)
     await page.goto('/')
-    await page.getByRole('button', { name: 'Porte d’entrée' }).click()
+    await page.getByRole('link', { name: 'Porte d’entrée' }).click()
     await expect(page.getByText(/L’orientation n’est pas disponible pour le moment/)).toBeVisible()
     await expect(page.getByTitle('Haut')).toHaveCount(0)
 
@@ -75,7 +75,7 @@ test.describe('Capability to confirm', () => {
     await expect(orientation.getByText('Fonctionne')).toBeVisible()
 
     await page.getByRole('link', { name: 'Accueil' }).click()
-    await page.getByRole('button', { name: 'Porte d’entrée' }).click()
+    await page.getByRole('link', { name: 'Porte d’entrée' }).click()
     await expect(page.getByTitle('Haut')).toBeVisible()
   })
 })

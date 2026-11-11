@@ -5,7 +5,7 @@ async function openTheLiveView(page: Page, liveRefusal?: number) {
   const state = createFakeBackendState({ liveRefusal })
   await installFakeBackend(page, state)
   await page.goto('/')
-  await page.getByRole('button', { name: 'Porte d’entrée' }).click()
+  await page.getByRole('link', { name: 'Porte d’entrée' }).click()
   return state
 }
 
@@ -24,10 +24,10 @@ test.describe('Live view video', () => {
       .toBeGreaterThanOrEqual(2)
     expect(state.liveSockets.at(-1)).toContain('/api/cameras/camera-1/live/ws?quality=low')
 
-    await page.getByRole('button', { name: 'Haute qualité' }).click()
+    await page.getByRole('button', { name: 'HD haute qualité' }).click()
 
     await expect.poll(() => state.liveSockets.at(-1)).toContain('quality=high')
-    await expect(page.getByRole('button', { name: 'Haute qualité' })).toHaveAttribute(
+    await expect(page.getByRole('button', { name: 'HD haute qualité' })).toHaveAttribute(
       'aria-pressed',
       'true',
     )

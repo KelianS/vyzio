@@ -7,7 +7,7 @@ async function openTheLiveView(page: Page) {
   })
   await installFakeBackend(page, state)
   await page.goto('/settings/cameras/camera-1/image')
-  await page.getByRole('button', { name: 'Piloter la caméra' }).click()
+  await page.getByRole('link', { name: 'Piloter la caméra' }).click()
   return state
 }
 

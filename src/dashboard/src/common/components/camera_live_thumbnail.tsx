@@ -21,16 +21,19 @@ interface CameraLiveThumbnailProps {
   frigateStatus?: FrigateStatus
   /** A privacy toggle is under way on this camera: the wait shows here, not only in the modal. */
   busy?: boolean
-  onExpand?: () => void
+  /** Where a tap on the picture leads: the camera's live view. */
+  liveTo?: string
   onTogglePrivacy?: (camera: Camera, active: boolean) => void
 }
+
+const FRAME = 'relative aspect-video bg-surface-inverse'
 
 export function CameraLiveThumbnail({
   camera,
   apiBaseUrl,
   frigateStatus = 'active',
   busy = false,
-  onExpand,
+  liveTo,
   onTogglePrivacy,
 }: CameraLiveThumbnailProps) {
   const [imgSrc, setImgSrc] = useState(() => liveFrameUrl(apiBaseUrl, camera.id))
@@ -41,7 +44,7 @@ export function CameraLiveThumbnail({
   const unwatched = surveillanceEntryOf(camera) !== SurveillanceEntry.Watched
   const polling = !camera.privacyModeActive && camera.connected && !unwatched
   // An offline camera opens no live view: it would only wait for a stream that cannot come (SPECS 2.2).
-  const expandable = Boolean(onExpand) && !camera.privacyModeActive && !unwatched && !deviceOffline
+  const expandable = Boolean(liveTo) && !camera.privacyModeActive && !unwatched && !deviceOffline
 
   // Resets the broken-image flag on identity/connectivity change without a setState-in-effect cascade.
   const resetKey = `${camera.id}:${camera.privacyModeActive}:${camera.connected}:${apiBaseUrl}`
@@ -72,61 +75,63 @@ export function CameraLiveThumbnail({
     onTogglePrivacy?.(camera, !camera.privacyModeActive)
   }
 
+  const picture = (
+    <>
+      {camera.privacyModeActive && privacy ? (
+        // The same words as the privacy screen's badge: what the camera answered (SPECS 9.2).
+        <div className="flex h-full flex-col items-center justify-center gap-2 px-3 text-center text-surface-inverse-foreground">
+          <PrivacyStateIcon kind={privacy.kind} className="size-5" />
+          <span className="text-sm font-medium">{privacy.text}</span>
+        </div>
+      ) : unwatched ? (
+        <Link
+          to={`/settings/cameras/${camera.id}`}
+          aria-label={`${formatCameraStatusLabel(camera)} : ${camera.displayName}`}
+          className="flex h-full items-center justify-center gap-1 text-sm font-medium text-surface-inverse-foreground underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring"
+        >
+          {formatCameraStatusLabel(camera)}
+          <ChevronRight className="size-4" aria-hidden="true" />
+        </Link>
+      ) : deviceOffline ? (
+        <div className="flex h-full items-center justify-center gap-2 text-sm font-medium text-surface-inverse-foreground">
+          <WifiOff className="size-4" aria-hidden="true" />
+          Hors ligne
+        </div>
+      ) : (
+        <>
+          <img
+            src={imgSrc}
+            alt={camera.displayName}
+            // An image with no data shows the browser's broken icon: it shows through
+            // the waiting veil, so it stays hidden until it has something to show.
+            className={cn('size-full object-cover', imageError && 'invisible')}
+            onError={() => setImageError(true)}
+            onLoad={() => setImageError(false)}
+          />
+          {waitMessage && <LiveWaitVeil message={waitMessage} className="bg-surface-inverse/90" />}
+        </>
+      )}
+    </>
+  )
+
   return (
     <article className="overflow-hidden rounded-card bg-card shadow-[var(--shadow-soft)]">
-      {/* Only the frame is the button — the footer's privacy toggle is a real one, and nesting is invalid. */}
-      <div
-        className={cn('relative aspect-video bg-surface-inverse', expandable && 'cursor-pointer')}
-        onClick={camera.privacyModeActive ? undefined : onExpand}
-        role={expandable ? 'button' : undefined}
-        // Names the frame itself: the image, hidden during an outage, took its name along.
-        aria-label={expandable ? camera.displayName : undefined}
-        tabIndex={expandable ? 0 : undefined}
-        onKeyDown={
-          expandable
-            ? (event) => {
-                if (event.key === 'Enter' || event.key === ' ') onExpand?.()
-              }
-            : undefined
-        }
-      >
-        {camera.privacyModeActive && privacy ? (
-          // The same words as the privacy screen's badge: what the camera answered (SPECS 9.2).
-          <div className="flex h-full flex-col items-center justify-center gap-2 px-3 text-center text-surface-inverse-foreground">
-            <PrivacyStateIcon kind={privacy.kind} className="size-5" />
-            <span className="text-sm font-medium">{privacy.text}</span>
-          </div>
-        ) : unwatched ? (
-          <Link
-            to={`/settings/cameras/${camera.id}`}
-            aria-label={`${formatCameraStatusLabel(camera)} : ${camera.displayName}`}
-            className="flex h-full items-center justify-center gap-1 text-sm font-medium text-surface-inverse-foreground underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring"
-          >
-            {formatCameraStatusLabel(camera)}
-            <ChevronRight className="size-4" aria-hidden="true" />
-          </Link>
-        ) : deviceOffline ? (
-          <div className="flex h-full items-center justify-center gap-2 text-sm font-medium text-surface-inverse-foreground">
-            <WifiOff className="size-4" aria-hidden="true" />
-            Hors ligne
-          </div>
-        ) : (
-          <>
-            <img
-              src={imgSrc}
-              alt={camera.displayName}
-              // An image with no data shows the browser's broken icon: it shows through
-              // the waiting veil, so it stays hidden until it has something to show.
-              className={cn('size-full object-cover', imageError && 'invisible')}
-              onError={() => setImageError(true)}
-              onLoad={() => setImageError(false)}
-            />
-            {waitMessage && (
-              <LiveWaitVeil message={waitMessage} className="bg-surface-inverse/90" />
-            )}
-          </>
-        )}
-      </div>
+      {/* Only the frame is the link: the footer's privacy toggle is a button, and nesting is invalid. */}
+      {expandable && liveTo ? (
+        <Link
+          to={liveTo}
+          // Names the frame itself: the image, hidden during an outage, took its name along.
+          aria-label={camera.displayName}
+          className={cn(
+            FRAME,
+            'block focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring',
+          )}
+        >
+          {picture}
+        </Link>
+      ) : (
+        <div className={FRAME}>{picture}</div>
+      )}
 
       <div className="flex items-center gap-2 p-3">
         <span

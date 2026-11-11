@@ -176,6 +176,27 @@ An error reads at two levels ([SPECS](SPECS.md) 1.5).
 - **An answer that the thing no longer exists is not a failed read**: it is said as such, with the way
   back, never `Réessayer`, which cannot succeed.
 
+### Full-screen viewing
+
+A picture the user watches and drives is **a screen of its own, with its own route**, never a
+layer over a page: the browser's back closes it, home when there is nothing to go back to, and
+nothing of the page stays around it. A layer (`common/components/overlay`) remains for glancing at a
+still image or a recording. Where each control sits in a given screen is its SPECS.
+
+- **The picture goes edge to edge.** A top bar carries back, the name, then the picture's own
+  controls, on the dark structural surface (`--bg-strong`). When the picture neither fills the screen
+  nor has controls beside it, the bar sits above it and never covers it; otherwise it lies over the
+  picture, dimmed so it reads over any picture.
+- **The other controls sit beside or below the picture when there is room**, on the page surface,
+  and over it only when the picture fills the screen. Below the picture they keep a capped size
+  that does not grow with the free height, and stand centred in the room left.
+- **Controls over a filling picture fade** after a few seconds without a gesture and come back on a
+  tap; never while a finger holds one. Controls beside or below the picture never fade. A line that
+  explains a state (a failure, a missing step) is not a control: it never fades.
+- **The browser's own bars**: when the picture fills the screen, the screen asks the browser to go
+  full screen on a gesture, with a button where no gesture has come. Where the browser cannot, the
+  screen fills what it leaves visible, and keeps every control inside the device's safe areas.
+
 ## UX vocabulary
 
 The single home of the interface's shared words. One gesture carries the same word **everywhere**, so
