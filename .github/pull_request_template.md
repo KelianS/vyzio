@@ -27,6 +27,6 @@ Closes #
 - [ ] a test that fails without the change (COMMON-15)
 - [ ] e2e for the journey a user walks through (DASHBOARD-30)
 - [ ] comments: one line, the non-deducible *why* (COMMON-02, COMMON-03)
-- [ ] `docs/` describes the target only (DOCS-06, DOCS-08)
+- [ ] `docs/` describes the target only (DOCS-08, DOCS-16)
 - [ ] nothing duplicated, nothing unreached (COMMON-05, COMMON-08)
 - [ ] no implicit dependency on an option that was not retained

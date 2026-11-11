@@ -145,7 +145,7 @@ export function AddCameraView() {
         <h1 className="mt-1 font-serif text-3xl">Ajouter une caméra</h1>
       </div>
 
-      <SettingsPage lede="Deux étapes : désigner la caméra, puis lui donner de quoi se connecter.">
+      <SettingsPage>
         <SettingsSection
           title="Quelle caméra ?"
           lede={
