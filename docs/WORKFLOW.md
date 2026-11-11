@@ -85,7 +85,9 @@ interface shows the user, and the bodies of the ADRs accepted in French until th
 
 - Branches: `main`, stable and the target of every pull request; a work branch is named
   `<type>/<issue>-<slug>`, `type` being a commit type of GIT-01 (`feat/47-live-video-stream`).
-- Pull requests: review and green tests are mandatory.
+- Pull requests: review and green tests are mandatory. CI's `ci-ok` job sums up every other job,
+  security scans included ([`SECURITY.md`](../SECURITY.md) § What runs on every change), and is
+  the check the ruleset of `main` requires.
 
 ### Delivery gate, before a pull request is opened
 
