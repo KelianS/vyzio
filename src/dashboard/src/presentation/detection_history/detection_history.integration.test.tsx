@@ -297,4 +297,58 @@ describe('DetectionHistoryView', () => {
     // Assert
     expect(await screen.findByText('La vidéo n’a pas pu être lue.')).toBeInTheDocument()
   })
+
+  it('onVideoFailed_ShouldSayItCouldNotBePlayedWithTheDetail_WhenTheSurveillanceFailsToServeIt', async () => {
+    // Arrange
+    fakeNetwork({
+      ...oneCat,
+      'GET /api/detection-events/event-1/clip': failure(
+        502,
+        'clip_unreadable',
+        'GET clip.mp4 got no answer',
+      ),
+    })
+    renderScreen(<DetectionHistoryView />)
+    await userEvent.click(await screen.findByRole('button', { name: 'Vidéo' }))
+    const preview = await screen.findByRole('dialog', { name: 'Aperçu de la détection' })
+
+    // Act
+    fireEvent.error(preview.querySelector('video')!)
+
+    // Assert
+    expect(await screen.findByText('La vidéo n’a pas pu être lue.')).toBeInTheDocument()
+    expect(screen.getByText(/GET \/api\/detection-events\/event-1\/clip · 502/)).toBeInTheDocument()
+    expect(screen.queryByText('La vidéo de ce moment a été supprimée.')).not.toBeInTheDocument()
+  })
+
+  it.each([
+    [{ mediaExpired: true }, 'Aperçu et vidéo effacés — au-delà de la durée de conservation.'],
+    [{ hasSnapshot: false, hasClip: false }, 'Cette détection n’a ni aperçu ni vidéo.'],
+  ])('onDelete_ShouldStillBeOffered_WhenTheRowHasNoMediaToShow (%o)', async (media, sentence) => {
+    // Arrange
+    fakeNetwork({
+      ...reference,
+      'GET /api/detection-events/history': ok({
+        items: [makeDetectionEvent({ label: 'cat', ...media })],
+        nextCursor: null,
+      }),
+      'DELETE /api/detection-events/event-1': ok(),
+    })
+    renderScreen(<DetectionHistoryView />)
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Ouvrir la détection : Détection « cat »' }),
+    )
+    const preview = await screen.findByRole('dialog', { name: 'Aperçu de la détection' })
+    expect(within(preview).getByText(sentence)).toBeInTheDocument()
+
+    // Act
+    await userEvent.click(within(preview).getByRole('button', { name: 'Supprimer' }))
+    await userEvent.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Supprimer' }),
+    )
+
+    // Assert
+    expect(await screen.findByText('Détection supprimée.')).toBeInTheDocument()
+    expect(screen.queryByText('Détection « cat »')).not.toBeInTheDocument()
+  })
 })

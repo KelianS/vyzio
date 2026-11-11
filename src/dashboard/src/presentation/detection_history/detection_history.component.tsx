@@ -187,6 +187,7 @@ export function DetectionHistoryView() {
             labels={uido.detectionLabels}
             apiBaseUrl={apiBaseUrl}
             onOpenMedia={presenter.onMediaSet}
+            openWithoutMedia
             renderExtra={(event) =>
               carriesIdentity(event) && (
                 <IdentityCorrection
@@ -254,7 +255,7 @@ export function DetectionHistoryView() {
         </Overlay>
       )}
 
-      {/* Rendered after the preview so the question stacks above it (ADR-42). */}
+      {/* Rendered after the preview so the question stacks above it. */}
       {deletingEventId && (
         <ConfirmModal
           title="Supprimer cette détection ?"

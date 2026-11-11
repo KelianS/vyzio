@@ -11,8 +11,9 @@ namespace Vyzio.Infrastructure.Services;
 public sealed class FrigateDetectionEraser(HttpClient httpClient, ILogger<FrigateDetectionEraser> logger)
     : IFrigateDetectionEraser
 {
-    private const string NothingErased = "nothing erased yet";
-    private const string RecordingErased = "its review item and the overlapping recording are already erased";
+    private static readonly Progress NothingErased = new("nothing erased yet", PartlyErased: false);
+    private static readonly Progress RecordingErased =
+        new("its review item and the overlapping recording are already erased", PartlyErased: true);
     private const int BodyExcerptLength = 200;
 
     public async Task<DetectionErasure> EraseAsync(string frigateEventId, CancellationToken ct = default)
@@ -58,7 +59,7 @@ public sealed class FrigateDetectionEraser(HttpClient httpClient, ILogger<Frigat
     }
 
     private async Task<HttpResponseMessage> SendAsync(
-        HttpMethod method, string path, HttpContent? content, string progress, CancellationToken ct)
+        HttpMethod method, string path, HttpContent? content, Progress progress, CancellationToken ct)
     {
         using var request = new HttpRequestMessage(method, path) { Content = content };
         try
@@ -67,11 +68,15 @@ public sealed class FrigateDetectionEraser(HttpClient httpClient, ILogger<Frigat
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException && !ct.IsCancellationRequested)
         {
-            throw Fail($"{method} {path} got no answer: {ex.Message}; {progress}", progress, ex);
+            // A deletion left unanswered may have been carried out: only a retry can tell.
+            var unanswered = method == HttpMethod.Get
+                ? progress
+                : progress with { Text = $"{progress.Text}; this call may have erased part of it", PartlyErased = true };
+            throw Fail($"{method} {path} got no answer: {ex.Message}; {unanswered.Text}", unanswered, ex);
         }
     }
 
-    private async Task EnsureSuccessAsync(HttpResponseMessage answer, string progress, CancellationToken ct)
+    private async Task EnsureSuccessAsync(HttpResponseMessage answer, Progress progress, CancellationToken ct)
     {
         if (answer.IsSuccessStatusCode)
             return;
@@ -80,11 +85,11 @@ public sealed class FrigateDetectionEraser(HttpClient httpClient, ILogger<Frigat
         var excerpt = body.Length > BodyExcerptLength ? body[..BodyExcerptLength] : body;
         throw Fail(
             $"{answer.RequestMessage?.Method} {answer.RequestMessage?.RequestUri?.PathAndQuery} answered "
-            + $"{(int)answer.StatusCode} {answer.ReasonPhrase}: {excerpt}; {progress}",
+            + $"{(int)answer.StatusCode} {answer.ReasonPhrase}: {excerpt}; {progress.Text}",
             progress);
     }
 
-    private async Task<T> ReadAsync<T>(HttpResponseMessage answer, string progress, CancellationToken ct)
+    private async Task<T> ReadAsync<T>(HttpResponseMessage answer, Progress progress, CancellationToken ct)
         where T : class
     {
         await EnsureSuccessAsync(answer, progress, ct);
@@ -97,18 +102,21 @@ public sealed class FrigateDetectionEraser(HttpClient httpClient, ILogger<Frigat
         {
             throw Fail(
                 $"{answer.RequestMessage?.Method} {answer.RequestMessage?.RequestUri?.PathAndQuery} answered "
-                + $"an unreadable body: {ex.Message}; {progress}",
+                + $"an unreadable body: {ex.Message}; {progress.Text}",
                 progress,
                 ex);
         }
     }
 
-    private DetectionErasureFailedException Fail(string detail, string progress, Exception? inner = null)
+    private DetectionErasureFailedException Fail(string detail, Progress progress, Exception? inner = null)
     {
-        var failure = new DetectionErasureFailedException(detail, progress == RecordingErased, inner);
+        var failure = new DetectionErasureFailedException(detail, progress.PartlyErased, inner);
         logger.LogError(failure, "Erasing a detection failed: {Detail}", detail);
         return failure;
     }
+
+    // What support reads about how far the erasure got, and whether a retry finishes rather than starts it.
+    private sealed record Progress(string Text, bool PartlyErased);
 
     private sealed class EndTimeDto
     {

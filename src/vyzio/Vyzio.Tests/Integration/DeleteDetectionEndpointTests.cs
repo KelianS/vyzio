@@ -80,11 +80,47 @@ public class DeleteDetectionEndpointTests(DeleteDetectionApiFactory factory) : I
     }
 }
 
+public class DetectionClipEndpointTests(DeleteDetectionApiFactory factory) : IClassFixture<DeleteDetectionApiFactory>
+{
+    [Fact]
+    public async Task GetClip_ShouldAnswerNotFound_WhenFrigateSaysTheClipNoLongerExists()
+    {
+        // Arrange
+        factory.Clips.ReadClipAsync("evt-gone", Arg.Any<CancellationToken>()).Returns((Stream?)null);
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.GetAsync("/api/detection-events/evt-gone/clip");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetClip_ShouldAnswerBadGatewayWithTheDetail_WhenFrigateFailsToServeIt()
+    {
+        // Arrange
+        factory.Clips.ReadClipAsync("evt-down", Arg.Any<CancellationToken>())
+            .ThrowsAsync(new FrigateClipUnreadableException("GET api/events/evt-down/clip.mp4 got no answer"));
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.GetAsync("/api/detection-events/evt-down/clip");
+
+        // Assert
+        var root = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+        Assert.Equal(HttpStatusCode.BadGateway, response.StatusCode);
+        Assert.Equal("clip_unreadable", root.GetProperty("error").GetString());
+        Assert.Equal("GET api/events/evt-down/clip.mp4 got no answer", root.GetProperty("message").GetString());
+    }
+}
+
 public sealed class DeleteDetectionApiFactory : WebApplicationFactory<Program>
 {
     private readonly SqliteConnection _connection = new("Data Source=:memory:");
 
     public IFrigateDetectionEraser Eraser { get; } = Substitute.For<IFrigateDetectionEraser>();
+    public IFrigateClipProvider Clips { get; } = Substitute.For<IFrigateClipProvider>();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -97,6 +133,8 @@ public sealed class DeleteDetectionApiFactory : WebApplicationFactory<Program>
             services.RemoveAll<IHostedService>();
             services.RemoveAll<IFrigateDetectionEraser>();
             services.AddSingleton(Eraser);
+            services.RemoveAll<IFrigateClipProvider>();
+            services.AddSingleton(Clips);
             services.RemoveAll<DbContextOptions<VyzioDbContext>>();
             services.RemoveAll<VyzioDbContext>();
             services.AddDbContext<VyzioDbContext>(options =>

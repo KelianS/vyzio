@@ -114,6 +114,7 @@ builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<Vyzio.Api.FrigateUnavailableExceptionHandler>();
 builder.Services.AddExceptionHandler<Vyzio.Api.CameraCommandExceptionHandler>();
 builder.Services.AddExceptionHandler<Vyzio.Api.DetectionErasureExceptionHandler>();
+builder.Services.AddExceptionHandler<Vyzio.Api.FrigateClipUnreadableExceptionHandler>();
 builder.Services.AddExceptionHandler<Vyzio.Api.ScheduleRuleExceptionHandler>();
 builder.Services.AddVyzioHealthChecks();
 builder.Services.AddSingleton<FrigateMqttConnection>();

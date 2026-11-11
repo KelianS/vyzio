@@ -71,4 +71,24 @@ describe('DetectionList', () => {
     expect(screen.queryByRole('presentation')).not.toBeInTheDocument()
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
+
+  it('DetectionList_ShouldOpenARowWithNothingToShow_WhenTheScreenOffersActionsOnIt', () => {
+    // Arrange
+    const onOpenMedia = vi.fn()
+    render(
+      <DetectionList
+        events={[{ ...event, mediaExpired: true }]}
+        labels={[]}
+        apiBaseUrl="http://api"
+        onOpenMedia={onOpenMedia}
+        openWithoutMedia
+      />,
+    )
+
+    // Act
+    fireEvent.click(screen.getByRole('button', { name: /Ouvrir la détection/ }))
+
+    // Assert
+    expect(onOpenMedia).toHaveBeenCalledWith({ type: 'none', eventId: 'evt-1', expired: true })
+  })
 })

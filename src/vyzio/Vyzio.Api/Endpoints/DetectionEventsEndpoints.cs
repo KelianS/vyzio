@@ -42,7 +42,7 @@ public static class DetectionEventsEndpoints
         // Clip proxy — streams MP4 from Frigate with Range support (ADR-17)
         group.MapGet("/{id}/clip", async (string id, IFrigateClipProvider clips, CancellationToken ct) =>
         {
-            var stream = await clips.TryGetClipAsync(id, ct: ct);
+            var stream = await clips.ReadClipAsync(id, ct);
             if (stream is null) return Results.NotFound();
             return Results.Stream(stream, "video/mp4", enableRangeProcessing: true);
         });

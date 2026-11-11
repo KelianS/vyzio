@@ -13,9 +13,9 @@ public class FrigateDetectionEraserTests
     private const string EndedReview = """{"id":"rev-1","end_time":1700000040.0}""";
 
     private static (FrigateDetectionEraser Eraser, ScriptedFrigate Frigate) CreateSut(
-        Dictionary<string, (HttpStatusCode Status, string Body)> answers)
+        Dictionary<string, (HttpStatusCode Status, string Body)> answers, string? dropped = null)
     {
-        var frigate = new ScriptedFrigate(answers);
+        var frigate = new ScriptedFrigate(answers, dropped);
         var eraser = new FrigateDetectionEraser(
             new HttpClient(frigate) { BaseAddress = new Uri("http://frigate:5000/") },
             NullLogger<FrigateDetectionEraser>.Instance);
@@ -149,6 +149,27 @@ public class FrigateDetectionEraserTests
     }
 
     [Fact]
+    public async Task EraseAsync_ShouldCountItAsPartlyErased_WhenTheReviewDeletionGetsNoAnswer()
+    {
+        // Arrange
+        var (eraser, _) = CreateSut(new()
+        {
+            ["GET /api/events/evt-1"] = (HttpStatusCode.OK, EndedEvent),
+            ["GET /api/review/event/evt-1"] = (HttpStatusCode.OK, EndedReview),
+        }, dropped: "POST /api/reviews/delete");
+
+        // Act
+        var failure = await Assert.ThrowsAsync<DetectionErasureFailedException>(() => eraser.EraseAsync("evt-1"));
+
+        // Assert
+        Assert.True(failure.PartlyErased);
+        Assert.Equal(
+            "POST api/reviews/delete got no answer: Connection reset.; nothing erased yet; "
+            + "this call may have erased part of it",
+            failure.Message);
+    }
+
+    [Fact]
     public async Task EraseAsync_ShouldSayFrigateGaveNoAnswer_WhenItIsUnreachable()
     {
         // Arrange
@@ -161,9 +182,11 @@ public class FrigateDetectionEraserTests
 
         // Assert
         Assert.Equal("GET api/events/evt-1 got no answer: No route to host.; nothing erased yet", failure.Message);
+        Assert.False(failure.PartlyErased);
     }
 
-    private sealed class ScriptedFrigate(Dictionary<string, (HttpStatusCode Status, string Body)> answers)
+    private sealed class ScriptedFrigate(
+        Dictionary<string, (HttpStatusCode Status, string Body)> answers, string? dropped)
         : HttpMessageHandler
     {
         public List<string> Requests { get; } = [];
@@ -175,6 +198,8 @@ public class FrigateDetectionEraserTests
             Requests.Add(key);
             if (key == "POST /api/reviews/delete")
                 ReviewDeletionBody = await request.Content!.ReadAsStringAsync(ct);
+            if (key == dropped)
+                throw new HttpRequestException("Connection reset.");
 
             var (status, body) = answers[key];
             return new HttpResponseMessage(status)
