@@ -12,6 +12,8 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
+  // Every core of the CI runner rather than Playwright's default of half of them.
+  workers: process.env.CI ? '100%' : undefined,
   reporter: 'html',
   use: {
     baseURL: BASE_URL,
