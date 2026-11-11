@@ -202,7 +202,7 @@ written, is in [`docs/WORKFLOW.md`](docs/WORKFLOW.md). Taking part means keeping
 Found a security flaw? Do not open an issue: [`SECURITY.md`](SECURITY.md) says how to report it
 privately, and what Vyzio does and does not defend against today.
 
-Documentation is French where it frames the product for its market (`docs/SPECS.md`).
+Documentation is French where it frames the product for its market (`docs/SPECS.md`, `docs/uc/`).
 Everything else is English: code, comments, commits, pull requests, issue titles.
 
 ---
@@ -212,6 +212,7 @@ Everything else is English: code, comments, commits, pull requests, issue titles
 | Document                                           | What it holds                            |
 | -------------------------------------------------- | ---------------------------------------- |
 | [`docs/SPECS.md`](docs/SPECS.md)                   | What the product does, and for whom      |
+| [`docs/uc/`](docs/uc/)                             | Each user goal and its journeys          |
 | [`docs/SAD.md`](docs/SAD.md)                       | System overview, flows, data, threats    |
 | [`docs/adr/`](docs/adr/)                           | Structural decisions and their rationale |
 | [`docs/hardware/`](docs/hardware/)                 | Measurements of each camera model        |

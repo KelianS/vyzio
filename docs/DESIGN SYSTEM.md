@@ -2,7 +2,7 @@
 
 The dashboard's design system: intent, tokens, components, the patterns every screen reuses, the
 shared UX vocabulary and the bans. It never describes one feature's behaviour, which is
-[SPECS](SPECS.md) or the code and its tests, and never paraphrases the code
+[SPECS](SPECS.md), its use cases, or the code and its tests, and never paraphrases the code
 ([DOCS-11, DOCS-13](rules/docs.md)). The French labels quoted are the product's own copy,
 reproduced verbatim.
 
@@ -121,7 +121,7 @@ one short line takes its place, naming as a link the page where it is fixed.
 A pill speaks **one vocabulary per level**: one set of words, the same for every item of that level,
 each word one state, never two; a word shared by two levels keeps one meaning in each. Four tones:
 `ok`, `warn` (the user has something to do), `danger` (a failure), `neutral` (nothing wrong, an answer
-the user gave included). Each feature's words are its SPECS.
+the user gave included). Each feature's words are its use case's.
 
 ### Folds
 
@@ -181,7 +181,7 @@ An error reads at two levels ([SPECS](SPECS.md) UI-01).
 A picture the user watches and drives is **a screen of its own, with its own route**, never a
 layer over a page: the browser's back closes it, home when there is nothing to go back to, and
 nothing of the page stays around it. A layer (`common/components/overlay`) remains for glancing at a
-still image or a recording. Where each control sits in a given screen is its SPECS.
+still image or a recording. Where each control sits in a given screen is its use case.
 
 - **The picture goes edge to edge.** A top bar carries back, the name, then the picture's own
   controls, on the dark structural surface (`--bg-strong`). When the picture neither fills the screen
