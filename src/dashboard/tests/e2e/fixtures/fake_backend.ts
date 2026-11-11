@@ -1471,6 +1471,14 @@ export async function installFakeBackend(
     if (path.match(/^\/api\/detection-events\/[^/]+\/identity$/) && method === 'PATCH') {
       return json(route, {})
     }
+    const deletionMatch = path.match(/^\/api\/detection-events\/([^/]+)$/)
+    if (deletionMatch && method === 'DELETE') {
+      const index = state.detectionHistory.findIndex((e) => e.eventId === deletionMatch[1])
+      if (index < 0) return json(route, { error: 'detection_not_found' }, 404)
+      // Gone from every read: history, a person's history and the home screen all draw on this list.
+      state.detectionHistory.splice(index, 1)
+      return route.fulfill({ status: 204 })
+    }
     const mediaMatch = path.match(/^\/api\/detection-events\/([^/]+)\/(thumbnail|snapshot)$/)
     if (mediaMatch && method === 'GET') {
       const event = state.detectionHistory.find((e) => e.eventId === mediaMatch[1])

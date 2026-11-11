@@ -1,12 +1,17 @@
 import { useEffect, useReducer, useState, type ReactNode } from 'react'
-import { SlidersHorizontal, UserRoundPen } from 'lucide-react'
+import { SlidersHorizontal, Trash2, UserRoundPen } from 'lucide-react'
 import { Button } from '../../common/ui/button'
 import { Input } from '../../common/ui/input'
 import { useToast } from '../../common/components/toast'
 import { HelpPanel } from '../../common/components/help_panel'
 import { Overlay } from '../../common/components/overlay'
+import { ConfirmModal } from '../../common/components/confirm_modal'
 import { DetectionList } from '../../common/detection/detection_list'
-import { carriesIdentity } from '../../common/detection/detection_formatters'
+import {
+  carriesIdentity,
+  formatEventDetail,
+  formatEventTitle,
+} from '../../common/detection/detection_formatters'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import type { DetectionEvent } from '../../domain/entities/detection_event.entity'
@@ -54,6 +59,8 @@ export function DetectionHistoryView() {
     uido.filterFrom,
     uido.filterTo,
   ])
+
+  const deleting = uido.items.find((item) => item.eventId === uido.deletingEventId)
 
   const filtered = Boolean(
     uido.filterCamera ||
@@ -183,16 +190,28 @@ export function DetectionHistoryView() {
             labels={uido.detectionLabels}
             apiBaseUrl={apiBaseUrl}
             onOpenMedia={(type, url) => presenter.onMediaSet({ type, url })}
-            renderExtra={(event) =>
-              carriesIdentity(event) && (
-                <IdentityCorrection
-                  event={event}
-                  profiles={uido.profiles}
-                  correcting={uido.correctingEventId === event.eventId}
-                  onCorrect={(profile) => presenter.onCorrect(event.eventId, profile)}
-                />
-              )
-            }
+            renderExtra={(event) => (
+              <span className="mt-1.5 flex flex-wrap items-center gap-2">
+                {carriesIdentity(event) && (
+                  <IdentityCorrection
+                    event={event}
+                    profiles={uido.profiles}
+                    correcting={uido.correctingEventId === event.eventId}
+                    onCorrect={(profile) => presenter.onCorrect(event.eventId, profile)}
+                  />
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  aria-label={`Supprimer la détection : ${formatEventTitle(event, uido.detectionLabels)}`}
+                  onClick={() => presenter.onAskDelete(event.eventId)}
+                >
+                  <Trash2 aria-hidden="true" />
+                  Supprimer
+                </Button>
+              </span>
+            )}
           />
         </div>
       )}
@@ -229,6 +248,22 @@ export function DetectionHistoryView() {
           est encore en train d’être écrite, et Vyzio réessaie tout seul.
         </p>
       </HelpPanel>
+
+      {deleting && (
+        <ConfirmModal
+          title="Supprimer cette détection ?"
+          body="C’est définitif : elle disparaît, avec tout ce que la caméra a enregistré pendant ce passage, même si une autre détection s’y trouve aussi, qui perd alors sa vidéo. Les notifications déjà reçues restent là où vous les avez reçues."
+          details={
+            <p className="text-sm font-medium">
+              {formatEventTitle(deleting, uido.detectionLabels)} · {formatEventDetail(deleting)}
+            </p>
+          }
+          confirmLabel="Supprimer"
+          tone="danger"
+          onConfirm={() => presenter.onDelete(deleting.eventId)}
+          onCancel={presenter.onDismissDelete}
+        />
+      )}
 
       {uido.media && (
         <Overlay label="Aperçu de la détection" onClose={() => presenter.onMediaSet(null)}>
@@ -270,13 +305,7 @@ function IdentityCorrection({
   if (!fixing) {
     return (
       // `ghost` did not pass for a button, sitting under a line of grey text.
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        className="mt-1.5"
-        onClick={() => setFixing(true)}
-      >
+      <Button type="button" variant="outline" size="sm" onClick={() => setFixing(true)}>
         <UserRoundPen aria-hidden="true" />
         {event.identity ? 'Corriger' : 'Identifier'}
       </Button>
@@ -284,7 +313,7 @@ function IdentityCorrection({
   }
 
   return (
-    <span className="mt-1 flex flex-wrap items-center gap-2">
+    <span className="flex flex-wrap items-center gap-2">
       <PickOne
         value={pickedProfileId}
         anyLabel={UNIDENTIFIED}

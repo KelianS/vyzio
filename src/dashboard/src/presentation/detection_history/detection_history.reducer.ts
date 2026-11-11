@@ -103,5 +103,17 @@ export function detectionHistoryReducer(
       }
     case 'CORRECT_FAILED':
       return { ...state, correctingEventId: null }
+
+    case 'DELETE_ASKED':
+      return { ...state, deletingEventId: action.eventId }
+    case 'DELETE_DISMISSED':
+      return { ...state, deletingEventId: null }
+    // Gone from the surveillance, so gone from the list without a re-read that would shift the page.
+    case 'DELETE_SUCCEEDED':
+      return {
+        ...state,
+        deletingEventId: null,
+        items: state.items.filter((item) => item.eventId !== action.eventId),
+      }
   }
 }

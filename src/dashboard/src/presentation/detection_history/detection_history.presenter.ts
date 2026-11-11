@@ -1,5 +1,5 @@
 import type { ToastTone } from '../../common/components/toast'
-import { toastError } from '../../common/errors/app_error'
+import { ApiErrorCode, AppErrorKind, toastError } from '../../common/errors/app_error'
 import { toAppError } from '../../common/errors/to_app_error'
 import type { DetectionHistoryQuery } from '../../domain/entities/detection_history.entity'
 import type { Profile } from '../../domain/entities/profile.entity'
@@ -89,6 +89,43 @@ export function buildDetectionHistoryPresenter({
       } catch (e) {
         dispatch({ type: 'CORRECT_FAILED' })
         toastError(toast, toAppError(e), 'La correction de l’identité n’a pas abouti.')
+      }
+    },
+
+    onAskDelete(eventId: string) {
+      dispatch({ type: 'DELETE_ASKED', eventId })
+    },
+    onDismissDelete() {
+      dispatch({ type: 'DELETE_DISMISSED' })
+    },
+
+    async onDelete(eventId: string): Promise<void> {
+      try {
+        await container.deleteDetection.execute(eventId)
+        dispatch({ type: 'DELETE_SUCCEEDED', eventId })
+        toast('Détection supprimée.', 'info')
+      } catch (e) {
+        const error = toAppError(e)
+        // Already gone is the outcome asked for, said as such, never a failure to retry.
+        if (error.kind === AppErrorKind.NotFound) {
+          dispatch({ type: 'DELETE_SUCCEEDED', eventId })
+          toast('Cette détection n’existe plus.', 'info')
+          return
+        }
+        dispatch({ type: 'DELETE_DISMISSED' })
+        // A detection still being filmed is a rule to wait for, not a breakdown to photograph.
+        if (
+          error.code === ApiErrorCode.DetectionInProgress &&
+          error.kind === AppErrorKind.Unknown
+        ) {
+          toast(error.message, 'info')
+          return
+        }
+        toastError(
+          toast,
+          error,
+          'La détection n’a pas pu être entièrement supprimée. Réessayez : la suppression reprendra là où elle s’est arrêtée.',
+        )
       }
     },
   }

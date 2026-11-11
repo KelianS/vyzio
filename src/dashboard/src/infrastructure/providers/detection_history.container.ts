@@ -1,4 +1,5 @@
 import { CorrectDetectionIdentity } from '../../domain/usecases/correct_detection_identity.use_case'
+import { DeleteDetection } from '../../domain/usecases/delete_detection.use_case'
 import { GetDetectionHistory } from '../../domain/usecases/get_detection_history.use_case'
 import { GetDetectionLabels } from '../../domain/usecases/get_detection_labels.use_case'
 import { GetProfiles } from '../../domain/usecases/get_profiles.use_case'
@@ -8,6 +9,7 @@ import type { DetectionLabelsRepository } from '../../domain/usecases/get_detect
 export interface DetectionHistoryContainer {
   getDetectionHistory: GetDetectionHistory
   correctDetectionIdentity: CorrectDetectionIdentity
+  deleteDetection: DeleteDetection
   getCameraLabels: GetDetectionLabels
   getProfiles: GetProfiles
 }
@@ -19,6 +21,7 @@ export function makeDetectionHistoryContainer(
   return {
     getDetectionHistory: new GetDetectionHistory(profileRepository),
     correctDetectionIdentity: new CorrectDetectionIdentity(profileRepository),
+    deleteDetection: new DeleteDetection(profileRepository),
     getCameraLabels: new GetDetectionLabels(cameraLabelsRepository),
     getProfiles: new GetProfiles(profileRepository),
   }

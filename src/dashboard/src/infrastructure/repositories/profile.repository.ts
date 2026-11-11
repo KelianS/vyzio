@@ -135,4 +135,8 @@ export class HttpProfileRepository implements ProfileRepository {
     })
     if (!response.ok) throw await httpErrorFrom(response, url, 'PATCH')
   }
+
+  async deleteDetection(eventId: string): Promise<void> {
+    return deleteReq(`${this.apiBaseUrl}/api/detection-events/${encodeURIComponent(eventId)}`)
+  }
 }

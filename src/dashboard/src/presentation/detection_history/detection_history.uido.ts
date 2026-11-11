@@ -29,6 +29,8 @@ export interface DetectionHistoryUido {
   filterTo: string
 
   correctingEventId: string | null
+  /** The detection whose deletion waits for its confirmation. */
+  deletingEventId: string | null
 }
 
 export function buildInitialDetectionHistoryUido(): DetectionHistoryUido {
@@ -51,5 +53,6 @@ export function buildInitialDetectionHistoryUido(): DetectionHistoryUido {
     filterTo: '',
 
     correctingEventId: null,
+    deletingEventId: null,
   }
 }

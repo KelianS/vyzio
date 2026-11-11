@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { screen } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { makeDetectionEvent } from '../../testing/detection_fixture'
 import { failure, fakeNetwork, ok } from '../../testing/fake_network'
@@ -129,5 +129,133 @@ describe('DetectionHistoryView', () => {
       await screen.findByText(/La correction de l’identité n’a pas abouti/),
     ).toBeInTheDocument()
     expect(screen.getByText('Alex')).toBeInTheDocument()
+  })
+
+  const oneCat = {
+    ...reference,
+    'GET /api/detection-events/history': ok({
+      items: [makeDetectionEvent({ label: 'cat' })],
+      nextCursor: null,
+    }),
+  }
+
+  async function confirmDeletion() {
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Supprimer la détection : Détection « cat »' }),
+    )
+    const dialog = await screen.findByRole('alertdialog')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Supprimer' }))
+  }
+
+  it('onDelete_ShouldRemoveTheDetectionAndSaySo_WhenTheUserConfirms', async () => {
+    // Arrange
+    const network = fakeNetwork({ ...oneCat, 'DELETE /api/detection-events/event-1': ok() })
+    renderScreen(<DetectionHistoryView />)
+
+    // Act
+    await confirmDeletion()
+
+    // Assert
+    expect(await screen.findByText('Détection supprimée.')).toBeInTheDocument()
+    expect(screen.queryByText('Détection « cat »')).not.toBeInTheDocument()
+    expect(network.sent).toContainEqual(
+      expect.objectContaining({ route: 'DELETE /api/detection-events/event-1' }),
+    )
+  })
+
+  it('onAskDelete_ShouldStateTheRecordingAndTheNotificationsInTheConfirmation_WhenTheUserAsks', async () => {
+    // Arrange
+    fakeNetwork(oneCat)
+    renderScreen(<DetectionHistoryView />)
+
+    // Act
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Supprimer la détection : Détection « cat »' }),
+    )
+
+    // Assert
+    const dialog = await screen.findByRole('alertdialog')
+    expect(dialog).toHaveTextContent('tout ce que la caméra a enregistré pendant ce passage')
+    expect(dialog).toHaveTextContent('Les notifications déjà reçues restent')
+  })
+
+  it('onDismissDelete_ShouldKeepTheDetectionAndSendNothing_WhenTheUserCancels', async () => {
+    // Arrange
+    const network = fakeNetwork(oneCat)
+    renderScreen(<DetectionHistoryView />)
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Supprimer la détection : Détection « cat »' }),
+    )
+
+    // Act
+    await userEvent.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Annuler' }),
+    )
+
+    // Assert
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    expect(screen.getByText('Détection « cat »')).toBeInTheDocument()
+    expect(network.sent).not.toContainEqual(
+      expect.objectContaining({ route: 'DELETE /api/detection-events/event-1' }),
+    )
+  })
+
+  it('onDelete_ShouldKeepTheDetectionAndSayWhyForSupport_WhenTheSurveillanceFails', async () => {
+    // Arrange
+    fakeNetwork({
+      ...oneCat,
+      'DELETE /api/detection-events/event-1': failure(
+        502,
+        'erasure_failed',
+        'POST /api/reviews/delete answered 500; nothing erased yet',
+      ),
+    })
+    renderScreen(<DetectionHistoryView />)
+
+    // Act
+    await confirmDeletion()
+
+    // Assert
+    expect(
+      await screen.findByText(/La détection n’a pas pu être entièrement supprimée/),
+    ).toBeInTheDocument()
+    expect(screen.getByText(/DELETE \/api\/detection-events\/event-1 · 502/)).toBeInTheDocument()
+    expect(screen.getByText('Détection « cat »')).toBeInTheDocument()
+  })
+
+  it('onDelete_ShouldAskToWaitForTheEnd_WhenTheDetectionIsStillInProgress', async () => {
+    // Arrange
+    fakeNetwork({
+      ...oneCat,
+      'DELETE /api/detection-events/event-1': failure(409, 'detection_in_progress'),
+    })
+    renderScreen(<DetectionHistoryView />)
+
+    // Act
+    await confirmDeletion()
+
+    // Assert
+    expect(
+      await screen.findByText(
+        'Cette détection est encore en cours : réessayez une fois qu’elle sera terminée',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Détection « cat »')).toBeInTheDocument()
+  })
+
+  it('onDelete_ShouldDropTheRowAndSayItIsGone_WhenTheDetectionNoLongerExists', async () => {
+    // Arrange
+    fakeNetwork({
+      ...oneCat,
+      'DELETE /api/detection-events/event-1': failure(404, 'detection_not_found'),
+    })
+    renderScreen(<DetectionHistoryView />)
+
+    // Act
+    await confirmDeletion()
+
+    // Assert
+    expect(await screen.findByText('Cette détection n’existe plus.')).toBeInTheDocument()
+    expect(screen.queryByText('Détection « cat »')).not.toBeInTheDocument()
   })
 })

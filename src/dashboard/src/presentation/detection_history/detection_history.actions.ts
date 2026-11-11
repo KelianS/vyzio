@@ -29,3 +29,6 @@ export type DetectionHistoryAction =
       profileId: string | null
     }
   | { type: 'CORRECT_FAILED' }
+  | { type: 'DELETE_ASKED'; eventId: string }
+  | { type: 'DELETE_DISMISSED' }
+  | { type: 'DELETE_SUCCEEDED'; eventId: string }

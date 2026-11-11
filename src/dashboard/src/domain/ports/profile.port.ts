@@ -46,4 +46,6 @@ export interface ProfileRepository {
 
   getDetectionHistory(query: DetectionHistoryQuery): Promise<DetectionHistoryPage>
   correctDetectionIdentity(eventId: string, profileId: string | null): Promise<void>
+  /** Erases the detection with the recording of its passage, for good (SPECS 6.2). */
+  deleteDetection(eventId: string): Promise<void>
 }
