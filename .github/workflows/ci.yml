@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [main]
 
+# A new push to a pull request cancels the run it supersedes; on main every commit keeps its own run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   rules:
     name: Rules — index and citations
@@ -244,7 +249,6 @@ jobs:
     name: Docker — build images (no push)
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    needs: [backend, frontend]
     steps:
       - uses: actions/checkout@v7
 
