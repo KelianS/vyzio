@@ -115,7 +115,7 @@ Un seul composant React, monté dans trois contextes :
 
 | Contexte | Usage | Éléments affichés |
 |---|---|---|
-| `LiveFeedModal` | Usage quotidien | Joystick + stop + "Retour position surveillance" |
+| Vue en direct | Usage quotidien | Joystick + positions enregistrées |
 | Fiche caméra | Configuration | Joystick + stop + "Retour" + **"Définir position de surveillance"** |
 | Onboarding | Première configuration | Joystick + stop + **"Définir position de surveillance"** |
 

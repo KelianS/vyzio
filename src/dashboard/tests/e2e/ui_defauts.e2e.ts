@@ -34,22 +34,95 @@ test.describe('Camera pause', () => {
 })
 
 test.describe('LiveView', () => {
-  test('LiveView_ShouldCloseWithAVisibleCross_WhenTheUserViewsACameraLive', async ({ page }) => {
+  test('LiveView_ShouldOpenFullScreenAndGoBackHome_WhenTheUserTapsACamera', async ({ page }) => {
     const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
     await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
 
     await page.goto('/')
-    await page.getByRole('button', { name: 'Salon' }).click()
+    await page.getByRole('link', { name: 'Salon' }).click()
 
-    const overlay = page.getByRole('dialog', { name: 'Aperçu' })
-    await expect(overlay).toBeVisible()
+    await expect(page).toHaveURL('/cameras/camera-1/direct')
+    await expect(page.getByRole('main', { name: 'Salon' })).toBeVisible()
+    await expect(page.getByRole('navigation', { name: 'Navigation principale' })).toBeHidden()
 
-    // Clicking outside already closed it; nothing announced it, and the content covered the cross.
-    const close = overlay.getByRole('button', { name: 'Fermer' })
-    await expect(close).toBeVisible()
-    await close.click()
+    await page.getByRole('button', { name: 'Retour' }).click()
+    await expect(page).toHaveURL('/')
+  })
 
-    await expect(overlay).toBeHidden()
+  test('LiveView_ShouldPutTheBarAboveThePicture_WhenThePhoneIsHeldUpright', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
+    await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
+
+    await page.goto('/cameras/camera-1/direct')
+    const back = await page.getByRole('button', { name: 'Retour' }).boundingBox()
+    const picture = await page.locator('video[aria-label="Salon"]').boundingBox()
+
+    expect(back!.y + back!.height).toBeLessThanOrEqual(picture!.y)
+    expect(picture!.width).toBe(390)
+  })
+
+  test('LiveView_ShouldKeepThePadAComfortableSizeAboveThePositions_WhenThePhoneIsHeldUpright', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    const state = createFakeBackendState({
+      cameras: [makeFakeCamera({ ptzSupported: true, verifiedCapabilities: ['ptz'] })],
+    })
+    await installFakeBackend(page, state)
+
+    await page.goto('/cameras/camera-1/direct')
+    await expect(page.getByTitle('Enregistrer la position actuelle ici').first()).toBeVisible()
+    const pad = await page.getByTitle('Haut').locator('..').boundingBox()
+    const tile = await page.getByTitle('Enregistrer la position actuelle ici').first().boundingBox()
+
+    // Capped, not inflated by the free height; the positions follow right under it.
+    expect(pad!.width).toBeLessThanOrEqual(160)
+    expect(pad!.width).toBeGreaterThanOrEqual(112)
+    expect(tile!.y - (pad!.y + pad!.height)).toBeLessThan(40)
+  })
+
+  test('LiveView_ShouldFitWithoutScrolling_WhenAShortPhoneIsHeldUpright', async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 600 })
+    const state = createFakeBackendState({
+      cameras: [makeFakeCamera({ ptzSupported: true, verifiedCapabilities: ['ptz'] })],
+    })
+    await installFakeBackend(page, state)
+
+    await page.goto('/cameras/camera-1/direct')
+    await expect(page.getByTitle('Enregistrer la position actuelle ici').first()).toBeVisible()
+    const screen = page.getByRole('main', { name: 'Porte d’entrée' })
+
+    expect(await screen.evaluate((main) => main.scrollHeight - main.clientHeight)).toBe(0)
+  })
+
+  test('LiveView_ShouldGoBackHome_WhenTheBrowserGoesBack', async ({ page }) => {
+    const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
+    await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
+
+    await page.goto('/')
+    await page.getByRole('link', { name: 'Salon' }).click()
+    await expect(page).toHaveURL('/cameras/camera-1/direct')
+    await page.goBack()
+
+    await expect(page).toHaveURL('/')
+    await expect(page.getByRole('link', { name: 'Salon' })).toBeVisible()
+  })
+
+  test('LiveView_ShouldFadeItsControlsAndBringThemBackOnATap_WhenThePhoneIsHeldLandscape', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 844, height: 390 })
+    const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
+    await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
+
+    await page.goto('/cameras/camera-1/direct')
+    const back = page.getByRole('button', { name: 'Retour' })
+    await expect(back).toBeVisible()
+    await expect(back).toBeHidden({ timeout: 6000 })
+
+    await page.getByRole('main', { name: 'Salon' }).click({ position: { x: 420, y: 200 } })
+    await expect(back).toBeVisible()
   })
 
   test('LiveView_ShouldShowAWaitNeverABrokenImage_WhenTheStreamIsUnavailable', async ({ page }) => {
@@ -64,7 +137,7 @@ test.describe('LiveView', () => {
     // An image with no data carries the browser's broken icon: it must not show through.
     await expect(page.locator('article img')).not.toBeVisible()
     // And the thumbnail stays openable: hiding the image must not take its name away.
-    await expect(page.getByRole('button', { name: 'Salon' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Salon' })).toBeVisible()
   })
 })
 
@@ -87,7 +160,7 @@ test.describe('LiveView PTZ positions', () => {
     await installFakeBackend(page, state)
 
     await page.goto('/')
-    await page.getByRole('button', { name: 'Salon' }).click()
+    await page.getByRole('link', { name: 'Salon' }).click()
     return state
   }
 

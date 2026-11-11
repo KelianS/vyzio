@@ -135,7 +135,11 @@ test('phone screens', async ({ page }) => {
 
   await open(page, '/')
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.getByRole('button', { name: 'Porte d’entrée' }).click()
-  await expect(page.getByRole('img', { name: 'Porte d’entrée' }).last()).toBeVisible()
+  await page.getByRole('link', { name: 'Porte d’entrée' }).click()
+  const video = page.locator('video[aria-label="Porte d’entrée"]')
+  await expect.poll(() => video.evaluate((v: HTMLVideoElement) => v.readyState)).toBeGreaterThan(1)
+  await expect(page.getByTitle('Haut')).toBeVisible()
+  // Away from the controls, so none shows its hover state.
+  await page.mouse.move(1, 1)
   await page.screenshot({ path: path.join(OUT, 'live.jpg'), quality: JPEG_QUALITY })
 })

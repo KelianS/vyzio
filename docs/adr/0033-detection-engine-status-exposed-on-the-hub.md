@@ -49,6 +49,6 @@ descendante.
   / « surveillance », conformément au principe produit #2.
 - Le sondage périodique est possédé une seule fois, au niveau racine (`App.tsx`, hook
   `useSystemStats`), et redescendu en prop — pas un sondage dupliqué par écran. Le Hub (miniatures live
-  + miniatures de détections récentes) et la vue live agrandie (`LiveFeedModal`, ouverte aussi bien
-  depuis le Hub que depuis l'onboarding caméra) consomment ce même statut pour afficher un overlay de
+  + miniatures de détections récentes) et la vue en direct (son propre écran, ouvert depuis le Hub
+  comme depuis la page de la caméra) consomment ce même statut pour afficher un overlay de
   chargement pendant `restarting`, au lieu de laisser transparaître une image cassée non rafraîchie.

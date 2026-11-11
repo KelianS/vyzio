@@ -29,17 +29,11 @@ export function LiveImage({
   const waitMessage = liveWaitMessage(frigateStatus, imageError)
 
   return (
-    // An image without data loses its size: the floor keeps the waiting veil full size.
-    <div
-      className={cn(
-        'relative flex items-center justify-center overflow-hidden rounded-lg',
-        waitMessage && 'aspect-video w-[min(90vw,48rem)] bg-surface-inverse',
-      )}
-    >
+    <div className="absolute inset-0 bg-surface-inverse">
       <img
         src={src}
         alt={label}
-        className={cn('block max-h-[75vh] max-w-[90vw] rounded-lg', waitMessage && 'invisible')}
+        className={cn('block size-full object-contain', waitMessage && 'invisible')}
         onError={() => setImageError(true)}
         onLoad={() => setImageError(false)}
       />
