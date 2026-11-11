@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Sockets;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 using NSubstitute;
@@ -20,10 +21,22 @@ public class CameraReachabilityPollerServiceTests
 
     private readonly FakeTimeProvider _time = new(Start);
 
-    private CameraReachabilityPollerService CreateSut() => new(
+    private CameraReachabilityPollerService CreateSut(ILogger<CameraReachabilityPollerService>? logger = null) => new(
         BackgroundLoop.Scopes(services => services.AddSingleton(_cameras)),
         _time,
-        NullLogger<CameraReachabilityPollerService>.Instance);
+        logger ?? NullLogger<CameraReachabilityPollerService>.Instance);
+
+    private sealed class CapturingLogger : ILogger<CameraReachabilityPollerService>
+    {
+        public List<(LogLevel Level, string Message)> Entries { get; } = [];
+
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+            => Entries.Add((logLevel, formatter(state, exception)));
+    }
 
     private static Camera ValidatedCamera(int port, string status) => new Camera
     {
@@ -138,6 +151,54 @@ public class CameraReachabilityPollerServiceTests
 
         // Assert
         Assert.Equal("online", camera.Status);
+    }
+
+    // Frigate no longer repeats a lost stream, so this line is how the logs show a camera going off and back (ADR-23).
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldLogTheCameraGoingOffline_WhenItStopsAnswering()
+    {
+        // Arrange
+        using var refusing = BackgroundLoop.RefusingPort();
+        var camera = ValidatedCamera(refusing.PortOf(), "online");
+        _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns([camera]);
+        var updated = SignalOnUpdate();
+        var logger = new CapturingLogger();
+        var sut = CreateSut(logger);
+
+        // Act
+        await sut.StartAsync(CancellationToken.None);
+        await _time.AdvanceUntilAsync(updated.Task, Step);
+        await sut.StopAsync(CancellationToken.None);
+
+        // Assert
+        var entry = Assert.Single(logger.Entries);
+        Assert.Equal(LogLevel.Information, entry.Level);
+        Assert.Contains("status changed: online → offline.", entry.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldLogTheCameraComingBackOnline_WhenItAnswersAgain()
+    {
+        // Arrange
+        var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var camera = ValidatedCamera(((IPEndPoint)listener.LocalEndpoint).Port, "offline");
+        _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns([camera]);
+        var updated = SignalOnUpdate();
+        var logger = new CapturingLogger();
+        var sut = CreateSut(logger);
+
+        // Act
+        await sut.StartAsync(CancellationToken.None);
+        await _time.AdvanceUntilAsync(updated.Task, Step);
+        await sut.StopAsync(CancellationToken.None);
+        listener.Stop();
+
+        // Assert
+        var entry = Assert.Single(logger.Entries);
+        Assert.Equal(LogLevel.Information, entry.Level);
+        Assert.Contains("status changed: offline → online.", entry.Message, StringComparison.Ordinal);
     }
 
     [Fact]
