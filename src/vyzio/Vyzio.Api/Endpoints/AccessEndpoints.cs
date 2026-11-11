@@ -101,11 +101,11 @@ public static class AccessEndpoints
 
     private static IResult Refuse(AccessRefusal refusal) => refusal switch
     {
-        AccessRefusal.AlreadyInstalled => ApiProblem.Conflict("already_installed"),
-        AccessRefusal.PasswordTooShort => ApiProblem.BadRequest("password_too_short"),
+        AccessRefusal.AlreadyInstalled => ApiProblem.Conflict("already_installed", "An owner account already exists."),
+        AccessRefusal.PasswordTooShort => ApiProblem.BadRequest("password_too_short", "The password is too short."),
         // Deliberately not 401: the caller holds a live session, and the interface reads 401 as "you were
         // signed out" — answering that here would close a screen instead of refusing one field.
-        AccessRefusal.CurrentPasswordWrong => ApiProblem.BadRequest("wrong_password"),
+        AccessRefusal.CurrentPasswordWrong => ApiProblem.BadRequest("wrong_password", "The current password is wrong."),
         // Same answer whether the account is missing or the password wrong: telling them apart helps only a guesser.
         AccessRefusal.NotInstalled or AccessRefusal.WrongPassword => Results.Unauthorized(),
         _ => Results.Unauthorized()

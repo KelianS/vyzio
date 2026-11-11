@@ -211,7 +211,7 @@ public static class CamerasEndpoints
             }
             catch (PtzNotCalibratedException)
             {
-                return ApiProblem.Conflict("not_calibrated");
+                return ApiProblem.Conflict("not_calibrated", "The camera has no reference position yet: calibrate it first.");
             }
         });
 

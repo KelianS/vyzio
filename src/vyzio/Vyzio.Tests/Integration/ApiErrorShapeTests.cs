@@ -6,7 +6,7 @@ using Vyzio.Core.Entities;
 
 namespace Vyzio.Tests.Integration;
 
-// The interface reads every failure in one shape, whoever wrote it (BACKEND-05).
+// The interface reads every failure in one shape, whoever wrote it (BACKEND-18).
 public class ApiErrorShapeTests(DeleteDetectionApiFactory signedIn, AccessApiFactory signedOut)
     : IClassFixture<DeleteDetectionApiFactory>, IClassFixture<AccessApiFactory>
 {
@@ -16,6 +16,7 @@ public class ApiErrorShapeTests(DeleteDetectionApiFactory signedIn, AccessApiFac
         Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
         var problem = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement.Clone();
         Assert.Equal((int)expected, problem.GetProperty("status").GetInt32());
+        Assert.False(string.IsNullOrWhiteSpace(problem.GetProperty("detail").GetString()));
         Assert.False(string.IsNullOrWhiteSpace(problem.GetProperty("traceId").GetString()));
         return problem;
     }
@@ -61,6 +62,21 @@ public class ApiErrorShapeTests(DeleteDetectionApiFactory signedIn, AccessApiFac
         // Assert
         var problem = await ProblemOf(response, HttpStatusCode.MethodNotAllowed);
         Assert.Equal("method_not_allowed", problem.GetProperty("code").GetString());
+    }
+
+    [Fact]
+    public async Task Endpoint_ShouldAnswerAProblemNamedBadRequest_WhenTheBodyCannotBeRead()
+    {
+        // Arrange
+        using var client = signedIn.CreateClient();
+        using var unreadable = new StringContent("{ not json", System.Text.Encoding.UTF8, "application/json");
+
+        // Act
+        var response = await client.PatchAsync("/api/detection-events/1700000000.1-abc123/identity", unreadable);
+
+        // Assert
+        var problem = await ProblemOf(response, HttpStatusCode.BadRequest);
+        Assert.Equal("bad_request", problem.GetProperty("code").GetString());
     }
 
     [Fact]

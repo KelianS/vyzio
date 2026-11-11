@@ -10,7 +10,7 @@ function text(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim() ? value.trim() : undefined
 }
 
-/** The API answers every error as a ProblemDetails (BACKEND-05); a proxy in between may answer anything. */
+/** The API answers every error as a ProblemDetails (BACKEND-18); a proxy in between may answer anything. */
 async function readAnswer(response: Response): Promise<Answer> {
   let body: unknown
   try {

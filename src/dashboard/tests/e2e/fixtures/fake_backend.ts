@@ -665,8 +665,13 @@ function json(route: Route, body: unknown, status = 200) {
   })
 }
 
-// Like the real one: every error is a ProblemDetails carrying its code (BACKEND-05).
-function problem(route: Route, status: number, code: string, detail?: string) {
+// Like the real one: every error is a ProblemDetails carrying its code (BACKEND-18).
+function problem(
+  route: Route,
+  status: number,
+  code: string,
+  detail = 'Refused by the fake backend.',
+) {
   return route.fulfill({
     status,
     contentType: 'application/problem+json',

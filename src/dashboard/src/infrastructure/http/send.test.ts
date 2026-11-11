@@ -71,12 +71,13 @@ describe('httpErrorFrom', () => {
     )
   })
 
-  it('httpErrorFrom_ShouldNameTheStatusCodeAndTrace_WhenTheProblemHasNoDetail', async () => {
+  it('httpErrorFrom_ShouldReadTheStatusPageLikeAnyError_WhenNoEndpointAnswersTheAddress', async () => {
     // Arrange
     const body = JSON.stringify({
       title: 'Not Found',
       status: 404,
       code: 'not_found',
+      detail: 'Nothing answers at this address.',
       traceId: '00-def-01',
     })
 
@@ -84,7 +85,9 @@ describe('httpErrorFrom', () => {
     const error = await httpErrorFrom(answer(404, 'Not Found', body), '/api/nowhere')
 
     // Assert
-    expect(error.diagnostic).toBe('GET /api/nowhere · 404 Not Found · not_found · trace 00-def-01')
+    expect(error.diagnostic).toBe(
+      'GET /api/nowhere · 404 Not Found · not_found · Nothing answers at this address. · trace 00-def-01',
+    )
   })
 
   it('httpErrorFrom_ShouldStillNameTheRequestAndStatus_WhenTheAnswerIsNotJson', async () => {
