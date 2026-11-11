@@ -292,7 +292,8 @@ jobs:
           set -uo pipefail
           failed=''
           for image in api dashboard; do
-            trivy image --severity HIGH,CRITICAL --no-progress --format sarif --output "trivy-$image.sarif" "vyzio-$image:ci"               || { failed="$failed $image"; continue; }
+            trivy image --severity HIGH,CRITICAL --no-progress --format sarif --output "trivy-$image.sarif" "vyzio-$image:ci" \
+              || { failed="$failed $image"; continue; }
             trivy image --exit-code 1 --severity HIGH,CRITICAL --no-progress --skip-db-update "vyzio-$image:ci" || failed="$failed $image"
           done
           if [ -n "$failed" ]; then
