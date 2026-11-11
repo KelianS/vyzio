@@ -10,6 +10,7 @@ jobs:
   rules:
     name: Rules — index and citations
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
 
@@ -26,6 +27,7 @@ jobs:
     name: Backend — build & test
     # Floor to respect if this ever moves to a container: SQLitePCLRaw 3.x needs GLIBC >= 2.33.
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
 
@@ -52,6 +54,7 @@ jobs:
   frontend:
     name: Frontend — build & test
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
 
@@ -93,12 +96,55 @@ jobs:
           name: frontend-coverage
           path: src/dashboard/coverage/
 
-      - name: Build
-        run: task front:build
+  playwright-version:
+    name: Playwright version
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.read.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
 
-      - name: Install Playwright browsers
-        run: pnpm --prefix src/dashboard exec playwright install --with-deps chromium
+      # The container tag must match the installed package, so only an exact pin is accepted.
+      - name: Read the pinned version
+        id: read
+        run: |
+          set -euo pipefail
+          version=$(jq -r '.devDependencies["@playwright/test"] // .dependencies["@playwright/test"] // ""' src/dashboard/package.json)
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::@playwright/test must be pinned to an exact version, found '$version'"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
+  e2e:
+    name: Frontend e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [playwright-version]
+    # Browsers and their system libraries come with the image, so no apt step depends on the runner mirrors.
+    container:
+      image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-noble
+      options: --ipc=host
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: src/dashboard/package.json
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+          cache-dependency-path: src/dashboard/pnpm-lock.yaml
+
+      - uses: go-task/setup-task@v2
+
+      - name: Install
+        run: pnpm --prefix src/dashboard install --frozen-lockfile
+
+      # The Playwright webServer builds the production bundle first, so no separate build step.
       - name: E2E tests
         run: task front:test:e2e
 
@@ -112,6 +158,7 @@ jobs:
   coverage:
     name: Coverage
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     needs: [backend, frontend]
     permissions:
       contents: write
@@ -196,6 +243,7 @@ jobs:
   docker-build-check:
     name: Docker — build images (no push)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: [backend, frontend]
     steps:
       - uses: actions/checkout@v7
