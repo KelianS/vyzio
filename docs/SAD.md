@@ -294,5 +294,4 @@ broker, Frigate), kept on the Docker network (ADR-55).
 | Discovery sweeps only the configured ranges and the dashboard address's /24: a camera on another subnet is found only by typing its address | #251 |
 | go2rtc carries every camera: if it stops, detection, recording and the live view stop together (ADR-72) | #288 |
 | The user cannot yet export or erase their data | #69 |
-| An erased detection leaves its thumbnail images on disk: Frigate's API does not remove them | [SPECS](SPECS.md) 6.2 |
 | Exposing Vyzio to Home Assistant would add an external system | #52 |
