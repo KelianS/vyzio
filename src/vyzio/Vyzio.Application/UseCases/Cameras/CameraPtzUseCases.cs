@@ -307,7 +307,9 @@ public sealed class SetCameraPrivacyStrategyUseCase(
         if (strategy == PrivacyStrategy.PtzParking
             && camera.PrivacyStrategy != PrivacyStrategy.PtzParking
             && !await BothEndsHeldAsync(camera, ct))
+        {
             throw new ParkingPositionsMissingException();
+        }
 
         // The last toggle's miss described the old strategy and would misname the new one (SPECS 9.2).
         if (camera.PrivacyStrategy != strategy)

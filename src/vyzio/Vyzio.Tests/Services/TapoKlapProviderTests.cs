@@ -251,7 +251,9 @@ public class TapoKlapProviderTests
 
             var response = new HttpResponseMessage(HttpStatusCode.OK);
             if (path.EndsWith("/handshake2", StringComparison.Ordinal))
+            {
                 response.Headers.Add("Set-Cookie", "TP_SESSIONID=session-1");
+            }
             else
             {
                 Sequences.Add(request.RequestUri.Query["?seq=".Length..]);

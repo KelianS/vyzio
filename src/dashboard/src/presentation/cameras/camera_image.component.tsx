@@ -205,7 +205,7 @@ function ImageForm({
 
   return (
     <>
-      <SettingsPage lede="Ce que la caméra envoie, avant toute analyse.">
+      <SettingsPage>
         <SettingsList settings={declarations} />
         {beyondBasicsFailure}
         {children}

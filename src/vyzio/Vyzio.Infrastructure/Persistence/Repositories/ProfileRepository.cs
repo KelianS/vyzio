@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
-using Vyzio.Infrastructure.Persistence;
 
 namespace Vyzio.Infrastructure.Persistence.Repositories;
 

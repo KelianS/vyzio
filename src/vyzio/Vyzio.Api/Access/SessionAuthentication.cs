@@ -61,7 +61,10 @@ public static class SessionAuthentication
 
         if (id is null
             || !SnakeCaseEnum.TryFromSnakeCase<AccountRole>(role, out var parsed)
-            || !DateTimeOffset.TryParse(expiry, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var expiresAt)) return null;
+            || !DateTimeOffset.TryParse(expiry, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var expiresAt))
+        {
+            return null;
+        }
 
         return new AuthenticatedSession(id, parsed, expiresAt);
     }

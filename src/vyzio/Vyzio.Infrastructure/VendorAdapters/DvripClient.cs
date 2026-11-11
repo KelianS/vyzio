@@ -34,9 +34,12 @@ internal sealed class DvripClient(TimeProvider time)
             await tcp.ConnectAsync(camera.Host, camera.PortOf(SupportedProtocol.Dvrip), linked.Token);
             var (sessionId, _, loginAnswer) = await LoginAsync(tcp.GetStream(), camera, linked.Token);
             if (sessionId is null)
+            {
                 throw loginAnswer is null
                     ? new CameraUnreachableException($"No DVRIP login answer from {camera.Host} (connection closed by the camera).")
                     : new CameraCommandRefusedException($"DVRIP login refused by {camera.Host} (Ret={ReadRet(loginAnswer)?.ToString(CultureInfo.InvariantCulture) ?? "unreadable"}).");
+            }
+
             return new DvripSession(tcp, sessionId, $"{camera.Host}:{camera.PortOf(SupportedProtocol.Dvrip)}", time, CommandTimeout);
         }
         catch (Exception ex)

@@ -39,7 +39,7 @@ export function AddNotificationChannelView() {
         <h1 className="mt-1 font-serif text-3xl">Ajouter un canal</h1>
       </div>
 
-      <SettingsPage lede="Le réglage est le même partout : seule la façon de s’y connecter change.">
+      <SettingsPage>
         {uido.error ? (
           <ReadFailure
             error={uido.error}

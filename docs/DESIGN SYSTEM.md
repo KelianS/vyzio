@@ -89,7 +89,9 @@ table). A page **does not name itself**: whatever led there has named it
 ([ADR-40](adr/0040-information-architecture-viewing-apart-from-configuring-two-level-settings-tree.md)).
 `SettingsPage` has no title; `SettingsSection` opens one only in a page covering several subjects, and a
 section title repeating the page's means one more page was needed. A section title is in the heading
-serif, a setting label in the body weight.
+serif, a setting label in the body weight. A page opens on a lede only to say what its name leaves
+out, a scope, a default, a timing, a state or where to look instead; a lede that rephrases the name
+is dropped.
 
 **An option that cannot be chosen yet stays in the list**, greyed and not selectable, with the reason
 and the way out on a quieter second line under its label (`text-xs text-muted-foreground`): what is

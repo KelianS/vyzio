@@ -1,6 +1,5 @@
 using System.Net;
 using System.Text.Json;
-using EFCore.NamingConventions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.Sqlite;
