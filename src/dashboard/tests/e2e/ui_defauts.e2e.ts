@@ -95,6 +95,19 @@ test.describe('LiveView', () => {
     expect(await screen.evaluate((main) => main.scrollHeight - main.clientHeight)).toBe(0)
   })
 
+  test('LiveView_ShouldKeepThePadPressable_WhenAVeryShortPhoneIsHeldUpright', async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 520 })
+    const state = createFakeBackendState({
+      cameras: [makeFakeCamera({ ptzSupported: true, verifiedCapabilities: ['ptz'] })],
+    })
+    await installFakeBackend(page, state)
+
+    await page.goto('/cameras/camera-1/direct')
+    const pad = await page.getByTitle('Haut').locator('..').boundingBox()
+
+    expect(pad!.width).toBe(112)
+  })
+
   test('LiveView_ShouldGoBackHome_WhenTheBrowserGoesBack', async ({ page }) => {
     const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
     await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
