@@ -8,4 +8,6 @@ export type LivePlayback =
   /** soundOffered: a gesture may turn the sound on, the browser playing it and the stream carrying it as far as known. */
   | { kind: 'playing'; soundOffered: boolean }
   | { kind: 'interrupted' }
+  /** A stream that played stopped bringing pictures, or closed: the camera no longer answers. */
+  | { kind: 'stalled'; diagnostic: string }
   | { kind: 'failed'; failure: LiveFailure; diagnostic: string }

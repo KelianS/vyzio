@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useReducer, useRef, useState, type ReactNode } from 'react'
 import { Volume2, VolumeX } from 'lucide-react'
 import { cn } from '../../../common/ui/utils'
 import { Button } from '../../../common/ui/button'
@@ -14,6 +14,10 @@ import { LiveImage } from './live_image'
 import { LIVE_CONTROL } from './live_control'
 
 const RECONNECT_MS = 2000
+// A camera that no longer answers is tried again less and less often, never further apart than this.
+const MAX_RETRY_MS = 15_000
+
+const CAMERA_LOST = 'La caméra ne répond plus : la vidéo reprendra dès son retour.'
 
 /** What each failure says, and the way out it offers (ADR-72 e). */
 const FAILURES: Record<
@@ -75,14 +79,67 @@ const PLAYING: Record<PlaybackKind, boolean> = {
   connecting: false,
   playing: true,
   interrupted: false,
+  stalled: false,
   failed: false,
 }
 
-const RETRIES: Record<PlaybackKind, boolean> = {
-  connecting: false,
-  playing: false,
-  interrupted: true,
-  failed: false,
+// While the camera no longer answers, these failures only mean it has not come back yet.
+const STILL_LOST: Record<LiveFailure, boolean> = {
+  unsupported_browser: false,
+  unsupported_codec: false,
+  unreachable: true,
+  no_quality: false,
+  privacy: false,
+  removed: false,
+}
+
+/** The playback, and since when the camera no longer answers: its last diagnostic and the retries since. */
+interface Watched {
+  playback: LivePlayback
+  lost: { diagnostic: string; retries: number } | null
+}
+
+// Kept from the stall until the picture comes back, so the attempts in between never show.
+function follow(watched: Watched, playback: LivePlayback): Watched {
+  switch (playback.kind) {
+    case 'stalled':
+      return { playback, lost: { diagnostic: playback.diagnostic, retries: 0 } }
+    case 'playing':
+      return { playback, lost: null }
+    case 'connecting':
+    case 'interrupted':
+      return { playback, lost: watched.lost }
+    case 'failed':
+      return {
+        playback,
+        lost:
+          watched.lost && STILL_LOST[playback.failure]
+            ? { diagnostic: playback.diagnostic, retries: watched.lost.retries + 1 }
+            : null,
+      }
+    default: {
+      const unknown: never = playback
+      return unknown
+    }
+  }
+}
+
+/** When the stream is opened again on its own, if it is: a lost camera at 2, 4, 8 s, then every 15 s. */
+function retryDelay({ playback, lost }: Watched): number | null {
+  switch (playback.kind) {
+    case 'interrupted':
+      return RECONNECT_MS
+    case 'stalled':
+    case 'failed':
+      return lost ? Math.min(RECONNECT_MS * 2 ** lost.retries, MAX_RETRY_MS) : null
+    case 'connecting':
+    case 'playing':
+      return null
+    default: {
+      const unknown: never = playback
+      return unknown
+    }
+  }
 }
 
 function failureOf(playback: LivePlayback): { failure: LiveFailure; diagnostic: string } | null {
@@ -92,6 +149,7 @@ function failureOf(playback: LivePlayback): { failure: LiveFailure; diagnostic: 
     case 'connecting':
     case 'playing':
     case 'interrupted':
+    case 'stalled':
       return null
     default: {
       const unknown: never = playback
@@ -106,6 +164,34 @@ const NOTICE_PLACE: Record<LiveLayout, string> = {
   landscape:
     'top-16 left-[max(0.5rem,env(safe-area-inset-left))] max-w-md right-[max(0.5rem,env(safe-area-inset-right))]',
   wide: 'inset-x-4 bottom-4 mx-auto max-w-2xl',
+}
+
+/** The card that says why the picture does not play, with its way out. */
+function Notice({
+  layout,
+  sentence,
+  diagnostic,
+  children,
+}: {
+  layout: LiveLayout
+  sentence: string
+  diagnostic: string
+  children?: ReactNode
+}) {
+  return (
+    <div
+      className={cn(
+        'absolute flex items-start justify-between gap-3 rounded-card bg-card p-3 text-sm text-card-foreground shadow-[var(--shadow-soft)]',
+        NOTICE_PLACE[layout],
+      )}
+    >
+      <div>
+        <p>{sentence}</p>
+        <DiagnosticLine text={diagnostic} />
+      </div>
+      {children}
+    </div>
+  )
 }
 
 /** The live video (ADR-72), filling its frame; its quality and sound go in the bar laid over it. */
@@ -144,15 +230,19 @@ export function LiveVideo({
   onToggleSound: () => void
 }) {
   const videoRef = useRef<HTMLVideoElement>(null)
-  const [playback, setPlayback] = useState<LivePlayback>({ kind: 'connecting' })
+  const [watched, report] = useReducer(follow, {
+    playback: { kind: 'connecting' },
+    lost: null,
+  })
+  const { playback, lost } = watched
   const [attempt, setAttempt] = useState(0)
 
   // Opened again on a new quality or sound, a retry, an interruption, and when surveillance comes back from a restart.
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
-    setPlayback({ kind: 'connecting' })
-    return onOpen(video, cameraId, quality, soundOn, setPlayback)
+    report({ kind: 'connecting' })
+    return onOpen(video, cameraId, quality, soundOn, report)
   }, [onOpen, cameraId, quality, soundOn, attempt, frigateStatus])
 
   // A quality the camera no longer offers gives way to the one it still has.
@@ -161,10 +251,11 @@ export function LiveVideo({
   }, [qualities, quality, onChooseQuality])
 
   useEffect(() => {
-    if (!RETRIES[playback.kind]) return
-    const retry = setTimeout(() => setAttempt((n) => n + 1), RECONNECT_MS)
+    const delay = retryDelay(watched)
+    if (delay === null) return
+    const retry = setTimeout(() => setAttempt((n) => n + 1), delay)
     return () => clearTimeout(retry)
-  }, [playback])
+  }, [watched])
 
   useEffect(() => {
     if (videoRef.current) videoRef.current.muted = !soundOn
@@ -183,12 +274,21 @@ export function LiveVideo({
   )
 
   const overlay = () => {
+    if (lost) {
+      const restarting = liveWaitMessage(frigateStatus, false)
+      return restarting ? (
+        <LiveWaitVeil message={restarting} />
+      ) : (
+        <Notice layout={layout} sentence={CAMERA_LOST} diagnostic={lost.diagnostic} />
+      )
+    }
     switch (playback.kind) {
       case 'connecting':
         return <LiveWaitVeil message={liveWaitMessage(frigateStatus, false) ?? 'Connexion…'} />
       case 'interrupted':
         return <LiveWaitVeil message={liveWaitMessage(frigateStatus, true) ?? 'Reconnexion…'} />
       case 'playing':
+      case 'stalled':
       case 'failed':
         return null
       default: {
@@ -214,7 +314,7 @@ export function LiveVideo({
     </>
   )
 
-  const failed = failureOf(playback)
+  const failed = lost ? null : failureOf(playback)
   const shown = failed && FAILURES[failed.failure]
   const playing = PLAYING[playback.kind]
 
@@ -238,23 +338,14 @@ export function LiveVideo({
               frigateStatus={frigateStatus}
             />
           )}
-          <div
-            className={cn(
-              'absolute flex items-start justify-between gap-3 rounded-card bg-card p-3 text-sm text-card-foreground shadow-[var(--shadow-soft)]',
-              NOTICE_PLACE[layout],
-            )}
-          >
-            <div>
-              <p>{shown.sentence}</p>
-              <DiagnosticLine text={failed.diagnostic} />
-            </div>
+          <Notice layout={layout} sentence={shown.sentence} diagnostic={failed.diagnostic}>
             {shown.retry && (
               <Button variant="outline" size="sm" onClick={() => setAttempt((n) => n + 1)}>
                 Réessayer
               </Button>
             )}
             {shown.otherQuality && qualitySwitch}
-          </div>
+          </Notice>
         </>
       )}
     </>

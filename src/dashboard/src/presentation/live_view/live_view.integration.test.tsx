@@ -737,6 +737,7 @@ describe('LiveView', () => {
 
 describe('LiveView video', () => {
   const H264_AAC = 'video/mp4; codecs="avc1.64001E,mp4a.40.2"'
+  const CAMERA_LOST = 'La caméra ne répond plus : la vidéo reprendra dès son retour.'
 
   afterEach(() => {
     vi.restoreAllMocks()
@@ -843,7 +844,7 @@ describe('LiveView video', () => {
     expect(screen.queryByRole('button', { name: 'HD haute qualité' })).not.toBeInTheDocument()
   })
 
-  it('LiveView_ShouldReconnect_WhenAPlayingStreamIsCut', async () => {
+  it('LiveView_ShouldSayTheCameraNoLongerAnswersAtOnceThenReconnect_WhenAPlayingStreamIsCut', async () => {
     // Arrange
     stubBrowserMse()
     renderVideo()
@@ -853,14 +854,34 @@ describe('LiveView video', () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
 
     // Act
-    act(() => first.hangUp(1006))
-    const waiting = screen.getByText('Reconnexion…')
+    act(() => first.hangUp(4503, 'stream_unreachable'))
+    const said = screen.getByText(CAMERA_LOST)
     act(() => vi.advanceTimersByTime(2000))
     vi.useRealTimers()
 
     // Assert
-    expect(waiting).toBeInTheDocument()
+    expect(said).toBeInTheDocument()
     await waitFor(() => expect(FakeSocket.opened).toHaveLength(2))
+  })
+
+  it('LiveView_ShouldReplaceTheFrozenPictureThenResumeOnItsOwn_WhenTheCameraStopsSendingThenComesBack', async () => {
+    // Arrange
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    stubBrowserMse()
+    renderVideo()
+    await theStreamPlays()
+    await screen.findByRole('button', { name: 'Activer le son' })
+
+    // Act
+    await act(() => vi.advanceTimersByTimeAsync(5000))
+    const saidWhileAway = screen.queryByText(CAMERA_LOST) !== null
+    await act(() => vi.advanceTimersByTimeAsync(2000))
+    await theStreamPlays(2)
+
+    // Assert
+    expect(saidWhileAway).toBe(true)
+    await waitFor(() => expect(screen.queryByText(CAMERA_LOST)).not.toBeInTheDocument())
+    expect(await screen.findByRole('button', { name: 'Activer le son' })).toBeInTheDocument()
   })
 
   it('LiveView_ShouldSayWhyAndOfferARetry_WhenTheStreamDoesNotArrive', async () => {
