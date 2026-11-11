@@ -17,13 +17,16 @@ const SAVE = 'POST /api/cameras/camera-1/ptz/preset/save'
 const GOTO = 'POST /api/cameras/camera-1/ptz/preset/goto'
 const CALIBRATE = 'POST /api/cameras/camera-1/ptz/calibrate'
 const CAPTURE = 'POST /api/cameras/camera-1/ptz/presets/1/snapshot'
+const SURVEILLANCE = /^Surveillance \(appui/
+const EMPTY_SLOT = 'Enregistrer la position actuelle ici'
 
-// The capture waits 6 s after the move answers (CAPTURE_DELAY_MS): the fake clock skips that wait.
-async function theThumbnailIsCaptured(network: ReturnType<typeof fakeNetwork>) {
-  const captured = () => network.sent.some(({ route }) => route === CAPTURE)
-  for (let tries = 0; tries < 10 && !captured(); tries++) {
-    await act(() => vi.advanceTimersByTimeAsync(6000))
-  }
+// The capture is scheduled as the tile frees up, then waits CAPTURE_DELAY_MS: the fake clock skips that wait.
+async function theThumbnailIsCaptured(
+  network: ReturnType<typeof fakeNetwork>,
+  tile: string | RegExp = SURVEILLANCE,
+) {
+  await waitFor(() => expect(screen.getAllByTitle(tile)[0]).toBeEnabled())
+  await act(() => vi.advanceTimersByTimeAsync(6000))
   expect(network.sent).toContainEqual(expect.objectContaining({ route: CAPTURE }))
 }
 
@@ -141,7 +144,7 @@ describe('LiveView', () => {
     expect(network.sent).toContainEqual(
       expect.objectContaining({ route: SAVE, body: { presetId: 1 } }),
     )
-    await theThumbnailIsCaptured(network)
+    await theThumbnailIsCaptured(network, EMPTY_SLOT)
   })
 
   it('onGoTo_ShouldAcknowledgeTheArrivalAndRecapture_WhenTheCameraReachesTheSavedPosition', async () => {
@@ -206,7 +209,9 @@ describe('LiveView', () => {
 
     // Assert
     expect(
-      await screen.findByText('La miniature de la position « Surveillance » n’a pas été mise à jour.'),
+      await screen.findByText(
+        'La miniature de la position « Surveillance » n’a pas été mise à jour.',
+      ),
     ).toBeInTheDocument()
     expect(
       screen.getByText(/POST \/api\/cameras\/camera-1\/ptz\/presets\/1\/snapshot · 500/),
@@ -341,6 +346,7 @@ describe('LiveView', () => {
     expect(network.sent).toContainEqual(
       expect.objectContaining({ route: GOTO, body: { presetId: 1 } }),
     )
+    expect(await screen.findByText('Caméra en position « Surveillance ».')).toBeInTheDocument()
     await theThumbnailIsCaptured(network)
   })
 

@@ -11,7 +11,7 @@ import type { PtzDirection } from './live_view.uido'
 // Well within the few seconds after which the server stops a hold it no longer hears about (ADR-60).
 const HOLD_SIGNAL_MS = 1000
 const MOVE_SPEED = 50
-// A native preset move goes on after the camera acknowledges it: capture once a full move has had time to end.
+// A native preset move goes on after the camera acknowledges it: capture once a full move has had time to end (ADR-26).
 const CAPTURE_DELAY_MS = 6000
 
 export interface LiveViewPresenterContext {
