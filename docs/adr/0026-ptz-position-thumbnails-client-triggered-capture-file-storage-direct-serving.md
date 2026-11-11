@@ -29,7 +29,7 @@ GET  /api/cameras/{id}/ptz/presets/{presetId}/thumbnail → sert le JPEG (404 si
 ```
 
 **Déclenchement côté client :**
-- Après `POST /ptz/preset/goto` → attente 1 500 ms (délai de mouvement physique) → `POST /snapshot`
+- Après `POST /ptz/preset/goto` → attente du délai de mouvement physique (`CAPTURE_DELAY_MS`, `live_view.presenter.ts`) → `POST /snapshot`
 - Après `POST /ptz/preset/save` → même délai + capture (la caméra est déjà à la position)
 
 **Affichage :**
@@ -41,4 +41,4 @@ GET  /api/cameras/{id}/ptz/presets/{presetId}/thumbnail → sert le JPEG (404 si
 - ✅ Aucune migration de base de données
 - ✅ Cohérent avec le pattern existant `latest.jpg` et `FaceStorageOptions`
 - ✅ Les miniatures survivent aux redémarrages (fichiers disque)
-- ⚠️ Le délai de 1 500 ms est un heuristique — une caméra Branch B (homing + steps) peut être plus lente ; acceptable car la miniature est non-bloquante
+- ⚠️ Le délai fixe est une heuristique : une caméra Branch B (homing + steps) peut être plus lente ; acceptable car la miniature est non-bloquante
