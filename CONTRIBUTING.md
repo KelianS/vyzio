@@ -6,7 +6,7 @@
 2. From the repo root, run `task up` to start the local runtime (API, Frigate, MQTT...).
 3. Run `task front:dev` to start the frontend dev server.
 
-All Vyzio settings default to production-ready values. Override any of them via `VYZIO_*` environment variables in `docker-compose.yml` (prod) or `docker-compose.dev.yml` (dev only).
+All Vyzio settings default to production-ready values. Override any of them via `VYZIO_*` environment variables in `docker-compose.yml` (prod) or `docker-compose.dev.yml` (dev only). A value Vyzio cannot honour stops the API at startup, with one log line naming the variable and the value it expects.
 
 ### Task runner
 
