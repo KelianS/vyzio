@@ -1,0 +1,54 @@
+name: Bug
+description: Something does not do what it says.
+title: 'fix(scope): '
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **This repository is public.** Never post a password, a camera account, a token, an IP or MAC address, a location, a serial or device number: replace each with a placeholder. A security flaw is reported privately, as [SECURITY.md](https://github.com/KelianS/vyzio/blob/main/SECURITY.md) says.
+        A bug is a problem to solve: [WORKFLOW § Issues](https://github.com/KelianS/vyzio/blob/main/docs/WORKFLOW.md#issues-a-problem-to-solve).
+  - type: textarea
+    id: what-happens
+    attributes:
+      label: What happens
+      description: What you saw, as it happened.
+    validations:
+      required: true
+  - type: textarea
+    id: what-should-happen
+    attributes:
+      label: What should happen
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce
+      description: The steps, from a screen anyone can reach.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Vyzio version
+      description: The image tag your compose file runs.
+      placeholder: v0.3.0
+    validations:
+      required: true
+  - type: input
+    id: camera
+    attributes:
+      label: Camera model and firmware
+      description: When the defect involves a camera.
+  - type: textarea
+    id: technical-detail
+    attributes:
+      label: Technical detail
+      description: The technical detail block under the error message, copied or photographed. It never holds a secret, but check it for addresses.
+      render: text
+  - type: textarea
+    id: leads
+    attributes:
+      label: Leads
+      description: Optional ideas of a cause or a fix. Whoever implements may choose another one.

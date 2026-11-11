@@ -81,8 +81,10 @@ Only on the user's request, and only after a `PASS` on the last commit.
 2. Title: the issue's title as it stands, otherwise per GIT-01.
 3. Body from [`.github/pull_request_template.md`](../../../.github/pull_request_template.md), written to a
    file and passed with `gh pr create --base main --body-file <file>`:
-   - **Why**: the effect obtained and for whom, the behaviour changes of the report included;
+   - **Why**: the problem solved and for whom, and why this way, the behaviour changes of the report
+     included;
    - **Scope**: `Closes #<issue>`;
+   - **Breaking change**: what a self-hoster must do on upgrade, or "None";
    - **Checked**: `task check` green, the review verdict and its sha, anything else actually run;
    - **Screenshots**: GIT-07, shot with `task pr:capture` then published with `task pr:screenshots`
      ([`CONTRIBUTING.md`](../../../CONTRIBUTING.md) § Pull request screenshots); no screen changed →

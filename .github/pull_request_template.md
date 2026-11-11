@@ -5,11 +5,19 @@ Format and vocabulary: docs/rules/git.md. English, like this whole description.
 
 ## Why
 
-<!-- What the diff does not show. Not the mechanics: the effect obtained, and for whom. -->
+<!--
+The essential section, the one read months later. What the diff does not show:
+- the problem solved, and for whom: the effect obtained, never the mechanics;
+- why this way: the choice made, and what it was weighed against when there was a choice.
+-->
 
 ## Scope
 
 Closes #
+
+## Breaking change
+
+<!-- What someone who hosts Vyzio must do when upgrading: an environment variable, the compose file, a port, a data reset. "None" otherwise. -->
 
 ## Checked
 

@@ -1,0 +1,27 @@
+name: Need or problem
+description: Something the product should do, or does badly. The problem, never the solution.
+title: 'feat(scope): '
+labels: [feature, needs-framing]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        An issue is a problem to solve, framed later: [WORKFLOW § Issues](https://github.com/KelianS/vyzio/blob/main/docs/WORKFLOW.md#issues-a-problem-to-solve).
+        Title in English, Conventional Commits: it becomes the pull request title.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: Who is held back, by what, and why it matters. The need, not a solution.
+    validations:
+      required: true
+  - type: textarea
+    id: facts
+    attributes:
+      label: Observed facts
+      description: What you saw or measured, as it happened. Leave empty when the need is new.
+  - type: textarea
+    id: leads
+    attributes:
+      label: Leads
+      description: Optional ideas of a solution. Whoever implements may choose another one.

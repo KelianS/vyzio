@@ -1,0 +1,44 @@
+name: Camera report
+description: What a camera model did with Vyzio, worked or not. Observed facts only.
+title: 'docs(hardware): '
+labels: [documentation]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **This repository is public.** Never post a password, a camera account, a token, an IP or MAC address, a location, a serial or device number: replace each with a placeholder.
+        A report feeds the model's sheet under [docs/hardware](https://github.com/KelianS/vyzio/tree/main/docs/hardware): what you observed, not what you think caused it.
+  - type: input
+    id: model
+    attributes:
+      label: Camera model
+      description: Brand and model, as printed on the camera or its box.
+    validations:
+      required: true
+  - type: input
+    id: firmware
+    attributes:
+      label: Firmware
+      description: As the vendor app or the camera's own page shows it.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Vyzio version
+      description: The image tag your compose file runs.
+      placeholder: v0.3.0
+    validations:
+      required: true
+  - type: textarea
+    id: worked
+    attributes:
+      label: What worked and what did not
+      description: For each thing you tried (adding it, the live view, recording, detection, turning it, privacy, image settings), what Vyzio showed.
+    validations:
+      required: true
+  - type: textarea
+    id: facts
+    attributes:
+      label: Observed facts
+      description: Anything else you saw, as it happened, with the technical detail block of an error screen when there was one.
