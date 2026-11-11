@@ -34,22 +34,48 @@ test.describe('Camera pause', () => {
 })
 
 test.describe('LiveView', () => {
-  test('LiveView_ShouldCloseWithAVisibleCross_WhenTheUserViewsACameraLive', async ({ page }) => {
+  test('LiveView_ShouldOpenFullScreenAndGoBackHome_WhenTheUserTapsACamera', async ({ page }) => {
     const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
     await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
 
     await page.goto('/')
-    await page.getByRole('button', { name: 'Salon' }).click()
+    await page.getByRole('link', { name: 'Salon' }).click()
 
-    const overlay = page.getByRole('dialog', { name: 'Aperçu' })
-    await expect(overlay).toBeVisible()
+    await expect(page).toHaveURL('/cameras/camera-1/direct')
+    await expect(page.getByRole('main', { name: 'Salon' })).toBeVisible()
+    await expect(page.getByRole('navigation', { name: 'Navigation principale' })).toBeHidden()
 
-    // Clicking outside already closed it; nothing announced it, and the content covered the cross.
-    const close = overlay.getByRole('button', { name: 'Fermer' })
-    await expect(close).toBeVisible()
-    await close.click()
+    await page.getByRole('button', { name: 'Retour' }).click()
+    await expect(page).toHaveURL('/')
+  })
 
-    await expect(overlay).toBeHidden()
+  test('LiveView_ShouldGoBackHome_WhenTheBrowserGoesBack', async ({ page }) => {
+    const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
+    await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
+
+    await page.goto('/')
+    await page.getByRole('link', { name: 'Salon' }).click()
+    await expect(page).toHaveURL('/cameras/camera-1/direct')
+    await page.goBack()
+
+    await expect(page).toHaveURL('/')
+    await expect(page.getByRole('link', { name: 'Salon' })).toBeVisible()
+  })
+
+  test('LiveView_ShouldFadeItsControlsAndBringThemBackOnATap_WhenThePhoneIsHeldLandscape', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 844, height: 390 })
+    const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
+    await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
+
+    await page.goto('/cameras/camera-1/direct')
+    const back = page.getByRole('button', { name: 'Retour' })
+    await expect(back).toBeVisible()
+    await expect(back).toBeHidden({ timeout: 6000 })
+
+    await page.getByRole('main', { name: 'Salon' }).click({ position: { x: 420, y: 200 } })
+    await expect(back).toBeVisible()
   })
 
   test('LiveView_ShouldShowAWaitNeverABrokenImage_WhenTheStreamIsUnavailable', async ({ page }) => {
@@ -64,7 +90,7 @@ test.describe('LiveView', () => {
     // An image with no data carries the browser's broken icon: it must not show through.
     await expect(page.locator('article img')).not.toBeVisible()
     // And the thumbnail stays openable: hiding the image must not take its name away.
-    await expect(page.getByRole('button', { name: 'Salon' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Salon' })).toBeVisible()
   })
 })
 
@@ -87,7 +113,7 @@ test.describe('LiveView PTZ positions', () => {
     await installFakeBackend(page, state)
 
     await page.goto('/')
-    await page.getByRole('button', { name: 'Salon' }).click()
+    await page.getByRole('link', { name: 'Salon' }).click()
     return state
   }
 

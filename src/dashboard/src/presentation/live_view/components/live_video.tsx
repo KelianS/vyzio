@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Volume2, VolumeX } from 'lucide-react'
 import { cn } from '../../../common/ui/utils'
 import { Button } from '../../../common/ui/button'
@@ -8,7 +8,10 @@ import { LiveWaitVeil } from '../../../common/components/live_wait_veil'
 import { LiveQuality } from '../../../domain/entities/camera.entity'
 import type { LiveFailure, LivePlayback } from '../../../domain/entities/live_playback.entity'
 import type { FrigateStatus } from '../../../domain/entities/system_stats.entity'
+import { CAMERA_REMOVED, PRIVACY_STOPS_LIVE } from '../live_view.formatters'
+import type { LiveLayout } from '../live_layout'
 import { LiveImage } from './live_image'
+import { LIVE_CONTROL } from './live_control'
 
 const RECONNECT_MS = 2000
 
@@ -43,13 +46,13 @@ const FAILURES: Record<
     otherQuality: true,
   },
   privacy: {
-    sentence: 'Mode vie privée : la vue en direct est arrêtée.',
+    sentence: PRIVACY_STOPS_LIVE,
     frame: false,
     retry: false,
     otherQuality: false,
   },
   removed: {
-    sentence: 'Cette caméra n’existe plus.',
+    sentence: CAMERA_REMOVED,
     frame: false,
     retry: false,
     otherQuality: false,
@@ -97,11 +100,15 @@ function failureOf(playback: LivePlayback): { failure: LiveFailure; diagnostic: 
   }
 }
 
-// Readable over any picture: the inverse surface, dimmed.
-const CONTROL =
-  'inline-flex h-9 min-w-9 items-center justify-center rounded-full bg-surface-inverse/70 px-3 text-xs font-semibold text-surface-inverse-foreground'
+// Landscape keeps the bottom for the positions: the reason goes under the bar, never faded.
+const NOTICE_PLACE: Record<LiveLayout, string> = {
+  portrait: 'inset-x-2 bottom-2',
+  landscape:
+    'top-16 left-[max(0.5rem,env(safe-area-inset-left))] max-w-md right-[max(0.5rem,env(safe-area-inset-right))]',
+  wide: 'inset-x-4 bottom-4 mx-auto max-w-2xl',
+}
 
-/** The live video (ADR-72), with its quality and sound; a sentence and its way out when it cannot play. */
+/** The live video (ADR-72), filling its frame; its quality and sound go in the bar laid over it. */
 export function LiveVideo({
   cameraId,
   apiBaseUrl,
@@ -110,6 +117,8 @@ export function LiveVideo({
   quality,
   qualities,
   soundOn,
+  layout,
+  bar,
   onOpen,
   onChooseQuality,
   onToggleSound,
@@ -121,6 +130,9 @@ export function LiveVideo({
   quality: LiveQuality
   qualities: LiveQuality[]
   soundOn: boolean
+  layout: LiveLayout
+  /** The bar over the picture, handed the picture's own controls while it plays. */
+  bar: (controls: ReactNode) => ReactNode
   onOpen: (
     video: HTMLVideoElement,
     cameraId: string,
@@ -161,9 +173,9 @@ export function LiveVideo({
   const qualitySwitch = qualities.length > 1 && (
     <button
       type="button"
-      className={cn(CONTROL, IS_HIGH[quality] && 'bg-primary text-primary-foreground')}
+      className={cn(LIVE_CONTROL, IS_HIGH[quality] && 'bg-primary text-primary-foreground')}
       aria-pressed={IS_HIGH[quality]}
-      aria-label="Haute qualité"
+      aria-label="HD haute qualité"
       onClick={() => onChooseQuality(OTHER_QUALITY[quality])}
     >
       HD
@@ -177,21 +189,6 @@ export function LiveVideo({
       case 'interrupted':
         return <LiveWaitVeil message={liveWaitMessage(frigateStatus, true) ?? 'Reconnexion…'} />
       case 'playing':
-        return (
-          <div className="absolute right-2 bottom-2 flex gap-2">
-            {playback.soundOffered && (
-              <button
-                type="button"
-                className={CONTROL}
-                aria-label={soundOn ? 'Couper le son' : 'Activer le son'}
-                onClick={onToggleSound}
-              >
-                {soundOn ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
-              </button>
-            )}
-            {qualitySwitch}
-          </div>
-        )
       case 'failed':
         return null
       default: {
@@ -201,12 +198,36 @@ export function LiveVideo({
     }
   }
 
+  const controls = playback.kind === 'playing' && (
+    <>
+      {playback.soundOffered && (
+        <button
+          type="button"
+          className={LIVE_CONTROL}
+          aria-label={soundOn ? 'Couper le son' : 'Activer le son'}
+          onClick={onToggleSound}
+        >
+          {soundOn ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
+        </button>
+      )}
+      {qualitySwitch}
+    </>
+  )
+
   const failed = failureOf(playback)
   const shown = failed && FAILURES[failed.failure]
   const playing = PLAYING[playback.kind]
 
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="relative size-full overflow-hidden bg-surface-inverse">
+      <video
+        ref={videoRef}
+        aria-label={label}
+        muted
+        playsInline
+        className={cn('block size-full object-contain', (!playing || failed) && 'invisible')}
+      />
+      {overlay()}
       {failed && shown && (
         <>
           {shown.frame && (
@@ -217,7 +238,12 @@ export function LiveVideo({
               frigateStatus={frigateStatus}
             />
           )}
-          <div className="flex w-full items-start justify-between gap-3 rounded-card bg-card p-3 text-sm text-card-foreground shadow-[var(--shadow-soft)]">
+          <div
+            className={cn(
+              'absolute flex items-start justify-between gap-3 rounded-card bg-card p-3 text-sm text-card-foreground shadow-[var(--shadow-soft)]',
+              NOTICE_PLACE[layout],
+            )}
+          >
             <div>
               <p>{shown.sentence}</p>
               <DiagnosticLine text={failed.diagnostic} />
@@ -231,22 +257,7 @@ export function LiveVideo({
           </div>
         </>
       )}
-      <div
-        className={cn(
-          'relative flex items-center justify-center overflow-hidden rounded-lg bg-surface-inverse',
-          failed && 'hidden',
-          !playing && 'aspect-video w-[min(90vw,48rem)]',
-        )}
-      >
-        <video
-          ref={videoRef}
-          aria-label={label}
-          muted
-          playsInline
-          className={cn('block max-h-[75vh] max-w-[90vw]', !playing && 'invisible')}
-        />
-        {overlay()}
-      </div>
+      {bar(controls)}
     </div>
   )
 }

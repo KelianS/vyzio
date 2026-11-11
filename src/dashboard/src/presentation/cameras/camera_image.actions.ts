@@ -19,5 +19,3 @@ export type CameraImageAction =
       currentPosition: { x: number; y: number } | null
     }
   | { type: 'PTZ_FAILED'; error: AppError }
-  | { type: 'LIVE_VIEW_OPENED' }
-  | { type: 'LIVE_VIEW_CLOSED' }

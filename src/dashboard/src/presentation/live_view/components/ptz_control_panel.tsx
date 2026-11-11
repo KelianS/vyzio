@@ -8,10 +8,42 @@ import { isReservedPreset, type PtzPreset } from '../../../domain/entities/ptz_p
 import { POSITIONS_UNREAD } from '../../cameras/cameras.formatters'
 import { presetLabel } from '../live_view.formatters'
 import type { LiveViewUido, PresetActivity, PtzDirection } from '../live_view.uido'
+import type { LiveLayout } from '../live_layout'
+import { fading } from './live_control'
 
 const ALL_PRESET_IDS = [1, 2, 3, 4]
 
 const BUSY: Record<PresetActivity, boolean> = { idle: false, saving: true, going: true }
+
+/** Where each part sits: below or beside the picture, or laid over it in landscape (SPECS 7.2). */
+const PLACE: Record<
+  LiveLayout,
+  { panel: string; joystick: string; positions: string; messages: string; tiles: string }
+> = {
+  portrait: {
+    panel: 'flex flex-col items-center gap-5',
+    joystick: '',
+    positions: 'flex w-full flex-col items-center gap-2',
+    messages: 'flex flex-col items-center gap-2',
+    tiles: 'flex max-w-full gap-3 overflow-x-auto px-1 pb-1',
+  },
+  landscape: {
+    panel: 'pointer-events-none absolute inset-0',
+    joystick:
+      'pointer-events-auto absolute top-1/2 right-[max(1rem,env(safe-area-inset-right))] -translate-y-1/2 rounded-full bg-card/60 p-1',
+    positions:
+      'absolute bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-1/2 flex max-w-[calc(100%-18rem)] -translate-x-1/2 flex-col items-center gap-2',
+    messages: 'pointer-events-auto flex flex-col gap-2 rounded-card bg-card p-2',
+    tiles: 'pointer-events-auto flex gap-3 overflow-x-auto rounded-card bg-card/85 p-2',
+  },
+  wide: {
+    panel: 'flex flex-col items-center gap-6',
+    joystick: '',
+    positions: 'flex w-full flex-col items-center gap-2',
+    messages: 'flex flex-col items-center gap-2',
+    tiles: 'flex flex-wrap justify-center gap-3',
+  },
+}
 
 const EDGE_POSITION: Record<PtzDirection, string> = {
   Up: 'top-0.5 left-1/2 -translate-x-1/2',
@@ -165,6 +197,9 @@ function PresetTile({
 }
 
 interface PtzControlPanelProps {
+  layout: LiveLayout
+  /** Over the picture, the joystick and the tiles fade; a line explaining a state never does. */
+  shown: boolean
   cameraId: string
   apiBaseUrl: string
   uido: LiveViewUido
@@ -179,8 +214,10 @@ interface PtzControlPanelProps {
   onRetryPresets: () => void
 }
 
-/** The joystick and the saved positions, below the live picture. */
+/** The joystick and the saved positions, below, beside or over the live picture. */
 export function PtzControlPanel({
+  layout,
+  shown,
   cameraId,
   apiBaseUrl,
   uido,
@@ -215,58 +252,68 @@ export function PtzControlPanel({
       ? presets?.find((p) => p.presetId === uido.overridePresetId)
       : undefined
 
+  const place = PLACE[layout]
+  const fade = fading(shown)
+  const messages = uido.presetsError !== null || (presets !== null && !calibrated)
+
   return (
-    <div className="flex flex-col items-center gap-2.5 sm:flex-row sm:items-start">
-      <div className="relative size-[116px] shrink-0 rounded-full border border-border bg-muted/40">
-        <div
-          className="absolute inset-[30%] rounded-full border-2 border-background/70"
-          aria-hidden="true"
-        />
-        <DirButton buttonSize={buttonSize} edge="Up" title="Haut" {...dir('Up')}>
-          <ArrowUp className="size-4" aria-hidden="true" />
-        </DirButton>
-        <DirButton buttonSize={buttonSize} edge="Left" title="Gauche" {...dir('Left')}>
-          <ArrowLeft className="size-4" aria-hidden="true" />
-        </DirButton>
-        <DirButton buttonSize={buttonSize} edge="Right" title="Droite" {...dir('Right')}>
-          <ArrowRight className="size-4" aria-hidden="true" />
-        </DirButton>
-        <DirButton buttonSize={buttonSize} edge="Down" title="Bas" {...dir('Down')}>
-          <ArrowDown className="size-4" aria-hidden="true" />
-        </DirButton>
+    <div className={place.panel}>
+      <div {...fade} className={cn(place.joystick, fade.className)}>
+        <div className="relative size-[116px] shrink-0 rounded-full border border-border bg-muted/40">
+          <div
+            className="absolute inset-[30%] rounded-full border-2 border-background/70"
+            aria-hidden="true"
+          />
+          <DirButton buttonSize={buttonSize} edge="Up" title="Haut" {...dir('Up')}>
+            <ArrowUp className="size-4" aria-hidden="true" />
+          </DirButton>
+          <DirButton buttonSize={buttonSize} edge="Left" title="Gauche" {...dir('Left')}>
+            <ArrowLeft className="size-4" aria-hidden="true" />
+          </DirButton>
+          <DirButton buttonSize={buttonSize} edge="Right" title="Droite" {...dir('Right')}>
+            <ArrowRight className="size-4" aria-hidden="true" />
+          </DirButton>
+          <DirButton buttonSize={buttonSize} edge="Down" title="Bas" {...dir('Down')}>
+            <ArrowDown className="size-4" aria-hidden="true" />
+          </DirButton>
+        </div>
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col items-center gap-1.5 sm:items-start">
-        {uido.presetsError && (
-          <ReadFailure
-            error={uido.presetsError}
-            onRetry={onRetryPresets}
-            subject={POSITIONS_UNREAD}
-          />
-        )}
+      <div className={place.positions}>
+        {messages && (
+          <div className={place.messages}>
+            {uido.presetsError && (
+              <ReadFailure
+                error={uido.presetsError}
+                onRetry={onRetryPresets}
+                subject={POSITIONS_UNREAD}
+              />
+            )}
 
-        {/* Without a reference the saved positions are inert, and nothing else said so. */}
-        {presets && !calibrated && (
-          <div className="flex flex-col items-center gap-2 rounded-inset border border-border bg-muted/40 p-2.5 sm:items-start">
-            <p className="text-sm text-muted-foreground">
-              Cette caméra n’a pas de position de référence : les positions enregistrées ne sont pas
-              utilisables tant qu’elle n’est pas calibrée.
-            </p>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={uido.calibrating}
-              onClick={onCalibrate}
-            >
-              {uido.calibrating ? 'Calibration en cours…' : 'Calibrer maintenant'}
-            </Button>
+            {/* Without a reference the saved positions are inert, and nothing else said so. */}
+            {presets && !calibrated && (
+              <div className="flex flex-col items-center gap-2 rounded-inset border border-border bg-muted/40 p-2.5">
+                <p className="text-sm text-muted-foreground">
+                  Cette caméra n’a pas de position de référence : les positions enregistrées ne sont
+                  pas utilisables tant qu’elle n’est pas calibrée.
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={uido.calibrating}
+                  onClick={onCalibrate}
+                >
+                  {uido.calibrating ? 'Calibration en cours…' : 'Calibrer maintenant'}
+                </Button>
+              </div>
+            )}
           </div>
         )}
 
         {/* No slot is offered while the camera has not said which ones it holds (ADR-69 g). */}
         {presets && (
-          <div className="flex flex-wrap justify-center gap-3 sm:justify-start">
+          <div {...fade} className={cn(place.tiles, fade.className)}>
             {ALL_PRESET_IDS.map((presetId) => {
               const preset = presets.find((p) => p.presetId === presetId)
               const version = uido.thumbnailVersions[presetId] ?? 1
@@ -276,7 +323,7 @@ export function PtzControlPanel({
                 : null
 
               return (
-                <div key={presetId} className="flex w-16 flex-col items-center gap-1">
+                <div key={presetId} className="flex w-16 shrink-0 flex-col items-center gap-1">
                   <PresetTile
                     preset={preset}
                     reserved={isReservedPreset(presetId)}

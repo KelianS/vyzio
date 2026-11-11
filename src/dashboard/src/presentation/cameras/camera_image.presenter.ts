@@ -122,15 +122,5 @@ export function buildCameraImagePresenter({
         dispatch({ type: 'SAVE_FINISHED' })
       }
     },
-
-    onOpenLiveView() {
-      dispatch({ type: 'LIVE_VIEW_OPENED' })
-    },
-
-    // The live view may have calibrated or moved the camera: read again when closing it.
-    onCloseLiveView(cameraId: string) {
-      dispatch({ type: 'LIVE_VIEW_CLOSED' })
-      readPtz(cameraId)
-    },
   }
 }

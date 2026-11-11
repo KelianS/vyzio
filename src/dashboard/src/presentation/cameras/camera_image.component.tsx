@@ -5,7 +5,6 @@ import { SettingsDraftBar } from '../../common/settings/settings_draft_bar'
 import { useUnsavedChanges } from '../navigation/use_unsaved_changes'
 import { useSettingsDraft } from '../../common/settings/use_settings_draft'
 import type { SettingDeclaration } from '../../common/settings/setting_declaration'
-import { Overlay } from '../../common/components/overlay'
 import { useToast } from '../../common/components/toast'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
@@ -15,7 +14,7 @@ import type {
   IrCutMode,
 } from '../../domain/entities/camera_image_settings.entity'
 import { SettingsPage, SettingsSection } from '../../common/settings/settings_page'
-import { LiveView } from '../live_view/live_view.component'
+import { liveViewPath } from '../live_view/live_view.route'
 import { OrientationUnavailable } from '../../common/components/orientation_unavailable'
 import {
   MOVES,
@@ -82,29 +81,14 @@ export function CameraImageView() {
         if (entry !== SurveillanceEntry.Watched)
           return <SurveillanceFirstNotice cameraId={cameraId} entry={entry} />
         return (
-          <>
-            <PtzCalibrationSection
-              loading={uido.ptzLoading}
-              error={uido.ptzError}
-              calibrated={uido.calibrated}
-              currentPosition={uido.currentPosition}
-              onOpenLiveView={presenter.onOpenLiveView}
-              onRetry={() => presenter.onRetryPtz(cameraId)}
-            />
-            {uido.liveViewOpen && (
-              <Overlay
-                label={`Pilotage : ${camera.displayName}`}
-                onClose={() => presenter.onCloseLiveView(cameraId)}
-              >
-                <LiveView
-                  cameraId={cameraId}
-                  label={camera.displayName}
-                  orientation={orientation}
-                  qualities={camera.liveQualities}
-                />
-              </Overlay>
-            )}
-          </>
+          <PtzCalibrationSection
+            loading={uido.ptzLoading}
+            error={uido.ptzError}
+            calibrated={uido.calibrated}
+            currentPosition={uido.currentPosition}
+            liveTo={liveViewPath(cameraId)}
+            onRetry={() => presenter.onRetryPtz(cameraId)}
+          />
         )
       default: {
         const unknown: never = orientation

@@ -6,7 +6,11 @@ import { failure, fakeNetwork, late, ok } from '../../testing/fake_network'
 import { renderScreen } from '../../testing/render_screen'
 import { FakeSocket, stubBrowserMse } from '../../testing/fake_mse'
 import type { LiveQuality } from '../../domain/entities/camera.entity'
-import { LiveView } from './live_view.component'
+import { LiveView, LiveViewScreen } from './live_view.component'
+import type { Camera } from '../../domain/entities/camera.entity'
+import { AppErrorKind, type AppError } from '../../common/errors/app_error'
+import { makeCamera } from '../../testing/camera_fixture'
+import { useRootStore } from '../../infrastructure/store/root.store'
 import { OrientationControl } from '../../common/orientation/orientation_control'
 
 const PRESETS = 'GET /api/cameras/camera-1/ptz/presets'
@@ -645,11 +649,13 @@ describe('LiveView video', () => {
     // Assert
     expect(socket.url).toContain('/api/cameras/camera-1/live/ws?quality=low')
     expect(await screen.findByRole('button', { name: 'Activer le son' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Haute qualité' })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: 'HD haute qualité' })).toHaveAttribute(
       'aria-pressed',
       'false',
     )
-    expect(screen.getByLabelText<HTMLVideoElement>('Front Door').muted).toBe(true)
+    expect(screen.getByLabelText<HTMLVideoElement>('Front Door', { selector: 'video' }).muted).toBe(
+      true,
+    )
   })
 
   it('LiveView_ShouldOpenTheHighQuality_WhenTheUserPressesHd', async () => {
@@ -659,7 +665,7 @@ describe('LiveView video', () => {
     await theStreamPlays()
 
     // Act
-    await userEvent.click(await screen.findByRole('button', { name: 'Haute qualité' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'HD haute qualité' }))
 
     // Assert
     await waitFor(() => expect(FakeSocket.latest().url).toContain('quality=high'))
@@ -680,7 +686,9 @@ describe('LiveView video', () => {
     expect(muted.closed).toBe(true)
     expect(JSON.parse(withSound.sent[0]).value).toContain('mp4a.40.2')
     expect(await screen.findByRole('button', { name: 'Couper le son' })).toBeInTheDocument()
-    expect(screen.getByLabelText<HTMLVideoElement>('Front Door').muted).toBe(false)
+    expect(screen.getByLabelText<HTMLVideoElement>('Front Door', { selector: 'video' }).muted).toBe(
+      false,
+    )
   })
   it('LiveView_ShouldOfferNoQualitySwitch_WhenTheCameraHasOneQuality', async () => {
     // Arrange
@@ -692,7 +700,7 @@ describe('LiveView video', () => {
 
     // Assert
     expect(await screen.findByRole('button', { name: 'Activer le son' })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Haute qualité' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'HD haute qualité' })).not.toBeInTheDocument()
   })
 
   it('LiveView_ShouldReconnect_WhenAPlayingStreamIsCut', async () => {
@@ -747,5 +755,308 @@ describe('LiveView video', () => {
     ).toBeInTheDocument()
     expect(screen.queryByRole('img', { name: 'Front Door' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Réessayer' })).not.toBeInTheDocument()
+  })
+})
+
+describe('LiveViewScreen', () => {
+  const ADDRESS = { path: '/cameras/:cameraId/direct', url: '/cameras/camera-1/direct' }
+
+  // The shell reads the camera list for every screen; here the test hands it over.
+  function theCamerasRead(cameras: Camera[], camerasError: AppError | null = null) {
+    act(() => useRootStore.setState({ cameras, camerasLoading: false, camerasError }))
+  }
+
+  it('LiveViewScreen_ShouldShowTheCameraItsAddressNames_WhenItIsWatched', () => {
+    // Arrange
+    fakeNetwork({})
+    renderScreen(<LiveViewScreen />, ADDRESS)
+
+    // Act
+    theCamerasRead([makeCamera()])
+
+    // Assert
+    expect(screen.getByRole('main', { name: 'Front Door' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Front Door', { selector: 'video' })).toBeInTheDocument()
+  })
+
+  it('LiveViewScreen_ShouldSayItWithoutPictureNorStream_WhenTheCameraIsInPrivacyMode', () => {
+    // Arrange
+    stubBrowserMse()
+    fakeNetwork({})
+    renderScreen(<LiveViewScreen />, ADDRESS)
+
+    // Act
+    theCamerasRead([makeCamera({ privacyModeActive: true })])
+
+    // Assert
+    expect(screen.getByText('Mode vie privée : la vue en direct est arrêtée.')).toBeInTheDocument()
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+    expect(FakeSocket.opened).toEqual([])
+  })
+
+  it('LiveViewScreen_ShouldLeadToTheCameraPage_WhenTheCameraIsStillToSetUp', () => {
+    // Arrange
+    fakeNetwork({})
+    renderScreen(<LiveViewScreen />, ADDRESS)
+
+    // Act
+    theCamerasRead([makeCamera({ validationState: 'draft' })])
+
+    // Assert
+    expect(screen.getByRole('link', { name: 'Ouvrir sa page' })).toHaveAttribute(
+      'href',
+      '/settings/cameras/camera-1',
+    )
+  })
+
+  it('LiveViewScreen_ShouldSayTheCameraIsGone_WhenNoCameraHasThisAddress', () => {
+    // Arrange
+    fakeNetwork({})
+    renderScreen(<LiveViewScreen />, ADDRESS)
+
+    // Act
+    theCamerasRead([makeCamera({ id: 'camera-2' })])
+
+    // Assert
+    expect(screen.getByText('Cette caméra n’existe plus.')).toBeInTheDocument()
+  })
+
+  it('LiveViewScreen_ShouldSayTheListWasNotReadAndOfferARetry_WhenTheCamerasCannotBeRead', () => {
+    // Arrange
+    fakeNetwork({})
+    renderScreen(<LiveViewScreen />, ADDRESS)
+
+    // Act
+    theCamerasRead([], {
+      kind: AppErrorKind.Server,
+      status: 500,
+      diagnostic: 'GET /api/cameras · 500',
+    })
+
+    // Assert
+    expect(screen.getByText('La liste de vos caméras n’a pas pu être lue.')).toBeInTheDocument()
+    expect(screen.getByText(/GET \/api\/cameras · 500/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Réessayer' })).toBeInTheDocument()
+  })
+
+  it('onBack_ShouldGoHome_WhenTheAddressWasOpenedDirectly', async () => {
+    // Arrange
+    fakeNetwork({})
+    const { router } = renderScreen(<LiveViewScreen />, ADDRESS)
+    theCamerasRead([makeCamera()])
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Retour' }))
+
+    // Assert
+    expect(router.state.location.pathname).toBe('/')
+  })
+})
+
+describe('LiveView layouts', () => {
+  type Layout = 'portrait' | 'landscape' | 'wide'
+
+  // The device's shape as CSS reads it; returns how to turn the device.
+  function holdTheDevice(initial: Layout) {
+    let current = initial
+    const listeners = new Set<() => void>()
+    const MATCHES: Record<Layout, (query: string) => boolean> = {
+      portrait: () => false,
+      landscape: (query) => query.includes('orientation: landscape'),
+      wide: (query) => query.includes('min-width'),
+    }
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      get matches() {
+        return MATCHES[current](query)
+      },
+      addEventListener: (_: string, listener: () => void) => listeners.add(listener),
+      removeEventListener: (_: string, listener: () => void) => listeners.delete(listener),
+    }))
+    return (next: Layout) => {
+      current = next
+      act(() => listeners.forEach((listener) => listener()))
+    }
+  }
+
+  function offerFullScreen() {
+    const request = vi.fn(() => Promise.resolve())
+    const exit = vi.fn(() => Promise.resolve())
+    Object.defineProperty(document, 'fullscreenEnabled', { value: true, configurable: true })
+    Object.defineProperty(document, 'exitFullscreen', { value: exit, configurable: true })
+    document.documentElement.requestFullscreen = request
+    return { request, exit }
+  }
+
+  function renderOn(orientation: OrientationControl = OrientationControl.Off) {
+    return renderScreen(
+      <LiveView
+        cameraId="camera-1"
+        label="Front Door"
+        orientation={orientation}
+        qualities={['low']}
+      />,
+    )
+  }
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+    Reflect.deleteProperty(document, 'fullscreenEnabled')
+    Reflect.deleteProperty(document, 'exitFullscreen')
+    Reflect.deleteProperty(document, 'fullscreenElement')
+    Reflect.deleteProperty(document.documentElement, 'requestFullscreen')
+  })
+
+  it('LiveView_ShouldFadeItsControlsAndBringThemBackOnATap_WhenHeldLandscape', () => {
+    // Arrange
+    vi.useFakeTimers()
+    holdTheDevice('landscape')
+    fakeNetwork({})
+    renderOn()
+
+    // Act
+    act(() => vi.advanceTimersByTime(3000))
+
+    // Assert
+    expect(screen.queryByRole('button', { name: 'Retour' })).not.toBeInTheDocument()
+
+    // Act
+    const picture = screen.getByRole('main', { name: 'Front Door' })
+    fireEvent.pointerDown(picture)
+    fireEvent.pointerUp(picture)
+
+    // Assert
+    expect(screen.getByRole('button', { name: 'Retour' })).toBeInTheDocument()
+  })
+
+  it('LiveView_ShouldKeepItsControls_WhenHeldUpright', () => {
+    // Arrange
+    vi.useFakeTimers()
+    holdTheDevice('portrait')
+    fakeNetwork({})
+    renderOn()
+
+    // Act
+    act(() => vi.advanceTimersByTime(10000))
+
+    // Assert
+    expect(screen.getByRole('button', { name: 'Retour' })).toBeInTheDocument()
+  })
+
+  it('LiveView_ShouldNeverFadeTheJoystick_WhenAFingerHoldsIt', async () => {
+    // Arrange
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    holdTheDevice('landscape')
+    fakeNetwork({ [PRESETS]: presetsRead() })
+    renderOn(OrientationControl.Usable)
+    const up = await screen.findByRole('button', { name: 'Haut' })
+
+    // Act
+    fireEvent.pointerDown(up)
+    act(() => vi.advanceTimersByTime(5000))
+
+    // Assert
+    expect(screen.getByRole('button', { name: 'Haut' })).toBeInTheDocument()
+
+    // Act
+    fireEvent.pointerUp(up)
+    act(() => vi.advanceTimersByTime(3000))
+
+    // Assert
+    expect(screen.queryByRole('button', { name: 'Haut' })).not.toBeInTheDocument()
+  })
+
+  it('LiveView_ShouldKeepTheReasonOnScreen_WhenTheControlsFade', async () => {
+    // Arrange
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    holdTheDevice('landscape')
+    fakeNetwork({ [PRESETS]: presetsRead({ calibrated: false }) })
+    renderOn(OrientationControl.Usable)
+    await screen.findByRole('button', { name: 'Calibrer maintenant' })
+
+    // Act
+    act(() => vi.advanceTimersByTime(3000))
+
+    // Assert
+    expect(screen.queryByRole('button', { name: 'Haut' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Calibrer maintenant' })).toBeInTheDocument()
+  })
+
+  it('onGesture_ShouldAskTheBrowserToGoFullScreenOnce_WhenTheFirstTapComesInLandscape', () => {
+    // Arrange
+    holdTheDevice('landscape')
+    const { request } = offerFullScreen()
+    fakeNetwork({})
+    renderOn()
+    const picture = screen.getByRole('main', { name: 'Front Door' })
+
+    // Act
+    fireEvent.click(picture)
+    fireEvent.click(picture)
+
+    // Assert
+    expect(request).toHaveBeenCalledTimes(1)
+  })
+
+  it('onFullScreen_ShouldAskTheBrowserAgain_WhenTheUserPressesTheButton', async () => {
+    // Arrange
+    holdTheDevice('landscape')
+    const { request } = offerFullScreen()
+    fakeNetwork({})
+    renderOn()
+    fireEvent.click(screen.getByRole('main', { name: 'Front Door' }))
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Plein écran' }))
+
+    // Assert
+    expect(request).toHaveBeenCalledTimes(2)
+  })
+
+  it('LiveView_ShouldOfferNoFullScreenButton_WhenTheBrowserCannotHideItsBars', () => {
+    // Arrange
+    holdTheDevice('landscape')
+    fakeNetwork({})
+    renderOn()
+
+    // Act
+    fireEvent.click(screen.getByRole('main', { name: 'Front Door' }))
+
+    // Assert
+    expect(screen.getByRole('button', { name: 'Retour' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Plein écran' })).not.toBeInTheDocument()
+  })
+
+  it('LiveView_ShouldOfferNoFullScreenButton_WhenHeldUpright', () => {
+    // Arrange
+    holdTheDevice('portrait')
+    const { request } = offerFullScreen()
+    fakeNetwork({})
+    renderOn()
+
+    // Act
+    fireEvent.click(screen.getByRole('main', { name: 'Front Door' }))
+
+    // Assert
+    expect(request).not.toHaveBeenCalled()
+    expect(screen.queryByRole('button', { name: 'Plein écran' })).not.toBeInTheDocument()
+  })
+
+  it('LiveView_ShouldLeaveFullScreen_WhenTheDeviceTurnsUpright', () => {
+    // Arrange
+    const turn = holdTheDevice('landscape')
+    const { exit } = offerFullScreen()
+    Object.defineProperty(document, 'fullscreenElement', {
+      value: document.documentElement,
+      configurable: true,
+    })
+    fakeNetwork({})
+    renderOn()
+
+    // Act
+    turn('portrait')
+
+    // Assert
+    expect(exit).toHaveBeenCalled()
   })
 })

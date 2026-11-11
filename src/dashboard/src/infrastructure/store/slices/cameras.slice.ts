@@ -11,7 +11,7 @@ export interface CamerasSlice {
   loadCameras: (getCameras: GetCameras) => Promise<void>
 }
 
-/** Cross-screen camera list — shared by Hub, Cameras and the LiveFeed modal instead of each fetching its own copy. */
+/** Cross-screen camera list — shared by Hub, Cameras and the live view instead of each fetching its own copy. */
 export const createCamerasSlice: StateCreator<CamerasSlice> = (set) => ({
   cameras: [],
   camerasLoading: true,

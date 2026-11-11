@@ -72,10 +72,5 @@ export function cameraImageReducer(
       }
     case 'PTZ_FAILED':
       return { ...state, ptzLoading: false, ptzError: action.error }
-
-    case 'LIVE_VIEW_OPENED':
-      return { ...state, liveViewOpen: true }
-    case 'LIVE_VIEW_CLOSED':
-      return { ...state, liveViewOpen: false }
   }
 }
