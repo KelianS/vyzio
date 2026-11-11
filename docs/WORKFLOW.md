@@ -153,7 +153,9 @@ The next release is a GitHub **milestone** named after its version (`v0.3.0`); a
 milestone is out of that release. Before work on a milestone starts, all its issues are framed in
 **one batch**: the open questions are gathered and put to the owner together, each with its options
 and a recommendation, so no product question comes back once the work has started. The
-milestone starts once none of its issues still carries `needs-framing`.
+milestone starts once none of its issues still carries `needs-framing`. The
+[`frame`](../.claude/skills/frame/SKILL.md) skill runs this framing for the assistant, and the
+[`issue`](../.claude/skills/issue/SKILL.md) skill records a new issue.
 
 ## Technology watch
 

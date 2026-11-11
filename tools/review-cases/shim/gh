@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Stands in for gh during a case: reads reach the real gh, anything else is refused and logged for the report.
+case "$1 $2" in
+  "issue view" | "issue list" | "pr view" | "pr list" | "label list" | "search issues") exec "$REVIEW_CASE_REAL_GH" "$@" ;;
+esac
+echo "gh $*" >>"$REVIEW_CASE_GH_WRITES"
+echo "gh $1 $2 is refused during a review case" >&2
+exit 1
