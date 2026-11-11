@@ -44,7 +44,7 @@ run_one() {
       claude -p "$ask" \
       --allowedTools Read Grep Glob Agent Skill WebSearch WebFetch "Bash(git *)" "Bash(gh *)" \
       "Bash(dotnet list *)" "Bash(pnpm --prefix src/dashboard outdated*)" \
-      "${edits[@]}" --disallowedTools "Bash(git push*)") >"$out/$case-$n.md" 2>>"$out/$case-$n.log"
+      "${edits[@]}" --disallowedTools "Bash(git push*)" "Bash(git -C* push*)" "Bash(git -c* push*)") >"$out/$case-$n.md" 2>>"$out/$case-$n.log"
     git -C "$work" status --porcelain | sed 's/^/Worktree changed by the run: /' >>"$out/$case-$n.md"
     [ "$(git -C "$work" rev-parse HEAD)" = "$head" ] || echo "Worktree changed by the run: a commit" >>"$out/$case-$n.md"
     [ -f "$writes" ] && sed 's/^/GitHub write attempted by the run: /' "$writes" >>"$out/$case-$n.md"
