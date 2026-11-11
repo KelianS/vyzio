@@ -289,10 +289,11 @@ Le detail ne contient jamais de secret : ni mot de passe, ni jeton, ni identifia
 - l'enregistrement de la video complete doit rester un choix explicite, et l'ordre de grandeur de sa consommation disque doit etre annonce avant activation ;
 - une camera dont aucune nature n'est conservee ne doit rien enregistrer du tout ;
 - le systeme doit supprimer automatiquement les donnees arrivees au terme de retention ;
-- l'utilisateur doit pouvoir supprimer une detection, une a la fois, depuis l'historique, apres une confirmation qui dit que c'est definitif ; elle disparait alors de tout Vyzio (historique, historique d'une personne, accueil, journal d'envoi de ses notifications, reponses du canal de messagerie), et tout ce que la camera a enregistre pendant le passage qui la contient est efface aussi, video complete comme sequences de mouvement ; ce passage peut durer plus que la detection, et une autre detection du meme passage reste dans l'historique avec son apercu mais sans sa video ; les notifications deja envoyees restent la ou elles ont ete recues ; la confirmation dit ces consequences en mots simples ;
+- l'utilisateur doit pouvoir supprimer une detection, une a la fois, depuis son apercu ouvert dans l'historique, apres une confirmation courte qui dit que la detection et sa video seront effacees ; elle disparait alors de tout Vyzio (historique, historique d'une personne, accueil, journal d'envoi de ses notifications, reponses du canal de messagerie), et tout ce que la camera a enregistre pendant le passage qui la contient est efface aussi, video complete comme sequences de mouvement ; ce passage peut durer plus que la detection, et une autre detection du meme passage reste dans l'historique avec son apercu mais sans sa video ; les notifications deja envoyees restent la ou elles ont ete recues ;
+- la video d'une detection dont l'enregistrement a ete efface avec une autre ne s'affiche pas en panne : son lecteur dit que la video de ce moment a ete supprimee ;
 - supprimer les notifications d'une detection les retire aussi du calcul du **Silence** : la detection suivante du meme type sur cette camera peut etre notifiee sans attendre la fin de l'espacement ;
-- une detection encore en cours ne se supprime pas : la camera la filme encore et elle reviendrait ; l'utilisateur est invite a reessayer une fois qu'elle est terminee ; une detection qui n'existe plus le dit, et quitte la liste ;
-- si la surveillance refuse ou ne repond pas, Vyzio ne retire rien de son cote et l'erreur suit 1.5, son detail disant ce qui etait deja efface ; tant que tout n'est pas efface, la detection reste dans l'historique et sa suppression se relance depuis elle pour finir le travail ;
+- une detection ne se supprime pas tant que l'enregistrement de son passage est en cours, meme si elle-meme est terminee : elle reviendrait ; l'utilisateur est invite a reessayer dans quelques minutes ; une detection qui n'existe plus le dit, et quitte la liste ;
+- si la surveillance refuse ou ne repond pas, Vyzio ne retire rien de son cote et l'erreur suit 1.5 : sa phrase dit si rien n'a ete efface ou si l'effacement est seulement partiel, son detail ce qui l'etait deja ; tant que tout n'est pas efface, la detection reste dans l'historique et sa suppression se relance depuis elle pour finir le travail ;
 - restent sur le disque de la machine sans plus etre affiches nulle part : la vignette de la detection et l'image du passage, sans echeance ; les visages gardes pour l'apprentissage de la reconnaissance, jusqu'a ce que de plus recents les remplacent ;
 - l'utilisateur doit etre informe si la capacite de stockage devient critique.
 
@@ -397,7 +398,7 @@ Le detail ne contient jamais de secret : ni mot de passe, ni jeton, ni identifia
 - l'acces a l'interface et aux donnees doit etre protege ;
 - sur le reseau domestique, l'interface est servie sans chiffrement : sa confidentialite est celle de ce reseau ; depuis l'exterieur, l'acces passe par le reseau overlay chiffre ([ADR-67](adr/0067-the-home-network-stays-on-http-the-overlay-encrypts-from-outside.md)) ;
 - les fonctions d'acces distant doivent etre explicites, optionnelles et desactivables ;
-- l'utilisateur doit pouvoir supprimer ses donnees produit dans un parcours comprensible.
+- l'utilisateur doit pouvoir supprimer ses donnees produit dans un parcours comprensible ; une detection se supprime une a une depuis l'historique (6.2).
 
 ### 8.3 Acces a l'interface
 
