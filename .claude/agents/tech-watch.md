@@ -17,7 +17,7 @@ The request may narrow it (a part of the stack, one dependency); otherwise the w
 - `src/vyzio/Directory.Packages.props`, `global.json`;
 - `src/dashboard/package.json`, resolved versions in `src/dashboard/pnpm-lock.yaml`;
 - the Dockerfiles (`src/vyzio/Vyzio.Api/Dockerfile`, `src/dashboard/Dockerfile`) and the images of
-  the `docker-compose*.yml` files, Frigate included;
+  the `compose*.yml` files, Frigate included;
 - the actions of `.github/workflows/`;
 - the tools behind the rules: `docs/rules/` pages verified by `Review` that a tool could verify.
 

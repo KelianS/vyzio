@@ -1,5 +1,5 @@
-# Development override — builds images locally instead of pulling from GHCR.
-# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+# Development override: builds images locally instead of pulling from GHCR.
+# Usage: task up, or docker compose -f compose.yml -f compose.dev.yml up -d with a .env
 
 services:
   vyzio-dashboard:
@@ -11,6 +11,8 @@ services:
     #   dockerfile: src/dashboard/Dockerfile
 
   vyzio-api:
+    # A local tag, so the build never shadows the release image .env names.
+    image: vyzio-api:dev
     build:
       context: .
       dockerfile: src/vyzio/Vyzio.Api/Dockerfile

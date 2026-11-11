@@ -48,6 +48,8 @@ out/
 .env
 .env.*
 !.env.example
+# The data folder .env.example names
+/data/
 
 # Coverage
 coverage/

@@ -12,7 +12,7 @@ Two readers depend on that route today, and they need opposite things:
 
 - the API container's `HEALTHCHECK` ([Dockerfile](../../src/vyzio/Vyzio.Api/Dockerfile)) reads it, and
   the dashboard container waits for `service_healthy` before it starts
-  ([docker-compose](../../docker-compose.yml)). This reader needs to know **the process answers**;
+  ([compose](../../compose.yml)). This reader needs to know **the process answers**;
 - whoever diagnoses an installation (an operator, a support session, a future update flow) needs to
   know **whether the dependencies answer**.
 
