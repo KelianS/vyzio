@@ -76,9 +76,23 @@ test.describe('LiveView', () => {
     const pad = await page.getByTitle('Haut').locator('..').boundingBox()
     const tile = await page.getByTitle('Enregistrer la position actuelle ici').first().boundingBox()
 
-    // Larger than main's 116 px pad, and the positions reach down the screen rather than stop high.
+    // The pad uses the room left, and the positions reach down the screen.
     expect(pad!.width).toBeGreaterThan(200)
     expect(tile!.y).toBeGreaterThan(600)
+  })
+
+  test('LiveView_ShouldFitWithoutScrolling_WhenAShortPhoneIsHeldUpright', async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 600 })
+    const state = createFakeBackendState({
+      cameras: [makeFakeCamera({ ptzSupported: true, verifiedCapabilities: ['ptz'] })],
+    })
+    await installFakeBackend(page, state)
+
+    await page.goto('/cameras/camera-1/direct')
+    await expect(page.getByTitle('Enregistrer la position actuelle ici').first()).toBeVisible()
+    const screen = page.getByRole('main', { name: 'Porte d’entrée' })
+
+    expect(await screen.evaluate((main) => main.scrollHeight - main.clientHeight)).toBe(0)
   })
 
   test('LiveView_ShouldGoBackHome_WhenTheBrowserGoesBack', async ({ page }) => {

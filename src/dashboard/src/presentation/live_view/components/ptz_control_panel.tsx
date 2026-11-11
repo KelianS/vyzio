@@ -33,7 +33,7 @@ const PLACE: Record<
   portrait: {
     panel: 'flex flex-1 flex-col items-center justify-evenly gap-5',
     joystick: '',
-    pad: 'size-[min(70vw,18rem,calc(100dvh-56.25vw-17rem))] bg-card',
+    pad: 'size-[max(7rem,min(70vw,18rem,calc(100dvh-56.25vw-17rem)))] bg-card',
     button: 'size-12',
     icon: 'size-6',
     positions: 'flex w-full flex-col items-center gap-2',
@@ -277,7 +277,7 @@ export function PtzControlPanel({
   return (
     <div className={place.panel}>
       <div {...fade} className={cn(place.joystick, fade.className)}>
-        {/* One pad: its own surface keeps the four directions one control without main's card behind it. */}
+        {/* Its own surface keeps the four directions one control, over the picture or the page. */}
         <div className={cn('relative shrink-0 rounded-full border border-border', place.pad)}>
           <div
             className="absolute inset-[30%] rounded-full border-2 border-background/70"
