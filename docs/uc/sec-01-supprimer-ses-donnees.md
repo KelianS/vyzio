@@ -30,7 +30,7 @@
 
 ### A1 · Supprimer un profil
 
-1. L'utilisateur supprime le profil et ses données liées (UC-PROF-04).
+1. Le propriétaire supprime le profil et ses données liées (UC-PROF-04).
 
 ## Règles locales
 
