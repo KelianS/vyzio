@@ -79,15 +79,10 @@ Only on the user's request, and only after a `PASS` on the last commit.
 
 1. Push the branch (`git push -u origin <branch>`); never `main`, never forced.
 2. Title: the issue's title as it stands, otherwise per GIT-01.
-3. Body from [`.github/pull_request_template.md`](../../../.github/pull_request_template.md), written to a
-   file and passed with `gh pr create --base main --body-file <file>`:
-   - **Why**: the effect obtained and for whom, the behaviour changes of the report included;
-   - **Scope**: `Closes #<issue>`;
-   - **Checked**: `task check` green, the review verdict and its sha, anything else actually run;
-   - **Screenshots**: GIT-07, shot with `task pr:capture` then published with `task pr:screenshots`
-     ([`CONTRIBUTING.md`](../../../CONTRIBUTING.md) § Pull request screenshots); no screen changed →
-     the heading struck through with the reason;
-   - **Definition of done**: ticked only from what the diff shows, a line that does not apply struck
-     through with its reason.
+3. Body: [`.github/pull_request_template.md`](../../../.github/pull_request_template.md), filled as
+   its comments say and no longer, written to a file and passed with
+   `gh pr create --base main --body-file <file>`. The behaviour changes of the report go under its
+   changes; the screenshots are shot with `task pr:capture` then published with
+   `task pr:screenshots` ([`CONTRIBUTING.md`](../../../CONTRIBUTING.md) § Pull request screenshots).
 4. A later commit that changes the scope, a behaviour or a screen → update the body and the
    screenshots (GIT-06), on request.

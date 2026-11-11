@@ -29,13 +29,13 @@ What it changes for whoever reads it, never "adds an X method".
 
 What the diff does not show, after a blank line.
 
-### GIT-05 · A pull request description follows its template
+### GIT-09 · A pull request description follows its template, and holds nothing more
 
 **Level**: Required · **Verified by**: Review
 
-[`pull_request_template.md`](../../.github/pull_request_template.md): the why, the scope, what was
-actually run with its result, and the definition of done ticked from what the diff shows, a line
-that does not apply struck through with its reason.
+[`pull_request_template.md`](../../.github/pull_request_template.md): the why in one sentence, the
+major changes only, and the definition of done ticked from what the diff shows, a line that does
+not apply struck through with its reason. Nothing beyond what the template asks.
 
 ### GIT-06 · A pull request description matches its last commit
 
