@@ -34,7 +34,7 @@ public class DeleteDetectionUseCaseTests
     {
         // Arrange
         _eraser.EraseAsync("evt-1", Arg.Any<CancellationToken>())
-            .ThrowsAsync(new DetectionErasureFailedException("POST /api/reviews/delete answered 500"));
+            .ThrowsAsync(new DetectionErasureFailedException("POST /api/reviews/delete answered 500", partlyErased: false));
 
         // Act
         var act = () => CreateSut().ExecuteAsync("evt-1");

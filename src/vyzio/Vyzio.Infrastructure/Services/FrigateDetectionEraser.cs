@@ -67,7 +67,7 @@ public sealed class FrigateDetectionEraser(HttpClient httpClient, ILogger<Frigat
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException && !ct.IsCancellationRequested)
         {
-            throw Fail($"{method} {path} got no answer: {ex.Message}; {progress}", ex);
+            throw Fail($"{method} {path} got no answer: {ex.Message}; {progress}", progress, ex);
         }
     }
 
@@ -80,7 +80,8 @@ public sealed class FrigateDetectionEraser(HttpClient httpClient, ILogger<Frigat
         var excerpt = body.Length > BodyExcerptLength ? body[..BodyExcerptLength] : body;
         throw Fail(
             $"{answer.RequestMessage?.Method} {answer.RequestMessage?.RequestUri?.PathAndQuery} answered "
-            + $"{(int)answer.StatusCode} {answer.ReasonPhrase}: {excerpt}; {progress}");
+            + $"{(int)answer.StatusCode} {answer.ReasonPhrase}: {excerpt}; {progress}",
+            progress);
     }
 
     private async Task<T> ReadAsync<T>(HttpResponseMessage answer, string progress, CancellationToken ct)
@@ -97,13 +98,14 @@ public sealed class FrigateDetectionEraser(HttpClient httpClient, ILogger<Frigat
             throw Fail(
                 $"{answer.RequestMessage?.Method} {answer.RequestMessage?.RequestUri?.PathAndQuery} answered "
                 + $"an unreadable body: {ex.Message}; {progress}",
+                progress,
                 ex);
         }
     }
 
-    private DetectionErasureFailedException Fail(string detail, Exception? inner = null)
+    private DetectionErasureFailedException Fail(string detail, string progress, Exception? inner = null)
     {
-        var failure = new DetectionErasureFailedException(detail, inner);
+        var failure = new DetectionErasureFailedException(detail, progress == RecordingErased, inner);
         logger.LogError(failure, "Erasing a detection failed: {Detail}", detail);
         return failure;
     }

@@ -113,7 +113,10 @@ export function detectionHistoryReducer(
       return {
         ...state,
         deletingEventId: null,
+        media: null,
         items: state.items.filter((item) => item.eventId !== action.eventId),
       }
+    case 'CLIP_GONE':
+      return { ...state, clipGoneEventId: action.eventId }
   }
 }

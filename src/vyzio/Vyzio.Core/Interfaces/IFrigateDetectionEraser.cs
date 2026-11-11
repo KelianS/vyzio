@@ -19,5 +19,9 @@ public interface IFrigateDetectionEraser
 /// Frigate refused or did not answer mid-erasure; the message says which call and what was already
 /// erased, for support (SPECS 1.5).
 /// </summary>
-public sealed class DetectionErasureFailedException(string message, Exception? inner = null)
-    : Exception(message, inner);
+public sealed class DetectionErasureFailedException(string message, bool partlyErased, Exception? inner = null)
+    : Exception(message, inner)
+{
+    /// <summary>Something is already gone, so a retry finishes the work rather than starts it.</summary>
+    public bool PartlyErased { get; } = partlyErased;
+}

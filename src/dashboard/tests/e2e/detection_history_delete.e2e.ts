@@ -1,9 +1,15 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 import {
   installFakeBackend,
   createFakeBackendState,
   makeFakeDetectionEvent,
 } from './fixtures/fake_backend'
+
+async function openTheCarPreview(page: Page) {
+  await page.goto('/history')
+  await page.getByRole('button', { name: /Voir l’aperçu.*Voiture/ }).click()
+  return page.getByRole('dialog', { name: 'Aperçu de la détection' })
+}
 
 test.describe('DetectionHistoryView deletion', () => {
   test.beforeEach(async ({ page }) => {
@@ -11,7 +17,7 @@ test.describe('DetectionHistoryView deletion', () => {
       page,
       createFakeBackendState({
         detectionHistory: [
-          makeFakeDetectionEvent({}),
+          makeFakeDetectionEvent({ hasClip: true }),
           makeFakeDetectionEvent({
             eventId: 'evt-2',
             camera: 'garage',
@@ -20,6 +26,7 @@ test.describe('DetectionHistoryView deletion', () => {
             confidence: 0.81,
           }),
         ],
+        clipsGone: ['event-1'],
       }),
     )
   })
@@ -27,17 +34,15 @@ test.describe('DetectionHistoryView deletion', () => {
   test('DetectionHistoryView_ShouldRemoveTheDetectionEverywhere_WhenTheUserConfirmsItsDeletion', async ({
     page,
   }) => {
-    await page.goto('/history')
-    await page
-      .getByRole('button', { name: /Supprimer la détection : Détection « Voiture »/ })
-      .click()
+    const preview = await openTheCarPreview(page)
+    await preview.getByRole('button', { name: 'Supprimer' }).click()
 
-    const dialog = page.getByRole('alertdialog')
-    await expect(dialog).toContainText('tout ce que la caméra a enregistré pendant ce passage')
-    await expect(dialog).toContainText('Les notifications déjà reçues restent')
-    await dialog.getByRole('button', { name: 'Supprimer' }).click()
+    const question = page.getByRole('alertdialog')
+    await expect(question).toContainText('La détection et sa vidéo seront effacées.')
+    await question.getByRole('button', { name: 'Supprimer' }).click()
 
     await expect(page.getByText('Détection supprimée.')).toBeVisible()
+    await expect(preview).toHaveCount(0)
     await expect(page.getByText(/garage/)).toHaveCount(0)
     await expect(page.getByText(/front door/)).toBeVisible()
 
@@ -49,13 +54,20 @@ test.describe('DetectionHistoryView deletion', () => {
   test('DetectionHistoryView_ShouldKeepTheDetection_WhenTheUserCancelsItsDeletion', async ({
     page,
   }) => {
-    await page.goto('/history')
-    await page
-      .getByRole('button', { name: /Supprimer la détection : Détection « Voiture »/ })
-      .click()
+    const preview = await openTheCarPreview(page)
+    await preview.getByRole('button', { name: 'Supprimer' }).click()
     await page.getByRole('alertdialog').getByRole('button', { name: 'Annuler' }).click()
 
     await expect(page.getByRole('alertdialog')).toHaveCount(0)
     await expect(page.getByText(/garage/)).toBeVisible()
+  })
+
+  test('DetectionHistoryView_ShouldSayTheVideoWasDeleted_WhenItWasErasedWithAnotherDetection', async ({
+    page,
+  }) => {
+    await page.goto('/history')
+    await page.getByRole('button', { name: 'Vidéo' }).click()
+
+    await expect(page.getByText('La vidéo de ce moment a été supprimée.')).toBeVisible()
   })
 })

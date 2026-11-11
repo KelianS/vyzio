@@ -2,7 +2,7 @@ import type { AppError } from '../../common/errors/app_error'
 import type { DetectionHistoryPage } from '../../domain/entities/detection_history.entity'
 import type { DetectionLabel } from '../../domain/entities/detection_label.entity'
 import type { Profile } from '../../domain/entities/profile.entity'
-import type { DetectionMedia } from './detection_history.uido'
+import type { DetectionMedia } from '../../common/detection/detection_preview'
 
 export type DetectionHistoryAction =
   | { type: 'PROFILES_LOADED'; profiles: Profile[] }
@@ -32,3 +32,4 @@ export type DetectionHistoryAction =
   | { type: 'DELETE_ASKED'; eventId: string }
   | { type: 'DELETE_DISMISSED' }
   | { type: 'DELETE_SUCCEEDED'; eventId: string }
+  | { type: 'CLIP_GONE'; eventId: string }

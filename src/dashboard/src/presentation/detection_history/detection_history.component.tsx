@@ -7,11 +7,8 @@ import { HelpPanel } from '../../common/components/help_panel'
 import { Overlay } from '../../common/components/overlay'
 import { ConfirmModal } from '../../common/components/confirm_modal'
 import { DetectionList } from '../../common/detection/detection_list'
-import {
-  carriesIdentity,
-  formatEventDetail,
-  formatEventTitle,
-} from '../../common/detection/detection_formatters'
+import { carriesIdentity } from '../../common/detection/detection_formatters'
+import { DetectionPreview } from '../../common/detection/detection_preview'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import type { DetectionEvent } from '../../domain/entities/detection_event.entity'
@@ -60,7 +57,7 @@ export function DetectionHistoryView() {
     uido.filterTo,
   ])
 
-  const deleting = uido.items.find((item) => item.eventId === uido.deletingEventId)
+  const { media, deletingEventId } = uido
 
   const filtered = Boolean(
     uido.filterCamera ||
@@ -189,29 +186,17 @@ export function DetectionHistoryView() {
             events={uido.items}
             labels={uido.detectionLabels}
             apiBaseUrl={apiBaseUrl}
-            onOpenMedia={(type, url) => presenter.onMediaSet({ type, url })}
-            renderExtra={(event) => (
-              <span className="mt-1.5 flex flex-wrap items-center gap-2">
-                {carriesIdentity(event) && (
-                  <IdentityCorrection
-                    event={event}
-                    profiles={uido.profiles}
-                    correcting={uido.correctingEventId === event.eventId}
-                    onCorrect={(profile) => presenter.onCorrect(event.eventId, profile)}
-                  />
-                )}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  aria-label={`Supprimer la détection : ${formatEventTitle(event, uido.detectionLabels)}`}
-                  onClick={() => presenter.onAskDelete(event.eventId)}
-                >
-                  <Trash2 aria-hidden="true" />
-                  Supprimer
-                </Button>
-              </span>
-            )}
+            onOpenMedia={presenter.onMediaSet}
+            renderExtra={(event) =>
+              carriesIdentity(event) && (
+                <IdentityCorrection
+                  event={event}
+                  profiles={uido.profiles}
+                  correcting={uido.correctingEventId === event.eventId}
+                  onCorrect={(profile) => presenter.onCorrect(event.eventId, profile)}
+                />
+              )
+            }
           />
         </div>
       )}
@@ -249,30 +234,36 @@ export function DetectionHistoryView() {
         </p>
       </HelpPanel>
 
-      {deleting && (
-        <ConfirmModal
-          title="Supprimer cette détection ?"
-          body="C’est définitif : elle disparaît, avec tout ce que la caméra a enregistré pendant ce passage, même si une autre détection s’y trouve aussi, qui perd alors sa vidéo. Les notifications déjà reçues restent là où vous les avez reçues."
-          details={
-            <p className="text-sm font-medium">
-              {formatEventTitle(deleting, uido.detectionLabels)} · {formatEventDetail(deleting)}
-            </p>
-          }
-          confirmLabel="Supprimer"
-          tone="danger"
-          onConfirm={() => presenter.onDelete(deleting.eventId)}
-          onCancel={presenter.onDismissDelete}
-        />
+      {media && (
+        <Overlay label="Aperçu de la détection" onClose={() => presenter.onMediaSet(null)}>
+          <DetectionPreview
+            media={media}
+            clipGone={uido.clipGoneEventId === media.eventId}
+            onVideoError={() => presenter.onVideoFailed(media.eventId)}
+          >
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => presenter.onAskDelete(media.eventId)}
+            >
+              <Trash2 aria-hidden="true" />
+              Supprimer
+            </Button>
+          </DetectionPreview>
+        </Overlay>
       )}
 
-      {uido.media && (
-        <Overlay label="Aperçu de la détection" onClose={() => presenter.onMediaSet(null)}>
-          {uido.media.type === 'image' ? (
-            <img src={uido.media.url} alt="" className="max-h-[85vh] rounded-lg" />
-          ) : (
-            <video src={uido.media.url} controls autoPlay className="max-h-[85vh] rounded-lg" />
-          )}
-        </Overlay>
+      {/* Rendered after the preview so the question stacks above it (ADR-42). */}
+      {deletingEventId && (
+        <ConfirmModal
+          title="Supprimer cette détection ?"
+          body="La détection et sa vidéo seront effacées."
+          confirmLabel="Supprimer"
+          tone="danger"
+          onConfirm={() => presenter.onDelete(deletingEventId)}
+          onCancel={presenter.onDismissDelete}
+        />
       )}
     </main>
   )
@@ -305,7 +296,13 @@ function IdentityCorrection({
   if (!fixing) {
     return (
       // `ghost` did not pass for a button, sitting under a line of grey text.
-      <Button type="button" variant="outline" size="sm" onClick={() => setFixing(true)}>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="mt-1.5"
+        onClick={() => setFixing(true)}
+      >
         <UserRoundPen aria-hidden="true" />
         {event.identity ? 'Corriger' : 'Identifier'}
       </Button>
@@ -313,7 +310,7 @@ function IdentityCorrection({
   }
 
   return (
-    <span className="flex flex-wrap items-center gap-2">
+    <span className="mt-1 flex flex-wrap items-center gap-2">
       <PickOne
         value={pickedProfileId}
         anyLabel={UNIDENTIFIED}

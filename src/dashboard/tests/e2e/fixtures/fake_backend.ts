@@ -351,6 +351,8 @@ export interface FakeBackendState {
   /** The cameras each person is restricted to, by profile id; none means every camera. */
   profileCameraLinks: Record<string, string[]>
   detectionHistory: FakeDetectionEvent[]
+  /** Detections whose video was erased with another one: their clip answers 404. */
+  clipsGone: string[]
   detectionConfig: {
     labels: string[]
     motionSensitivity: 'high' | 'medium' | 'low'
@@ -443,6 +445,7 @@ export function createFakeBackendState(
     commandJournal: {},
     profileCameraLinks: {},
     detectionHistory: [],
+    clipsGone: [],
     detectionConfig: {
       labels: ['person'],
       motionSensitivity: 'medium',
@@ -1478,6 +1481,10 @@ export async function installFakeBackend(
       // Gone from every read: history, a person's history and the home screen all draw on this list.
       state.detectionHistory.splice(index, 1)
       return route.fulfill({ status: 204 })
+    }
+    const clipMatch = path.match(/^\/api\/detection-events\/([^/]+)\/clip$/)
+    if (clipMatch && method === 'GET' && state.clipsGone.includes(clipMatch[1])) {
+      return json(route, {}, 404)
     }
     const mediaMatch = path.match(/^\/api\/detection-events\/([^/]+)\/(thumbnail|snapshot)$/)
     if (mediaMatch && method === 'GET') {

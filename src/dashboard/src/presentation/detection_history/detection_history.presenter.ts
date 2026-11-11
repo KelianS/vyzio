@@ -5,7 +5,8 @@ import type { DetectionHistoryQuery } from '../../domain/entities/detection_hist
 import type { Profile } from '../../domain/entities/profile.entity'
 import type { DetectionHistoryContainer } from '../../infrastructure/providers/detection_history.container'
 import type { DetectionHistoryAction } from './detection_history.actions'
-import type { DetectionMedia } from './detection_history.uido'
+import type { DetectionMedia } from '../../common/detection/detection_preview'
+import { explainVideoFailure } from '../../common/detection/explain_video_failure'
 
 export interface DetectionHistoryPresenterContext {
   container: DetectionHistoryContainer
@@ -99,6 +100,15 @@ export function buildDetectionHistoryPresenter({
       dispatch({ type: 'DELETE_DISMISSED' })
     },
 
+    onVideoFailed(eventId: string): Promise<void> {
+      return explainVideoFailure(
+        container.checkDetectionClip,
+        eventId,
+        () => dispatch({ type: 'CLIP_GONE', eventId }),
+        toast,
+      )
+    },
+
     async onDelete(eventId: string): Promise<void> {
       try {
         await container.deleteDetection.execute(eventId)
@@ -121,12 +131,20 @@ export function buildDetectionHistoryPresenter({
           toast(error.message, 'info')
           return
         }
-        toastError(
-          toast,
-          error,
-          'La détection n’a pas pu être entièrement supprimée. Réessayez : la suppression reprendra là où elle s’est arrêtée.',
-        )
+        toastError(toast, error, failureSentence(error.code))
       }
     },
+  }
+}
+
+/** Whether anything is already gone decides what a retry means (SPECS 6.2). */
+function failureSentence(code: string | undefined): string | undefined {
+  switch (code) {
+    case ApiErrorCode.ErasureFailed:
+      return 'La surveillance n’a pas pu supprimer cette détection : rien n’a été effacé. Réessayez dans un instant.'
+    case ApiErrorCode.ErasureIncomplete:
+      return 'La détection n’a été effacée qu’en partie. Réessayez pour terminer.'
+    default:
+      return undefined
   }
 }

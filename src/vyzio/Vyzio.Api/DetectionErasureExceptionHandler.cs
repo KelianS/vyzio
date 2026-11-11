@@ -9,13 +9,15 @@ internal sealed class DetectionErasureExceptionHandler : IExceptionHandler
     public async ValueTask<bool> TryHandleAsync(
         HttpContext httpContext, Exception exception, CancellationToken ct)
     {
-        if (exception is not DetectionErasureFailedException)
+        if (exception is not DetectionErasureFailedException failure)
         {
             return false;
         }
 
+        // The screen says either "nothing was erased" or "a retry finishes it" from this code alone.
+        var error = failure.PartlyErased ? "erasure_incomplete" : "erasure_failed";
         httpContext.Response.StatusCode = StatusCodes.Status502BadGateway;
-        await httpContext.Response.WriteAsJsonAsync(new { error = "erasure_failed", message = exception.Message }, ct);
+        await httpContext.Response.WriteAsJsonAsync(new { error, message = failure.Message }, ct);
         return true;
     }
 }

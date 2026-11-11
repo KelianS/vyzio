@@ -29,6 +29,8 @@ export const ApiErrorCode = {
   PrivacyModeActive: 'privacy_mode_active',
   StreamPathRequired: 'stream_path_required',
   DetectionInProgress: 'detection_in_progress',
+  ErasureFailed: 'erasure_failed',
+  ErasureIncomplete: 'erasure_incomplete',
 } as const
 
 /** What support reads under the sentence (SPECS 1.5), and the code the API named, if any. */

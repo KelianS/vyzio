@@ -47,10 +47,11 @@ describe('DetectionList', () => {
     fireEvent.click(screen.getByRole('button', { name: /Voir l’aperçu/ }))
 
     // Assert
-    expect(onOpenMedia).toHaveBeenCalledWith(
-      'image',
-      'http://api/api/detection-events/evt-1/snapshot',
-    )
+    expect(onOpenMedia).toHaveBeenCalledWith({
+      type: 'image',
+      url: 'http://api/api/detection-events/evt-1/snapshot',
+      eventId: 'evt-1',
+    })
   })
 
   it('DetectionList_ShouldSayTheMediaIsErasedWithNothingToClick_WhenItExpired', () => {

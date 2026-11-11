@@ -39,7 +39,7 @@ const KNOWN_REFUSALS = new Map<string, string>([
   ],
   [
     ApiErrorCode.DetectionInProgress,
-    'Cette détection est encore en cours : réessayez une fois qu’elle sera terminée',
+    'L’enregistrement de ce moment est encore en cours. Réessayez dans quelques minutes.',
   ],
   [
     ApiErrorCode.ParkingPositionsMissing,

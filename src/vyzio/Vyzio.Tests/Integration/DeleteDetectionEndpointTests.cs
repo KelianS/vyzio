@@ -56,23 +56,27 @@ public class DeleteDetectionEndpointTests(DeleteDetectionApiFactory factory) : I
         Assert.Equal(expectedError, JsonDocument.Parse(body).RootElement.GetProperty("error").GetString());
     }
 
-    [Fact]
-    public async Task Delete_ShouldAnswerTheFailureDetailAndKeepTheNotificationRows_WhenFrigateFails()
+    [Theory]
+    [InlineData(false, "erasure_failed")]
+    [InlineData(true, "erasure_incomplete")]
+    public async Task Delete_ShouldAnswerHowFarItGotAndKeepTheNotificationRows_WhenFrigateFails(
+        bool partlyErased, string expectedError)
     {
         // Arrange
-        factory.Eraser.EraseAsync("evt-failed", Arg.Any<CancellationToken>())
-            .ThrowsAsync(new DetectionErasureFailedException("POST /api/reviews/delete answered 500 ; nothing erased yet"));
-        factory.SeedNotification("evt-failed");
+        var eventId = $"evt-failed-{expectedError}";
+        factory.Eraser.EraseAsync(eventId, Arg.Any<CancellationToken>())
+            .ThrowsAsync(new DetectionErasureFailedException("DELETE /api/events/x answered 500", partlyErased));
+        factory.SeedNotification(eventId);
 
         // Act
-        var (status, body) = await DeleteAsync("evt-failed");
+        var (status, body) = await DeleteAsync(eventId);
 
         // Assert
         var root = JsonDocument.Parse(body).RootElement;
         Assert.Equal(HttpStatusCode.BadGateway, status);
-        Assert.Equal("erasure_failed", root.GetProperty("error").GetString());
-        Assert.Equal("POST /api/reviews/delete answered 500 ; nothing erased yet", root.GetProperty("message").GetString());
-        Assert.Equal(1, factory.CountNotifications("evt-failed"));
+        Assert.Equal(expectedError, root.GetProperty("error").GetString());
+        Assert.Equal("DELETE /api/events/x answered 500", root.GetProperty("message").GetString());
+        Assert.Equal(1, factory.CountNotifications(eventId));
     }
 }
 

@@ -121,6 +121,7 @@ public class FrigateDetectionEraserTests
         Assert.Equal(
             "POST /api/reviews/delete answered 403 Forbidden: {\"message\":\"admin only\"}; nothing erased yet",
             failure.Message);
+        Assert.False(failure.PartlyErased);
         Assert.DoesNotContain("DELETE /api/events/evt-1", frigate.Requests);
     }
 
@@ -144,6 +145,7 @@ public class FrigateDetectionEraserTests
             "DELETE /api/events/evt-1 answered 500 Internal Server Error: database is locked; "
             + "its review item and the overlapping recording are already erased",
             failure.Message);
+        Assert.True(failure.PartlyErased);
     }
 
     [Fact]

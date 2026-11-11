@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { CalendarOff, Play } from 'lucide-react'
 import { Button } from '../ui/button'
 import { DetectionThumbnail } from '../components/detection_thumbnail'
+import type { DetectionMedia } from './detection_preview'
 import type { DetectionEvent } from '../../domain/entities/detection_event.entity'
 import type { DetectionLabel } from '../../domain/entities/detection_label.entity'
 import {
@@ -16,7 +17,7 @@ interface DetectionListProps {
   /** What names a detection nobody was recognised in. */
   labels: readonly DetectionLabel[]
   apiBaseUrl: string
-  onOpenMedia: (type: 'image' | 'video', url: string) => void
+  onOpenMedia: (media: DetectionMedia) => void
   /** What the screen adds to a row - the identity correction, on the history only. */
   renderExtra?: (event: DetectionEvent) => ReactNode
 }
@@ -52,7 +53,13 @@ export function DetectionList({
               aria-label={`Voir l’aperçu — ${formatEventTitle(event, labels)}`}
               className="shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
               // The tile shows the crop, opening shows the wide shot: two images, not two sizes.
-              onClick={() => onOpenMedia('image', snapshotUrl(apiBaseUrl, event.eventId))}
+              onClick={() =>
+                onOpenMedia({
+                  type: 'image',
+                  url: snapshotUrl(apiBaseUrl, event.eventId),
+                  eventId: event.eventId,
+                })
+              }
             >
               <DetectionThumbnail src={thumbnailUrl(apiBaseUrl, event.eventId)} />
             </button>
@@ -75,7 +82,11 @@ export function DetectionList({
               variant="ghost"
               size="sm"
               onClick={() =>
-                onOpenMedia('video', `${apiBaseUrl}/api/detection-events/${event.eventId}/clip`)
+                onOpenMedia({
+                  type: 'video',
+                  url: `${apiBaseUrl}/api/detection-events/${event.eventId}/clip`,
+                  eventId: event.eventId,
+                })
               }
             >
               <Play aria-hidden="true" />

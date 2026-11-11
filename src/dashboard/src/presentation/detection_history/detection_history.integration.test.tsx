@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { screen, within } from '@testing-library/react'
+import { fireEvent, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { makeDetectionEvent } from '../../testing/detection_fixture'
 import { failure, fakeNetwork, ok } from '../../testing/fake_network'
@@ -134,20 +134,24 @@ describe('DetectionHistoryView', () => {
   const oneCat = {
     ...reference,
     'GET /api/detection-events/history': ok({
-      items: [makeDetectionEvent({ label: 'cat' })],
+      items: [makeDetectionEvent({ label: 'cat', hasSnapshot: true, hasClip: true })],
       nextCursor: null,
     }),
   }
 
-  async function confirmDeletion() {
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Supprimer la détection : Détection « cat »' }),
-    )
-    const dialog = await screen.findByRole('alertdialog')
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Supprimer' }))
+  async function openPreview() {
+    await userEvent.click(await screen.findByRole('button', { name: /Voir l’aperçu/ }))
+    return screen.findByRole('dialog', { name: 'Aperçu de la détection' })
   }
 
-  it('onDelete_ShouldRemoveTheDetectionAndSaySo_WhenTheUserConfirms', async () => {
+  async function confirmDeletion() {
+    const preview = await openPreview()
+    await userEvent.click(within(preview).getByRole('button', { name: 'Supprimer' }))
+    const question = await screen.findByRole('alertdialog')
+    await userEvent.click(within(question).getByRole('button', { name: 'Supprimer' }))
+  }
+
+  it('onDelete_ShouldRemoveTheDetectionAndCloseItsPreview_WhenTheUserConfirms', async () => {
     // Arrange
     const network = fakeNetwork({ ...oneCat, 'DELETE /api/detection-events/event-1': ok() })
     renderScreen(<DetectionHistoryView />)
@@ -158,34 +162,33 @@ describe('DetectionHistoryView', () => {
     // Assert
     expect(await screen.findByText('Détection supprimée.')).toBeInTheDocument()
     expect(screen.queryByText('Détection « cat »')).not.toBeInTheDocument()
+    expect(screen.queryByRole('dialog', { name: 'Aperçu de la détection' })).not.toBeInTheDocument()
     expect(network.sent).toContainEqual(
       expect.objectContaining({ route: 'DELETE /api/detection-events/event-1' }),
     )
   })
 
-  it('onAskDelete_ShouldStateTheRecordingAndTheNotificationsInTheConfirmation_WhenTheUserAsks', async () => {
+  it('onAskDelete_ShouldSayInOneSentenceWhatGoes_WhenTheUserAsksFromThePreview', async () => {
     // Arrange
     fakeNetwork(oneCat)
     renderScreen(<DetectionHistoryView />)
+    const preview = await openPreview()
 
     // Act
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Supprimer la détection : Détection « cat »' }),
-    )
+    await userEvent.click(within(preview).getByRole('button', { name: 'Supprimer' }))
 
     // Assert
-    const dialog = await screen.findByRole('alertdialog')
-    expect(dialog).toHaveTextContent('tout ce que la caméra a enregistré pendant ce passage')
-    expect(dialog).toHaveTextContent('Les notifications déjà reçues restent')
+    expect(await screen.findByRole('alertdialog')).toHaveTextContent(
+      'La détection et sa vidéo seront effacées.',
+    )
   })
 
   it('onDismissDelete_ShouldKeepTheDetectionAndSendNothing_WhenTheUserCancels', async () => {
     // Arrange
     const network = fakeNetwork(oneCat)
     renderScreen(<DetectionHistoryView />)
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Supprimer la détection : Détection « cat »' }),
-    )
+    const preview = await openPreview()
+    await userEvent.click(within(preview).getByRole('button', { name: 'Supprimer' }))
 
     // Act
     await userEvent.click(
@@ -200,30 +203,37 @@ describe('DetectionHistoryView', () => {
     )
   })
 
-  it('onDelete_ShouldKeepTheDetectionAndSayWhyForSupport_WhenTheSurveillanceFails', async () => {
-    // Arrange
-    fakeNetwork({
-      ...oneCat,
-      'DELETE /api/detection-events/event-1': failure(
-        502,
-        'erasure_failed',
-        'POST /api/reviews/delete answered 500; nothing erased yet',
-      ),
-    })
-    renderScreen(<DetectionHistoryView />)
+  it.each([
+    [
+      'erasure_failed',
+      'La surveillance n’a pas pu supprimer cette détection : rien n’a été effacé. Réessayez dans un instant.',
+    ],
+    ['erasure_incomplete', 'La détection n’a été effacée qu’en partie. Réessayez pour terminer.'],
+  ])(
+    'onDelete_ShouldSayHowFarItGotAndKeepTheDetection_WhenTheSurveillanceFails (%s)',
+    async (code, sentence) => {
+      // Arrange
+      fakeNetwork({
+        ...oneCat,
+        'DELETE /api/detection-events/event-1': failure(
+          502,
+          code,
+          'DELETE /api/events/x answered 500',
+        ),
+      })
+      renderScreen(<DetectionHistoryView />)
 
-    // Act
-    await confirmDeletion()
+      // Act
+      await confirmDeletion()
 
-    // Assert
-    expect(
-      await screen.findByText(/La détection n’a pas pu être entièrement supprimée/),
-    ).toBeInTheDocument()
-    expect(screen.getByText(/DELETE \/api\/detection-events\/event-1 · 502/)).toBeInTheDocument()
-    expect(screen.getByText('Détection « cat »')).toBeInTheDocument()
-  })
+      // Assert
+      expect(await screen.findByText(sentence)).toBeInTheDocument()
+      expect(screen.getByText(/DELETE \/api\/detection-events\/event-1 · 502/)).toBeInTheDocument()
+      expect(screen.getByText('Détection « cat »')).toBeInTheDocument()
+    },
+  )
 
-  it('onDelete_ShouldAskToWaitForTheEnd_WhenTheDetectionIsStillInProgress', async () => {
+  it('onDelete_ShouldAskToComeBackLater_WhenTheRecordingIsStillInProgress', async () => {
     // Arrange
     fakeNetwork({
       ...oneCat,
@@ -237,7 +247,7 @@ describe('DetectionHistoryView', () => {
     // Assert
     expect(
       await screen.findByText(
-        'Cette détection est encore en cours : réessayez une fois qu’elle sera terminée',
+        'L’enregistrement de ce moment est encore en cours. Réessayez dans quelques minutes.',
       ),
     ).toBeInTheDocument()
     expect(screen.getByText('Détection « cat »')).toBeInTheDocument()
@@ -257,5 +267,34 @@ describe('DetectionHistoryView', () => {
     // Assert
     expect(await screen.findByText('Cette détection n’existe plus.')).toBeInTheDocument()
     expect(screen.queryByText('Détection « cat »')).not.toBeInTheDocument()
+  })
+
+  it('onVideoFailed_ShouldSayTheVideoWasDeleted_WhenItsRecordingNoLongerExists', async () => {
+    // Arrange
+    fakeNetwork({ ...oneCat, 'GET /api/detection-events/event-1/clip': failure(404) })
+    renderScreen(<DetectionHistoryView />)
+    await userEvent.click(await screen.findByRole('button', { name: 'Vidéo' }))
+    const preview = await screen.findByRole('dialog', { name: 'Aperçu de la détection' })
+
+    // Act
+    fireEvent.error(preview.querySelector('video')!)
+
+    // Assert
+    expect(await screen.findByText('La vidéo de ce moment a été supprimée.')).toBeInTheDocument()
+    expect(preview.querySelector('video')).toBeNull()
+  })
+
+  it('onVideoFailed_ShouldSayTheVideoCouldNotBePlayed_WhenItsRecordingStillExists', async () => {
+    // Arrange
+    fakeNetwork({ ...oneCat, 'GET /api/detection-events/event-1/clip': ok() })
+    renderScreen(<DetectionHistoryView />)
+    await userEvent.click(await screen.findByRole('button', { name: 'Vidéo' }))
+    const preview = await screen.findByRole('dialog', { name: 'Aperçu de la détection' })
+
+    // Act
+    fireEvent.error(preview.querySelector('video')!)
+
+    // Assert
+    expect(await screen.findByText('La vidéo n’a pas pu être lue.')).toBeInTheDocument()
   })
 })
