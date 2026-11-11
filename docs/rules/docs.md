@@ -36,6 +36,22 @@ only `docs/`.
 A change that would is preceded by the document's update, in the same branch. Search `docs/adr/` for
 the subject, not only the files the diff touches.
 
+## The SPECS and the SAD
+
+### DOCS-16 · The SPECS and the SAD state the target, never its history or its delivery
+
+**Level**: Required · **Verified by**: Review
+
+What the product does and how the system is shaped, in the present tense: no date, no delivery
+status ("not delivered", "à venir", "pour l'instant"), no issue number standing for a behaviour,
+never what was done before nor the road travelled. What is delivered and when lives in its issue or
+milestone; the road travelled, in Git or under the "Options rejected" of an ADR (DOCS-08).
+
+Why: a date or a status ages in silence and duplicates the issue that carries it.
+
+**Exceptions**: the SAD's risks and open questions, each linked to its issue
+([`../WORKFLOW.md`](../WORKFLOW.md) § The SAD).
+
 ## The SAD
 
 ### DOCS-05 · The SAD names no code
@@ -47,12 +63,6 @@ constant copied from the code, no paraphrase of it.
 
 **Exceptions**: the ports of the network flow matrix, which are the system's contract with the
 network and are reviewed there.
-
-### DOCS-06 · The SAD states the target, in the present tense
-
-**Level**: Required · **Verified by**: Review
-
-Never what was done before nor the road travelled.
 
 ## ADRs
 
