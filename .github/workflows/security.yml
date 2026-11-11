@@ -118,6 +118,8 @@ jobs:
           fi
 
       - uses: ./.github/actions/setup-dashboard
+        with:
+          install: 'false'
 
       - name: Frontend dependency audit
         run: |

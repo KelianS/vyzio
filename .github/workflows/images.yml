@@ -9,9 +9,8 @@ on:
         type: boolean
         default: false
       version:
-        description: The version the images carry, without its leading v.
+        description: The version the images carry, without its leading v; none keeps the Dockerfile default.
         type: string
-        default: 0.0.0-dev
 
 jobs:
   image:
@@ -32,7 +31,7 @@ jobs:
       LOCAL_TAG: vyzio-${{ matrix.image }}:scan
       # One copy for the build and the push, so the push reuses every layer of what was scanned.
       BUILD_ARGS: |
-        VYZIO_VERSION=${{ inputs.version }}
+        ${{ inputs.version && format('VYZIO_VERSION={0}', inputs.version) || '' }}
         VYZIO_REVISION=${{ github.sha }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

@@ -1,6 +1,11 @@
 name: Set up the dashboard
 description: pnpm, Node with the pnpm store cached, Task, and the dashboard dependencies installed from the lockfile.
 
+inputs:
+  install:
+    description: Install the dependencies; an audit reads the lockfile alone.
+    default: 'true'
+
 runs:
   using: composite
   steps:
@@ -17,5 +22,6 @@ runs:
     - uses: go-task/setup-task@a00fbb05ce67b35648be3c78cbc9fd85354c757e # v2.2.0
 
     - name: Install
+      if: inputs.install == 'true'
       shell: bash
       run: pnpm --prefix src/dashboard install --frozen-lockfile
