@@ -23,7 +23,7 @@ test.describe('Privacy parking', () => {
 
     await page.getByRole('combobox', { name: 'En mode vie privée' }).click()
 
-    // Listed, never hidden: a greyed option says what the camera could do and how (SPECS 9.3).
+    // Listed, never hidden: a greyed option says what the camera could do and how (PRIV-15).
     const parking = page.getByRole('option', { name: /Orientation à l’écart/ })
     await expect(parking).toBeVisible()
     await expect(parking).toHaveAttribute('aria-disabled', 'true')

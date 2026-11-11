@@ -137,7 +137,7 @@ export function buildDetectionHistoryPresenter({
   }
 }
 
-/** Whether anything is already gone decides what a retry means (SPECS 6.2). */
+/** Whether anything is already gone decides what a retry means (HIST-14). */
 function failureSentence(code: string | undefined): string | undefined {
   switch (code) {
     case ApiErrorCode.ErasureFailed:

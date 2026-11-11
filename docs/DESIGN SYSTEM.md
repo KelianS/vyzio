@@ -142,7 +142,7 @@ what is **visible** (a label and its cost), a setting's **tooltip**, a section's
 panel. **A tooltip fits in two sentences**: what overflows is about the task, not the field, and goes to
 the panel. A **cost** never moves down: it stays visible without a gesture.
 
-An **action** says its cost once, before the effect ([SPECS](SPECS.md) 7.2): in its confirmation when
+An **action** says its cost once, before the effect ([SPECS](SPECS.md) UI-16, UI-19): in its confirmation when
 it asks one, with nothing above the button; otherwise in one line above its button. An action that
 costs nothing gets no line.
 
@@ -155,12 +155,12 @@ own only where the task it explains is not yet done.
 A figure the user cannot act on stays off the card, in the `Détails techniques` fold
 (`common/components/technical_details`). Only the user opens it, and a figure is **never read as a
 fault**: no line and no warning colour come from it. It speaks the product's words, a thing under the
-name the user gave it, never an internal identifier or a technical name ([SPECS](SPECS.md) 1.5). It
+name the user gave it, never an internal identifier or a technical name ([SPECS](SPECS.md) UI-02). It
 never holds a setting, an explanation or an error's diagnostic line.
 
 ### Errors
 
-An error reads at two levels ([SPECS](SPECS.md) 1.5).
+An error reads at two levels ([SPECS](SPECS.md) UI-01).
 
 - **The sentence** names the effect in the product's words, and what to do when there is something to
   do. It is all the user needs.
@@ -219,11 +219,11 @@ A label states the **nature** of a screen, viewing or configuring, never its aud
   `prévenir` or `signaler`. A person is `notifié`, a channel sends `notifications`, a setting says
   `Me notifier`.
 - A time range is a **`plage`**, its rubric **`Planification`**; each type has one name, icon and effect
-  line, the same in every screen ([SPECS](SPECS.md) 7.3). `Couper` stays the word of privacy mode and
+  line, the same in every screen ([SPECS](SPECS.md) SCHED-02). `Couper` stays the word of privacy mode and
   `Silence` that of the spacing between repeated notifications.
 - A capability is titled by what the camera does, in the product's words: `Flux vidéo`, `Orientation`,
   `Coupure matérielle` (as on the privacy screen), `Réglages image`. Where a protocol name may appear
-  is SPECS 1.5; help naming protocols or ports sits in `Avancé`, help next to the cards stays plain.
+  is UI-02; help naming protocols or ports sits in `Avancé`, help next to the cards stays plain.
 
 ### Editing cycle
 

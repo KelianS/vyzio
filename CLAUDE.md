@@ -55,7 +55,7 @@ follow it yet: never take it as a model.
 
 ## Product principles (they guide every product and UX decision)
 
-Digest, sources: [`README.md`](README.md), [`docs/SPECS.md`](docs/SPECS.md) §1, [`docs/DESIGN SYSTEM.md`](docs/DESIGN%20SYSTEM.md) § Intent.
+Digest, sources: [`README.md`](README.md), [`docs/SPECS.md`](docs/SPECS.md) § Vue d'ensemble, [`docs/DESIGN SYSTEM.md`](docs/DESIGN%20SYSTEM.md) § Intent.
 
 1. **Non-technical audience**: hide the complexity, zero NVR or home-automation jargon.
 2. **Frigate is an implementation detail**: delegate to it everything it covers (do not reinvent the video pipeline), but keep it **invisible and temporary**. The user must never have to know it, see it or name it.
@@ -63,4 +63,4 @@ Digest, sources: [`README.md`](README.md), [`docs/SPECS.md`](docs/SPECS.md) §1,
 4. **Explainability**: no opaque score or state without a readable justification.
 5. **Plug and play**: reduce installation and configuration friction as far as it will go.
 6. **Unified camera control**: drive every camera directly (PTZ, hardware privacy, settings, Wi-Fi eventually), through a proprietary protocol where needed, to free the user from vendor apps.
-7. **Diagnosable errors**: a plain sentence first, then the full technical detail support needs to diagnose from a photo of the screen, never a secret. The one place a technical name may appear ([SPECS](docs/SPECS.md) 1.5).
+7. **Diagnosable errors**: a plain sentence first, then the full technical detail support needs to diagnose from a photo of the screen, never a secret. The one place a technical name may appear ([SPECS](docs/SPECS.md) UI-02).

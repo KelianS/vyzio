@@ -91,7 +91,7 @@ Pour DVRIP, l'énumération interroge `Simplify.Encode` via le `DvripClient` par
 `ExtraFormat`, et `ExtraFormat.VideoEnable` **atteste que le sous-flux existe et est actif** avant que
 Vyzio ne le propose. Le chemin correspondant suit la convention `?channel=0&subtype=1` vérifiée sur le
 terrain. Aucun flux n'est donc proposé sur simple convention, conformément à la règle de vérification
-avant proposition (SPECS §2.3).
+avant proposition (CAM-13).
 
 Le flux de détection est **choisi par l'utilisateur**, par caméra, parmi les flux énumérés — présentés
 avec leur résolution et une explication de ce que le choix change.

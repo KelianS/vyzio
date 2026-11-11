@@ -22,7 +22,7 @@ function leave() {
   if (isActive()) document.exitFullscreen().catch(() => undefined)
 }
 
-/** Asks the browser to hide its bars while `wanted`, on the first gesture or from a button (SPECS 7.2). */
+/** Asks the browser to hide its bars while `wanted`, on the first gesture or from a button (LIVE-10). */
 export function useFullScreen(wanted: boolean) {
   const active = useSyncExternalStore(subscribe, isActive)
   const asked = useRef(false)

@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fixtures/fake_backend'
 
-// Vyzio does not guess which way a camera turns: the user swaps left and right on its PTZ (SPECS 11).
+// Vyzio does not guess which way a camera turns: the user swaps left and right on its PTZ (PTZ-03).
 test.describe('PTZ pan direction', () => {
   test('CameraConnectionView_ShouldSwapLeftAndRight_WhenTheUserTurnsTheSettingOn', async ({
     page,

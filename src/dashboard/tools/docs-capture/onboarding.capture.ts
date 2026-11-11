@@ -4,7 +4,7 @@ import { createFakeBackendState, installFakeBackend } from '../../tests/e2e/fixt
 
 const OUT = path.resolve(import.meta.dirname, '../../../../docs/assets')
 
-// The phone viewport: that is the form factor the interface is designed for (SPECS 7.2).
+// The phone viewport: that is the form factor the interface is designed for (UI-10).
 test.use({ viewport: { width: 390, height: 844 } })
 
 test('adding a camera', async ({ page }) => {

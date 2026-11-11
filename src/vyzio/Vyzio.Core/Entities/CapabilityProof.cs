@@ -8,7 +8,7 @@ public enum ProofOutcome
     Unprovable,
 }
 
-// Detail is support detail naming what the camera answered, never a secret (SPECS 1.5).
+// Detail is support detail naming what the camera answered, never a secret (UI-03).
 public sealed record CapabilityProof(ProofOutcome Outcome, string? Detail)
 {
     public static CapabilityProof Proven() => new(ProofOutcome.Proven, null);

@@ -4,7 +4,7 @@ import { ProtocolStatus, type CameraProtocol } from '../../domain/entities/camer
 import { IS_STREAM } from './capability_state'
 import { PROTOCOL_LABELS } from './protocol_labels'
 
-/** What a detection found, read from what it left on the camera (SPECS 2.2: the page says what answers). */
+/** What a detection found, read from what it left on the camera (CAM-40: the page says what answers). */
 export const DetectionOutcome = {
   StreamWorks: 'stream_works',
   StreamNotWorking: 'stream_not_working',
@@ -14,7 +14,7 @@ export const DetectionOutcome = {
 
 export type DetectionOutcome = (typeof DetectionOutcome)[keyof typeof DetectionOutcome]
 
-/** The result line of a detection: a plain sentence first, then what each protocol answered for support (SPECS 1.5). */
+/** The result line of a detection: a plain sentence first, then what each protocol answered for support (UI-01). */
 export interface DetectionResult {
   outcome: DetectionOutcome
   diagnostic: string | null
@@ -49,7 +49,7 @@ export function detectionResultOf(
   const errors = protocols
     .filter((p) => p.lastError)
     .map((p) => `${PROTOCOL_LABELS[p.protocol]} : ${scrubSecrets(p.lastError ?? '')}`)
-  // A silent try leaves no protocol behind: the photo for support still says what was asked (SPECS 1.5).
+  // A silent try leaves no protocol behind: the photo for support still says what was asked (UI-01).
   const silent = outcome === DetectionOutcome.NothingAnswers && errors.length === 0
   const asked = silent ? `${host} : aucun protocole n’a répondu` : errors.join(' · ') || null
   return { outcome, diagnostic: outcome === DetectionOutcome.StreamWorks ? null : asked }

@@ -57,7 +57,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<GetCameraStatusUseCase>();
         services.AddScoped<GetCameraDetectionConfigUseCase>();
         services.AddScoped<SaveCameraDetectionConfigUseCase>();
-        // Singleton: a resume outlives the request that made it (SPECS 9.2).
+        // Singleton: a resume outlives the request that made it (PRIV-07).
         services.AddSingleton<PrivacyResumes>();
         services.AddScoped<ToggleCameraPrivacyModeUseCase>();
         services.AddScoped<BatchToggleCameraPrivacyModeUseCase>();

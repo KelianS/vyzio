@@ -30,7 +30,7 @@ import { alertsSummary } from './alerts_summary'
 /** Home shows only the latest ones; the history shows the same ones, all of them. */
 const RECENT_EVENTS_MAX = 5
 
-// The live view is a screen of its own (SPECS 7.2): only a detection's media opens here.
+// The live view is a screen of its own (LIVE-07): only a detection's media opens here.
 type ModalMedia = DetectionMedia
 
 export function HubView() {

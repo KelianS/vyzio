@@ -6,7 +6,7 @@ using Vyzio.Core.Entities;
 
 namespace Vyzio.Application.UseCases.Cameras;
 
-/// <summary>Cameras resumed by hand inside a Privacy range, until it ends; in memory, so a restart applies the ranges again (SPECS 9.2).</summary>
+/// <summary>Cameras resumed by hand inside a Privacy range, until it ends; in memory, so a restart applies the ranges again (PRIV-07).</summary>
 public sealed class PrivacyResumes(TimeZoneInfo timeZone, TimeProvider time)
 {
     // The moment each resume ends, or null when the ranges never let the camera out.
@@ -24,7 +24,7 @@ public sealed class PrivacyResumes(TimeZoneInfo timeZone, TimeProvider time)
 
     public void End(string cameraId) => _resumed.TryRemove(cameraId, out _);
 
-    /// <summary>A Privacy range saved applies within the minute, resumed or not (SPECS 7.3).</summary>
+    /// <summary>A Privacy range saved applies within SCHED-04, resumed or not (PRIV-07).</summary>
     public void EndFor(ScheduleRule rule)
     {
         if (rule.Kind != ScheduleRuleKind.Privacy) return;
@@ -32,7 +32,7 @@ public sealed class PrivacyResumes(TimeZoneInfo timeZone, TimeProvider time)
             End(cameraId);
     }
 
-    /// <summary>Ended at its moment even when no scheduler pass saw the gap before the next range (SPECS 9.2).</summary>
+    /// <summary>Ended at its moment even when no scheduler pass saw the gap before the next range (PRIV-07).</summary>
     public bool Holds(string cameraId)
     {
         if (!_resumed.TryGetValue(cameraId, out var end)) return false;

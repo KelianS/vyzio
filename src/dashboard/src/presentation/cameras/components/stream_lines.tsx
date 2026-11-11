@@ -52,7 +52,7 @@ export interface StreamLineIntents {
   onAdd: (addition: CameraStreamAddition) => void
 }
 
-/** One line per stream of the camera, in the stream card's Options (SPECS 2.3). */
+/** One line per stream of the camera, in the stream card's Options (CAM-56). */
 export function StreamLines({
   lineup,
   loading,
@@ -396,7 +396,7 @@ function AddStreamForm({
   )
 }
 
-/** The « Flux » dropdown of a stream choice, its failure and, on « Autre chemin… », the typed path (SPECS 2.3). */
+/** The « Flux » dropdown of a stream choice, its failure and, on « Autre chemin… », the typed path (CAM-57). */
 export function StreamPicker({
   choices,
   selected,

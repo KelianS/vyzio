@@ -4,7 +4,7 @@
 
 ## Contexte
 
-SPECS §10 : l'utilisateur doit pouvoir régler luminosité, contraste, saturation, netteté et vision nocturne (IR) depuis Vyzio plutôt que dans l'app constructeur — c'est le premier jalon du principe produit « contrôle unifié de toutes les caméras » (README, `../CLAUDE.md`). Comme PTZ et vie privée matérielle (ADR-22), ces réglages ne dépendent pas de la marque mais de ce que la caméra sait réellement faire.
+UC-IMG-01 : l'utilisateur doit pouvoir régler luminosité, contraste, saturation, netteté et vision nocturne (IR) depuis Vyzio plutôt que dans l'app constructeur — c'est le premier jalon du principe produit « contrôle unifié de toutes les caméras » (README, `../CLAUDE.md`). Comme PTZ et vie privée matérielle (ADR-22), ces réglages ne dépendent pas de la marque mais de ce que la caméra sait réellement faire.
 
 Différence structurelle avec PTZ/privacy : il n'y a rien à persister côté Vyzio. La caméra reste la seule source de vérité pour ses réglages image — Vyzio lit et écrit en direct, comme un simple proxy protocolaire.
 

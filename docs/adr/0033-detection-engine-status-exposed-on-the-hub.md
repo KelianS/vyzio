@@ -4,7 +4,7 @@
 
 ## Contexte
 
-Le Hub (SPECS §7.2) doit afficher l'état du moteur de détection interne (Frigate — invisible pour
+Le Hub (SYS-01) doit afficher l'état du moteur de détection interne (Frigate — invisible pour
 l'utilisateur, cf. `CLAUDE.md` principe produit #2) sur trois paliers : actif, redémarrage en cours,
 indisponible. Aujourd'hui, `GET /api/system/stats` (`GetSystemStatsUseCase`) expose seulement un
 booléen `Available`, dérivé d'un appel HTTP à `api/stats` de Frigate (`FrigateStatsProvider`) : ce
@@ -43,7 +43,7 @@ descendante.
   passage, résolution automatique) ; stats indisponibles + tracker actif → `restarting` ; sinon →
   `unavailable`.
 - Le Hub doit sonder périodiquement l'endpoint pour que le palier "redémarrage" se résolve seul, sans
-  rechargement manuel de la page (cohérent avec l'exigence SPECS §7.2 : « sans action de
+  rechargement manuel de la page (cohérent avec l'exigence SYS-01 : « sans action de
   l'utilisateur »).
 - Aucun libellé ne doit mentionner le nom du composant technique — uniquement « système de détection »
   / « surveillance », conformément au principe produit #2.

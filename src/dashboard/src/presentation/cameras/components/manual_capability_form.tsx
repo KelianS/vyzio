@@ -18,7 +18,7 @@ import { Picker } from './protocol_choice'
 // The stream is never added by hand: a camera is born with it (ADR-61).
 const ADDABLE_CAPABILITIES: Capability[] = ['ptz', 'hardware_privacy', 'image_settings']
 
-/** The manual path of SPECS 2.3: an unbound capability, over one of the camera's protocols, tested at once. */
+/** The manual path of UC-CAM-03: an unbound capability, over one of the camera's protocols, tested at once. */
 export function ManualCapability({
   bindings,
   protocols,

@@ -4,7 +4,7 @@
 
 ## Contexte
 
-La reconnaissance automatique du constructeur à la découverte (protocoles confirmés, OUI MAC, hostname — ADR-32) reste faillible par nature (§ 2.2/2.3 SPECS). L'utilisateur doit pouvoir corriger ou court-circuiter une détection ratée sans repasser par la déclaration capacité-par-capacité de l'ADR-22, réservée à une marque réellement inconnue de Vyzio.
+La reconnaissance automatique du constructeur à la découverte (protocoles confirmés, OUI MAC, hostname — ADR-32) reste faillible par nature (CAM-31). L'utilisateur doit pouvoir corriger ou court-circuiter une détection ratée sans repasser par la déclaration capacité-par-capacité de l'ADR-22, réservée à une marque réellement inconnue de Vyzio.
 
 ## Décision
 

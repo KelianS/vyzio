@@ -89,10 +89,10 @@ public class Camera
     // true if the vendor API confirmed the hardware-level cut during last toggle
     public bool PrivacyVendorCut { get; set; }
 
-    // Null when the camera did what the last toggle asked, or was asked nothing (SPECS 9.2)
+    // Null when the camera did what the last toggle asked, or was asked nothing (PRIV-05)
     public PrivacyMiss? PrivacyMiss { get; set; }
 
-    // What support reads under the sentence when the camera did not follow, never a secret (SPECS 1.5)
+    // What support reads under the sentence when the camera did not follow, never a secret (UI-03)
     [MaxLength(PrivacyMissDetailLength)]
     public string? PrivacyMissDetail { get; set; }
 

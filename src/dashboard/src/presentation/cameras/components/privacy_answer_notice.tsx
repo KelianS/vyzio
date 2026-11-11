@@ -5,7 +5,7 @@ import { privacyBadge, privacyMissSentence } from '../../../common/privacy/priva
 import { PrivacyStateIcon } from '../../../common/privacy/privacy_state_icon'
 import type { Camera } from '../../../domain/entities/camera.entity'
 
-/** What the camera answered to privacy mode, first on the screen the tile links to (SPECS 9.2). */
+/** What the camera answered to privacy mode, first on the screen the tile links to (PRIV-05). */
 export function PrivacyAnswerNotice({ camera }: { camera: Camera }) {
   const badge = privacyBadge(camera)
   const sentence = privacyMissSentence(camera)

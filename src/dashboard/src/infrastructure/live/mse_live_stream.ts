@@ -170,7 +170,7 @@ export class MseLiveStream implements LiveStreamPort {
     retryWithoutAudio: (() => void) | null,
   ): () => void {
     const { env } = this
-    // The line support reads under the sentence: which stream was asked, and what answered (SPECS 1.5).
+    // The line support reads under the sentence: which stream was asked, and what answered (UI-01).
     const failed = (failure: LiveFailure, detail: string): LivePlayback => ({
       kind: 'failed',
       failure,

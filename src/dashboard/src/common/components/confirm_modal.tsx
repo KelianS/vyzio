@@ -21,7 +21,7 @@ interface ConfirmModalProps {
   body: string
   /** What the question is about, under its sentence: a list the body cannot hold. */
   details?: ReactNode
-  /** A failure behind the question: the line support reads (SPECS 1.5). */
+  /** A failure behind the question: the line support reads (UI-01). */
   diagnostic?: string
   confirmLabel: string
   cancelLabel?: string

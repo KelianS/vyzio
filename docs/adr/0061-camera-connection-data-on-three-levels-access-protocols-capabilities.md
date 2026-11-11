@@ -24,7 +24,7 @@ A camera's connection data sits on the wrong level:
 - `Camera.Port`, the stream paths and `Camera.StreamProtocol` read as facts of the whole camera, but
   they only concern the video stream. ONVIF, DVRIP or V380 answer on other ports, which the clients
   hardcode.
-- The video stream is a capability for the product ([SPECS](../SPECS.md) 2.3) and on screen since
+- The video stream is a capability for the product ([SPECS](../SPECS.md) CAM-18) and on screen since
   #155, but not in the data: ADR-22 kept it out of the binding model, so a DVRIP-only camera and an
   RTSP camera take two different paths through onboarding, verification and discovery.
 - The per-protocol level exists by halves: `SupportedProtocolsJson` lists the protocols a verified
@@ -120,7 +120,7 @@ like the camera's.
 **f) Frigate reads the stream from its binding**: the transport from the stream binding, the port and
 account from that protocol's row, the paths from the streams.
 
-The screen that shows the three levels is framed in [SPECS](../SPECS.md) 2.3.
+The screen that shows the three levels is framed in [SPECS](../SPECS.md) CAM-17 and CAM-20.
 
 ## Options rejected
 

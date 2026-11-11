@@ -8,7 +8,7 @@ public interface ICameraProtocolProbe
     Task<ProtocolAnswer> ProbeAsync(Camera camera, SupportedProtocol protocol, CancellationToken ct = default);
 }
 
-// Error is support detail naming the protocol, the port and what the camera said, never a secret (SPECS 1.5).
+// Error is support detail naming the protocol, the port and what the camera said, never a secret (UI-03).
 public sealed record ProtocolAnswer(ProtocolStatus Status, string? Error)
 {
     public static ProtocolAnswer Answers() => new(ProtocolStatus.Answers, null);

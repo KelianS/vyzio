@@ -7,7 +7,7 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Application.UseCases.Scheduling;
 
-/// <summary>A rule the user can fix, answered as a refusal naming what to change, never as a failure (SPECS 7.3).</summary>
+/// <summary>A rule the user can fix, answered as a refusal naming what to change, never as a failure (SCHED-06).</summary>
 public sealed class InvalidScheduleRuleException(ScheduleRuleRefusal refusal)
     : Exception(refusal switch
     {

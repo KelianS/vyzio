@@ -3,7 +3,7 @@ import { useToast } from '../../common/components/toast'
 import { toastError } from '../../common/errors/app_error'
 import { useRootStore } from '../../infrastructure/store/root.store'
 
-/** A reload that fails keeps the list already shown, so the failure goes to a toast (SPECS 1.5). */
+/** A reload that fails keeps the list already shown, so the failure goes to a toast (UI-01). */
 export function useCameraListFailureToast() {
   const { toast } = useToast()
 

@@ -10,7 +10,7 @@ export const MEDIA_EXPIRED = 'Aperçu et vidéo effacés — au-delà de la dur�
 
 interface DetectionPreviewProps {
   media: DetectionMedia
-  /** The video was erased with another detection: said as such, never as a broken player (SPECS 6.2). */
+  /** The video was erased with another detection: said as such, never as a broken player (HIST-11). */
   clipGone: boolean
   onVideoError: () => void
   /** What the screen offers on the opened detection, under it. */

@@ -145,7 +145,7 @@ const router = createBrowserRouter([
       // Consultation
       { path: '/', element: <HubView /> },
       { path: '/history', element: <DetectionHistoryView /> },
-      // A screen of its own, without the header: the picture takes the whole viewport (SPECS 7.2).
+      // A screen of its own, without the header: the picture takes the whole viewport (LIVE-07).
       { path: LIVE_VIEW_ROUTE, element: <LiveViewScreen />, handle: FULL_SCREEN },
 
       // Settings - a two-level tree (ADR-40). The route carries the selection: it,
@@ -166,7 +166,7 @@ const router = createBrowserRouter([
                 // Carries the name of the open camera, and its tabs.
                 handle: OWN_HEADER,
                 children: [
-                  // A camera always opens on Connexion (SPECS 2.2).
+                  // A camera always opens on Connexion (CAM-03).
                   { index: true, element: <Navigate to="connexion" replace /> },
                   { path: 'connexion', element: <CameraConnectionView /> },
                   { path: 'vie-privee', element: <CameraPrivacyView /> },

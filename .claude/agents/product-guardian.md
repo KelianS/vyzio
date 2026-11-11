@@ -35,11 +35,11 @@ above, never commercial strategy.
 - **Jargon or a leaking dependency**: NVR or home-automation vocabulary, a raw Frigate label or name,
   a technical identifier shown to the user (principles 1 and 2).
 - **Dead ends**: a journey a non-technical user cannot finish, a failure that says nothing about what
-  to do next (principle 5; for adding a camera, SPECS 2.3: longer, never blocked by design).
+  to do next (principle 5; for adding a camera, CAM-11: longer, never blocked by design).
 - **Opaque states**: a score, status or decision shown without a readable reason (principle 4).
 - **Broken promises**: images leaving the home without explicit consent, a feature that needs the
   internet to work, data the user cannot see or remove (principle 3, privacy first).
-- **Scope drift**: work outside the product scope (SPECS §12) or outside the milestone its issue
+- **Scope drift**: work outside the product scope (SPECS § Perimetre produit) or outside the milestone its issue
   belongs to, or a SPECS rule that the change silently drops.
 - **Public promise drift**: the README claiming what the product does not do, or the product doing
   what the README says it will not.

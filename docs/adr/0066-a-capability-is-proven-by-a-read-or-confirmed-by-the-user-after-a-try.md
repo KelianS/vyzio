@@ -88,7 +88,7 @@ back a capability the user rejected over a candidate: it still looks for a proof
 and only a proof replaces the "no"; otherwise the capability stays rejected on its protocol. Removing a
 capability forgets the answer: added again by hand, it starts to confirm.
 
-The screen's states, words and gestures, and the product rule, are in [SPECS](../SPECS.md) 2.3.
+The screen's states, words and gestures, and the product rule, are in [SPECS](../SPECS.md) CAM-16 and [UC-CAM-04](../uc/cam-04-confirmer-une-capacite.md).
 
 ## Options rejected
 
@@ -96,7 +96,7 @@ The screen's states, words and gestures, and the product rule, are in [SPECS](..
 answers DVRIP: the claim without observation this decision removes.
 
 **Failing whatever cannot be proven (B).** A V380 head that turns would read "En échec" forever, and
-the product would take away a capability the hardware has: the opposite of SPECS 2.3.
+the product would take away a capability the hardware has: the opposite of CAM-11.
 
 **A test move as the proof (D).** A check that moves the camera surprises whoever is watching it and
 can undo a privacy parking; #207 kept the probes read-only for that reason. The try of d) moves the

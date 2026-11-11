@@ -1,7 +1,7 @@
 import { SurveillanceEntry, surveillanceEntryOf } from '../../common/camera/camera_status'
 import type { Camera } from '../../domain/entities/camera.entity'
 
-/** What the live view's address reaches, before any stream is tried (SPECS 7.2). */
+/** What the live view's address reaches, before any stream is tried (LIVE-11). */
 export const LiveAccess = {
   Loading: 'loading',
   Unread: 'unread',
@@ -14,7 +14,7 @@ export const LiveAccess = {
 
 export type LiveAccess = (typeof LiveAccess)[keyof typeof LiveAccess]
 
-/** The same gates as the home thumbnail, so an address never opens what a tap would not (SPECS 2.2, 9.2). */
+/** The same gates as the home thumbnail, so an address never opens what a tap would not (LIVE-11). */
 export function liveAccessOf(
   camera: Camera | undefined,
   { loading, unread }: { loading: boolean; unread: boolean },

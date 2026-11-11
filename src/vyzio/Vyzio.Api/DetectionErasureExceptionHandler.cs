@@ -3,7 +3,7 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Api;
 
-// The surveillance refused or dropped an erasure; the message says how far it got, for support (SPECS 1.5).
+// The surveillance refused or dropped an erasure; the message says how far it got, for support (HIST-14).
 internal sealed class DetectionErasureExceptionHandler : IExceptionHandler
 {
     public async ValueTask<bool> TryHandleAsync(

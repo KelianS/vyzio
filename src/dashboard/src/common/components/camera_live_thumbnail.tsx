@@ -43,7 +43,7 @@ export function CameraLiveThumbnail({
   // Not in surveillance yet: no image to try nor live view to open, the tile leads to its page (ADR-68 d).
   const unwatched = surveillanceEntryOf(camera) !== SurveillanceEntry.Watched
   const polling = !camera.privacyModeActive && camera.connected && !unwatched
-  // An offline camera opens no live view: it would only wait for a stream that cannot come (SPECS 2.2).
+  // An offline camera opens no live view: it would only wait for a stream that cannot come (CAM-08).
   const expandable = Boolean(liveTo) && !camera.privacyModeActive && !unwatched && !deviceOffline
 
   // Resets the broken-image flag on identity/connectivity change without a setState-in-effect cascade.
@@ -78,7 +78,7 @@ export function CameraLiveThumbnail({
   const picture = (
     <>
       {camera.privacyModeActive && privacy ? (
-        // The same words as the privacy screen's badge: what the camera answered (SPECS 9.2).
+        // The same words as the privacy screen's badge: what the camera answered (PRIV-06).
         <div className="flex h-full flex-col items-center justify-center gap-2 px-3 text-center text-surface-inverse-foreground">
           <PrivacyStateIcon kind={privacy.kind} className="size-5" />
           <span className="text-sm font-medium">{privacy.text}</span>
@@ -169,7 +169,7 @@ export function CameraLiveThumbnail({
           </Button>
         )}
       </div>
-      {/* Outside the frame, which may be a button; the privacy screen says why (SPECS 9.2). */}
+      {/* Outside the frame, which may be a button; the privacy screen says why (PRIV-05). */}
       {missLabel && (
         <Link
           to={`/settings/cameras/${camera.id}/vie-privee`}

@@ -4,7 +4,7 @@ import type {
 } from '../../domain/entities/camera_capability_binding.entity'
 import type { CameraProtocol } from '../../domain/entities/camera_protocol.entity'
 
-/** A protocol's one displayed name, wherever it appears: box, choice list, sentence (SPECS 1.5). */
+/** A protocol's one displayed name, wherever it appears: box, choice list, sentence (CAM-25). */
 export const PROTOCOL_LABELS: Record<SupportedProtocol, string> = {
   onvif: 'ONVIF',
   dvrip: 'DVRIP',

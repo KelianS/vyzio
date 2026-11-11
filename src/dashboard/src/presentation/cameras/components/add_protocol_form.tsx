@@ -12,7 +12,7 @@ import { PROTOCOL_LABELS, SPECIFIC_ACCOUNT_HELP } from '../protocol_labels'
 import { ALL_PROTOCOLS } from '../camera_connection_values'
 import { Picker } from './protocol_choice'
 
-/** Adds a protocol the camera does not speak yet, checked at once (SPECS 2.3). */
+/** Adds a protocol the camera does not speak yet, checked at once (CAM-45). */
 export function AddProtocol({
   protocols,
   open,
