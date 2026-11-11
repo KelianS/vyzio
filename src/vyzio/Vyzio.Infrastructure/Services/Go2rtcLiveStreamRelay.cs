@@ -38,6 +38,7 @@ public sealed partial class Go2rtcLiveStreamRelay : ILiveStreamRelay
 {
     private const int BufferSize = 64 * 1024;
     private static readonly TimeSpan CloseGrace = TimeSpan.FromSeconds(5);
+    private const string StreamUnreachable = "stream_unreachable";
 
     private readonly VyzioRuntimeSettings settings;
     private readonly ILogger<Go2rtcLiveStreamRelay> logger;
@@ -115,7 +116,7 @@ public sealed partial class Go2rtcLiveStreamRelay : ILiveStreamRelay
         catch (Exception ex) when (ex is WebSocketException or HttpRequestException or IOException)
         {
             logger.LogWarning(ex, "Live stream {Stream} could not be opened", name);
-            await CloseQuietlyAsync(viewer, (WebSocketCloseStatus)LiveStreamClose.Unreachable, "stream_unreachable");
+            await CloseQuietlyAsync(viewer, (WebSocketCloseStatus)LiveStreamClose.Unreachable, StreamUnreachable);
             return;
         }
 
@@ -126,11 +127,13 @@ public sealed partial class Go2rtcLiveStreamRelay : ILiveStreamRelay
             var toCamera = PumpAsync(viewer, source, null, logger, ct);
             var toViewer = PumpAsync(source, viewer, scrub, logger, ct);
 
-            // The side that ended first has its close passed on; the other answers it, or is cut after a grace.
+            // The viewer's close is passed on to go2rtc; go2rtc ending first means the camera's stream is gone, which the player reads at once.
             var first = await Task.WhenAny(toCamera, toViewer);
             var (status, description) = session.Cut
                 ? ((WebSocketCloseStatus)LiveStreamClose.PrivacyMode, SnakeCaseEnum.ToSnakeCase(LiveStreamClose.PrivacyMode))
-                : await first;
+                : first == toViewer
+                    ? ((WebSocketCloseStatus)LiveStreamClose.Unreachable, StreamUnreachable)
+                    : await first;
             var (ended, other, otherPump) = first == toViewer ? (source, viewer, toCamera) : (viewer, source, toViewer);
 
             await CloseQuietlyAsync(other, status ?? WebSocketCloseStatus.EndpointUnavailable, description);

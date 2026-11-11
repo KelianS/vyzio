@@ -57,7 +57,7 @@ flowchart TB
     subgraph hub["Vyzio hub, one Docker network"]
         dash["Dashboard<br/>web server and static interface"]
         api["API<br/>product logic"]
-        db[("Database<br/>one file, in the API's volume")]
+        db[("Database<br/>one file, in the API's data folder")]
         mqtt["MQTT broker"]
         subgraph frig["Frigate container"]
             frigate["Frigate<br/>video pipeline"]
@@ -76,7 +76,7 @@ flowchart TB
     frigate -- "MQTT events" --> mqtt
     mqtt -- "MQTT events" --> api
     api -- "MQTT live tuning" --> mqtt
-    api -- "writes the configuration<br/>(shared volume)" --> frigate
+    api -- "writes the configuration<br/>(shared folder)" --> frigate
     api -- "restart" --> docker
     frigate -- RTSP --> go2rtc
     go2rtc -- "RTSP, DVRIP" --> cams
@@ -102,7 +102,7 @@ Every flow the system opens. "Docker network" means a flow that never leaves the
 
 | Source | Direction | Destination | Protocol | Port | Authentication |
 |---|---|---|---|---|---|
-| Browser, home network | to | Dashboard | HTTP and the live view's WebSocket, in the clear by design (ADR-67) | 8080, the one published port | Owner session cookie (ADR-54) |
+| Browser, home network | to | Dashboard | HTTP and the live view's WebSocket, in the clear by design (ADR-67) | 8080 by default, set at install, the one published port | Owner session cookie (ADR-54) |
 | Dashboard | to | API, Docker network | HTTP, WebSocket | 8443 | The owner session cookie, passed through |
 | API | to | Frigate, Docker network | HTTP REST; WebSocket to go2rtc for the live view (ADR-72) | 5000, also bound to the host's loopback | None: unreachable from outside the hub |
 | Frigate | to | MQTT broker, Docker network | MQTT | 1883 | None, anonymous |
@@ -210,7 +210,7 @@ The session is held for the whole move, and the camera stops by itself when the 
 sequenceDiagram
     actor U as User
     participant A as API
-    participant V as Shared volume
+    participant V as Shared folder
     participant D as Docker engine
     participant F as Frigate
     U->>A: save a setting that changes surveillance
@@ -241,9 +241,9 @@ a live tuning that needs no restart goes over MQTT (ADR-35).
 | Owner account and sessions | Vyzio | Database; the password only hashed (ADR-54) | Sessions until revoked |
 | PTZ positions counted by Vyzio, the thumbnails and slot labels | Vyzio (ADR-26, ADR-60, ADR-69) | Database, the thumbnails as files beside it | Until removed |
 | Native PTZ presets | The camera, read on demand (ADR-69) | The camera | Until removed on the camera |
-| Detections, event history, clips, recordings, snapshots | Frigate (ADR-49) | Frigate's media volume and database | Set by Vyzio, never turned off, overridable per camera (ADR-39, ADR-48); the user erases one detection with the recording of its passage, its thumbnail images staying on disk with no expiry ([SPECS](SPECS.md) HIST-10, HIST-15) |
+| Detections, event history, clips, recordings, snapshots | Frigate (ADR-49) | Frigate's media folder and database | Set by Vyzio, never turned off, overridable per camera (ADR-39, ADR-48); the user erases one detection with the recording of its passage, its thumbnail images staying on disk with no expiry ([SPECS](SPECS.md) HIST-10, HIST-15) |
 | Face embeddings | Frigate (ADR-03) | Frigate | Follows the library Vyzio syncs |
-| The Frigate configuration | Written by Vyzio, read by Frigate (ADR-12) | Shared volume | Rewritten at each change |
+| The Frigate configuration | Written by Vyzio, read by Frigate (ADR-12) | Shared folder | Rewritten at each change |
 
 **Never leaves the house:** frames, recordings, clips, embeddings and camera accounts. The one
 exception is the image of a notification, sent to the channels the user set up (ADR-50).
@@ -255,11 +255,12 @@ exception is the image of a notification, sent to the channels the user set up (
 | Container | Image | Published | State | Privilege |
 |---|---|---|---|---|
 | Dashboard | Vyzio, from the project registry | One port, to the home network | None | None |
-| API | Vyzio, from the project registry | None | Database and files volume; configuration volume, shared with Frigate | Privileged, to read the accelerators (ADR-34); the host's Docker socket |
+| API | Vyzio, from the project registry | None | Database and files folder; configuration folder, shared with Frigate | Privileged, to read the accelerators (ADR-34); the host's Docker socket |
 | MQTT broker | Mosquitto | None | None | None |
-| Frigate, with go2rtc | Frigate, a pinned version | API on the host's loopback only | Configuration volume; media volume | Privileged, for the accelerators |
+| Frigate, with go2rtc | Frigate, a pinned version | API on the host's loopback only | Configuration folder; media folder | Privileged, for the accelerators |
 
-One Compose stack on one machine, one Docker network. The API exposes two anonymous probes: liveness,
+One Compose stack on one machine, one Docker network; its state lives in folders under one host
+folder the installer chooses, along with the release to run. The API exposes two anonymous probes: liveness,
 read by the container healthcheck and the only one relayed by the dashboard, and readiness (database,
 broker, Frigate), kept on the Docker network (ADR-55).
 

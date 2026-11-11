@@ -1,11 +1,16 @@
 version: '3'
 
 vars:
-  COMPOSE_DEV: docker compose -f docker-compose.yml -f docker-compose.dev.yml
-  COMPOSE_MOCK: docker compose -f docker-compose.yml -f docker-compose.mock.yml
+  # A clone without its own .env runs the dev stack on the example settings.
+  ENV_FILE:
+    sh: test -f .env && echo .env || echo .env.example
+  COMPOSE_DEV: docker compose --env-file {{.ENV_FILE}} -f compose.yml -f compose.dev.yml
+  COMPOSE_MOCK: docker compose --env-file {{.ENV_FILE}} -f compose.yml -f compose.mock.yml
   DASHBOARD_DIR: src/dashboard
   BACKEND_DIR: src/vyzio
   BACKEND_SLN: Vyzio.slnx
+  # A local test run leaves three quarters of the cores to whoever works beside it; CI keeps them all.
+  TEST_WORKERS: '{{.TEST_WORKERS | default (max 1 (div numCPU 4))}}'
 
 tasks:
   default:
@@ -58,13 +63,13 @@ tasks:
     desc: Lance les tests frontend (vitest)
     dir: '{{.DASHBOARD_DIR}}'
     cmds:
-      - pnpm test {{.CLI_ARGS}}
+      - pnpm test {{if not .CI}}--maxWorkers={{.TEST_WORKERS}}{{end}} {{.CLI_ARGS}}
 
   front:test:e2e:
     desc: Lance les tests e2e frontend (Playwright, build de prod)
     dir: '{{.DASHBOARD_DIR}}'
     cmds:
-      - pnpm test:e2e
+      - pnpm test:e2e {{if not .CI}}--workers={{.TEST_WORKERS}}{{end}}
 
   docs:capture:
     desc: Regenerates the documentation screenshots from the test fixtures
@@ -126,7 +131,7 @@ tasks:
     desc: Lance les tests backend (dotnet test sur Vyzio.slnx)
     dir: '{{.BACKEND_DIR}}'
     cmds:
-      - dotnet test {{.BACKEND_SLN}} {{.CLI_ARGS}}
+      - dotnet test {{.BACKEND_SLN}} {{.CLI_ARGS}} {{if not .CI}}-- xUnit.MaxParallelThreads={{.TEST_WORKERS}}{{end}}
 
   back:build:
     desc: Build le backend (dotnet build sur Vyzio.slnx)

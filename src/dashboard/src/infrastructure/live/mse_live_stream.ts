@@ -1,6 +1,10 @@
 import { scrubSecrets } from '../../common/errors/scrub_secrets'
 import type { LiveQuality } from '../../domain/entities/camera.entity'
-import type { LiveFailure, LivePlayback } from '../../domain/entities/live_playback.entity'
+import {
+  MAY_PASS,
+  type LiveFailure,
+  type LivePlayback,
+} from '../../domain/entities/live_playback.entity'
 import type { LiveStreamPort } from '../../domain/ports/live_stream.port'
 
 /** What the stream needs from the browser, so a test can stand in for it. */
@@ -52,6 +56,8 @@ const CLOSE_FAILURES: Partial<Record<number, LiveFailure>> = {
 }
 
 const FIRST_SEGMENT_MS = 10_000
+// go2rtc sends each frame as it comes: even a camera at one frame a second leaves this silence only once it stopped.
+const STALL_MS = 5_000
 // Behind by more than this, the player jumps back to the live edge rather than replaying the past.
 const MAX_LAG_S = 1.5
 const LIVE_EDGE_S = 0.3
@@ -171,10 +177,11 @@ export class MseLiveStream implements LiveStreamPort {
   ): () => void {
     const { env } = this
     // The line support reads under the sentence: which stream was asked, and what answered (UI-01).
+    const diagnosticOf = (detail: string) => scrubSecrets(`live ${cameraId} ${quality}: ${detail}`)
     const failed = (failure: LiveFailure, detail: string): LivePlayback => ({
       kind: 'failed',
       failure,
-      diagnostic: scrubSecrets(`live ${cameraId} ${quality}: ${detail}`),
+      diagnostic: diagnosticOf(detail),
     })
 
     const media = env.createMediaSource()
@@ -204,10 +211,17 @@ export class MseLiveStream implements LiveStreamPort {
       () => fail('unreachable', `no video within ${FIRST_SEGMENT_MS / 1000} s`),
       FIRST_SEGMENT_MS,
     )
+    let stall: ReturnType<typeof setTimeout> | undefined
+
+    function watchForStall() {
+      clearTimeout(stall)
+      stall = setTimeout(() => fail('unreachable', `no video for ${STALL_MS / 1000} s`), STALL_MS)
+    }
 
     function release() {
       ended = true
       clearTimeout(firstSegment)
+      clearTimeout(stall)
       video.removeEventListener('error', onMediaError)
       if (socket) {
         socket.onclose = null
@@ -221,7 +235,12 @@ export class MseLiveStream implements LiveStreamPort {
     function fail(failure: LiveFailure, detail: string) {
       if (ended) return
       release()
-      onPlayback(failed(failure, detail))
+      // Once the stream has played, a failure that may pass means the camera stopped answering.
+      onPlayback(
+        playing && MAY_PASS[failure]
+          ? { kind: 'stalled', diagnostic: diagnosticOf(detail) }
+          : failed(failure, detail),
+      )
     }
 
     // A decode failure closes the source, so the cause is read from the video, not from the next append.
@@ -282,6 +301,7 @@ export class MseLiveStream implements LiveStreamPort {
       if (!playing) {
         playing = true
         clearTimeout(firstSegment)
+        watchForStall()
         onPlayback({ kind: 'playing', soundOffered: withSound ? hasAudio : soundPlayable })
         // Muted autoplay is allowed everywhere; a refusal leaves the picture on its first frame.
         void video.play().catch(() => undefined)
@@ -334,13 +354,14 @@ export class MseLiveStream implements LiveStreamPort {
             onText(event.data)
             return
           }
+          if (playing) watchForStall()
           queue.push(event.data)
           flush()
         }
+        // A close without the API's code is the connection to Vyzio, not the camera: it reconnects.
         opened.onclose = (event) => {
           if (ended) return
-          const refused = event.code in CLOSE_FAILURES
-          if (playing && !refused) {
+          if (playing && !(event.code in CLOSE_FAILURES)) {
             release()
             onPlayback({ kind: 'interrupted' })
             return

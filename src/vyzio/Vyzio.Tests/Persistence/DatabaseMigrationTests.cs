@@ -9,7 +9,7 @@ public sealed class DatabaseMigrationTests : IDisposable
 {
     private readonly SqliteConnection _connection = new("Data Source=:memory:");
     private readonly VyzioDbContext _db;
-    private readonly LogLines _log = new();
+    private readonly LogLines<DatabaseMigrationTests> _log = new();
 
     public DatabaseMigrationTests()
     {
@@ -43,7 +43,7 @@ public sealed class DatabaseMigrationTests : IDisposable
     public async Task ApplyAsync_ShouldSayTheSchemaIsUpToDate_WhenNoMigrationIsPending()
     {
         // Arrange
-        await DatabaseMigration.ApplyAsync(_db, new LogLines());
+        await DatabaseMigration.ApplyAsync(_db, new LogLines<DatabaseMigrationTests>());
 
         // Act
         var applied = await DatabaseMigration.ApplyAsync(_db, _log);
@@ -53,18 +53,5 @@ public sealed class DatabaseMigrationTests : IDisposable
         var (level, message) = Assert.Single(_log.Lines);
         Assert.Equal(LogLevel.Information, level);
         Assert.Equal("Database schema is up to date, no migration applied", message);
-    }
-
-    private sealed class LogLines : ILogger
-    {
-        public List<(LogLevel Level, string Message)> Lines { get; } = [];
-
-        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
-
-        public bool IsEnabled(LogLevel logLevel) => true;
-
-        public void Log<TState>(LogLevel logLevel, EventId eventId,
-            TState state, Exception? exception, Func<TState, Exception?, string> formatter) =>
-            Lines.Add((logLevel, formatter(state, exception)));
     }
 }

@@ -43,4 +43,25 @@ test.describe('Live view video', () => {
     ).toBeVisible()
     await expect(page.getByRole('img', { name: 'Porte d’entrée' }).last()).toBeVisible()
   })
+
+  test('LiveVideo_ShouldSayTheCameraNoLongerAnswersThenResume_WhenTheCameraStopsSendingThenComesBack', async ({
+    page,
+  }) => {
+    const state = await openTheLiveView(page)
+    const video = page.locator('video[aria-label="Porte d’entrée"]')
+    await expect
+      .poll(() => video.evaluate((v: HTMLVideoElement) => v.readyState))
+      .toBeGreaterThanOrEqual(2)
+    const lost = page.getByText('Cette caméra ne répond plus : la vidéo reprendra dès son retour.')
+
+    state.liveSilent = true
+
+    await expect(lost).toBeVisible({ timeout: 10_000 })
+    await expect(video).toBeHidden()
+
+    state.liveSilent = false
+
+    await expect(lost).toBeHidden({ timeout: 20_000 })
+    await expect(video).toBeVisible()
+  })
 })
