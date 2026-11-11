@@ -36,6 +36,8 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "$PR" ]; then echo "code=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          # Read into a variable first, so a failed request fails the job instead of passing as docs-only.
+          files=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR/files" --paginate --jq '.[] | .filename, (.previous_filename // empty)')
           code=false
           while IFS= read -r file; do
             case "$file" in
@@ -44,7 +46,7 @@ jobs:
               *.md) ;;
               *) code=true ;;
             esac
-          done < <(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR/files" --paginate --jq '.[] | .filename, (.previous_filename // empty)')
+          done <<< "$files"
           echo "code=$code" | tee -a "$GITHUB_OUTPUT"
 
   rules:
