@@ -26,7 +26,7 @@ real_gh="$(command -v gh)"
 
 # Applies the case on a detached worktree of HEAD, commits it, and runs the case's agent or skill on it.
 run_one() {
-  local case=$1 n=$2 work agent skill prompt ask edits writes="$out/$case-$n.gh"
+  local case=$1 n=$2 work agent skill prompt ask edits head writes="$out/$case-$n.gh"
   work="$(mktemp -d)/repo"
   agent="$(sed -n 's/^agent: //p' "$here/$case/expect.txt" | tr -d '\r')"
   skill="$(sed -n 's/^skill: //p' "$here/$case/expect.txt" | tr -d '\r')"
@@ -39,12 +39,14 @@ run_one() {
   [ -n "$skill" ] && ask="Use the $skill skill: $prompt. Print what the skill returns to the user verbatim, nothing else." && edits=(--allowedTools Edit Write)
   git -C "$root" worktree add --quiet --detach "$work" "$base" >"$out/$case-$n.log" 2>&1
   if (cd "$work" && bash "$here/$case/setup.sh" && git add -A && git commit --quiet --allow-empty -m "test(review): apply the $case review case") >>"$out/$case-$n.log" 2>&1; then
+    head="$(git -C "$work" rev-parse HEAD)"
     (cd "$work" && PATH="$here/shim:$PATH" REVIEW_CASE_REAL_GH="$real_gh" REVIEW_CASE_GH_WRITES="$writes" \
       claude -p "$ask" \
       --allowedTools Read Grep Glob Agent Skill WebSearch WebFetch "Bash(git *)" "Bash(gh *)" \
       "Bash(dotnet list *)" "Bash(pnpm --prefix src/dashboard outdated*)" \
-      "${edits[@]}") >"$out/$case-$n.md" 2>>"$out/$case-$n.log"
+      "${edits[@]}" --disallowedTools "Bash(git push*)") >"$out/$case-$n.md" 2>>"$out/$case-$n.log"
     git -C "$work" status --porcelain | sed 's/^/Worktree changed by the run: /' >>"$out/$case-$n.md"
+    [ "$(git -C "$work" rev-parse HEAD)" = "$head" ] || echo "Worktree changed by the run: a commit" >>"$out/$case-$n.md"
     [ -f "$writes" ] && sed 's/^/GitHub write attempted by the run: /' "$writes" >>"$out/$case-$n.md"
   else
     echo "setup failed" >"$out/$case-$n.md"

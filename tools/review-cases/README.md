@@ -10,7 +10,7 @@ IDs come out.
   `cites: <text>` or `absent: <text>`.
 
 `bash tools/review-cases/run.sh [-n runs] [case...]` calls Claude, so it runs locally (AGENTS-07,
-AGENTS-08). In a `prompt`, `{base}` stands for the commit the case is applied on. A skill may edit files
-and an agent may not; `gh` is [`shim/gh`](shim/gh), which lets reads through and refuses anything
-else. A file the run changed or a GitHub write it attempted fails the case, whatever `expect.txt`
-says. Reports land in `results/`, ignored by Git.
+AGENTS-08). In a `prompt`, `{base}` stands for the commit the case is applied on. A skill may edit
+files and an agent may not; no run may `git push`; `gh` is [`shim/gh`](shim/gh), which lets reads
+through and refuses anything else. A file changed, a commit made or a `gh` write attempted by the
+run fails the case, whatever `expect.txt` says. Reports land in `results/`, ignored by Git.

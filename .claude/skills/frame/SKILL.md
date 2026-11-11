@@ -8,8 +8,8 @@ argument-hint: "#<n> [#<n>...] | milestone <version>"
 
 Where framing sits and what it produces: [`docs/WORKFLOW.md`](../../../docs/WORKFLOW.md) § Mandated
 order, § Issues and § Releases. This skill only says how the assistant runs it. It never starts the
-implementation: no code, test or configuration edited, no work branch created; framing ends with the
-documents and the issues updated.
+implementation: no code, test or configuration edited, no implementation branch created; framing
+ends with the documents and the issues updated.
 
 ## 1. The batch
 
@@ -43,7 +43,7 @@ A question that only the answer to another one opens is the one exception to a s
 From the answers, draft what the mandated order requires: the SPECS or ADR changes, then each
 issue's new body and labels, per WORKFLOW § Issues. Show the exact text (AGENTS-05).
 
-Once approved: the document changes are written on a `docs/<issue>-<slug>` branch of their own
-(WORKFLOW § Git), never mixed into another branch, for the owner to deliver; each issue is updated
-with `gh issue edit <n> --body-file <file>`, and `--remove-label needs-framing` once nothing is left
-to settle. List what was written, with the links.
+Once approved: the document changes are written on a `docs/<first issue of the batch>-<slug>`
+branch of their own (WORKFLOW § Git), never mixed into another branch, for the owner to deliver;
+each issue is updated with `gh issue edit <n> --body-file <file>`, and `--remove-label
+needs-framing` once nothing is left to settle. List what was written, with the links.
