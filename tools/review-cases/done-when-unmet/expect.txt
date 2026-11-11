@@ -2,3 +2,4 @@ agent: delivery-reviewer
 prompt: review the current branch against base {base}, for issue #333; task check was green, nothing else was run
 verdict: BLOCKING
 cites: GIT-09
+cites: invalid numeric setting

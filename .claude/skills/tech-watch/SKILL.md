@@ -27,7 +27,7 @@ Recording follows AGENTS-05 and AGENTS-06, proposal by proposal:
 2. Show the exact text: a comment on the open issue found, otherwise the draft issue.
 3. Once approved, `gh issue comment`, or `gh issue create --label needs-framing --label tech-watch`.
    The `tech-watch` label missing → create it once with `gh label create tech-watch`.
-4. List what was created, with the links.
+4. List what was created or commented, with the links.
 
 A proposal is never implemented from here: once recorded, it is framed like any `needs-framing`
 issue.

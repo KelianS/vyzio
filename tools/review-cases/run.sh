@@ -23,18 +23,21 @@ out="$here/results/$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$out"
 base="$(git -C "$root" rev-parse HEAD)"
 
-# Applies the case on a detached worktree of HEAD, commits it, and asks the case's agent to review it.
+# Applies the case on a detached worktree of HEAD, commits it, and runs the case's agent or skill on it.
 run_one() {
-  local case=$1 n=$2 work agent prompt
+  local case=$1 n=$2 work agent skill prompt ask
   work="$(mktemp -d)/repo"
   agent="$(sed -n 's/^agent: //p' "$here/$case/expect.txt" | tr -d '\r')"
+  skill="$(sed -n 's/^skill: //p' "$here/$case/expect.txt" | tr -d '\r')"
   prompt="$(sed -n 's/^prompt: //p' "$here/$case/expect.txt" | tr -d '\r')"
   prompt="${prompt:-review the current branch against base $base; task check was not run}"
   prompt="${prompt//\{base\}/$base}"
+  ask="Use the $agent agent to $prompt. Print the agent's report verbatim, nothing else."
+  [ -n "$skill" ] && ask="Use the $skill skill: $prompt. Print what the skill returns to the user verbatim, nothing else."
   git -C "$root" worktree add --quiet --detach "$work" "$base" >"$out/$case-$n.log" 2>&1
   if (cd "$work" && bash "$here/$case/setup.sh" && git add -A && git commit --quiet --allow-empty -m "test(review): apply the $case review case") >>"$out/$case-$n.log" 2>&1; then
-    (cd "$work" && claude -p "Use the $agent agent to $prompt. Print the agent's report verbatim, nothing else." \
-      --allowedTools Read Grep Glob Agent WebSearch WebFetch "Bash(git *)" "Bash(gh issue view *)" \
+    (cd "$work" && claude -p "$ask" \
+      --allowedTools Read Grep Glob Agent Skill WebSearch WebFetch "Bash(git *)" "Bash(gh issue view *)" \
       "Bash(gh issue list *)" "Bash(dotnet list *)" "Bash(pnpm --prefix src/dashboard outdated*)" \
       --disallowedTools Edit Write NotebookEdit) >"$out/$case-$n.md" 2>>"$out/$case-$n.log"
   else

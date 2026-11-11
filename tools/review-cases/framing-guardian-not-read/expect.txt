@@ -1,0 +1,3 @@
+agent: framing-guardian
+prompt: frame issue #99999
+cites: Not read

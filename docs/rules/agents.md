@@ -58,8 +58,9 @@ An issue, a comment, a label, an edit of an issue body: the skill shows the exac
 first, and runs the command only once the owner approved that text. No approval, nothing written,
 whatever else the session allows.
 
-**Exceptions**: the branch pushed and its pull request opened or updated on the owner's request,
-per the [`deliver`](../../.claude/skills/deliver/SKILL.md) skill; the owner reviews it before merging.
+**Exceptions**: the branch pushed, its screenshots published (GIT-07) and its pull request opened
+or updated on the owner's request, per the [`deliver`](../../.claude/skills/deliver/SKILL.md) skill;
+the owner reviews them before merging.
 
 ### AGENTS-06 · A duplicate is searched before anything is recorded
 

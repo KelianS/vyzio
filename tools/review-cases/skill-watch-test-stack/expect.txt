@@ -1,0 +1,3 @@
+skill: tech-watch
+prompt: backend test stack only, the test packages of src/vyzio/Directory.Packages.props. Stop after the report of step 2
+cites: xunit.v3
