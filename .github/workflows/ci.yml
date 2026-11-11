@@ -119,6 +119,8 @@ jobs:
       version: ${{ steps.read.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # The container tag must match the installed package, so only an exact pin is accepted.
       - name: Read the pinned version
         id: read
         run: |
@@ -315,13 +317,14 @@ jobs:
           version: v0.74.0
           cache: true
 
-      # One database a day: a run restores the day's copy, or the latest one and refreshes it.
+      # One database a day: a run restores the day's copy, or else the latest one, which Trivy refreshes.
       - name: Date the vulnerability database
         id: trivy-db
         run: echo "date=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
 
       - name: Restore the vulnerability database
-        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        id: trivy-cache
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: ~/.cache/trivy
           key: trivy-db-${{ steps.trivy-db.outputs.date }}
@@ -340,6 +343,14 @@ jobs:
             if [ "$BLOCKING" = true ]; then echo "::error::Image scan failed:$failed"; exit 1; fi
             echo "::warning::Image scan failed:$failed (informational on a pull request)"
           fi
+
+      # Saved even when the scan fails, which is when main needs the day's copy most.
+      - name: Save the vulnerability database
+        if: always() && steps.trivy-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: ~/.cache/trivy
+          key: trivy-db-${{ steps.trivy-db.outputs.date }}
 
       # A fork's pull request gets a read-only token, so the uploads are skipped; the job verdict stands.
       - name: Upload the API scan to code scanning
