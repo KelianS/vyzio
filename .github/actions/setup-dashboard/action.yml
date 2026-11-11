@@ -1,0 +1,21 @@
+name: Set up the dashboard
+description: pnpm, Node with the pnpm store cached, Task, and the dashboard dependencies installed from the lockfile.
+
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      with:
+        package_json_file: src/dashboard/package.json
+
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version: '24'
+        cache: 'pnpm'
+        cache-dependency-path: src/dashboard/pnpm-lock.yaml
+
+    - uses: go-task/setup-task@a00fbb05ce67b35648be3c78cbc9fd85354c757e # v2.2.0
+
+    - name: Install
+      shell: bash
+      run: pnpm --prefix src/dashboard install --frozen-lockfile
