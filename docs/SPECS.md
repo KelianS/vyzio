@@ -471,10 +471,9 @@ Deux roles existent : le **proprietaire**, et le **resident**, qui consulte le d
 **Règles fonctionnelles :**
 
 - chaque position enregistrée affiche une miniature de la vue caméra à cette position, dès qu'elle a été prise ;
-- la miniature est capturée automatiquement après chaque déplacement GoTo vers un preset demandé depuis l'interface, une fois la caméra arrivée à destination ; les déplacements du mode vie privée n'en prennent aucune ;
+- la miniature est capturée automatiquement après chaque enregistrement d'une position et chaque déplacement GoTo vers un preset demandé depuis l'interface, une fois la caméra arrivée à destination ; les déplacements du mode vie privée n'en prennent aucune ;
 - la miniature est persistée côté serveur et survit à un rechargement de l'interface ;
-- la première miniature n'est disponible qu'après le premier GoTo ; avant, le slot d'une position enregistrée montre qu'une position existe (§9.3), jamais le signe d'un slot vide ni une image générique ;
-- la capture est déclenchée après le retour de la commande GoTo (attendre un délai court pour laisser la caméra atteindre physiquement sa position) ;
+- une position enregistrée ailleurs (par exemple dans l'application du fabricant) n'a sa première miniature qu'après son premier GoTo ; avant, son slot montre qu'une position existe (§9.3), jamais le signe d'un slot vide ni une image générique ;
 - la miniature est mise à jour à chaque nouveau GoTo, quelle que soit la vue depuis laquelle l'utilisateur navigue (fiche caméra ou modale live).
 
 ---

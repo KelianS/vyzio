@@ -31,7 +31,6 @@ GET  /api/cameras/{id}/ptz/presets/{presetId}/thumbnail → sert le JPEG (404 si
 **Déclenchement côté client :**
 - Après `POST /ptz/preset/goto` → attente 1 500 ms (délai de mouvement physique) → `POST /snapshot`
 - Après `POST /ptz/preset/save` → même délai + capture (la caméra est déjà à la position)
-- La miniature n'est pas capturée à la sauvegarde initiale d'un preset (la caméra n'est pas nécessairement à la position à ce moment)
 
 **Affichage :**
 - `PtzControlPanel` (vue live) : seul endroit où les presets se configurent ([ADR-45](0045-ptz-positions-configured-from-the-live-view-never-from-settings.md)) ; chaque tuile preset affiche sa miniature, déclenche la capture après GoTo et après un nouvel enregistrement
