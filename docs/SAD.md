@@ -3,7 +3,7 @@
 The overview of the system: what runs, what talks to what, where the data lives and what threatens it.
 It holds what the code does not easily show. Each decision is an ADR, named here by its number
 ([index](adr/README.md)); how a part works is in the code and its tests. What this document may and
-may not hold, and when it must change: DOCS-05, DOCS-06 and DOCS-03 of [`rules/docs.md`](rules/docs.md).
+may not hold, and when it must change: DOCS-05, DOCS-16 and DOCS-03 of [`rules/docs.md`](rules/docs.md).
 
 Vyzio is a product layer on top of Frigate (ADR-01): Frigate runs the video pipeline, Vyzio makes it
 usable by a non-technical household and keeps it invisible.
@@ -32,7 +32,7 @@ flowchart LR
     vyzio["Vyzio hub<br/>on the home network"]
     cams["IP cameras<br/>home network"]
     chan["Messaging services<br/>Telegram, Discord"]
-    overlay["Overlay network<br/>NetBird, operated by the user<br/>(not delivered, #62)"]
+    overlay["Overlay network<br/>NetBird, operated by the user"]
     registry["Image registry<br/>install and update only"]
 
     user -- "uses the interface<br/>(home network)" --> vyzio
@@ -119,7 +119,7 @@ Every flow the system opens. "Docker network" means a flow that never leaves the
 | API | to | Docker engine of the host | Docker API, Unix socket | none | Root-equivalent (§ 8) |
 | API | to | Telegram | HTTPS; commands fetched by long polling | 443, outbound only | Bot token (ADR-52) |
 | API | to | Discord | HTTPS and a WebSocket gateway | 443, outbound only | Bot token (ADR-52) |
-| Phone, away from home | to | Dashboard | NetBird overlay, end to end encrypted, HTTP inside (ADR-67) | none opened on the router | Overlay membership, then the owner session (ADR-51, not delivered, #62) |
+| Phone, away from home | to | Dashboard | NetBird overlay, end to end encrypted, HTTP inside (ADR-67) | none opened on the router | Overlay membership, then the owner session (ADR-51) |
 | Host | to | Image registry | HTTPS | 443, at install and update only | None, public images |
 
 No flow enters the house from the internet: the channels are fetched from inside, and remote access
@@ -237,7 +237,7 @@ a live tuning that needs no restart goes over MQTT (ADR-35).
 | Cameras, their protocols, capabilities and streams | Vyzio | Database | Until the camera is removed |
 | Profiles and their reference photos | Vyzio, synced to Frigate's face library (ADR-13) | Database, the photos as files beside it | Until removed |
 | Schedule rules, channel settings and pairings, retention settings | Vyzio | Database | Until changed |
-| Notification log, command journal | Vyzio, anchored on the Frigate event | Database | No expiry yet (#69); a notification row goes with its detection ([SPECS](SPECS.md) 6.2) |
+| Notification log, command journal | Vyzio, anchored on the Frigate event | Database | No expiry; a notification row goes with its detection ([SPECS](SPECS.md) 6.2) |
 | Owner account and sessions | Vyzio | Database; the password only hashed (ADR-54) | Sessions until revoked |
 | PTZ positions counted by Vyzio, the thumbnails and slot labels | Vyzio (ADR-26, ADR-60, ADR-69) | Database, the thumbnails as files beside it | Until removed |
 | Native PTZ presets | The camera, read on demand (ADR-69) | The camera | Until removed on the camera |
@@ -271,7 +271,7 @@ broker, Frigate), kept on the Docker network (ADR-55).
 |---|---|
 | Someone on the home network opens the interface | Owner account, server session in an `httpOnly` cookie, revocable, login rate limited (ADR-54) |
 | Someone on the home network reads the traffic | Accepted: the home network is served over HTTP, its confidentiality is that network's; from outside, only the overlay's encrypted tunnel (ADR-67) |
-| A copy of the database file or of the generated Frigate configuration | Password hashed; camera accounts readable in both, channel tokens in the database (#247) |
+| A copy of the database file or of the generated Frigate configuration | Password hashed. Accepted: camera accounts readable in both, channel tokens in the database ([`SECURITY.md`](../SECURITY.md)) |
 | Frigate reached directly | Bound to the host's loopback, every access through the API, the live socket included (ADR-16, ADR-17, ADR-72) |
 | A camera account read from a live stream's error | The relay removes every camera account from go2rtc's messages before they reach the browser (ADR-72) |
 | Code execution in the API | Accepted: it holds the Docker socket, so the machine. The container is not published, and the restart command is read once from the environment, never from a request ([`SECURITY.md`](../SECURITY.md)) |
@@ -286,12 +286,12 @@ broker, Frigate), kept on the Docker network (ADR-55).
 
 | Risk or question | Issue |
 |---|---|
-| Frigate is still 0.x: a minor can break the MQTT or REST contract. It is pinned and moved through an issue | #121 |
+| Frigate is 0.x: a minor can break the MQTT or REST contract. It is pinned and moved through an issue | #121 |
 | The contract with Frigate is tested against stubs, not a running Frigate | #94 |
-| Tapo KLAP is still tested against hand-written stubs; ONVIF, RTSP, DVRIP and V380 replay exchanges captured from real cameras | #88 |
+| Tapo KLAP is tested against hand-written stubs; ONVIF, RTSP, DVRIP and V380 replay exchanges captured from real cameras | #88 |
 | The disk fills with recordings without warning | #64 |
-| A machine without an accelerator, or with a GPU not yet supported, limits the cameras it can analyse | #54, #55 |
+| A machine without an accelerator, or with a GPU Vyzio does not support, limits the cameras it can analyse | #54, #55 |
 | Discovery sweeps only the configured ranges and the dashboard address's /24: a camera on another subnet is found only by typing its address | #251 |
 | go2rtc carries every camera: if it stops, detection, recording and the live view stop together (ADR-72) | #288 |
-| The user cannot yet export or erase their data | #69 |
+| The user cannot export or erase their data, and the notification log and command journal never expire | #69 |
 | Exposing Vyzio to Home Assistant would add an external system | #52 |

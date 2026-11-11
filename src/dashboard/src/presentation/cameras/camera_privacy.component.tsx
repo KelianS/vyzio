@@ -58,7 +58,7 @@ export function CameraPrivacyView() {
 
   return (
     <>
-      <SettingsPage lede="Ce que Vyzio fait de cette caméra quand vous ne voulez pas être filmé.">
+      <SettingsPage>
         <PrivacyAnswerNotice camera={camera} />
         <SettingsList settings={settings} />
         {uido.presetsError && (

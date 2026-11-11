@@ -37,9 +37,10 @@ Each rule of `docs.md` that can apply, and in particular:
 2. **Shape** (DOCS-03): does the diff add, remove or change a container, an external system, a
    network flow, the ownership or retention of data, or a quality attribute? Look at the compose
    files, `nginx.conf`, outbound clients, listeners and persisted data, not only `docs/`.
-3. **Nature of each document** (DOCS-05 to DOCS-14): the SAD names no code and states the target; an
-   ADR stays within its bar, states its target and is frozen once accepted; no document copies the
-   code or restates an ADR; the DESIGN SYSTEM describes no feature.
+3. **Nature of each document** (DOCS-05 to DOCS-16): the SPECS and the SAD state the target, never
+   its history or its delivery; the SAD names no code; an ADR stays within its bar, states its
+   target and is frozen once accepted; no document copies the code or restates an ADR; the DESIGN
+   SYSTEM describes no feature.
 4. **Help** (DASHBOARD-26): a user-facing feature carries its help in its screen, not in a markdown
    file.
 

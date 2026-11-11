@@ -102,7 +102,7 @@ function DetectionForm({
 
   return (
     <>
-      <SettingsPage lede="Ce que cette caméra cherche.">
+      <SettingsPage>
         <SettingsList settings={declarations} />
 
         <HelpPanel title="Pourquoi la sensibilité met-elle du temps à s’ajuster ?">
