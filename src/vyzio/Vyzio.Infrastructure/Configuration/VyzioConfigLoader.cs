@@ -47,7 +47,9 @@ public static class VyzioConfigLoader
             var raw = Env(name, @default).TrimEnd('/');
             if (Uri.TryCreate(raw, UriKind.Absolute, out var uri)
                 && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+            {
                 return raw;
+            }
 
             problems.Add($"{name} must be an http address such as {@default}.");
             return @default;
