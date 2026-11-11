@@ -28,9 +28,9 @@ All Vyzio settings default to production-ready values. Override any of them via 
 | `task docs:capture` | Regenerate the README screenshots from the e2e fixtures |
 | `task pr:capture` / `task pr:screenshots` | Shoot / publish the screenshots of a pull request |
 
-Locally, the test tasks run Vitest, Playwright and xUnit on a quarter of the cores, so the machine
-stays usable during `task check`; CI keeps every core. `TEST_WORKERS` sets the count for a faster
-run: `TEST_WORKERS=16 task check`.
+Locally, the test tasks run Vitest, Playwright and xUnit on a share of the cores (`TEST_WORKERS` in
+`Taskfile.yml`), so the machine stays usable during `task check`; CI keeps every core. The
+`TEST_WORKERS` environment variable sets the count for a faster run: `TEST_WORKERS=16 task check`.
 
 Docker commands run via `wsl docker compose ...` under the hood, since Docker is only reachable through WSL on Windows dev machines.
 
