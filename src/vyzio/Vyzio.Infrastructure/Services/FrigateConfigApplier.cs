@@ -234,6 +234,8 @@ public sealed class FrigateConfigApplier(
         {
             Streams = streams.Count > 0 ? streams : null,
             Webrtc = new FrigateWebrtcConfig { Candidates = [], IceServers = [] },
+            // A camera that is off would log a refused connection on every retry; Vyzio reports it once (ADR-23).
+            Log = new FrigateGo2rtcLogConfig { Rtsp = "error" },
         };
 
         // On with the first active camera; the small model's files ship with Vyzio, the large one stays off (ADR-70).
@@ -254,6 +256,7 @@ public sealed class FrigateConfigApplier(
             },
             // Frigate would ask GitHub for its latest release at every start (ADR-70).
             Telemetry = new FrigateTelemetryConfig { VersionCheck = false },
+            Logger = BuildLogger(),
             Ffmpeg = BuildFfmpeg(plan.HwAccel),
             Detectors = BuildDetectors(detectorKind),
             Model = BuildModel(detectorKind),
@@ -266,14 +269,29 @@ public sealed class FrigateConfigApplier(
         return (document, detectorKind);
     }
 
+    // Vyzio already reports a lost stream once (ADR-23); these loggers would repeat it on every retry.
+    private static FrigateLoggerConfig BuildLogger() => new()
+    {
+        Default = "info",
+        Logs = new Dictionary<string, string>
+        {
+            ["frigate.video"] = "critical",
+            ["watchdog"] = "critical",
+            ["ffmpeg"] = "critical",
+            ["frigate.record.maintainer"] = "error",
+        },
+    };
+
     // Software decoding is one of the most expensive things Frigate does, and it is pure waste when
     // a GPU is present (ADR-34). `preset-vaapi` is the codec-agnostic option: the QuickSync presets
     // suit gen13+/Arc better but exist only in per-codec variants (`-h264`/`-h265`), and Vyzio does
     // not record each camera's codec — so they are not selectable today (backlog).
-    private static FrigateFfmpegGlobalConfig? BuildFfmpeg(FrigateHwAccel hwAccel) =>
-        hwAccel == FrigateHwAccel.Vaapi
-            ? new FrigateFfmpegGlobalConfig { HwaccelArgs = "preset-vaapi" }
-            : null;
+    private static FrigateFfmpegGlobalConfig BuildFfmpeg(FrigateHwAccel hwAccel) => new()
+    {
+        HwaccelArgs = hwAccel == FrigateHwAccel.Vaapi ? "preset-vaapi" : null,
+        // A camera that is off is retried slowly; Vyzio, not Frigate, reports that it is off (ADR-23).
+        RetryInterval = 30,
+    };
 
     // `onnx` (auto-detects OpenVINO as execution provider on the stock image) + YOLOX only for the
     // Openvino/Intel-GPU tier, where dedicated hardware absorbs the extra compute a YOLO-family model
@@ -355,7 +373,8 @@ public sealed class FrigateConfigApplier(
         public required FrigateMqttConfig Mqtt { get; init; }
         public required FrigateDatabaseConfig Database { get; init; }
         public required FrigateTelemetryConfig Telemetry { get; init; }
-        public FrigateFfmpegGlobalConfig? Ffmpeg { get; init; }
+        public required FrigateLoggerConfig Logger { get; init; }
+        public required FrigateFfmpegGlobalConfig Ffmpeg { get; init; }
         public required Dictionary<string, FrigateDetectorConfig> Detectors { get; init; }
         public FrigateModelConfig? Model { get; init; }
         public FrigateFaceRecognitionConfig? FaceRecognition { get; init; }
@@ -368,6 +387,18 @@ public sealed class FrigateConfigApplier(
     {
         public Dictionary<string, List<string>>? Streams { get; init; }
         public required FrigateWebrtcConfig Webrtc { get; init; }
+        public required FrigateGo2rtcLogConfig Log { get; init; }
+    }
+
+    private sealed class FrigateGo2rtcLogConfig
+    {
+        public required string Rtsp { get; init; }
+    }
+
+    private sealed class FrigateLoggerConfig
+    {
+        public required string Default { get; init; }
+        public required Dictionary<string, string> Logs { get; init; }
     }
 
     private sealed class FrigateWebrtcConfig
@@ -392,11 +423,11 @@ public sealed class FrigateConfigApplier(
         public required string Path { get; init; }
     }
 
-    // Global ffmpeg section — only carries hardware decoding today; per-camera inputs stay in
-    // FrigateFfmpegConfig.
+    // Frigate merges this section into every camera; per-camera inputs stay in FrigateFfmpegConfig.
     private sealed class FrigateFfmpegGlobalConfig
     {
-        public required string HwaccelArgs { get; init; }
+        public string? HwaccelArgs { get; init; }
+        public required int RetryInterval { get; init; }
     }
 
     private sealed class FrigateDetectorConfig

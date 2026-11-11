@@ -209,6 +209,66 @@ public sealed class FrigateConfigApplierTests : IDisposable
         Assert.Empty(SequenceAt(yaml, "go2rtc", "webrtc", "ice_servers"));
     }
 
+    // A camera that is off is reported once by Vyzio, not on every retry (ADR-23).
+
+    [Theory]
+    [InlineData("frigate.video", "critical")]
+    [InlineData("watchdog", "critical")]
+    [InlineData("ffmpeg", "critical")]
+    [InlineData("frigate.record.maintainer", "error")]
+    public async Task ApplyAsync_ShouldQuietTheLoggersThatRepeatALostStream_WhenTheConfigIsWritten(string logger, string level)
+    {
+        // Arrange
+        Camera[] cameras = [MakeValidatedCamera("front-door")];
+
+        // Act
+        var yaml = await ApplyAndReadYamlAsync(cameras);
+
+        // Assert
+        Assert.Equal(level, ScalarAt(yaml, "logger", "logs", logger));
+    }
+
+    [Fact]
+    public async Task ApplyAsync_ShouldKeepFrigatesOtherLogsAtInfo_WhenTheConfigIsWritten()
+    {
+        // Arrange
+        Camera[] cameras = [MakeValidatedCamera("front-door")];
+
+        // Act
+        var yaml = await ApplyAndReadYamlAsync(cameras);
+
+        // Assert
+        Assert.Equal("info", ScalarAt(yaml, "logger", "default"));
+    }
+
+    [Theory]
+    [InlineData(FrigateHwAccel.None)]
+    [InlineData(FrigateHwAccel.Vaapi)]
+    public async Task ApplyAsync_ShouldRetryAnUnreachableCameraEveryThirtySeconds_WhenTheConfigIsWritten(FrigateHwAccel hwAccel)
+    {
+        // Arrange
+        Camera[] cameras = [MakeValidatedCamera("front-door")];
+
+        // Act
+        var yaml = await ApplyAndReadYamlAsync(cameras, hwAccel: hwAccel);
+
+        // Assert
+        Assert.Equal("30", ScalarAt(yaml, "ffmpeg", "retry_interval"));
+    }
+
+    [Fact]
+    public async Task ApplyAsync_ShouldLogOnlyRtspErrorsFromGo2rtc_WhenTheConfigIsWritten()
+    {
+        // Arrange
+        Camera[] cameras = [MakeValidatedCamera("front-door")];
+
+        // Act
+        var yaml = await ApplyAndReadYamlAsync(cameras);
+
+        // Assert
+        Assert.Equal("error", ScalarAt(yaml, "go2rtc", "log", "rtsp"));
+    }
+
     [Fact]
     public async Task ApplyAsync_ShouldAskForTheSmallFaceModel_WhenACameraIsActive()
     {
