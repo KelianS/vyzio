@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine@sha256:230c3fbae0ceedc70bca04eed2bfb5694e8b248cadbb81010f41b7a993601f55 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine@sha256:0294f285d062afacc8b5f6d7febb0cd4ee879320e5585fa15f2f4ebf1feb9ba7 AS build
 WORKDIR /src
 
 COPY global.json .editorconfig ./
@@ -12,7 +12,7 @@ RUN dotnet restore ./src/vyzio/Vyzio.Api/Vyzio.Api.csproj
 COPY src/vyzio ./src/vyzio
 RUN dotnet publish ./src/vyzio/Vyzio.Api/Vyzio.Api.csproj -c Release -o /app/publish
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine@sha256:819bd3649d8bf53f35527c68d62e17b348ef6f24ae73073f497f00a878348062 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine@sha256:21c3f9798416cba4c0576a947c286231cb71ea2884896cb968253f5c9668f930 AS runtime
 WORKDIR /app
 
 # The revision is the one thing an operator cannot recover from the image otherwise: a version tag
@@ -31,11 +31,7 @@ LABEL org.opencontainers.image.revision="${VYZIO_REVISION}"
 # tzdata: IANA timezone database (Europe/Paris, etc.)
 # icu-libs: .NET globalization, disabled by default in Alpine-based images
 # curl: fetch bundled detection and face models at build time (below)
-# libcrypto3/libssl3: already present, floored to the CVE-2026-14456 fix that Alpine ships and the
-# .NET base image has not been rebuilt with yet. A floor rather than a pin: it fails the build if
-# the fix is gone, and survives Alpine moving past it. Drop once the base image catches up.
-RUN apk add --no-cache docker-cli tzdata icu-libs su-exec curl \
-	'libcrypto3>=3.5.8-r0' 'libssl3>=3.5.8-r0'
+RUN apk add --no-cache docker-cli tzdata icu-libs su-exec curl
 
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
 
