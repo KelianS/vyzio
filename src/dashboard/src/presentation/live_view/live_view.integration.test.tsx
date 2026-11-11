@@ -208,12 +208,12 @@ describe('LiveView', () => {
     await userEvent.click(await screen.findByTitle(SURVEILLANCE))
     await screen.findByText('Caméra en position « Surveillance ».')
     await waitFor(() => expect(screen.getByTitle(SURVEILLANCE)).toBeEnabled())
+    // The second move answers after the first capture would have fired.
+    network.answer(GOTO, late(ok(), 7000))
 
     // Act
     await userEvent.click(screen.getByTitle(PARKING))
-    await screen.findByText('Caméra en position « Parking ».')
-    await waitFor(() => expect(screen.getByTitle(PARKING)).toBeEnabled())
-    await act(() => vi.advanceTimersByTimeAsync(6000))
+    await act(() => vi.advanceTimersByTimeAsync(14_000))
 
     // Assert
     expect(network.sent).toContainEqual(expect.objectContaining({ route: CAPTURE_PARKING }))
