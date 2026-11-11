@@ -265,7 +265,25 @@ describe('MseLiveStream', () => {
     ])
   })
 
-  it('open_ShouldReportAnInterruption_WhenAPlayingStreamCloses', async () => {
+  it('open_ShouldSayTheCameraStoppedAnsweringAtOnce_WhenTheApiClosesAPlayingStreamAsUnreachable', async () => {
+    // Arrange
+    const { socket, reports } = open()
+    socket?.answer(H264_AAC)
+    socket?.segment()
+    await flushMicrotasks()
+
+    // Act
+    socket?.hangUp(4503, 'stream_unreachable')
+
+    // Assert
+    expect(reports.at(-1)).toEqual({
+      kind: 'stalled',
+      diagnostic: 'live cam1 low: close 4503 stream_unreachable',
+    })
+    expect(socket?.closed).toBe(true)
+  })
+
+  it('open_ShouldReportAnInterruption_WhenTheConnectionToVyzioDropsWhilePlaying', async () => {
     // Arrange
     const { socket, reports } = open()
     socket?.answer(H264_AAC)
@@ -277,6 +295,58 @@ describe('MseLiveStream', () => {
 
     // Assert
     expect(reports.at(-1)).toEqual({ kind: 'interrupted' })
+  })
+
+  it('open_ShouldStillSayPrivacyMode_WhenAPlayingStreamIsCutForPrivacy', async () => {
+    // Arrange
+    const { socket, reports } = open()
+    socket?.answer(H264_AAC)
+    socket?.segment()
+    await flushMicrotasks()
+
+    // Act
+    socket?.hangUp(4409, 'privacy_mode')
+
+    // Assert
+    expect(reports.at(-1)).toMatchObject({ kind: 'failed', failure: 'privacy' })
+  })
+
+  it('open_ShouldSayTheCameraStoppedAnswering_WhenNoFrameArrivesForFiveSeconds', async () => {
+    // Arrange
+    vi.useFakeTimers()
+    const { socket, reports } = open()
+    socket?.answer(H264_AAC)
+    socket?.segment()
+    await flushMicrotasks()
+
+    // Act
+    vi.advanceTimersByTime(5000)
+
+    // Assert
+    expect(reports.at(-1)).toEqual({
+      kind: 'stalled',
+      diagnostic: 'live cam1 low: no video for 5 s',
+    })
+    expect(socket?.closed).toBe(true)
+  })
+
+  it('open_ShouldKeepPlaying_WhenEachFrameArrivesWithinFiveSeconds', async () => {
+    // Arrange
+    vi.useFakeTimers()
+    const { socket, reports } = open()
+    socket?.answer(H264_AAC)
+    socket?.segment()
+    await flushMicrotasks()
+
+    // Act
+    vi.advanceTimersByTime(4000)
+    socket?.segment()
+    await flushMicrotasks()
+    vi.advanceTimersByTime(4000)
+
+    // Assert
+    expect(reports).toEqual([{ kind: 'playing', soundOffered: true }])
+    expect(socket?.closed).toBe(false)
   })
 
   it('open_ShouldFailAsUnreachable_WhenNoVideoArrivesInTime', () => {

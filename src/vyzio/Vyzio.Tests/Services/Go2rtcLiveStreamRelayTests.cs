@@ -161,6 +161,46 @@ public sealed class Go2rtcLiveStreamRelayTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task RelayAsync_ShouldCloseTheViewerAsUnreachable_WhenGo2rtcClosesTheStream()
+    {
+        // Arrange
+        var (viewer, browser) = await PairAsync();
+        var (go2rtc, relaySide) = await PairAsync();
+        var relaying = MakeRelay(new FakeUpstream(relaySide)).RelayAsync(MakeCamera(), LiveQuality.Low, viewer);
+
+        // Act
+        await go2rtc.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, null, CancellationToken.None);
+        var closing = await ReceiveAsync(browser);
+        await browser.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, null, CancellationToken.None);
+        await relaying;
+
+        // Assert
+        Assert.Equal(WebSocketMessageType.Close, closing.Type);
+        Assert.Equal((WebSocketCloseStatus)LiveStreamClose.Unreachable, browser.CloseStatus);
+        Assert.Equal("stream_unreachable", browser.CloseStatusDescription);
+    }
+
+    [Fact]
+    public async Task RelayAsync_ShouldCloseTheViewerAsUnreachable_WhenGo2rtcVanishes()
+    {
+        // Arrange
+        var (viewer, browser) = await PairAsync();
+        var (go2rtc, relaySide) = await PairAsync();
+        var relaying = MakeRelay(new FakeUpstream(relaySide)).RelayAsync(MakeCamera(), LiveQuality.Low, viewer);
+
+        // Act
+        go2rtc.Abort();
+        var closing = await ReceiveAsync(browser);
+        await browser.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, null, CancellationToken.None);
+        await relaying;
+
+        // Assert
+        Assert.Equal(WebSocketMessageType.Close, closing.Type);
+        Assert.Equal((WebSocketCloseStatus)LiveStreamClose.Unreachable, browser.CloseStatus);
+        Assert.Equal("stream_unreachable", browser.CloseStatusDescription);
+    }
+
+    [Fact]
     public async Task RelayAsync_ShouldCloseTheGo2rtcSocket_WhenTheViewerLeaves()
     {
         // Arrange
