@@ -61,6 +61,7 @@ Vyzio retient un **contrat d'entree volontairement borne** par rapport a l'ensem
 - `GET /api/events/{id}` pour completer un evenement deja connu ;
 - `GET /api/events/{id}/thumbnail.jpg` ou ressource equivalente exposee par Frigate pour l'image ;
 - `GET /api/events/{id}/clip.mp4` ou ressource equivalente exposee par Frigate pour le clip.
+- `GET /api/review/event/{id}`, `POST /api/reviews/delete` et `DELETE /api/events/{id}` pour effacer une detection a la demande de l'utilisateur (SPECS 6.2).
 
 Vyzio ne persiste pas le payload Frigate brut en entier. Il conserve uniquement les champs utiles a ses regles, a ses notifications et a son exposition API.
 

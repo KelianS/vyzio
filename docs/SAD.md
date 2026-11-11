@@ -237,11 +237,11 @@ a live tuning that needs no restart goes over MQTT (ADR-35).
 | Cameras, their protocols, capabilities and streams | Vyzio | Database | Until the camera is removed |
 | Profiles and their reference photos | Vyzio, synced to Frigate's face library (ADR-13) | Database, the photos as files beside it | Until removed |
 | Schedule rules, channel settings and pairings, retention settings | Vyzio | Database | Until changed |
-| Notification log, command journal | Vyzio, anchored on the Frigate event | Database | No expiry yet (#69) |
+| Notification log, command journal | Vyzio, anchored on the Frigate event | Database | No expiry yet (#69); a notification row goes with its detection ([SPECS](SPECS.md) 6.2) |
 | Owner account and sessions | Vyzio | Database; the password only hashed (ADR-54) | Sessions until revoked |
 | PTZ positions counted by Vyzio, the thumbnails and slot labels | Vyzio (ADR-26, ADR-60, ADR-69) | Database, the thumbnails as files beside it | Until removed |
 | Native PTZ presets | The camera, read on demand (ADR-69) | The camera | Until removed on the camera |
-| Detections, event history, clips, recordings, snapshots | Frigate (ADR-49) | Frigate's media volume and database | Set by Vyzio, never turned off, overridable per camera (ADR-39, ADR-48) |
+| Detections, event history, clips, recordings, snapshots | Frigate (ADR-49) | Frigate's media volume and database | Set by Vyzio, never turned off, overridable per camera (ADR-39, ADR-48); the user erases one detection with the recording of its passage, its thumbnail images staying on disk with no expiry ([SPECS](SPECS.md) 6.2) |
 | Face embeddings | Frigate (ADR-03) | Frigate | Follows the library Vyzio syncs |
 | The Frigate configuration | Written by Vyzio, read by Frigate (ADR-12) | Shared volume | Rewritten at each change |
 
@@ -294,4 +294,5 @@ broker, Frigate), kept on the Docker network (ADR-55).
 | Discovery sweeps only the configured ranges and the dashboard address's /24: a camera on another subnet is found only by typing its address | #251 |
 | go2rtc carries every camera: if it stops, detection, recording and the live view stop together (ADR-72) | #288 |
 | The user cannot yet export or erase their data | #69 |
+| An erased detection leaves its thumbnail images on disk: Frigate's API does not remove them | #325 |
 | Exposing Vyzio to Home Assistant would add an external system | #52 |
