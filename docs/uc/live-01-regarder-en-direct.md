@@ -30,6 +30,7 @@
 | A5 | Atteindre le direct par son adresse | Alternative | L'utilisateur ouvre l'adresse de la vue en direct |
 | E1 | La vidéo ne peut pas être lue | Échec | Le navigateur ne lit pas la vidéo, ou le flux n'arrive pas |
 | E2 | La caméra ne peut rien montrer | Échec | La caméra est en mode vie privée, hors ligne, à configurer, ou n'existe plus |
+| E3 | La caméra cesse de répondre pendant la lecture | Échec | Plus aucune image n'arrive de la caméra |
 
 ## Détail des chemins
 
@@ -72,6 +73,11 @@
 1. La caméra est en mode vie privée, hors ligne, à configurer, ou n'existe plus.
 2. La vue le dit en une phrase, sans image ni tentative de flux, avec le chemin utile (LIVE-11, PRIV-06).
 
+### E3 · La caméra cesse de répondre pendant la lecture
+
+1. Plus aucune image n'arrive de la caméra : la vue ne laisse pas une image figée passer pour le direct, et le dit en une phrase, sans image (LIVE-13).
+2. Au retour de la caméra, la vue reprend d'elle-même, sans rechargement.
+
 ## Règles locales
 
 - **LIVE-04** · la vue en direct d'une camera montre une **video fluide**, proche de la scene (LIVE-01), en qualite economique a l'ouverture ; l'utilisateur passe en haute qualite le temps de la regarder, sans que ce choix soit retenu ni change le reglage de la camera ; une camera qui n'a qu'une qualite n'offre pas ce choix ;
@@ -82,7 +88,8 @@
 - **LIVE-09** · telephone tenu droit, la barre est au-dessus de la video, jamais posee sur l'image ; la video occupe toute la largeur juste en dessous, puis le pilotage, d'une taille confortable qui ne grandit pas avec la hauteur libre, et les positions juste en dessous, centres dans la place qui reste ; sur grand ecran, la video prend toute la place disponible, la barre posee sur l'image, le pilotage et les positions a cote ; sans pilotage, cette place ne garde que la ligne qui dit pourquoi, quand il y en a une (PTZ-02) ;
 - **LIVE-10** · telephone tenu en paysage, la video occupe tout l'ecran : la barre, le pilotage et les positions, enregistrement compris, sont poses dessus, s'effacent apres quelques secondes sans geste, jamais pendant un appui, et reviennent d'un appui sur l'image ; ce qui explique un etat (la raison de l'image de secours, des positions non lues, une calibration a faire, une orientation indisponible) ne s'efface jamais ; le navigateur y masque ses propres barres des le premier geste quand il le permet, avec un bouton pour le lui redemander, et sinon la vue occupe tout ce qu'il laisse visible ;
 - **LIVE-11** · atteinte par son adresse, la vue en direct d'une camera en mode vie privee, hors ligne, a configurer ou qui n'existe plus le dit en une phrase, sans image ni tentative de flux, avec le chemin utile (la page de la camera pour une camera a configurer ou hors ligne) ; la vignette, elle, ne l'ouvre que pour une camera surveillee qui repond (CAM-05, CAM-08, PRIV-06) ;
-- **LIVE-12** · si la video ne peut pas etre lue, parce que le navigateur ne la lit pas ou que le flux n'arrive pas, la vue en direct montre une image rafraichie, dit pourquoi en une phrase et propose de reessayer quand la cause peut passer ; en mode vie privee, ou pour une camera qui n'existe plus, elle le dit sans image ; les vignettes restent des images rafraichies.
+- **LIVE-12** · si la video ne peut pas etre lue, parce que le navigateur ne la lit pas ou que le flux n'arrive pas, la vue en direct montre une image rafraichie, dit pourquoi en une phrase et propose de reessayer quand la cause peut passer ; en mode vie privee, ou pour une camera qui n'existe plus, elle le dit sans image ; les vignettes restent des images rafraichies ;
+- **LIVE-13** · si la video s'arrete en cours de lecture parce que la camera ne repond plus, la vue en direct ne laisse pas une image figee passer pour le direct : quelques secondes sans nouvelle image suffisent, et un flux que la camera cesse d'envoyer le fait savoir aussitot ; elle le dit en une phrase, sans image, et reprend d'elle-meme au retour de la camera, sans rechargement ; une coupure entre le navigateur et Vyzio, elle, se reconnecte.
 
 ## Points ouverts
 
