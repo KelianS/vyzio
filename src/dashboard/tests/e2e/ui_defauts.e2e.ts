@@ -62,7 +62,7 @@ test.describe('LiveView', () => {
     expect(picture!.width).toBe(390)
   })
 
-  test('LiveView_ShouldGiveThePadAndPositionsTheHeightLeft_WhenThePhoneIsHeldUpright', async ({
+  test('LiveView_ShouldKeepThePadAComfortableSizeAboveThePositions_WhenThePhoneIsHeldUpright', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 390, height: 844 })
@@ -76,9 +76,10 @@ test.describe('LiveView', () => {
     const pad = await page.getByTitle('Haut').locator('..').boundingBox()
     const tile = await page.getByTitle('Enregistrer la position actuelle ici').first().boundingBox()
 
-    // The pad uses the room left, and the positions reach down the screen.
-    expect(pad!.width).toBeGreaterThan(200)
-    expect(tile!.y).toBeGreaterThan(600)
+    // Capped, not inflated by the free height; the positions follow right under it.
+    expect(pad!.width).toBeLessThanOrEqual(160)
+    expect(pad!.width).toBeGreaterThanOrEqual(112)
+    expect(tile!.y - (pad!.y + pad!.height)).toBeLessThan(40)
   })
 
   test('LiveView_ShouldFitWithoutScrolling_WhenAShortPhoneIsHeldUpright', async ({ page }) => {
@@ -93,19 +94,6 @@ test.describe('LiveView', () => {
     const screen = page.getByRole('main', { name: 'Porte d’entrée' })
 
     expect(await screen.evaluate((main) => main.scrollHeight - main.clientHeight)).toBe(0)
-  })
-
-  test('LiveView_ShouldKeepThePadPressable_WhenAVeryShortPhoneIsHeldUpright', async ({ page }) => {
-    await page.setViewportSize({ width: 360, height: 520 })
-    const state = createFakeBackendState({
-      cameras: [makeFakeCamera({ ptzSupported: true, verifiedCapabilities: ['ptz'] })],
-    })
-    await installFakeBackend(page, state)
-
-    await page.goto('/cameras/camera-1/direct')
-    const pad = await page.getByTitle('Haut').locator('..').boundingBox()
-
-    expect(pad!.width).toBe(112)
   })
 
   test('LiveView_ShouldGoBackHome_WhenTheBrowserGoesBack', async ({ page }) => {

@@ -29,13 +29,13 @@ const PLACE: Record<
     tiles: string
   }
 > = {
-  // The pad grows with the room the bar, the picture and the positions leave, within the width.
+  // A fixed, comfortable pad with the positions right under it, both centred in the room left.
   portrait: {
-    panel: 'flex flex-1 flex-col items-center justify-evenly gap-5',
+    panel: 'flex flex-1 flex-col items-center justify-center gap-5',
     joystick: '',
-    pad: 'size-[max(7rem,min(70vw,18rem,calc(100dvh-56.25vw-17rem)))] bg-card',
-    button: 'size-12',
-    icon: 'size-6',
+    pad: 'size-[max(7rem,min(40vw,10rem))] bg-card',
+    button: 'size-10',
+    icon: 'size-5',
     positions: 'flex w-full flex-col items-center gap-2',
     messages: 'flex flex-col items-center gap-2',
     tiles: 'flex max-w-full gap-3 overflow-x-auto px-1 pb-1',

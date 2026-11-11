@@ -188,8 +188,8 @@ still image or a recording. Where each control sits in a given screen is its SPE
   nor has controls beside it, the bar sits above it and never covers it; otherwise it lies over the
   picture, dimmed so it reads over any picture.
 - **The other controls sit beside or below the picture when there is room**, on the page surface,
-  and over it only when the picture fills the screen. Below the picture they take the remaining
-  height and grow with it, leaving no empty band.
+  and over it only when the picture fills the screen. Below the picture they keep a capped size
+  that does not grow with the free height, and stand centred in the room left.
 - **Controls over a filling picture fade** after a few seconds without a gesture and come back on a
   tap; never while a finger holds one. Controls beside or below the picture never fade. A line that
   explains a state (a failure, a missing step) is not a control: it never fades.

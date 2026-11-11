@@ -32,7 +32,7 @@ import type { LiveQuality } from '../../domain/entities/camera.entity'
 const SCREEN = 'fixed inset-x-0 top-0 z-40 h-dvh'
 
 const LAYOUT: Record<LiveLayout, { screen: string; picture: string; controls: string }> = {
-  // The controls take the height the picture leaves, rather than an empty band at the bottom.
+  // The controls fill the height the picture leaves, so they can centre in it.
   portrait: {
     screen: 'flex flex-col overflow-y-auto bg-background',
     picture: 'w-full shrink-0',
