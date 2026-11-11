@@ -106,9 +106,11 @@ internal sealed class DvripPtzProvider(DvripClient dvrip, PtzMoveRunner runner, 
         try
         {
             if (JsonNode.Parse(answer!) is JsonObject doc && doc.TryGetPropertyValue(PresetList, out var list))
+            {
                 return list is null
                     ? new HashSet<int>()
                     : list.AsArray().Select(preset => preset?["Id"]?.GetValue<int>() ?? throw new FormatException("a preset carries no id")).ToHashSet();
+            }
         }
         catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException)
         {
