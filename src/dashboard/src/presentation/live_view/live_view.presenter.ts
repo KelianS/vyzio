@@ -31,7 +31,7 @@ export function buildLiveViewPresenter({ container, dispatch, toast }: LiveViewP
   let hold: Hold | null = null
   // A press sends up to three calls: a failure is shown once per press, not once per call.
   let failureShown = false
-  // Only the latest move may be captured: another move before the delay would put its view under the wrong position.
+  // Only what moves the camera cancels a pending capture: a go-to, a joystick press or a calibration.
   let pendingCapture: ReturnType<typeof setTimeout> | null = null
 
   function cancelPendingCapture() {
@@ -106,7 +106,6 @@ export function buildLiveViewPresenter({ container, dispatch, toast }: LiveViewP
   }
 
   async function save(cameraId: string, presetId: number, label: string) {
-    cancelPendingCapture()
     dispatch({ type: 'SAVE_STARTED', presetId })
     try {
       await container.ptzSaveCurrentAsPreset.execute(cameraId, presetId)
@@ -164,11 +163,8 @@ export function buildLiveViewPresenter({ container, dispatch, toast }: LiveViewP
       startHold(cameraId, direction)
     },
 
-    // Closing the view mid-press stops the camera, and no capture outlives it.
-    onClose() {
-      cancelPendingCapture()
-      endHold()
-    },
+    // Closing the view mid-press stops the camera.
+    onClose: endHold,
     onRelease: endHold,
 
     async onGoTo(cameraId: string, presetId: number, label: string) {
@@ -201,6 +197,7 @@ export function buildLiveViewPresenter({ container, dispatch, toast }: LiveViewP
     },
 
     async onCalibrate(cameraId: string) {
+      cancelPendingCapture()
       dispatch({ type: 'CALIBRATE_STARTED' })
       try {
         await container.ptzCalibrate.execute(cameraId)
