@@ -289,7 +289,7 @@ public sealed class FrigateConfigApplier(
     private static FrigateFfmpegGlobalConfig BuildFfmpeg(FrigateHwAccel hwAccel) => new()
     {
         HwaccelArgs = hwAccel == FrigateHwAccel.Vaapi ? "preset-vaapi" : null,
-        // A camera that is off is retried every 30 s, so it records again within 30 s of coming back (ADR-23).
+        // A camera that is off is retried slowly; Vyzio, not Frigate, reports that it is off (ADR-23).
         RetryInterval = 30,
     };
 
