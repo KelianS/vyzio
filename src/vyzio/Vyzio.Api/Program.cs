@@ -109,7 +109,7 @@ try
                 }));
     });
 
-    builder.Services.AddProblemDetails();
+    builder.Services.AddProblemDetails(options => options.CustomizeProblemDetails = ApiProblem.Complete);
     builder.Services.AddExceptionHandler<Vyzio.Api.FrigateUnavailableExceptionHandler>();
     builder.Services.AddExceptionHandler<Vyzio.Api.CameraCommandExceptionHandler>();
     builder.Services.AddExceptionHandler<Vyzio.Api.DetectionErasureExceptionHandler>();
@@ -132,6 +132,8 @@ try
     if (hostCommand is not null) return await HostCommands.RunAsync(app.Services, hostCommand);
 
     app.UseExceptionHandler();
+    // A 401, 404 or 405 nobody wrote a body for still answers in the one error shape (BACKEND-05).
+    app.UseStatusCodePages();
     app.UseRateLimiter();
     app.UseAuthentication();
     app.UseAuthorization();

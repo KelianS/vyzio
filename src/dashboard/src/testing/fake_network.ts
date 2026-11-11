@@ -31,8 +31,9 @@ export function late(answer: FakeAnswer, delayMs: number): FakeAnswer {
   return { ...answer, delayMs }
 }
 
-export function failure(status: number, error?: string, message?: string): FakeAnswer {
-  return { status, body: { error, message } }
+/** Shaped like every error the API returns: a ProblemDetails carrying its code (BACKEND-05). */
+export function failure(status: number, code?: string, detail?: string): FakeAnswer {
+  return { status, body: { status, code, detail } }
 }
 
 /**

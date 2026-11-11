@@ -9,8 +9,8 @@ async function failRead(page: Page, path: string) {
     route.request().method() === 'GET'
       ? route.fulfill({
           status: 500,
-          contentType: 'application/json',
-          body: JSON.stringify({ status: 500, traceId: '00-e2e-read' }),
+          contentType: 'application/problem+json',
+          body: JSON.stringify({ status: 500, code: 'unexpected_error', traceId: '00-e2e-read' }),
         })
       : route.fallback(),
   )

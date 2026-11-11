@@ -61,7 +61,7 @@ public static class ProfilesEndpoints
             CancellationToken ct) =>
         {
             if (file is null || file.Length == 0)
-                return Results.BadRequest("No file provided.");
+                return ApiProblem.BadRequest("photo_missing", "No file provided.");
 
             using var ms = new MemoryStream();
             await file.CopyToAsync(ms, ct);

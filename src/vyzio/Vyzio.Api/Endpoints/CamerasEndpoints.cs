@@ -67,7 +67,7 @@ public static class CamerasEndpoints
             }
             catch (ArgumentException ex)
             {
-                return Results.BadRequest(new { error = "invalid_camera", message = ex.Message });
+                return ApiProblem.BadRequest("invalid_camera", ex.Message);
             }
         });
 
@@ -145,10 +145,10 @@ public static class CamerasEndpoints
             CancellationToken ct) =>
         {
             if (!http.WebSockets.IsWebSocketRequest)
-                return Results.BadRequest(new { error = "websocket_expected", message = "The live stream is served over a WebSocket." });
+                return ApiProblem.BadRequest("websocket_expected", "The live stream is served over a WebSocket.");
             var liveQuality = LiveQuality.Low;
             if (quality is not null && !SnakeCaseEnum.TryFromSnakeCase(quality, out liveQuality))
-                return Results.BadRequest(new { error = "unknown_quality", message = $"Unknown live quality '{quality}'." });
+                return ApiProblem.BadRequest("unknown_quality", $"Unknown live quality '{quality}'.");
 
             using var socket = await http.WebSockets.AcceptWebSocketAsync();
             var opening = await open.ExecuteAsync(id, liveQuality, ct);
@@ -188,7 +188,7 @@ public static class CamerasEndpoints
             }
             catch (ArgumentException ex)
             {
-                return Results.BadRequest(new { error = "unknown_direction", message = ex.Message });
+                return ApiProblem.BadRequest("unknown_direction", ex.Message);
             }
         });
 
@@ -211,7 +211,7 @@ public static class CamerasEndpoints
             }
             catch (PtzNotCalibratedException)
             {
-                return Results.Conflict(new { error = "not_calibrated" });
+                return ApiProblem.Conflict("not_calibrated");
             }
         });
 
@@ -264,11 +264,11 @@ public static class CamerasEndpoints
             }
             catch (ParkingPositionsMissingException ex)
             {
-                return Results.Conflict(new { error = "parking_positions_missing", message = ex.Message });
+                return ApiProblem.Conflict("parking_positions_missing", ex.Message);
             }
             catch (ArgumentException ex)
             {
-                return Results.BadRequest(new { error = ex.Message });
+                return ApiProblem.BadRequest("unknown_privacy_strategy", ex.Message);
             }
         });
 
@@ -293,15 +293,15 @@ public static class CamerasEndpoints
             }
             catch (ProtocolNotOnCameraException ex)
             {
-                return Results.Conflict(new { error = "protocol_not_on_camera", message = ex.Message });
+                return ApiProblem.Conflict("protocol_not_on_camera", ex.Message);
             }
             catch (StreamPathRequiredException ex)
             {
-                return Results.BadRequest(new { error = "stream_path_required", message = ex.Message });
+                return ApiProblem.BadRequest("stream_path_required", ex.Message);
             }
             catch (ArgumentException ex)
             {
-                return Results.BadRequest(new { error = "invalid_capability_request", message = ex.Message });
+                return ApiProblem.BadRequest("invalid_capability_request", ex.Message);
             }
         });
 
@@ -318,7 +318,7 @@ public static class CamerasEndpoints
             CancellationToken ct) =>
         {
             if (!SnakeCaseEnum.TryFromSnakeCase<CameraCapability>(capability, out var cap))
-                return Results.BadRequest(new { error = $"Unknown capability: {capability}" });
+                return ApiProblem.BadRequest("unknown_capability", $"Unknown capability: {capability}");
 
             try
             {
@@ -327,7 +327,7 @@ public static class CamerasEndpoints
             }
             catch (ArgumentException ex)
             {
-                return Results.BadRequest(new { error = "stream_not_removable", message = ex.Message });
+                return ApiProblem.BadRequest("stream_not_removable", ex.Message);
             }
         });
 
@@ -338,7 +338,7 @@ public static class CamerasEndpoints
             CancellationToken ct) =>
         {
             if (!SnakeCaseEnum.TryFromSnakeCase<CameraCapability>(capability, out var cap))
-                return Results.BadRequest(new { error = $"Unknown capability: {capability}" });
+                return ApiProblem.BadRequest("unknown_capability", $"Unknown capability: {capability}");
 
             // The gesture after changing something on the camera: re-resolve, never trust the cache (ADR-56).
             var result = await useCase.ExecuteAsync(id, cap, rediscoverEndpoints: true, ct: ct);
@@ -353,14 +353,14 @@ public static class CamerasEndpoints
             CancellationToken ct) =>
         {
             if (!SnakeCaseEnum.TryFromSnakeCase<CameraCapability>(capability, out var cap))
-                return Results.BadRequest(new { error = "unknown_capability", message = $"Unknown capability: {capability}" });
+                return ApiProblem.BadRequest("unknown_capability", $"Unknown capability: {capability}");
 
             return await useCase.ExecuteAsync(id, cap, ct) switch
             {
                 CapabilityTryOutcome.Done => Results.NoContent(),
                 CapabilityTryOutcome.NotFound => Results.NotFound(),
-                CapabilityTryOutcome.NothingToConfirm => Results.Conflict(new { error = "nothing_to_confirm", message = $"The {capability} capability has nothing to confirm." }),
-                CapabilityTryOutcome.PrivacyModeActive => Results.Conflict(new { error = "privacy_mode_active", message = "The camera is in privacy mode: a try would move or uncover it." }),
+                CapabilityTryOutcome.NothingToConfirm => ApiProblem.Conflict("nothing_to_confirm", $"The {capability} capability has nothing to confirm."),
+                CapabilityTryOutcome.PrivacyModeActive => ApiProblem.Conflict("privacy_mode_active", "The camera is in privacy mode: a try would move or uncover it."),
                 var outcome => throw new InvalidOperationException($"Unhandled outcome {outcome}."),
             };
         });
@@ -373,14 +373,14 @@ public static class CamerasEndpoints
             CancellationToken ct) =>
         {
             if (!SnakeCaseEnum.TryFromSnakeCase<CameraCapability>(capability, out var cap))
-                return Results.BadRequest(new { error = "unknown_capability", message = $"Unknown capability: {capability}" });
+                return ApiProblem.BadRequest("unknown_capability", $"Unknown capability: {capability}");
 
             var result = await useCase.ExecuteAsync(id, cap, request.Worked, ct);
             return result.Outcome switch
             {
                 CapabilityAnswerOutcome.Recorded => Results.Ok(result.Binding),
                 CapabilityAnswerOutcome.NotFound => Results.NotFound(),
-                CapabilityAnswerOutcome.NothingToConfirm => Results.Conflict(new { error = "nothing_to_confirm", message = $"The {capability} capability has nothing to confirm." }),
+                CapabilityAnswerOutcome.NothingToConfirm => ApiProblem.Conflict("nothing_to_confirm", $"The {capability} capability has nothing to confirm."),
                 var outcome => throw new InvalidOperationException($"Unhandled outcome {outcome}."),
             };
         });
@@ -411,8 +411,8 @@ public static class CamerasEndpoints
             {
                 AddProtocolOutcome.Added => Results.Ok(result.Protocol),
                 AddProtocolOutcome.CameraNotFound => Results.NotFound(),
-                AddProtocolOutcome.UnknownProtocol => Results.BadRequest(new { error = "unknown_protocol", message = $"Unknown protocol: {request.Protocol}" }),
-                AddProtocolOutcome.AlreadySpoken => Results.Conflict(new { error = "protocol_exists", message = $"The camera already speaks {request.Protocol}." }),
+                AddProtocolOutcome.UnknownProtocol => ApiProblem.BadRequest("unknown_protocol", $"Unknown protocol: {request.Protocol}"),
+                AddProtocolOutcome.AlreadySpoken => ApiProblem.Conflict("protocol_exists", $"The camera already speaks {request.Protocol}."),
                 _ => throw new InvalidOperationException($"Unhandled outcome {result.Outcome}."),
             };
         });
@@ -427,13 +427,13 @@ public static class CamerasEndpoints
         group.MapDelete("/{id}/protocols/{protocol}", async (string id, string protocol, RemoveCameraProtocolUseCase useCase, CancellationToken ct) =>
         {
             if (!SnakeCaseEnum.TryFromSnakeCase<SupportedProtocol>(protocol, out var parsed))
-                return Results.BadRequest(new { error = "unknown_protocol", message = $"Unknown protocol: {protocol}" });
+                return ApiProblem.BadRequest("unknown_protocol", $"Unknown protocol: {protocol}");
 
             return await useCase.ExecuteAsync(id, parsed, ct) switch
             {
                 RemoveProtocolOutcome.Removed => Results.NoContent(),
                 RemoveProtocolOutcome.NotFound => Results.NotFound(),
-                RemoveProtocolOutcome.InUse => Results.Conflict(new { error = "protocol_in_use", message = $"A capability goes through {protocol}." }),
+                RemoveProtocolOutcome.InUse => ApiProblem.Conflict("protocol_in_use", $"A capability goes through {protocol}."),
                 var other => throw new InvalidOperationException($"Unhandled outcome {other}."),
             };
         });
@@ -446,7 +446,7 @@ public static class CamerasEndpoints
             CancellationToken ct) =>
         {
             if (!SnakeCaseEnum.TryFromSnakeCase<SupportedProtocol>(protocol, out var parsed))
-                return Results.BadRequest(new { error = "unknown_protocol", message = $"Unknown protocol: {protocol}" });
+                return ApiProblem.BadRequest("unknown_protocol", $"Unknown protocol: {protocol}");
 
             var result = await useCase.ExecuteAsync(id, parsed, request, ct);
             return result is null ? Results.NotFound() : Results.Ok(result);
@@ -459,7 +459,7 @@ public static class CamerasEndpoints
             CancellationToken ct) =>
         {
             if (!SnakeCaseEnum.TryFromSnakeCase<SupportedProtocol>(protocol, out var parsed))
-                return Results.BadRequest(new { error = "unknown_protocol", message = $"Unknown protocol: {protocol}" });
+                return ApiProblem.BadRequest("unknown_protocol", $"Unknown protocol: {protocol}");
 
             var result = await useCase.ExecuteAsync(id, parsed, ct);
             return result is null ? Results.NotFound() : Results.Ok(result);
@@ -497,7 +497,7 @@ public static class CamerasEndpoints
             var slug = camera.FrigateCameraName;
             var bytes = await frames.TryGetLatestFrameAsync(slug, ct);
             if (bytes is null)
-                return Results.Problem("Could not retrieve frame from Frigate");
+                return ApiProblem.Of(StatusCodes.Status502BadGateway, "frame_unavailable", "Could not retrieve frame from Frigate");
 
             await thumbnailStore.SaveAsync(id, presetId, bytes, ct);
             return Results.NoContent();

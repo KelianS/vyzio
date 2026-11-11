@@ -156,8 +156,8 @@ public static class NotificationEndpoints
         => SnakeCaseEnum.TryFromSnakeCase(channel, out parsed);
 
     private static IResult UnknownChannel(string channel)
-        => Results.Problem($"Canal de notification inconnu : {channel}.", statusCode: StatusCodes.Status400BadRequest);
+        => ApiProblem.BadRequest("unknown_channel", $"Unknown notification channel: {channel}.");
 
     private static IResult DoesNotListen(string channel)
-        => Results.Problem($"Ce canal n'accepte pas de commandes : {channel}.", statusCode: StatusCodes.Status400BadRequest);
+        => ApiProblem.BadRequest("channel_takes_no_commands", $"This channel takes no commands: {channel}.");
 }

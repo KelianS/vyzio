@@ -6,7 +6,7 @@ function answer(
   status: number,
   statusText: string,
   body: string,
-  contentType = 'application/json',
+  contentType = 'application/problem+json',
 ) {
   return new Response(body, { status, statusText, headers: { 'Content-Type': contentType } })
 }
@@ -15,21 +15,26 @@ describe('httpErrorFrom', () => {
   it('httpErrorFrom_ShouldNameTheRequestAndKeepTheErrorCode_WhenTheAnswerCarriesACode', async () => {
     // Arrange & Act
     const error = await httpErrorFrom(
-      answer(409, 'Conflict', JSON.stringify({ error: 'not_calibrated' })),
+      answer(409, 'Conflict', JSON.stringify({ status: 409, code: 'not_calibrated' })),
       'http://hub/api/cameras/cam-1/ptz/presets/2?x=1',
       'PUT',
     )
 
     // Assert
     expect(error.status).toBe(409)
+    expect(error.code).toBe('not_calibrated')
     expect(error.diagnostic).toBe(
       'PUT /api/cameras/cam-1/ptz/presets/2 · 409 Conflict · not_calibrated',
     )
   })
 
-  it('httpErrorFrom_ShouldKeepTheCodeAndTheReason_WhenTheAnswerCarriesBoth', async () => {
+  it('httpErrorFrom_ShouldKeepTheCodeAndTheDetail_WhenTheProblemCarriesBoth', async () => {
     // Arrange
-    const body = JSON.stringify({ error: 'camera_refused', message: 'Privacy mode is on' })
+    const body = JSON.stringify({
+      status: 502,
+      code: 'camera_refused',
+      detail: 'Privacy mode is on',
+    })
 
     // Act
     const error = await httpErrorFrom(
@@ -44,27 +49,13 @@ describe('httpErrorFrom', () => {
     )
   })
 
-  it('httpErrorFrom_ShouldReadTheReason_WhenTheErrorFieldIsASentenceRatherThanACode', async () => {
-    // Arrange
-    const body = JSON.stringify({ error: 'Unknown capability: zoom' })
-
-    // Act
-    const error = await httpErrorFrom(
-      answer(400, 'Bad Request', body),
-      '/api/cameras/c/capabilities/zoom',
-    )
-
-    // Assert
-    expect(error.diagnostic).toBe(
-      'GET /api/cameras/c/capabilities/zoom · 400 Bad Request · Unknown capability: zoom',
-    )
-  })
-
-  it('httpErrorFrom_ShouldKeepTheDetailAndTheTraceId_WhenTheAnswerIsAProblemDetails', async () => {
+  it('httpErrorFrom_ShouldKeepTheCodeDetailAndTraceId_WhenTheServerFailedUnexpectedly', async () => {
     // Arrange
     const body = JSON.stringify({
-      title: 'An error occurred',
-      detail: 'Frame unavailable',
+      title: 'An error occurred while processing your request.',
+      status: 500,
+      code: 'unexpected_error',
+      detail: 'InvalidOperationException',
       traceId: '00-abc-01',
     })
 
@@ -76,8 +67,24 @@ describe('httpErrorFrom', () => {
 
     // Assert
     expect(error.diagnostic).toBe(
-      'GET /api/cameras/c/frame · 500 Internal Server Error · Frame unavailable · trace 00-abc-01',
+      'GET /api/cameras/c/frame · 500 Internal Server Error · unexpected_error · InvalidOperationException · trace 00-abc-01',
     )
+  })
+
+  it('httpErrorFrom_ShouldNameTheStatusCodeAndTrace_WhenTheProblemHasNoDetail', async () => {
+    // Arrange
+    const body = JSON.stringify({
+      title: 'Not Found',
+      status: 404,
+      code: 'not_found',
+      traceId: '00-def-01',
+    })
+
+    // Act
+    const error = await httpErrorFrom(answer(404, 'Not Found', body), '/api/nowhere')
+
+    // Assert
+    expect(error.diagnostic).toBe('GET /api/nowhere · 404 Not Found · not_found · trace 00-def-01')
   })
 
   it('httpErrorFrom_ShouldStillNameTheRequestAndStatus_WhenTheAnswerIsNotJson', async () => {

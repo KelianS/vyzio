@@ -310,9 +310,9 @@ export interface FakeScheduleRule {
 // Like the real one: a night is kept, a range without target or with no length is refused.
 function scheduleRefusal(body: Pick<FakeScheduleRule, 'targetIds' | 'startTime' | 'endTime'>) {
   if (body.targetIds.length === 0)
-    return { error: 'schedule_no_target', message: 'At least one target is required.' }
+    return { code: 'schedule_no_target', detail: 'At least one target is required.' }
   if (body.startTime === body.endTime)
-    return { error: 'schedule_empty_range', message: 'Start and end are the same time.' }
+    return { code: 'schedule_empty_range', detail: 'Start and end are the same time.' }
   return null
 }
 
@@ -665,6 +665,15 @@ function json(route: Route, body: unknown, status = 200) {
   })
 }
 
+// Like the real one: every error is a ProblemDetails carrying its code (BACKEND-05).
+function problem(route: Route, status: number, code: string, detail?: string) {
+  return route.fulfill({
+    status,
+    contentType: 'application/problem+json',
+    body: JSON.stringify({ status, code, detail, traceId: '00-e2e-01' }),
+  })
+}
+
 /**
  * Installs an in-memory fake backend for the whole app: every screen fetches through this
  * instead of a real API. Kept as one router (not per-test literal payloads) so a flow like
@@ -706,7 +715,7 @@ export async function installFakeBackend(
     if (path === '/api/access/session' && method === 'GET') {
       return state.access.signedIn
         ? json(route, { role: 'owner', expiresAt: '2027-01-01T00:00:00Z' })
-        : json(route, { error: 'unauthorized' }, 401)
+        : problem(route, 401, 'unauthorized')
     }
 
     if (path === '/api/access/account' && method === 'POST') {
@@ -718,7 +727,7 @@ export async function installFakeBackend(
     if (path === '/api/access/session' && method === 'POST') {
       const password = (postData?.password as string | undefined) ?? ''
       if (password !== (state.access.password ?? FAKE_PASSWORD))
-        return json(route, { error: 'unauthorized' }, 401)
+        return problem(route, 401, 'unauthorized')
 
       state.access = { ...state.access, signedIn: true }
       return json(route, { role: 'owner', expiresAt: '2027-01-01T00:00:00Z' })
@@ -736,15 +745,15 @@ export async function installFakeBackend(
 
     // Past this line everything needs a session, like the API does: otherwise the harness would be
     // testing an application nobody runs (ADR-54).
-    if (!state.access.signedIn) return json(route, { error: 'unauthorized' }, 401)
+    if (!state.access.signedIn) return problem(route, 401, 'unauthorized')
 
     // Guarded like the rest: changing a password is a setting, not a way in.
     if (path === '/api/access/password' && method === 'PUT') {
       const current = (postData?.currentPassword as string | undefined) ?? ''
       const next = (postData?.newPassword as string | undefined) ?? ''
       if (current !== (state.access.password ?? FAKE_PASSWORD))
-        return json(route, { error: 'wrong_password' }, 400)
-      if (next.length < 8) return json(route, { error: 'password_too_short' }, 400)
+        return problem(route, 400, 'wrong_password')
+      if (next.length < 8) return problem(route, 400, 'password_too_short')
 
       state.access = { ...state.access, password: next }
       return json(route, { role: 'owner', expiresAt: '2027-01-01T00:00:00Z' })
@@ -860,12 +869,7 @@ export async function installFakeBackend(
     }
     if (path === '/api/cameras/apply-configuration' && method === 'POST') {
       if (state.restartBreaks) {
-        const problem = {
-          title: 'An error occurred while processing your request.',
-          status: 500,
-          traceId: '00-e2e-01',
-        }
-        return json(route, problem, 500)
+        return problem(route, 500, 'unexpected_error', 'InvalidOperationException')
       }
       // Like the real one: a successful restart clears the pending state, a failure leaves it.
       if (state.restartFails) {
@@ -906,7 +910,7 @@ export async function installFakeBackend(
         return jpeg(route, sceneOf(state, cameraId))
       }
       if (!rest && method === 'GET') {
-        return camera ? json(route, camera) : json(route, { message: 'not found' }, 404)
+        return camera ? json(route, camera) : problem(route, 404, 'not_found')
       }
       if (!rest && method === 'PUT') {
         const updated = makeFakeCamera({
@@ -961,7 +965,7 @@ export async function installFakeBackend(
         return json(route, {})
       }
       if (rest === '/ptz/move/signal' && method === 'POST') {
-        return state.ptz.holding ? json(route, {}) : json(route, {}, 404)
+        return state.ptz.holding ? json(route, {}) : problem(route, 404, 'not_found')
       }
       if (rest === '/ptz/move/stop' && method === 'POST') {
         state.ptz.holding = false
@@ -979,7 +983,7 @@ export async function installFakeBackend(
       }
       if (rest === '/ptz/preset/save' && method === 'POST') {
         // Like the real one: with no reference, the current position is unknown, nothing is saved.
-        if (!state.ptz.calibrated) return json(route, { message: 'not_calibrated' }, 409)
+        if (!state.ptz.calibrated) return problem(route, 409, 'not_calibrated')
         const presetId = Number(postData?.presetId)
         const position = state.ptz.currentPosition ?? { x: 0, y: 0 }
         state.ptz.presets = [
@@ -1010,13 +1014,13 @@ export async function installFakeBackend(
         // Like the real one: a capability goes through one of the camera's protocols (ADR-61 d).
         const chosen = postData?.protocol as string
         if (!state.protocols.some((p) => p.protocol === chosen)) {
-          return json(route, { error: 'protocol_not_on_camera' }, 409)
+          return problem(route, 409, 'protocol_not_on_camera')
         }
         const changed =
           state.streamBinding.configured === false || state.streamBinding.protocol !== chosen
         if (changed) {
           const laidOut = layOut(state, chosen, (postData?.streamPath as string | null) ?? null)
-          if (!laidOut) return json(route, { error: 'stream_path_required' }, 400)
+          if (!laidOut) return problem(route, 400, 'stream_path_required')
           state.streams = laidOut
         }
         state.streamBinding.protocol = chosen
@@ -1053,7 +1057,7 @@ export async function installFakeBackend(
         // Like the real one: a protocol is added once, then checked at once.
         const name = postData?.protocol as string
         if (state.protocols.some((p) => p.protocol === name)) {
-          return json(route, { error: 'protocol_exists' }, 409)
+          return problem(route, 409, 'protocol_exists')
         }
         const username = (postData?.username as string | null) ?? null
         const added = makeFakeProtocol({
@@ -1070,11 +1074,11 @@ export async function installFakeBackend(
       if (protocolMatch) {
         const [, name, check] = protocolMatch
         const entry = state.protocols.find((p) => p.protocol === name)
-        if (!entry) return json(route, { message: 'not found' }, 404)
+        if (!entry) return problem(route, 404, 'not_found')
         if (!check && method === 'DELETE') {
           // Like the real one: a protocol a capability goes through stays.
           const used = [state.streamBinding.protocol, state.ptzBinding?.protocol].includes(name)
-          if (used) return json(route, { error: 'protocol_in_use' }, 409)
+          if (used) return problem(route, 409, 'protocol_in_use')
           state.protocols = state.protocols.filter((p) => p.protocol !== name)
           return route.fulfill({ status: 204 })
         }
@@ -1095,18 +1099,20 @@ export async function installFakeBackend(
         }
       }
       if (rest === '/capabilities/ptz/probe' && method === 'POST') {
-        return state.ptzBinding ? json(route, ptzBindingOf(state.ptzBinding)) : json(route, {}, 404)
+        return state.ptzBinding
+          ? json(route, ptzBindingOf(state.ptzBinding))
+          : problem(route, 404, 'not_found')
       }
       if (rest === '/capabilities/ptz/try' && method === 'POST') {
         // Like the real one: only a capability to confirm, or one the user said no to, is tried; it records nothing.
         if (!state.ptzBinding?.status || !ASKABLE[state.ptzBinding.status]) {
-          return json(route, { error: 'nothing_to_confirm' }, 409)
+          return problem(route, 409, 'nothing_to_confirm')
         }
         return route.fulfill({ status: 204 })
       }
       if (rest === '/capabilities/ptz/confirm' && method === 'POST') {
         if (!state.ptzBinding?.status || !ASKABLE[state.ptzBinding.status]) {
-          return json(route, { error: 'nothing_to_confirm' }, 409)
+          return problem(route, 409, 'nothing_to_confirm')
         }
         const worked = Boolean(postData?.worked)
         state.ptzBinding.status = worked
@@ -1121,7 +1127,7 @@ export async function installFakeBackend(
         return json(route, ptzBindingOf(state.ptzBinding))
       }
       if (rest === '/capabilities/ptz/pan-inverted' && method === 'PUT') {
-        if (!state.ptzBinding) return json(route, {}, 404)
+        if (!state.ptzBinding) return problem(route, 404, 'not_found')
         const inverted = Boolean(postData?.inverted)
         const config = JSON.parse(state.ptzBinding.configJson ?? '{}') as Record<string, unknown>
         state.ptzBinding.configJson = JSON.stringify({ ...config, pan_inverted: inverted })
@@ -1132,7 +1138,7 @@ export async function installFakeBackend(
       }
       if (rest === '/streams/available' && method === 'GET') {
         const protocol = new URL(route.request().url()).searchParams.get('protocol')
-        if (!protocol) return json(route, { error: 'unknown_protocol' }, 400)
+        if (!protocol) return problem(route, 400, 'unknown_protocol')
         return json(route, availableOf(state, protocol))
       }
       if (rest === '/streams' && method === 'POST') {
@@ -1143,7 +1149,7 @@ export async function installFakeBackend(
         }
         // Like the real one: over RTSP a path, over DVRIP one of its two qualities (ADR-65 e).
         if (!PATH_ACCEPTED[body.protocol]?.(body.path ?? '')) {
-          return json(route, { error: PATH_REFUSAL[body.protocol] ?? 'unknown_protocol' }, 400)
+          return problem(route, 400, PATH_REFUSAL[body.protocol] ?? 'unknown_protocol')
         }
         const served = state.servedStreams.find((entry) => entry.path === body.path)
         const added = makeFakeStream({
@@ -1164,7 +1170,7 @@ export async function installFakeBackend(
       const streamMatch = rest?.match(/^\/streams\/([^/]+)(\/role|\/check)?$/)
       if (streamMatch) {
         const target = state.streams.find((stream) => stream.id === streamMatch[1])
-        if (!target) return json(route, {}, 404)
+        if (!target) return problem(route, 404, 'not_found')
         const records = RECORDS[target.role]
         const action = streamMatch[2]
         if (action === '/check') {
@@ -1173,10 +1179,10 @@ export async function installFakeBackend(
         }
         if (action === '/role') {
           const role = postData?.role as FakeStream['role']
-          if (records && !RECORDS[role]) return json(route, { error: 'stream_records' }, 409)
+          if (records && !RECORDS[role]) return problem(route, 409, 'stream_records')
           giveRole(state.streams, target, role)
         } else if (method === 'DELETE') {
-          if (records) return json(route, { error: 'stream_records' }, 409)
+          if (records) return problem(route, 409, 'stream_records')
           state.streams = state.streams.filter((stream) => stream !== target)
         }
         state.pendingChanges = true
@@ -1229,7 +1235,7 @@ export async function installFakeBackend(
         const presetId = Number(rest?.split('/')[3])
         return state.ptz.presets.some((p) => p.presetId === presetId && p.thumbnail)
           ? jpeg(route, sceneOf(state, cameraId))
-          : json(route, {}, 404)
+          : problem(route, 404, 'not_found')
       }
       if (method === 'DELETE') {
         state.cameras = state.cameras.filter((c) => c.id !== cameraId)
@@ -1256,7 +1262,7 @@ export async function installFakeBackend(
     if (path === '/api/schedules' && method === 'POST') {
       const body = route.request().postDataJSON() as Omit<FakeScheduleRule, 'id' | 'createdAt'>
       const refusal = scheduleRefusal(body)
-      if (refusal) return json(route, refusal, 400)
+      if (refusal) return problem(route, 400, refusal.code, refusal.detail)
       const rule = {
         ...body,
         id: `rule-${state.scheduleRules.length + 1}`,
@@ -1268,7 +1274,7 @@ export async function installFakeBackend(
     const scheduleMatch = path.match(/^\/api\/schedules\/([^/]+)$/)
     if (scheduleMatch) {
       const rule = state.scheduleRules.find((entry) => entry.id === scheduleMatch[1])
-      if (!rule) return json(route, {}, 404)
+      if (!rule) return problem(route, 404, 'not_found')
       if (method === 'GET') return json(route, rule)
       if (method === 'DELETE') {
         state.scheduleRules = state.scheduleRules.filter((entry) => entry !== rule)
@@ -1280,7 +1286,7 @@ export async function installFakeBackend(
           'id' | 'kind' | 'createdAt'
         >
         const refusal = scheduleRefusal(body)
-        if (refusal) return json(route, refusal, 400)
+        if (refusal) return problem(route, 400, refusal.code, refusal.detail)
         Object.assign(rule, body)
         return json(route, rule)
       }
@@ -1369,7 +1375,7 @@ export async function installFakeBackend(
     if (notifConfigMatch) {
       const [, channel, isTest] = notifConfigMatch
       if (!CHANNEL_CATALOGUE[channel]) {
-        return json(route, { detail: `Canal de notification inconnu : ${channel}.` }, 400)
+        return problem(route, 400, 'unknown_channel', `Unknown notification channel: ${channel}.`)
       }
       if (isTest && method === 'POST') {
         return json(route, { success: true, errorMessage: null })
@@ -1477,14 +1483,14 @@ export async function installFakeBackend(
     const deletionMatch = path.match(/^\/api\/detection-events\/([^/]+)$/)
     if (deletionMatch && method === 'DELETE') {
       const index = state.detectionHistory.findIndex((e) => e.eventId === deletionMatch[1])
-      if (index < 0) return json(route, { error: 'detection_not_found' }, 404)
+      if (index < 0) return problem(route, 404, 'detection_not_found')
       // Gone from every read: history, a person's history and the home screen all draw on this list.
       state.detectionHistory.splice(index, 1)
       return route.fulfill({ status: 204 })
     }
     const clipMatch = path.match(/^\/api\/detection-events\/([^/]+)\/clip$/)
     if (clipMatch && method === 'GET' && state.clipsGone.includes(clipMatch[1])) {
-      return json(route, {}, 404)
+      return problem(route, 404, 'not_found')
     }
     const mediaMatch = path.match(/^\/api\/detection-events\/([^/]+)\/(thumbnail|snapshot)$/)
     if (mediaMatch && method === 'GET') {
@@ -1492,6 +1498,6 @@ export async function installFakeBackend(
       return jpeg(route, sceneOf(state, event?.camera))
     }
 
-    return json(route, { message: `unmocked: ${method} ${path}` }, 404)
+    return problem(route, 404, 'not_found', `unmocked: ${method} ${path}`)
   })
 }

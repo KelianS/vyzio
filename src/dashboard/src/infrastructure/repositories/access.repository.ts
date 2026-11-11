@@ -1,3 +1,4 @@
+import { ApiErrorCode } from '../../common/errors/app_error'
 import type {
   AccessState,
   CurrentSession,
@@ -52,14 +53,9 @@ export class HttpAccessRepository implements AccessRepository {
 
     // Deliberately outside `fetchJson`: a wrong current password is read beside the field, and must
     // never be confused with the session ending, which is what a 401 signals.
-    if (response.status === 400) {
-      const body = (await response
-        .clone()
-        .json()
-        .catch(() => null)) as { error?: string } | null
-      if (body?.error === 'wrong_password') return 'wrong-password'
-    }
-    throw await httpErrorFrom(response, url, 'PUT')
+    const error = await httpErrorFrom(response, url, 'PUT')
+    if (error.code === ApiErrorCode.WrongPassword) return 'wrong-password'
+    throw error
   }
 
   async signOut(): Promise<void> {

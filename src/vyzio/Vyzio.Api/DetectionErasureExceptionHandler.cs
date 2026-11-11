@@ -16,8 +16,7 @@ internal sealed class DetectionErasureExceptionHandler : IExceptionHandler
 
         // The screen says either "nothing was erased" or "a retry finishes it" from this code alone.
         var error = failure.PartlyErased ? "erasure_incomplete" : "erasure_failed";
-        httpContext.Response.StatusCode = StatusCodes.Status502BadGateway;
-        await httpContext.Response.WriteAsJsonAsync(new { error, message = failure.Message }, ct);
+        await ApiProblem.Of(StatusCodes.Status502BadGateway, error, failure.Message).ExecuteAsync(httpContext);
         return true;
     }
 }

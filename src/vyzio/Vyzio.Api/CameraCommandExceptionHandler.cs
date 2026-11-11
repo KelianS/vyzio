@@ -20,8 +20,7 @@ internal sealed class CameraCommandExceptionHandler : IExceptionHandler
             return false;
         }
 
-        httpContext.Response.StatusCode = StatusCodes.Status502BadGateway;
-        await httpContext.Response.WriteAsJsonAsync(new { error, message = exception.Message }, ct);
+        await ApiProblem.Of(StatusCodes.Status502BadGateway, error, exception.Message).ExecuteAsync(httpContext);
         return true;
     }
 }

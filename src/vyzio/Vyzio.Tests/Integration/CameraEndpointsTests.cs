@@ -286,7 +286,7 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
 
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Contains("\"error\":\"unknown_direction\"", await response.Content.ReadAsStringAsync());
+        Assert.Contains("\"code\":\"unknown_direction\"", await response.Content.ReadAsStringAsync());
     }
 
     [Fact]

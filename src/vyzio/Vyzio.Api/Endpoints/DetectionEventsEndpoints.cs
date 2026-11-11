@@ -69,20 +69,13 @@ public static class DetectionEventsEndpoints
 
         group.MapDelete("/{id}", async (string id, DeleteDetectionUseCase useCase, CancellationToken ct) =>
             !FrigateEventId.IsWellFormed(id)
-                ? Results.NotFound(new { error = "detection_not_found", message = "No detection has that id." })
+                ? ApiProblem.NotFound("detection_not_found", "No detection has that id.")
                 : await useCase.ExecuteAsync(id, ct) switch
                 {
                     DetectionErasure.Erased => Results.NoContent(),
-                    DetectionErasure.NotFound => Results.NotFound(new
-                    {
-                        error = "detection_not_found",
-                        message = $"No detection {id} to erase.",
-                    }),
-                    DetectionErasure.InProgress => Results.Conflict(new
-                    {
-                        error = "detection_in_progress",
-                        message = $"Detection {id} is still being filmed; nothing was erased.",
-                    }),
+                    DetectionErasure.NotFound => ApiProblem.NotFound("detection_not_found", $"No detection {id} to erase."),
+                    DetectionErasure.InProgress => ApiProblem.Conflict(
+                        "detection_in_progress", $"Detection {id} is still being filmed; nothing was erased."),
                     _ => throw new InvalidOperationException($"Unhandled erasure outcome for {id}."),
                 });
 
