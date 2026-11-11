@@ -13,6 +13,12 @@ updates:
     groups:
       nuget-minor-and-patch:
         update-types: [minor, patch]
+    ignore:
+      # Stay on the .NET LTS: these majors track the runtime, decided in an issue (test SDK majors held too).
+      - dependency-name: "Microsoft.*"
+        update-types: [version-update:semver-major]
+      - dependency-name: "System.*"
+        update-types: [version-update:semver-major]
 
   - package-ecosystem: npm
     directory: /src/dashboard
