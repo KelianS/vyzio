@@ -87,12 +87,13 @@ interface shows the user, and the bodies of the ADRs accepted in French until th
   `<type>/<issue>-<slug>`, `type` being a commit type of GIT-01 (`feat/47-live-video-stream`).
 - Pull requests: review and green tests are mandatory. CI's `ci-ok` job sums up every other job,
   security scans included ([`SECURITY.md`](../SECURITY.md) § What runs on every change), and is
-  the check the ruleset of `main` requires.
+  the check the ruleset of `main` requires. A pull request that changes only documentation runs
+  no build, test or scan job (the `changes` job of [`ci.yml`](../.github/workflows/ci.yml)).
 
 ### Delivery gate, before a pull request is opened
 
 1. `task check` is green (GIT-08). It runs the steps of the rules, backend and frontend CI jobs; the
-   image build and its Trivy scan stay CI-only.
+   image build and its Trivy scan stay in CI and the release.
 2. The review agents of [`.claude/agents/`](../.claude/agents/) have run on the branch:
    - `delivery-reviewer` always;
    - `framing-guardian` when the change alters a behaviour or the architecture, or touches `docs/`,

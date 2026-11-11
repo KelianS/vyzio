@@ -1,0 +1,161 @@
+name: Images
+
+# The one image build, called by CI (no push) and by Release (push): both images are built and scanned, then tagged.
+on:
+  workflow_call:
+    inputs:
+      push:
+        description: Push the images to GHCR once scanned, tagged with the version and latest.
+        type: boolean
+        default: false
+      version:
+        description: The version the images carry, without its leading v; none keeps the Dockerfile default.
+        type: string
+
+jobs:
+  image:
+    name: ${{ matrix.image }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: api
+            dockerfile: src/vyzio/Vyzio.Api/Dockerfile
+          - image: dashboard
+            dockerfile: src/dashboard/Dockerfile
+    # A new advisory reaches every pull request at once: it warns there and fails main, its daily run and a release.
+    env:
+      BLOCKING: ${{ github.event_name != 'pull_request' }}
+      LOCAL_TAG: vyzio-${{ matrix.image }}:scan
+      # One copy for the build and the push, so the push reuses every layer of what was scanned.
+      BUILD_ARGS: |
+        ${{ inputs.version && format('VYZIO_VERSION={0}', inputs.version) || '' }}
+        VYZIO_REVISION=${{ github.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Build
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: false
+          load: true
+          tags: ${{ env.LOCAL_TAG }}
+          build-args: ${{ env.BUILD_ARGS }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+
+      - name: Install Trivy
+        uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567 # v0.3.1
+        with:
+          version: v0.74.0
+          cache: true
+
+      # One database a day: a run restores the day's copy, or else the latest one, which Trivy refreshes.
+      - name: Date the vulnerability database
+        id: trivy-db
+        run: echo "date=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the vulnerability database
+        id: trivy-cache
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: ~/.cache/trivy
+          key: trivy-db-${{ steps.trivy-db.outputs.date }}
+          restore-keys: trivy-db-
+
+      - name: Scan
+        run: |
+          set -uo pipefail
+          if trivy image --severity HIGH,CRITICAL --no-progress --format sarif --output trivy.sarif "$LOCAL_TAG" \
+            && trivy image --exit-code 1 --severity HIGH,CRITICAL --no-progress --skip-db-update "$LOCAL_TAG"; then
+            exit 0
+          fi
+          if [ "$BLOCKING" = true ]; then echo "::error::Image scan failed"; exit 1; fi
+          echo "::warning::Image scan failed (informational on a pull request)"
+
+      # Saved even when the scan fails, which is when main needs the day's copy most.
+      - name: Save the vulnerability database
+        if: always() && steps.trivy-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: ~/.cache/trivy
+          key: trivy-db-${{ steps.trivy-db.outputs.date }}
+
+      # A fork's pull request gets a read-only token, so the upload is skipped; the job verdict stands.
+      - name: Upload the scan to code scanning
+        if: always() && !github.event.pull_request.head.repo.fork && hashFiles('trivy.sarif') != ''
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        with:
+          sarif_file: trivy.sarif
+          category: trivy-${{ matrix.image }}
+
+      - name: Log in to GHCR
+        if: inputs.push
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Untagged, by digest, from the builder that just built what was scanned; the tag job names it.
+      - name: Push by digest
+        id: push
+        if: inputs.push
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          outputs: type=image,name=ghcr.io/kelians/vyzio-${{ matrix.image }},push-by-digest=true,name-canonical=true,push=true
+          build-args: ${{ env.BUILD_ARGS }}
+
+      - name: Record the digest
+        if: inputs.push
+        env:
+          DIGEST: ${{ steps.push.outputs.digest }}
+        run: echo "$DIGEST" > "digest-${{ matrix.image }}"
+
+      - name: Upload the digest
+        if: inputs.push
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: digest-${{ matrix.image }}
+          retention-days: 1
+          path: digest-${{ matrix.image }}
+
+  # Once both images are scanned and pushed, one step tags both, so latest moves for the two together.
+  tag:
+    name: tag
+    if: inputs.push
+    needs: [image]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Log in to GHCR
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: digest-*
+          merge-multiple: true
+
+      - name: Tag the version and latest
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          for image in api dashboard; do
+            repo="ghcr.io/kelians/vyzio-$image"
+            docker buildx imagetools create -t "$repo:$VERSION" -t "$repo:latest" "$repo@$(cat "digest-$image")"
+          done

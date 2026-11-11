@@ -20,6 +20,35 @@ permissions:
   contents: read
 
 jobs:
+  # A pull request that changes only documentation runs no build, test or scan job; Rules and ci-ok always run.
+  changes:
+    name: Changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.files.outputs.code }}
+    steps:
+      - name: List the changed files
+        id: files
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          if [ -z "$PR" ]; then echo "code=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          # Read into a variable first, so a failed request fails the job instead of passing as docs-only.
+          files=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR/files" --paginate --jq '.[] | .filename, (.previous_filename // empty)')
+          code=false
+          while IFS= read -r file; do
+            case "$file" in
+              docs/*|.github/ISSUE_TEMPLATE/*|.github/pull_request_template.md) ;;
+              */*) code=true ;;
+              *.md) ;;
+              *) code=true ;;
+            esac
+          done <<< "$files"
+          echo "code=$code" | tee -a "$GITHUB_OUTPUT"
+
   rules:
     name: Rules — index and citations
     runs-on: ubuntu-latest
@@ -38,17 +67,15 @@ jobs:
 
   backend:
     name: Backend — build & test
+    needs: [changes]
+    if: needs.changes.outputs.code == 'true'
     # Floor to respect if this ever moves to a container: SQLitePCLRaw 3.x needs GLIBC >= 2.33.
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
-        with:
-          global-json-file: global.json
-
-      - uses: go-task/setup-task@a00fbb05ce67b35648be3c78cbc9fd85354c757e # v2.2.0
+      - uses: ./.github/actions/setup-backend
 
       - name: Format and code style check
         run: task back:format:check
@@ -67,25 +94,14 @@ jobs:
 
   frontend:
     name: Frontend — build & test
+    needs: [changes]
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
-        with:
-          package_json_file: src/dashboard/package.json
-
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: '24'
-          cache: 'pnpm'
-          cache-dependency-path: src/dashboard/pnpm-lock.yaml
-
-      - uses: go-task/setup-task@a00fbb05ce67b35648be3c78cbc9fd85354c757e # v2.2.0
-
-      - name: Install
-        run: pnpm --prefix src/dashboard install --frozen-lockfile
+      - uses: ./.github/actions/setup-dashboard
 
       - name: Type-check
         run: task front:typecheck
@@ -113,6 +129,8 @@ jobs:
 
   playwright-version:
     name: Playwright version
+    needs: [changes]
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
@@ -144,20 +162,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
-        with:
-          package_json_file: src/dashboard/package.json
-
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: '24'
-          cache: 'pnpm'
-          cache-dependency-path: src/dashboard/pnpm-lock.yaml
-
-      - uses: go-task/setup-task@a00fbb05ce67b35648be3c78cbc9fd85354c757e # v2.2.0
-
-      - name: Install
-        run: pnpm --prefix src/dashboard install --frozen-lockfile
+      - uses: ./.github/actions/setup-dashboard
 
       # The Playwright webServer builds the production bundle first, so no separate build step.
       - name: E2E tests
@@ -272,103 +277,19 @@ jobs:
               commit -qm "chore(ci): coverage badges for ${GITHUB_SHA}"
           git -C "$work" push -qf "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}" badges
 
-  docker-build-check:
-    name: Docker — build images (no push)
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
+  images:
+    name: Images
+    needs: [changes]
+    if: needs.changes.outputs.code == 'true'
+    uses: ./.github/workflows/images.yml
     permissions:
       contents: read
       security-events: write
-    # A new advisory reaches every pull request at once: it warns there and fails main and its daily run.
-    env:
-      BLOCKING: ${{ github.event_name != 'pull_request' }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
-
-      - name: Build API image
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
-        with:
-          context: .
-          file: src/vyzio/Vyzio.Api/Dockerfile
-          push: false
-          tags: vyzio-api:ci
-          build-args: VYZIO_REVISION=${{ github.sha }}
-          load: true
-          cache-from: type=gha,scope=api
-          cache-to: type=gha,mode=max,scope=api
-
-      - name: Build dashboard image
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
-        with:
-          context: .
-          file: src/dashboard/Dockerfile
-          push: false
-          tags: vyzio-dashboard:ci
-          build-args: VYZIO_REVISION=${{ github.sha }}
-          load: true
-          cache-from: type=gha,scope=dashboard
-          cache-to: type=gha,mode=max,scope=dashboard
-
-      - name: Install Trivy
-        uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567 # v0.3.1
-        with:
-          version: v0.74.0
-          cache: true
-
-      # One database a day: a run restores the day's copy, or else the latest one, which Trivy refreshes.
-      - name: Date the vulnerability database
-        id: trivy-db
-        run: echo "date=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
-
-      - name: Restore the vulnerability database
-        id: trivy-cache
-        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
-        with:
-          path: ~/.cache/trivy
-          key: trivy-db-${{ steps.trivy-db.outputs.date }}
-          restore-keys: trivy-db-
-
-      - name: Scan the images
-        run: |
-          set -uo pipefail
-          failed=''
-          for image in api dashboard; do
-            trivy image --severity HIGH,CRITICAL --no-progress --format sarif --output "trivy-$image.sarif" "vyzio-$image:ci" \
-              || { failed="$failed $image"; continue; }
-            trivy image --exit-code 1 --severity HIGH,CRITICAL --no-progress --skip-db-update "vyzio-$image:ci" || failed="$failed $image"
-          done
-          if [ -n "$failed" ]; then
-            if [ "$BLOCKING" = true ]; then echo "::error::Image scan failed:$failed"; exit 1; fi
-            echo "::warning::Image scan failed:$failed (informational on a pull request)"
-          fi
-
-      # Saved even when the scan fails, which is when main needs the day's copy most.
-      - name: Save the vulnerability database
-        if: always() && steps.trivy-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
-        with:
-          path: ~/.cache/trivy
-          key: trivy-db-${{ steps.trivy-db.outputs.date }}
-
-      # A fork's pull request gets a read-only token, so the uploads are skipped; the job verdict stands.
-      - name: Upload the API scan to code scanning
-        if: always() && !github.event.pull_request.head.repo.fork && hashFiles('trivy-api.sarif') != ''
-        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
-        with:
-          sarif_file: trivy-api.sarif
-          category: trivy-api
-
-      - name: Upload the dashboard scan to code scanning
-        if: always() && !github.event.pull_request.head.repo.fork && hashFiles('trivy-dashboard.sarif') != ''
-        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
-        with:
-          sarif_file: trivy-dashboard.sarif
-          category: trivy-dashboard
 
   security:
     name: Security
+    needs: [changes]
+    if: needs.changes.outputs.code == 'true'
     uses: ./.github/workflows/security.yml
     permissions:
       contents: read
@@ -381,7 +302,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     if: always()
-    needs: [rules, backend, frontend, playwright-version, e2e, coverage, badges, docker-build-check, security]
+    needs: [changes, rules, backend, frontend, playwright-version, e2e, coverage, badges, images, security]
     steps:
       - name: Verdict
         env:

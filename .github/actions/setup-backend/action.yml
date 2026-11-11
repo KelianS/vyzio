@@ -1,0 +1,11 @@
+name: Set up the backend
+description: The .NET SDK that global.json pins, and Task.
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+      with:
+        global-json-file: global.json
+
+    - uses: go-task/setup-task@a00fbb05ce67b35648be3c78cbc9fd85354c757e # v2.2.0

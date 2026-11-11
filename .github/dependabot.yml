@@ -81,7 +81,10 @@ updates:
         update-types: [version-update:semver-major]
 
   - package-ecosystem: github-actions
-    directory: /
+    # The workflows, and the composite actions they share, whose pins Dependabot reads only where it is told to look.
+    directories:
+      - /
+      - /.github/actions/*
     schedule:
       interval: weekly
     commit-message:
