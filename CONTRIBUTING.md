@@ -20,7 +20,8 @@ All Vyzio settings default to production-ready values. Override any of them via 
 | `task check` | Run the backend and frontend CI checks locally, e2e included |
 | `task front:test` / `task back:test` / `task test` | Run frontend / backend / both test suites |
 | `task front:lint` | ESLint |
-| `task back:format` / `task back:format:check` | Format the backend to `.editorconfig` / check it without changing it |
+| `task back:format` / `task back:format:check` | Bring the backend to `.editorconfig` (whitespace, code style, analyzers) / check it without changing it |
+| `task back:migration:add -- Name` | Add an EF Core migration with the `dotnet-ef` pinned in `src/vyzio/.config/dotnet-tools.json`, never a global one |
 | `task front:knip` | Dead code detection (Knip) |
 | `task front:build` / `task back:build` / `task build` | Build frontend / backend / both |
 | `task back:run` | Run the API locally outside docker |
