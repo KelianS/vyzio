@@ -38,6 +38,10 @@ const KNOWN_REFUSALS = new Map<string, string>([
     'La caméra ne dit pas quels flux elle sert, ou ne répond pas : saisissez le chemin du flux donné par le fabricant',
   ],
   [
+    ApiErrorCode.DetectionInProgress,
+    'L’enregistrement de ce moment est encore en cours. Réessayez dans quelques minutes.',
+  ],
+  [
     ApiErrorCode.ParkingPositionsMissing,
     'Enregistrez d’abord les positions Surveillance et Parking de cette caméra, dans « Image et pilotage »',
   ],

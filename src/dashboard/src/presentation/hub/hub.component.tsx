@@ -13,16 +13,13 @@ import { useToast } from '../../common/components/toast'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import { useRootStore } from '../../infrastructure/store/root.store'
-import type { Camera, LiveQuality } from '../../domain/entities/camera.entity'
+import type { Camera } from '../../domain/entities/camera.entity'
 import type { DetectionLabel } from '../../domain/entities/detection_label.entity'
 import type { HubOverview } from '../../domain/entities/hub_overview.entity'
 import type { SystemStats } from '../../domain/entities/system_stats.entity'
 import { DetectionList } from '../../common/detection/detection_list'
-import { LiveView } from '../live_view/live_view.component'
-import {
-  orientationControlOf,
-  type OrientationControl,
-} from '../../common/orientation/orientation_control'
+import { liveViewPath } from '../live_view/live_view.route'
+import { DetectionPreview, type DetectionMedia } from '../../common/detection/detection_preview'
 import { SystemMonitorPanel } from './system_monitor_panel'
 import { buildHubPresenter } from './hub.presenter'
 import { hubReducer } from './hub.reducer'
@@ -33,15 +30,8 @@ import { alertsSummary } from './alerts_summary'
 /** Home shows only the latest ones; the history shows the same ones, all of them. */
 const RECENT_EVENTS_MAX = 5
 
-type ModalMedia =
-  | { type: 'image' | 'video'; url: string }
-  | {
-      type: 'live'
-      cameraId: string
-      label: string
-      orientation: OrientationControl
-      qualities: LiveQuality[]
-    }
+// The live view is a screen of its own (SPECS 7.2): only a detection's media opens here.
+type ModalMedia = DetectionMedia
 
 export function HubView() {
   const { apiBaseUrl, hub: container, cameras: camerasContainer } = useAppContainer()
@@ -84,32 +74,16 @@ export function HubView() {
         privacyLoading={uido.privacyLoading}
         onPrivacyPendingSet={presenter.onPrivacyPendingSet}
         onTogglePrivacy={presenter.onTogglePrivacy}
-        onOpenMedia={(type, url) => setModalMedia({ type, url })}
-        onOpenLive={(camera) =>
-          setModalMedia({
-            type: 'live',
-            cameraId: camera.id,
-            label: camera.displayName,
-            orientation: orientationControlOf(camera),
-            qualities: camera.liveQualities,
-          })
-        }
+        onOpenMedia={setModalMedia}
       />
 
       {modalMedia && (
         <Overlay label="Aperçu" onClose={() => setModalMedia(null)}>
-          {modalMedia.type === 'live' ? (
-            <LiveView
-              cameraId={modalMedia.cameraId}
-              label={modalMedia.label}
-              orientation={modalMedia.orientation}
-              qualities={modalMedia.qualities}
-            />
-          ) : modalMedia.type === 'image' ? (
-            <img src={modalMedia.url} alt="" className="max-h-[85vh] rounded-lg" />
-          ) : (
-            <video src={modalMedia.url} controls autoPlay className="max-h-[85vh] rounded-lg" />
-          )}
+          <DetectionPreview
+            media={modalMedia}
+            clipGone={uido.clipGoneEventId === modalMedia.eventId}
+            onVideoError={() => presenter.onVideoFailed(modalMedia.eventId)}
+          />
         </Overlay>
       )}
     </>
@@ -242,8 +216,7 @@ interface HubOperationalProps {
   privacyLoading: boolean
   onPrivacyPendingSet: (request: PrivacyRequest | null) => void
   onTogglePrivacy: (request: PrivacyRequest) => void
-  onOpenMedia: (type: 'image' | 'video', url: string) => void
-  onOpenLive: (camera: Camera) => void
+  onOpenMedia: (media: DetectionMedia) => void
 }
 
 function HubOperational({
@@ -257,7 +230,6 @@ function HubOperational({
   onPrivacyPendingSet,
   onTogglePrivacy,
   onOpenMedia,
-  onOpenLive,
 }: HubOperationalProps) {
   const frigateStatus = systemStats?.status ?? 'active'
   const allPrivate = cameras.every((camera) => camera.privacyModeActive)
@@ -327,7 +299,7 @@ function HubOperational({
               camera={camera}
               apiBaseUrl={apiBaseUrl}
               frigateStatus={frigateStatus}
-              onExpand={camera.privacyModeActive ? undefined : () => onOpenLive(camera)}
+              liveTo={liveViewPath(camera.id)}
               busy={privacyBusyIds.has(camera.id)}
               onTogglePrivacy={(target, active) =>
                 onPrivacyPendingSet({

@@ -6,6 +6,7 @@ import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import { buildRestartSurveillancePresenter } from '../surveillance/restart_surveillance.presenter'
 import { useRestartState } from '../surveillance/use_restart_state'
+import { isLiveViewPath } from '../live_view/live_view.route'
 
 const SETTINGS_ROOT = '/settings'
 
@@ -35,7 +36,9 @@ export function NavigationGuard() {
     if (currentLocation.pathname === nextLocation.pathname) return false
     // Read at the moment of leaving: a page that just saved and leaves has not re-rendered the guard yet.
     if (useRootStore.getState().unsavedChanges) return true
-    return pending && isSettings(currentLocation.pathname) && !isSettings(nextLocation.pathname)
+    // Driving the camera from its page is a detour, not leaving the settings (SPECS 7.2).
+    const leaving = !isSettings(nextLocation.pathname) && !isLiveViewPath(nextLocation.pathname)
+    return pending && isSettings(currentLocation.pathname) && leaving
   })
 
   // The block outlives its cause - typically a save in the meantime - and would

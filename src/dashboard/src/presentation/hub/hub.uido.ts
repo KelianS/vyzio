@@ -10,6 +10,8 @@ export interface HubUido {
   privacyPending: PrivacyRequest | null
   privacyLoading: boolean
   detectionLabels: DetectionLabel[]
+  /** The detection whose video turned out erased with another one. */
+  clipGoneEventId: string | null
 }
 
 export function buildInitialHubUido(): HubUido {
@@ -20,5 +22,6 @@ export function buildInitialHubUido(): HubUido {
     privacyPending: null,
     privacyLoading: false,
     detectionLabels: [],
+    clipGoneEventId: null,
   }
 }

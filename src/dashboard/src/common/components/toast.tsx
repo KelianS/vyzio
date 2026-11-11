@@ -44,7 +44,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       <div
         role="region"
         // Above every Radix layer (`z-50`): a camera refusing a move shows while watching it.
-        className="pointer-events-none fixed right-4 bottom-4 z-300 grid gap-2"
+        className="pointer-events-none fixed right-[max(1rem,env(safe-area-inset-right))] bottom-[max(1rem,env(safe-area-inset-bottom))] z-300 grid gap-2"
         aria-live="polite"
         aria-label="Notifications"
       >

@@ -31,6 +31,7 @@ function renderGuard() {
       <NavigationGuard />
       <Link to="/">Accueil</Link>
       <Link to="/settings/notifications">Notifications</Link>
+      <Link to="/cameras/camera-1/direct">Direct</Link>
     </>,
     CONSERVATION,
   )
@@ -112,6 +113,20 @@ describe('NavigationGuard', () => {
 
     // Assert
     expect(router.state.location.pathname).toBe('/settings/notifications')
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+  })
+
+  it('NavigationGuard_ShouldAskNothing_WhenARestartIsPendingAndTheUserDrivesACameraFromTheSettings', async () => {
+    // Arrange
+    fakeNetwork({ [STATS]: ok(stats(true)) })
+    const { router } = renderGuard()
+    await pollTheSurveillance()
+
+    // Act
+    await userEvent.click(screen.getByRole('link', { name: 'Direct' }))
+
+    // Assert
+    expect(router.state.location.pathname).toBe('/cameras/camera-1/direct')
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
   })
 

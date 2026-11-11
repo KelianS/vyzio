@@ -86,9 +86,9 @@ Tracked in [issue #247](https://github.com/KelianS/vyzio/issues/247).
 The [CI workflow](.github/workflows/ci.yml) runs on every pull request, on every push to `main` and
 daily. It builds both images through the [Images workflow](.github/workflows/images.yml), which
 scans them with Trivy from high severity up, and which the release runs too, so the release pushes
-no image it has not scanned. CI also calls the [Security workflow](.github/workflows/security.yml): CodeQL on C# and
-TypeScript, Semgrep static analysis, and a dependency audit on both the .NET and the frontend
-package trees. What depends on the change blocks a pull request: Semgrep fails on a finding its
+no image it has not scanned. CI also calls the [Security workflow](.github/workflows/security.yml):
+CodeQL on C# and TypeScript, Semgrep static analysis, and a dependency audit on both the .NET and
+the frontend package trees. What depends on the change blocks a pull request: Semgrep fails on a finding its
 base did not have, and CodeQL on a new alert. What depends on advisories published since, the
 dependency audit and the image scan, only warns on a pull request and fails `main`, its daily run
 and a release. Semgrep, CodeQL and Trivy report to code scanning.

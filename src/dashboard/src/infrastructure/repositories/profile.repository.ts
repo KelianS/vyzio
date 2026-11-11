@@ -135,4 +135,18 @@ export class HttpProfileRepository implements ProfileRepository {
     })
     if (!response.ok) throw await httpErrorFrom(response, url, 'PATCH')
   }
+
+  async deleteDetection(eventId: string): Promise<void> {
+    return deleteReq(`${this.apiBaseUrl}/api/detection-events/${encodeURIComponent(eventId)}`)
+  }
+
+  async hasDetectionClip(eventId: string): Promise<boolean> {
+    const url = `${this.apiBaseUrl}/api/detection-events/${encodeURIComponent(eventId)}/clip`
+    // One byte is enough to know the video is there; a 404 is the answer, not a failure.
+    const response = await send(url, { method: 'GET', headers: { Range: 'bytes=0-0' } })
+    if (response.status === 404) return false
+    if (!response.ok) throw await httpErrorFrom(response, url, 'GET')
+    await response.body?.cancel()
+    return true
+  }
 }

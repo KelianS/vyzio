@@ -244,5 +244,8 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
         public Task<Stream?> TryGetClipAsync(
             string frigateEventId, TimeSpan finalizationWindow = default, CancellationToken ct = default)
             => Task.FromResult(Clip);
+
+        public Task<Stream?> ReadClipAsync(string frigateEventId, CancellationToken ct = default)
+            => Task.FromResult(Clip);
     }
 }

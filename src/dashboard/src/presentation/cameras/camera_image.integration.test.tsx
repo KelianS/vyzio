@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { Camera } from '../../domain/entities/camera.entity'
 import type { CameraImageSettings } from '../../domain/entities/camera_image_settings.entity'
@@ -14,8 +14,6 @@ const SETTINGS = 'GET /api/cameras/camera-1/image-settings'
 const SAVE_SETTINGS = 'PUT /api/cameras/camera-1/image-settings'
 const BINDINGS = 'GET /api/cameras/camera-1/capabilities'
 const PRESETS = 'GET /api/cameras/camera-1/ptz/presets'
-const SAVE_PRESET = 'POST /api/cameras/camera-1/ptz/preset/save'
-const CAPTURE = 'POST /api/cameras/camera-1/ptz/presets/1/snapshot'
 
 const imageCamera = makeCamera({ verifiedCapabilities: ['image_settings'] })
 const ptzCamera = makeCamera({ ptzSupported: true, verifiedCapabilities: ['ptz'] })
@@ -47,19 +45,6 @@ function presetsRead(currentPosition: { x: number; y: number } | null, calibrate
   return ok({ presets: [], calibrated, currentPosition })
 }
 
-const onePresetSaved = ok({
-  presets: [{ presetId: 1, label: 'Surveillance', thumbnail: true, panMs: 3, tiltMs: 2 }],
-  calibrated: true,
-  currentPosition: null,
-})
-
-// Opens the live view over the tab, then long presses the saved position to redefine it.
-async function askToRedefineFromTheLiveView() {
-  await userEvent.click(await screen.findByRole('button', { name: 'Piloter la caméra' }))
-  fireEvent.mouseDown(await screen.findByTitle(/^Surveillance \(appui/))
-  return screen.findByRole('alertdialog', { name: 'Redéfinir cette position ?' }, { timeout: 2000 })
-}
-
 async function raiseTheBrightness() {
   const brightness = await screen.findByRole('slider', { name: 'Luminosité' })
   brightness.focus()
@@ -82,7 +67,7 @@ describe('CameraImageView', () => {
       'href',
       '/settings/cameras/camera-1/connexion',
     )
-    expect(screen.queryByRole('button', { name: 'Piloter la caméra' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Piloter la caméra' })).not.toBeInTheDocument()
     expect(network.sent).toEqual([])
   })
 
@@ -207,7 +192,7 @@ describe('CameraImageView', () => {
     ).toBeInTheDocument()
   })
 
-  it('onLoad_ShouldSayWhereTheCameraStands_WhenItIsCalibrated', async () => {
+  it('onLoad_ShouldPointAtTheLiveViewForThePositions_WhenTheCameraIsCalibrated', async () => {
     // Arrange
     fakeNetwork({ [PRESETS]: presetsRead({ x: 3, y: 2 }) })
 
@@ -215,7 +200,12 @@ describe('CameraImageView', () => {
     renderScreen(<CameraImageView />, imageTab(ptzCamera))
 
     // Assert
-    expect(await screen.findByText('Position actuelle : 3, 2')).toBeInTheDocument()
+    expect(
+      await screen.findByText(
+        'Ouvrez la vue en direct pour définir les positions de cette caméra.',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/Position actuelle/)).not.toBeInTheDocument()
   })
 
   it('onLoad_ShouldAskForACalibration_WhenTheCameraHasNoReference', async () => {
@@ -245,7 +235,7 @@ describe('CameraImageView', () => {
     expect(screen.getByRole('button', { name: 'Réessayer' })).toBeInTheDocument()
   })
 
-  it('onRetryPtz_ShouldSayWhereTheCameraStands_WhenTheSecondReadSucceeds', async () => {
+  it('onRetryPtz_ShouldOfferToDriveTheCamera_WhenTheSecondReadSucceeds', async () => {
     // Arrange
     const network = fakeNetwork({ [PRESETS]: failure(500) })
     renderScreen(<CameraImageView />, imageTab(ptzCamera))
@@ -256,7 +246,7 @@ describe('CameraImageView', () => {
     await userEvent.click(retry)
 
     // Assert
-    expect(await screen.findByText('Position actuelle : 3, 2')).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: 'Piloter la caméra' })).toBeInTheDocument()
   })
 
   it('onLoad_ShouldSayTheSettingsCouldNotBeReadAndKeepTheControl_WhenTheReadFails', async () => {
@@ -279,7 +269,7 @@ describe('CameraImageView', () => {
     ).toBeInTheDocument()
     expect(screen.getByText(/GET \/api\/cameras\/camera-1\/image-settings · 500/)).toBeVisible()
     expect(screen.getByRole('button', { name: 'Réessayer' })).toBeInTheDocument()
-    expect(await screen.findByRole('button', { name: 'Piloter la caméra' })).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: 'Piloter la caméra' })).toBeInTheDocument()
     expect(screen.queryByRole('slider')).not.toBeInTheDocument()
   })
 
@@ -370,68 +360,19 @@ describe('CameraImageView', () => {
     expect(screen.getByRole('button', { name: 'Réessayer' })).toBeInTheDocument()
   })
 
-  it('onCloseLiveView_ShouldReadWhereTheCameraStandsAgain_WhenTheLiveViewCloses', async () => {
+  it('PtzCalibrationSection_ShouldOpenTheLiveViewScreen_WhenTheUserDrivesTheCamera', async () => {
     // Arrange
-    const network = fakeNetwork({ [PRESETS]: presetsRead(null) })
-    renderScreen(<CameraImageView />, imageTab(ptzCamera))
-    await userEvent.click(await screen.findByRole('button', { name: 'Piloter la caméra' }))
-    network.answer(PRESETS, presetsRead({ x: 7, y: 4 }))
+    fakeNetwork({ [PRESETS]: presetsRead(null) })
 
     // Act
-    await userEvent.click(screen.getByRole('button', { name: 'Fermer' }))
-
-    // Assert
-    expect(await screen.findByText('Position actuelle : 7, 4')).toBeInTheDocument()
-  })
-
-  it('onConfirmOverride_ShouldSaveThenLetTheCrossClose_WhenAskedFromTheLiveView', async () => {
-    // Arrange
-    const network = fakeNetwork({ [PRESETS]: onePresetSaved, [SAVE_PRESET]: ok(), [CAPTURE]: ok() })
     renderScreen(<CameraImageView />, imageTab(ptzCamera))
-    const question = await askToRedefineFromTheLiveView()
-
-    // Act
-    await userEvent.click(within(question).getByRole('button', { name: 'Redéfinir' }))
-    await screen.findByText('Position « Surveillance » enregistrée.')
-    const liveView = screen.getByRole('dialog', { name: /^Pilotage/ })
-    await userEvent.click(within(liveView).getByRole('button', { name: 'Fermer' }))
 
     // Assert
-    expect(network.sent).toContainEqual(
-      expect.objectContaining({ route: SAVE_PRESET, body: { presetId: 1 } }),
+    expect(await screen.findByRole('link', { name: 'Piloter la caméra' })).toHaveAttribute(
+      'href',
+      '/cameras/camera-1/direct',
     )
-    expect(screen.queryByRole('dialog', { name: /^Pilotage/ })).not.toBeInTheDocument()
   })
-
-  it('onCancelOverride_ShouldReturnToTheLiveView_WhenAskedFromTheLiveView', async () => {
-    // Arrange
-    const network = fakeNetwork({ [PRESETS]: onePresetSaved })
-    renderScreen(<CameraImageView />, imageTab(ptzCamera))
-    const question = await askToRedefineFromTheLiveView()
-
-    // Act
-    await userEvent.click(within(question).getByRole('button', { name: 'Annuler' }))
-
-    // Assert
-    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
-    expect(screen.getByRole('dialog', { name: /^Pilotage/ })).toBeInTheDocument()
-    expect(network.sent).not.toContainEqual(expect.objectContaining({ route: SAVE_PRESET }))
-  })
-
-  it('onCancelOverride_ShouldKeepTheLiveViewOpen_WhenEscapeClosesTheQuestion', async () => {
-    // Arrange
-    fakeNetwork({ [PRESETS]: onePresetSaved })
-    renderScreen(<CameraImageView />, imageTab(ptzCamera))
-    await askToRedefineFromTheLiveView()
-
-    // Act
-    await userEvent.keyboard('{Escape}')
-
-    // Assert
-    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
-    expect(screen.getByRole('dialog', { name: /^Pilotage/ })).toBeInTheDocument()
-  })
-
   it('render_ShouldPointAtTheHeaderTrigger_WhenTheCameraIsNotInSurveillanceYet', async () => {
     // Arrange
     fakeNetwork({ [PRESETS]: presetsRead(null), 'GET /api/system/stats': PENDING_STATS })
@@ -449,6 +390,6 @@ describe('CameraImageView', () => {
     expect(
       screen.queryByRole('button', { name: 'Appliquer les changements' }),
     ).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Piloter la caméra' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Piloter la caméra' })).not.toBeInTheDocument()
   })
 })
