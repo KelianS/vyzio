@@ -29,11 +29,11 @@ const PLACE: Record<
     tiles: string
   }
 > = {
-  // The pad grows with the room below the picture.
+  // The pad grows with the room the bar, the picture and the positions leave, within the width.
   portrait: {
     panel: 'flex flex-1 flex-col items-center justify-evenly gap-5',
     joystick: '',
-    pad: 'size-[min(62vw,16rem)]',
+    pad: 'size-[min(70vw,18rem,calc(100dvh-56.25vw-17rem))] bg-card',
     button: 'size-12',
     icon: 'size-6',
     positions: 'flex w-full flex-col items-center gap-2',
@@ -44,7 +44,7 @@ const PLACE: Record<
     panel: 'pointer-events-none absolute inset-0',
     joystick:
       'pointer-events-auto absolute top-1/2 right-[max(1rem,env(safe-area-inset-right))] -translate-y-1/2',
-    pad: 'size-[116px]',
+    pad: 'size-[116px] bg-card/60',
     button: 'size-[34px]',
     icon: 'size-4',
     positions:
@@ -55,7 +55,7 @@ const PLACE: Record<
   wide: {
     panel: 'flex flex-col items-center gap-6',
     joystick: '',
-    pad: 'size-40',
+    pad: 'size-40 bg-card',
     button: 'size-10',
     icon: 'size-5',
     positions: 'flex w-full flex-col items-center gap-2',
@@ -277,13 +277,8 @@ export function PtzControlPanel({
   return (
     <div className={place.panel}>
       <div {...fade} className={cn(place.joystick, fade.className)}>
-        {/* One pad, as on a card: its own surface keeps the four directions one control on any background. */}
-        <div
-          className={cn(
-            'relative shrink-0 rounded-full border border-border bg-card shadow-[var(--shadow-soft)]',
-            place.pad,
-          )}
-        >
+        {/* One pad: its own surface keeps the four directions one control without main's card behind it. */}
+        <div className={cn('relative shrink-0 rounded-full border border-border', place.pad)}>
           <div
             className="absolute inset-[30%] rounded-full border-2 border-background/70"
             aria-hidden="true"

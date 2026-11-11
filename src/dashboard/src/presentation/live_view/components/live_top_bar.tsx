@@ -3,7 +3,7 @@ import { ArrowLeft, Maximize } from 'lucide-react'
 import { cn } from '../../../common/ui/utils'
 import { fading, LIVE_CONTROL } from './live_control'
 
-/** The bar over the picture: back, the camera's name, then the picture's own controls (DESIGN SYSTEM § Full-screen viewing). */
+/** The top bar: back, the camera's name, then the picture's own controls (DESIGN SYSTEM § Full-screen viewing). */
 export function LiveTopBar({
   label,
   shown,
@@ -14,7 +14,7 @@ export function LiveTopBar({
 }: {
   label: string
   shown: boolean
-  /** Above the picture rather than over it: a solid strip, nothing faded. */
+  /** Above the picture rather than over it: a solid strip instead of a gradient. */
   above?: boolean
   onBack: () => void
   /** Given only while the browser can still be asked to hide its bars. */

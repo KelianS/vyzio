@@ -182,9 +182,9 @@ nothing of the page stays around it. A layer (`common/components/overlay`) remai
 still image or a recording. Where each control sits in a given screen is its SPECS.
 
 - **The picture goes edge to edge.** A top bar carries back, the name, then the picture's own
-  controls, on the dark structural surface (`--bg-strong`). On a screen taller than wide it sits
-  above the picture and never covers it; elsewhere it lies over the picture, dimmed so it reads over
-  any picture.
+  controls, on the dark structural surface (`--bg-strong`). When the other controls stand below the
+  picture it sits above it and never covers it; when they stand beside it or over it, it lies over
+  the picture, dimmed so it reads over any picture.
 - **The other controls sit beside or below the picture when there is room**, on the page surface,
   and over it only when the picture fills the screen. Below the picture they take the remaining
   height and grow with it, leaving no empty band.

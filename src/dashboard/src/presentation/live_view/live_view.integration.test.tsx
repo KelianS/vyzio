@@ -1171,21 +1171,18 @@ describe('LiveView layouts', () => {
     { layout: 'portrait' as const, over: false },
     { layout: 'landscape' as const, over: true },
     { layout: 'wide' as const, over: true },
-  ])(
-    'LiveView_ShouldLayTheBarOverThePictureOnlyWhenItFillsTheScreen_WhenHeld $layout',
-    ({ layout, over }) => {
-      // Arrange
-      holdTheDevice(layout)
-      fakeNetwork({})
+  ])('LiveView_ShouldKeepTheBarOffThePictureOnlyUpright_WhenHeld $layout', ({ layout, over }) => {
+    // Arrange
+    holdTheDevice(layout)
+    fakeNetwork({})
 
-      // Act
-      renderOn()
+    // Act
+    renderOn()
 
-      // Assert
-      const picture = screen.getByLabelText('Front Door', { selector: 'video' }).parentElement
-      expect(picture?.contains(screen.getByRole('button', { name: 'Retour' }))).toBe(over)
-    },
-  )
+    // Assert
+    const picture = screen.getByLabelText('Front Door', { selector: 'video' }).parentElement
+    expect(picture?.contains(screen.getByRole('button', { name: 'Retour' }))).toBe(over)
+  })
 
   it('LiveView_ShouldKeepItsControls_WhenHeldUpright', () => {
     // Arrange

@@ -62,6 +62,25 @@ test.describe('LiveView', () => {
     expect(picture!.width).toBe(390)
   })
 
+  test('LiveView_ShouldGiveThePadAndPositionsTheHeightLeft_WhenThePhoneIsHeldUpright', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    const state = createFakeBackendState({
+      cameras: [makeFakeCamera({ ptzSupported: true, verifiedCapabilities: ['ptz'] })],
+    })
+    await installFakeBackend(page, state)
+
+    await page.goto('/cameras/camera-1/direct')
+    await expect(page.getByTitle('Enregistrer la position actuelle ici').first()).toBeVisible()
+    const pad = await page.getByTitle('Haut').locator('..').boundingBox()
+    const tile = await page.getByTitle('Enregistrer la position actuelle ici').first().boundingBox()
+
+    // Larger than main's 116 px pad, and the positions reach down the screen rather than stop high.
+    expect(pad!.width).toBeGreaterThan(200)
+    expect(tile!.y).toBeGreaterThan(600)
+  })
+
   test('LiveView_ShouldGoBackHome_WhenTheBrowserGoesBack', async ({ page }) => {
     const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
     await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
