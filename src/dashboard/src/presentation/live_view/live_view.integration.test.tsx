@@ -844,6 +844,26 @@ describe('LiveView video', () => {
     expect(screen.queryByRole('button', { name: 'HD haute qualité' })).not.toBeInTheDocument()
   })
 
+  it('LiveView_ShouldReconnect_WhenAPlayingStreamIsCut', async () => {
+    // Arrange
+    stubBrowserMse()
+    renderVideo()
+    const first = await theStreamPlays()
+    await screen.findByRole('button', { name: 'Activer le son' })
+
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+
+    // Act
+    act(() => first.hangUp(1006))
+    const waiting = screen.getByText('Reconnexion…')
+    act(() => vi.advanceTimersByTime(2000))
+    vi.useRealTimers()
+
+    // Assert
+    expect(waiting).toBeInTheDocument()
+    await waitFor(() => expect(FakeSocket.opened).toHaveLength(2))
+  })
+
   it('LiveView_ShouldSayTheCameraNoLongerAnswersAtOnceThenReconnect_WhenAPlayingStreamIsCut', async () => {
     // Arrange
     stubBrowserMse()
