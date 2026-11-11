@@ -181,11 +181,13 @@ layer over a page: the browser's back closes it, home when there is nothing to g
 nothing of the page stays around it. A layer (`common/components/overlay`) remains for glancing at a
 still image or a recording. Where each control sits in a given screen is its SPECS.
 
-- **The picture goes edge to edge.** A top bar always lies over it: back, the name, then the
-  picture's own controls, on the dark structural surface (`--bg-strong`) dimmed so it reads over any
-  picture.
+- **The picture goes edge to edge.** A top bar carries back, the name, then the picture's own
+  controls, on the dark structural surface (`--bg-strong`). On a screen taller than wide it sits
+  above the picture and never covers it; elsewhere it lies over the picture, dimmed so it reads over
+  any picture.
 - **The other controls sit beside or below the picture when there is room**, on the page surface,
-  and over it only when the picture fills the screen.
+  and over it only when the picture fills the screen. Below the picture they take the remaining
+  height and grow with it, leaving no empty band.
 - **Controls over a filling picture fade** after a few seconds without a gesture and come back on a
   tap; never while a finger holds one. Controls beside or below the picture never fade. A line that
   explains a state (a failure, a missing step) is not a control: it never fades.
