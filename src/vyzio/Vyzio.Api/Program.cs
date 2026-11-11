@@ -55,6 +55,10 @@ builder.Services.AddHttpClient<IFrigateIdentityWriter, FrigateIdentityWriter>(cl
 {
     client.BaseAddress = new Uri($"{runtimeSettings.Frigate.ApiBaseUrl}/");
 });
+builder.Services.AddHttpClient<IFrigateDetectionEraser, FrigateDetectionEraser>(client =>
+{
+    client.BaseAddress = new Uri($"{runtimeSettings.Frigate.ApiBaseUrl}/");
+});
 builder.Services.AddHttpClient<IFrigateEventImageProvider, FrigateEventImageProvider>(client =>
 {
     client.BaseAddress = new Uri($"{runtimeSettings.Frigate.ApiBaseUrl}/");
@@ -109,6 +113,7 @@ builder.Services.AddRateLimiter(options =>
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<Vyzio.Api.FrigateUnavailableExceptionHandler>();
 builder.Services.AddExceptionHandler<Vyzio.Api.CameraCommandExceptionHandler>();
+builder.Services.AddExceptionHandler<Vyzio.Api.DetectionErasureExceptionHandler>();
 builder.Services.AddExceptionHandler<Vyzio.Api.ScheduleRuleExceptionHandler>();
 builder.Services.AddVyzioHealthChecks();
 builder.Services.AddSingleton<FrigateMqttConnection>();

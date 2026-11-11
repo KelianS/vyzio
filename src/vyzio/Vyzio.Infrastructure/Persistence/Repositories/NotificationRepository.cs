@@ -48,4 +48,9 @@ public sealed class NotificationRepository(VyzioDbContext db) : INotificationRep
             .OrderByDescending(n => n.SentAt)
             .Take(limit)
             .ToListAsync(ct);
+
+    public Task<int> DeleteForEventAsync(string frigateEventId, CancellationToken ct = default)
+        => db.Notifications
+            .Where(n => n.FrigateEventId == frigateEventId)
+            .ExecuteDeleteAsync(ct);
 }

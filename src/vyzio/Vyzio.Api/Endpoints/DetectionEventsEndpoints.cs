@@ -65,6 +65,23 @@ public static class DetectionEventsEndpoints
             return updated ? Results.NoContent() : Results.NotFound();
         });
 
+        group.MapDelete("/{id}", async (string id, DeleteDetectionUseCase useCase, CancellationToken ct) =>
+            await useCase.ExecuteAsync(id, ct) switch
+            {
+                DetectionErasure.Erased => Results.NoContent(),
+                DetectionErasure.NotFound => Results.NotFound(new
+                {
+                    error = "detection_not_found",
+                    message = $"No detection {id} to erase.",
+                }),
+                DetectionErasure.InProgress => Results.Conflict(new
+                {
+                    error = "detection_in_progress",
+                    message = $"Detection {id} is still being filmed; nothing was erased.",
+                }),
+                _ => throw new InvalidOperationException($"Unhandled erasure outcome for {id}."),
+            });
+
         return app;
     }
 
