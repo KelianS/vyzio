@@ -23,6 +23,7 @@ out="$here/results/$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$out"
 base="$(git -C "$root" rev-parse HEAD)"
 real_gh="$(command -v gh)"
+real_git="$(command -v git)"
 
 # Applies the case on a detached worktree of HEAD, commits it, and runs the case's agent or skill on it.
 run_one() {
@@ -40,11 +41,11 @@ run_one() {
   git -C "$root" worktree add --quiet --detach "$work" "$base" >"$out/$case-$n.log" 2>&1
   if (cd "$work" && bash "$here/$case/setup.sh" && git add -A && git commit --quiet --allow-empty -m "test(review): apply the $case review case") >>"$out/$case-$n.log" 2>&1; then
     head="$(git -C "$work" rev-parse HEAD)"
-    (cd "$work" && PATH="$here/shim:$PATH" REVIEW_CASE_REAL_GH="$real_gh" REVIEW_CASE_GH_WRITES="$writes" \
+    (cd "$work" && PATH="$here/shim:$PATH" REVIEW_CASE_REAL_GH="$real_gh" REVIEW_CASE_REAL_GIT="$real_git" REVIEW_CASE_WRITES="$writes" \
       claude -p "$ask" \
       --allowedTools Read Grep Glob Agent Skill WebSearch WebFetch "Bash(git *)" "Bash(gh *)" \
       "Bash(dotnet list *)" "Bash(pnpm --prefix src/dashboard outdated*)" \
-      "${edits[@]}" --disallowedTools "Bash(git push*)" "Bash(git -C* push*)" "Bash(git -c* push*)") >"$out/$case-$n.md" 2>>"$out/$case-$n.log"
+      "${edits[@]}") >"$out/$case-$n.md" 2>>"$out/$case-$n.log"
     git -C "$work" status --porcelain | sed 's/^/Worktree changed by the run: /' >>"$out/$case-$n.md"
     [ "$(git -C "$work" rev-parse HEAD)" = "$head" ] || echo "Worktree changed by the run: a commit" >>"$out/$case-$n.md"
     [ -f "$writes" ] && sed 's/^/GitHub write attempted by the run: /' "$writes" >>"$out/$case-$n.md"
