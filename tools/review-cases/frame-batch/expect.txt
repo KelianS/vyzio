@@ -1,4 +1,4 @@
 skill: frame
 prompt: frame #185
-cites: Options:
-cites: Recommendation:
+cites: Options
+cites: Recommand
