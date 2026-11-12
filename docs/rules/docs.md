@@ -146,7 +146,7 @@ the one of [`adr/TEMPLATE.md`](../adr/TEMPLATE.md).
 
 When the decision it records moves, the ADR is rewritten in the same branch as the change, in the
 present tense, and the option it leaves goes under its "Options rejected" (DOCS-08). No "amended
-by" in its status, no correction stacked at its end, no ADR written only to amend another.
+by", no correction stacked at its end, no ADR written only to amend another.
 
 **Exceptions**: the ADRs accepted before [`adr/TEMPLATE.md`](../adr/TEMPLATE.md), as they stand
 until their decision moves; then they are rewritten to it, or deleted under DOCS-22.

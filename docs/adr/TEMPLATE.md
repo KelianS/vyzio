@@ -8,8 +8,11 @@ nature are DOCS-07, DOCS-08, DOCS-11, DOCS-12 and DOCS-21 to DOCS-23, DOCS-25 of
 
 ## When to write one
 
-Only when the decision meets the bar of DOCS-07; its ADR comes in the same branch as the code
-(DOCS-02).
+When the choice is structural and costly to change, the bar of DOCS-07; an obvious or reversible
+choice does not get one. Its ADR comes in the same branch as the code (DOCS-02).
+
+An ADR in this folder is in force: it carries no status, and the pull request that merges it is
+its validation.
 
 ## What an ADR holds, and what goes elsewhere
 
@@ -43,23 +46,26 @@ rewritten.
 ```markdown
 # ADR-<NN>: <the target, stated as the decision taken>
 
-> Status: Accepted
-
 ## Context
 
-<The forces at play: the need it answers (cite the SPECS or use case ID), the constraints, the
-facts measured (cite the hardware sheet). No solution yet.>
+<What situation forced a decision? The need it answers (cite the SPECS or use case ID), the
+constraints, the facts measured (cite the hardware sheet). No solution yet.>
 
 ## Decision
 
-<The choice, in the present tense, at the level of structure: what owns what, which flow, which
-contract, which dependency. No value the code holds, no screen.>
+<What was decided, in one direct sentence.>
+
+- <Only if needed: the structural detail, what owns what, which flow, which contract, which
+  dependency. No value the code holds, no screen.>
 
 ## Consequences
 
-- <What becomes easier, what becomes harder, what it costs to reverse.>
+- ✅ <What it gains.>
+- ⚠️ <What it costs, or a risk it accepts.>
 
 ## Options rejected
 
-- **<Option>**: <what it was, and why it lost>.
+| Option | Why rejected |
+| --- | --- |
+| <Option> | <Why it lost> |
 ```
