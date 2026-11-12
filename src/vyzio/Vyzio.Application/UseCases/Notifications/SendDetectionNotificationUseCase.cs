@@ -25,6 +25,7 @@ public sealed class SendDetectionNotificationUseCase(
     IFrigateClipProvider clipProvider,
     DetectionMessageFormatter formatter,
     PersonAlertPolicy personAlertPolicy,
+    IErasedDetections erased,
     TimeZoneInfo timeZone,
     ILogger<SendDetectionNotificationUseCase> logger,
     TimeSpan? mediaFinalizationWindow = null) : IDetectionNotificationDispatcher
@@ -82,6 +83,14 @@ public sealed class SendDetectionNotificationUseCase(
         try
         {
             (photo, video) = await GatherMediaAsync(config, sender.Descriptor.Capabilities, enabledFields, detection, ct);
+
+            // Gathering the media can outlast the detection: the user may have erased it meanwhile (HIST-10).
+            if (erased.Contains(detection.EventId))
+            {
+                logger.LogInformation("{Channel} notification for event {EventId} dropped: the user erased the detection",
+                    config.Channel, detection.EventId);
+                return false;
+            }
 
             logger.LogInformation(
                 "Sending {Channel} notification for event {EventId} label={Label} photo={HasPhoto} video={HasVideo}",

@@ -11,6 +11,7 @@ using Vyzio.Core.Interfaces;
 using Vyzio.Infrastructure.Notifications;
 using Vyzio.Infrastructure.Persistence;
 using Vyzio.Infrastructure.Persistence.Repositories;
+using Vyzio.Infrastructure.Services;
 
 namespace Vyzio.Tests.Integration;
 
@@ -24,6 +25,7 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
     private readonly StubFrigateEventReader _eventReader;
     private readonly StubClipProvider _clipProvider;
     private readonly TestDetectionQueue _queue;
+    private readonly ErasedDetections _erased = new();
     private readonly NotifyDetectionUseCase _notify;
     private readonly IngestFrigateEventUseCase _sut;
 
@@ -68,6 +70,7 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
                 new DetectionProfileResolver(new ProfileRepository(_db)),
                 new ProfileCameraLinkRepository(_db),
                 new CameraDirectory(new CameraRepository(_db))),
+            _erased,
             TimeZoneInfo.Local,
             NullLogger<SendDetectionNotificationUseCase>.Instance,
             mediaFinalizationWindow: TimeSpan.Zero);
@@ -146,6 +149,26 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
         Assert.Equal(2, await _db.Notifications.CountAsync());
         Assert.Single(_telegram.TextOnly);
         Assert.Single(_discord.TextOnly);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldSendNothingOnAnyChannel_WhenTheUserErasesTheDetectionWhileItsClipIsAwaited()
+    {
+        // Arrange
+        _eventReader.Identity = "Alice";
+        var eraser = Substitute.For<IFrigateDetectionEraser>();
+        eraser.EraseAsync("frigate-ti-005", Arg.Any<CancellationToken>()).Returns(DetectionErasure.Erased);
+        var deletion = new DeleteDetectionUseCase(
+            eraser, _notifications, _erased, NullLogger<DeleteDetectionUseCase>.Instance);
+        _clipProvider.WhileAwaited = () => deletion.ExecuteAsync("frigate-ti-005");
+
+        // Act
+        await IngestAndNotifyAsync(Payload("frigate-ti-005", lifecycle: "end", hasClip: true));
+
+        // Assert
+        Assert.Empty(_telegram.Sent);
+        Assert.Empty(_discord.Sent);
+        Assert.Equal(0, await _db.Notifications.CountAsync());
     }
 
     [Fact]
@@ -241,9 +264,16 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
     {
         public Stream? Clip { get; set; }
 
-        public Task<Stream?> TryGetClipAsync(
+        // What happens elsewhere while the notification waits for Frigate to write the clip.
+        public Func<Task>? WhileAwaited { get; set; }
+
+        public async Task<Stream?> TryGetClipAsync(
             string frigateEventId, TimeSpan finalizationWindow = default, CancellationToken ct = default)
-            => Task.FromResult(Clip);
+        {
+            if (WhileAwaited is not null)
+                await WhileAwaited();
+            return Clip;
+        }
 
         public Task<Stream?> ReadClipAsync(string frigateEventId, CancellationToken ct = default)
             => Task.FromResult(Clip);

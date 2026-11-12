@@ -11,9 +11,10 @@ public class DeleteDetectionUseCaseTests
 {
     private readonly IFrigateDetectionEraser _eraser = Substitute.For<IFrigateDetectionEraser>();
     private readonly INotificationRepository _notifications = Substitute.For<INotificationRepository>();
+    private readonly IErasedDetections _erased = Substitute.For<IErasedDetections>();
 
     private DeleteDetectionUseCase CreateSut()
-        => new(_eraser, _notifications, NullLogger<DeleteDetectionUseCase>.Instance);
+        => new(_eraser, _notifications, _erased, NullLogger<DeleteDetectionUseCase>.Instance);
 
     [Fact]
     public async Task ExecuteAsync_ShouldRemoveTheDetectionsNotificationRows_WhenFrigateErasedIt()
@@ -27,6 +28,47 @@ public class DeleteDetectionUseCaseTests
         // Assert
         Assert.Equal(DetectionErasure.Erased, erasure);
         await _notifications.Received(1).DeleteForEventAsync("evt-1", Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldStopTheNotificationStillOnItsWay_WhenFrigateErasedIt()
+    {
+        // Arrange
+        _eraser.EraseAsync("evt-1", Arg.Any<CancellationToken>()).Returns(DetectionErasure.Erased);
+
+        // Act
+        await CreateSut().ExecuteAsync("evt-1");
+
+        // Assert
+        _erased.Received(1).Remember("evt-1");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldLetItsNotificationLeave_WhenTheDetectionIsStillInProgress()
+    {
+        // Arrange
+        _eraser.EraseAsync("evt-1", Arg.Any<CancellationToken>()).Returns(DetectionErasure.InProgress);
+
+        // Act
+        await CreateSut().ExecuteAsync("evt-1");
+
+        // Assert
+        _erased.DidNotReceiveWithAnyArgs().Remember(default!);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldLetItsNotificationLeave_WhenFrigateFailsMidErasure()
+    {
+        // Arrange
+        _eraser.EraseAsync("evt-1", Arg.Any<CancellationToken>())
+            .ThrowsAsync(new DetectionErasureFailedException("DELETE /api/events/evt-1 answered 500", partlyErased: true));
+
+        // Act
+        var act = () => CreateSut().ExecuteAsync("evt-1");
+
+        // Assert
+        await Assert.ThrowsAsync<DetectionErasureFailedException>(act);
+        _erased.DidNotReceiveWithAnyArgs().Remember(default!);
     }
 
     [Fact]

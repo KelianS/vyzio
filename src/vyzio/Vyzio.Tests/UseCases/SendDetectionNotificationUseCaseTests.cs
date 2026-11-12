@@ -19,6 +19,7 @@ public class SendDetectionNotificationUseCaseTests
     private readonly INotificationChannelSender _discord = FakeSender(NotificationChannel.Discord);
     private readonly IProfileRepository _profiles = Substitute.For<IProfileRepository>();
     private readonly IScheduleRuleRepository _scheduleRules = Substitute.For<IScheduleRuleRepository>();
+    private readonly IErasedDetections _erased = Substitute.For<IErasedDetections>();
 
     private static NotificationChannelConfig ActiveConfig(NotificationChannel channel = NotificationChannel.Telegram)
         => new()
@@ -71,6 +72,7 @@ public class SendDetectionNotificationUseCaseTests
                 new DetectionProfileResolver(_profiles),
                 Substitute.For<IProfileCameraLinkRepository>(),
                 new CameraDirectory(Substitute.For<ICameraRepository>())),
+            _erased,
             TimeZoneInfo.Local,
             NullLogger<SendDetectionNotificationUseCase>.Instance,
             mediaFinalizationWindow: TimeSpan.Zero);
@@ -99,6 +101,23 @@ public class SendDetectionNotificationUseCaseTests
         Assert.False(sent);
         await _telegram.DidNotReceive().SendAsync(
             Arg.Any<OutgoingNotification>(), Arg.Any<ChannelCredentials>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldSendOnNoChannelNorJournalIt_WhenTheUserErasedTheDetection()
+    {
+        // Arrange
+        Configure(ActiveConfig(), ActiveConfig(NotificationChannel.Discord));
+        _erased.Contains("frigate-evt-900").Returns(true);
+
+        // Act
+        var sent = await Build(_telegram, _discord).ExecuteAsync(CreateDetection());
+
+        // Assert
+        Assert.False(sent);
+        await _telegram.DidNotReceiveWithAnyArgs().SendAsync(default!, default!, default);
+        await _discord.DidNotReceiveWithAnyArgs().SendAsync(default!, default!, default);
+        await _notifications.DidNotReceiveWithAnyArgs().AddAsync(default!, default);
     }
 
     [Fact]
