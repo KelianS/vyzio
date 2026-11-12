@@ -1,0 +1,4 @@
+skill: issue
+prompt: record this bug: the camera list shows a camera as offline while its live view keeps playing
+cites: Searched:
+cites: not recorded until you approve

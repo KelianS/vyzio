@@ -5,7 +5,7 @@ import { ChevronRight } from 'lucide-react'
 export function AdvancedFold({ lede, children }: { lede?: string; children: ReactNode }) {
   return (
     <details className="group mt-8 rounded-inset border border-border">
-      <summary className="flex cursor-pointer list-none items-center gap-2 rounded-inset px-4 py-3 font-medium select-none hover:bg-muted">
+      <summary className="flex cursor-pointer list-none items-center gap-2 rounded-inset px-4 py-3 font-medium hover:bg-muted">
         <ChevronRight
           className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-90"
           aria-hidden="true"

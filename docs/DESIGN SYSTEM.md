@@ -79,6 +79,11 @@ plus tokens: no global class, no literal colour, radius or shadow in a component
 supported everywhere**: a screen without it is a screen writing a colour by hand. Responsive design
 follows the library's scale from the small screen upwards; another breakpoint must be justified.
 
+**A press never selects.** What the user acts on, a button, a link, a tab, a field's label or a strip
+of controls marked `data-press-only`, never selects its text nor opens the phone's callout on a long
+press; text to read stays selectable, and so does a field, even inside its label. One base rule in
+`src/index.css` carries it, never a class per component.
+
 ## Patterns
 
 ### Settings screens
@@ -186,7 +191,8 @@ still image or a recording. Where each control sits in a given screen is its use
 - **The picture goes edge to edge.** A top bar carries back, the name, then the picture's own
   controls, on the dark structural surface (`--bg-strong`). When the picture neither fills the screen
   nor has controls beside it, the bar sits above it and never covers it; otherwise it lies over the
-  picture, dimmed so it reads over any picture.
+  picture, dimmed so it reads over any picture. Above the picture, the frame takes the picture's own
+  shape: no band beside it, nothing cropped.
 - **The other controls sit beside or below the picture when there is room**, on the page surface,
   and over it only when the picture fills the screen. Below the picture they keep a capped size
   that does not grow with the free height, and stand centred in the room left.
@@ -194,8 +200,10 @@ still image or a recording. Where each control sits in a given screen is its use
   tap; never while a finger holds one. Controls beside or below the picture never fade. A line that
   explains a state (a failure, a missing step) is not a control: it never fades.
 - **The browser's own bars**: when the picture fills the screen, the screen asks the browser to go
-  full screen on a gesture, with a button where no gesture has come. Where the browser cannot, the
-  screen fills what it leaves visible, and keeps every control inside the device's safe areas.
+  full screen on a gesture, with a button where no gesture has come, and one to give the bars back
+  without leaving the screen, the browser's own way out not always working. Where the browser
+  cannot, the screen fills what it leaves visible, and keeps every control inside the device's safe
+  areas.
 
 ## UX vocabulary
 

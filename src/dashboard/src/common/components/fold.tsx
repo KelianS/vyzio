@@ -24,7 +24,7 @@ export function Fold({
       onToggle={(event) => setOpen(event.currentTarget.open)}
       className="group mt-4 rounded-inset bg-muted/50"
     >
-      <summary className="flex cursor-pointer list-none items-center gap-2 rounded-inset px-3 py-2 text-sm font-medium select-none hover:bg-muted">
+      <summary className="flex cursor-pointer list-none items-center gap-2 rounded-inset px-3 py-2 text-sm font-medium hover:bg-muted">
         {summary}
         <ChevronRight
           className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-90"

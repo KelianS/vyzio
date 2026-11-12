@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Stands in for git during a case: a push is refused and logged for the report, anything else reaches the real git.
+for arg in "$@"; do
+  if [ "$arg" = push ]; then
+    echo "git $*" >>"$REVIEW_CASE_WRITES"
+    echo "git push is refused during a review case" >&2
+    exit 1
+  fi
+done
+exec "$REVIEW_CASE_REAL_GIT" "$@"

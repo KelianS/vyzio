@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { ArrowLeft, Maximize } from 'lucide-react'
+import { ArrowLeft, Maximize, Minimize } from 'lucide-react'
 import { cn } from '../../../common/ui/utils'
 import { fading, LIVE_CONTROL } from './live_control'
 
@@ -10,6 +10,7 @@ export function LiveTopBar({
   above = false,
   onBack,
   onFullScreen,
+  onLeaveFullScreen,
   children,
 }: {
   label: string
@@ -19,6 +20,8 @@ export function LiveTopBar({
   onBack: () => void
   /** Given only while the browser can still be asked to hide its bars. */
   onFullScreen?: () => void
+  /** Given only while the browser hides its bars: its own swipe hint does not always leave. */
+  onLeaveFullScreen?: () => void
   children?: ReactNode
 }) {
   const fade = fading(shown)
@@ -26,6 +29,7 @@ export function LiveTopBar({
   return (
     <div
       {...fade}
+      data-press-only
       className={cn(
         'flex items-center gap-2 pt-[max(0.5rem,env(safe-area-inset-top))] pr-[max(0.5rem,env(safe-area-inset-right))] pl-[max(0.5rem,env(safe-area-inset-left))] text-surface-inverse-foreground',
         above
@@ -56,6 +60,16 @@ export function LiveTopBar({
           onClick={onFullScreen}
         >
           <Maximize className="size-4" aria-hidden="true" />
+        </button>
+      )}
+      {onLeaveFullScreen && (
+        <button
+          type="button"
+          className={LIVE_CONTROL}
+          aria-label="Quitter le plein écran"
+          onClick={onLeaveFullScreen}
+        >
+          <Minimize className="size-4" aria-hidden="true" />
         </button>
       )}
     </div>

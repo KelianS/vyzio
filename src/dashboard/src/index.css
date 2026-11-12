@@ -213,6 +213,34 @@ body::before {
     color: inherit;
     text-decoration: none;
   }
+
+  /* A press never selects: what the user acts on is not text to read (DESIGN SYSTEM § Component foundation). */
+  a,
+  button,
+  summary,
+  label,
+  [role='button'],
+  [role='link'],
+  [role='tab'],
+  [role='menuitem'],
+  [role='option'],
+  [role='switch'],
+  [role='checkbox'],
+  [role='radio'],
+  [role='slider'],
+  [data-press-only] {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  /* A field inside its label stays typed into and pasted into. */
+  input,
+  textarea {
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
+  }
 }
 
 /* ---------------------------------------------------------------------------

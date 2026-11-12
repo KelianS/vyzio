@@ -265,6 +265,7 @@ export function LiveView({
               above={BAR_ABOVE[layout]}
               onBack={back}
               onFullScreen={fullScreen.offered ? fullScreen.enter : undefined}
+              onLeaveFullScreen={fullScreen.leave}
             >
               {pictureControls}
             </LiveTopBar>

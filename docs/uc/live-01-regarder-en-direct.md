@@ -37,7 +37,7 @@
 ### N1 · Ouvrir le direct depuis l'accueil
 
 1. L'utilisateur touche la vignette d'une caméra surveillée qui répond (LIVE-11).
-2. Vyzio ouvre la vue en direct, son écran à elle (LIVE-07), en qualité économique et sans le son (LIVE-04, LIVE-05), disposée selon l'écran (LIVE-08, LIVE-09).
+2. Vyzio ouvre la vue en direct, son écran à elle (LIVE-07), en qualité économique et sans le son (LIVE-04, LIVE-05), disposée selon l'écran (LIVE-08, LIVE-09), le cadre à la forme de l'image (LIVE-14).
 3. L'utilisateur revient en arrière par la barre ou le retour du navigateur, et retrouve l'accueil (LIVE-07).
 
 ### A1 · Passer en haute qualité
@@ -57,6 +57,8 @@
 
 1. Le téléphone tenu en paysage, la vidéo occupe tout l'écran et les commandes s'y posent (LIVE-10).
 2. Sans geste, elles s'effacent (LIVE-10) ; un appui sur l'image les fait revenir.
+3. La vidéo continue pendant que le téléphone tourne, dans un sens comme dans l'autre (LIVE-16).
+4. L'utilisateur peut faire rendre ses barres au navigateur ; la vue reste ouverte et la vidéo continue (LIVE-15).
 
 ### A5 · Atteindre le direct par son adresse
 
@@ -89,7 +91,10 @@
 - **LIVE-10** · telephone tenu en paysage, la video occupe tout l'ecran : la barre, le pilotage et les positions, enregistrement compris, sont poses dessus, s'effacent apres quelques secondes sans geste, jamais pendant un appui, et reviennent d'un appui sur l'image ; ce qui explique un etat (la raison de l'image de secours, des positions non lues, une calibration a faire, une orientation indisponible) ne s'efface jamais ; le navigateur y masque ses propres barres des le premier geste quand il le permet, avec un bouton pour le lui redemander, et sinon la vue occupe tout ce qu'il laisse visible ;
 - **LIVE-11** · atteinte par son adresse, la vue en direct d'une camera en mode vie privee, hors ligne, a configurer ou qui n'existe plus le dit en une phrase, sans image ni tentative de flux, avec le chemin utile (la page de la camera pour une camera a configurer ou hors ligne) ; la vignette, elle, ne l'ouvre que pour une camera surveillee qui repond (CAM-05, CAM-08, PRIV-06) ;
 - **LIVE-12** · si la video ne peut pas etre lue, parce que le navigateur ne la lit pas ou que le flux n'arrive pas, la vue en direct montre une image rafraichie, dit pourquoi en une phrase et propose de reessayer quand la cause peut passer ; en mode vie privee, ou pour une camera qui n'existe plus, elle le dit sans image ; les vignettes restent des images rafraichies ;
-- **LIVE-13** · si la video s'arrete en cours de lecture parce que la camera ne repond plus, la vue en direct ne laisse pas une image figee passer pour le direct : quelques secondes sans nouvelle image suffisent, et un flux que la camera cesse d'envoyer le fait savoir aussitot ; elle le dit en une phrase, sans image, et reprend d'elle-meme au retour de la camera, sans rechargement ; une coupure entre le navigateur et Vyzio, elle, se reconnecte.
+- **LIVE-13** · si la video s'arrete en cours de lecture parce que la camera ne repond plus, la vue en direct ne laisse pas une image figee passer pour le direct : quelques secondes sans nouvelle image suffisent, et un flux que la camera cesse d'envoyer le fait savoir aussitot ; elle le dit en une phrase, sans image, et reprend d'elle-meme au retour de la camera, sans rechargement ; une coupure entre le navigateur et Vyzio, elle, se reconnecte ;
+- **LIVE-14** · telephone tenu droit, le cadre de la video prend la forme de l'image de la camera : elle occupe toute la largeur, sans bande sur les cotes ni recadrage ;
+- **LIVE-15** · quand le navigateur masque ses propres barres, un bouton les lui fait rendre sans quitter la vue, la video continuant ;
+- **LIVE-16** · la video continue quand le telephone tourne, dans un sens comme dans l'autre, sans rouvrir la vue.
 
 ## Points ouverts
 
