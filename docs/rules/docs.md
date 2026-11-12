@@ -14,6 +14,8 @@ A user story, a journey, a rule, a service level or the product scope that chang
 [`SPECS.md`](../SPECS.md) or in its use case under [`uc/`](../uc/) before the code that delivers
 it, in the same pull request.
 
+**Exceptions**: a docs branch the implementation pull request is stacked on (DOCS-21).
+
 ### DOCS-02 · A structural decision comes with its ADR in the same branch
 
 **Level**: Required · **Verified by**: Review
@@ -36,6 +38,20 @@ only `docs/`.
 
 A change that would is preceded by the document's update, in the same branch. Search `docs/adr/` for
 the subject, not only the files the diff touches.
+
+### DOCS-21 · Framing never reaches `main` ahead of the code that delivers it
+
+**Level**: Required · **Verified by**: Review
+
+An approved change to the SPECS, a use case or an ADR merges with the code that delivers it: as the
+first commit of the implementation branch, in its pull request, or on a docs branch the
+implementation pull request is stacked on, the two merged together. A pull request that changes
+these documents for behaviour it does not deliver is a finding.
+
+Why: `main` never describes a behaviour that is not implemented.
+
+**Exceptions**: a document change that delivers no behaviour (a wording, a correction, a
+reorganisation).
 
 ## The SPECS, the use cases and the SAD
 

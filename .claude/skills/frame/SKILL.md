@@ -8,8 +8,8 @@ argument-hint: "#<n> [#<n>...] | milestone <version>"
 
 Where framing sits and what it produces: [`docs/WORKFLOW.md`](../../../docs/WORKFLOW.md) § Mandated
 order, § Issues and § Releases. This skill only says how the assistant runs it. It never starts the
-implementation: no code, test or configuration edited, no implementation branch created; framing
-ends with the documents and the issues updated.
+implementation: no code, test or configuration edited; framing ends with the documents committed
+and the issues updated.
 
 ## 1. The batch
 
@@ -40,10 +40,15 @@ A question that only the answer to another one opens is the one exception to a s
 
 ## 4. Write what the owner approved
 
-From the answers, draft what the mandated order requires: the SPECS or ADR changes, then each
-issue's new body and labels, per WORKFLOW § Issues. Show the exact text (AGENTS-05).
+From the answers, draft what the mandated order requires: the SPECS, use case or ADR changes, then
+each issue's new body and labels, per WORKFLOW § Issues. Show the exact text (AGENTS-05).
 
-Once approved: the document changes are written on a `docs/<first issue of the batch>-<slug>`
-branch of their own (WORKFLOW § Git), never mixed into another branch, for the owner to deliver;
-each issue is updated with `gh issue edit <n> --body-file <file>`, and `--remove-label
-needs-framing` once nothing is left to settle. List what was written, with the links.
+Once approved, per DOCS-21:
+
+1. The document changes of each issue are committed as the first commit of that issue's work
+   branch, named per WORKFLOW § Git, created from `main` if it does not exist yet. No pull request
+   is opened from it: the documents ship with the code. A stacked docs branch is used only when the
+   owner asks for one.
+2. Each issue is updated with `gh issue edit <n> --body-file <file>`, and `--remove-label
+   needs-framing` once nothing is left to settle.
+3. List the branches and commits written, and the issue links.
