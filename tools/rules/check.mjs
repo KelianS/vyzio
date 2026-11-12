@@ -158,9 +158,9 @@ for (const file of tracked) {
   text.split(/\r?\n/).forEach((line, i) => {
     const where = `${file}:${i + 1}`
     if (!file.startsWith(ADR_CITATION_EXEMPT)) {
-      for (const [id, numbers] of line.matchAll(CITED_ADR)) {
+      for (const [, numbers] of line.matchAll(CITED_ADR)) {
         for (const number of numbers.split('/')) {
-          if (!adrs.has(Number(number))) problems.push(`${where}: cites ${id}, ADR-${number} of which no ADR defines (DOCS-25)`)
+          if (!adrs.has(Number(number))) problems.push(`${where}: cites ADR-${number}, which no ADR defines (DOCS-25)`)
         }
       }
     }

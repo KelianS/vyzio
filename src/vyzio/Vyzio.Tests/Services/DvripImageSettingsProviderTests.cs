@@ -110,7 +110,7 @@ public class DvripImageSettingsProviderTests
         Assert.Equal(SupportedProtocol.Dvrip, provider.Protocol);
     }
 
-    // ADR-04, ADR-11: unlike DvripPtzProvider (which swallows and returns false), image settings
+    // ADR-06, ADR-11: unlike DvripPtzProvider (which swallows and returns false), image settings
     // calls let DvripCallException propagate so the real reason ends up in LastError.
     [Fact]
     public async Task GetImageSettingsAsync_ShouldThrowAnExceptionNamingTheHost_WhenTheCameraIsUnreachable()

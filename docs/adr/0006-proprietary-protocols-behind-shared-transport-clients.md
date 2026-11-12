@@ -3,7 +3,7 @@
 ## Context
 
 Principle 6 asks Vyzio to drive every camera directly, through a proprietary protocol where the
-camera offers nothing else. Two such protocols are in reach today:
+camera offers nothing else. Two such protocols are in reach:
 
 - **DVRIP**, the binary protocol of the Xiongmai firmware, spoken by many brands alike. Several
   capabilities need it on the same camera: the video stream of a camera that serves no RTSP, image
@@ -14,8 +14,8 @@ camera offers nothing else. Two such protocols are in reach today:
   with two V380 cameras a broadcast may be answered by the other one.
 
 Each capability writing its own framing, login and error handling would copy the same protocol
-several times, each copy with its own mistakes, and a mistake in the shared framing breaks every capability at
-once, found only against a reference client and a real camera. A capability
+several times, each copy with its own mistakes; one shared client is fixed and checked in one place, against a
+reference client and a real camera. A capability
 probe that swallows a failure leaves the user with a generic message instead of the cause (UI-01).
 
 Frigate reads RTSP only, and does not speak DVRIP.
