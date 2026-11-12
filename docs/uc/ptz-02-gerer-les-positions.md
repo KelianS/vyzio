@@ -9,7 +9,7 @@
 
 **Préalables** :
 
-- l'orientation de la caméra fonctionne (PTZ-02) ;
+- l'orientation de la caméra fonctionne (PTZ-19) ;
 - la caméra est en surveillance et sa vue en direct est ouverte (UC-LIVE-01, PRIV-18).
 
 **Résultat en succès** : la position est enregistrée sur son slot, avec sa miniature (PTZ-07, PTZ-11).

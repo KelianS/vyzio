@@ -1,4 +1,4 @@
-# ADR-12: The history is Frigate's list, enriched on read; retention is three durations, the history's never below a day
+# ADR-12: The history is Frigate's list, enriched on read; retention is three durations, the history's with a floor
 
 ## Context
 
@@ -7,11 +7,11 @@ HIST-04), and the owner chooses how long each kind of recording is kept, for the
 per camera (UC-HIST-02, HIST-06, HIST-07). Frigate (ADR-02) already records, detects, keeps each
 detection's clip and image, and deletes them when their retention ends.
 
-A copy of Frigate's detections kept by Vyzio was measured to rot: about half of its rows pointed at
-a media that no longer existed. The copied "has a clip" and "has an image" flags were true at the end
-of a detection and false once the media expired, and Frigate drops, object by object, the detections
-it keeps no media for. The same question, "which media does this detection have", got a different
-answer from each consumer. Once each fact was given its owner, the copy held nothing Vyzio owned.
+Frigate drops, object by object, the detections it keeps no media for, and a detection's media
+expires while the detection lives on. A copy of its detections kept by Vyzio therefore drifts: its
+"has a clip" and "has an image" flags are true at the end of a detection and false once the media
+expires, and the same question, "which media does this detection have", gets a different answer
+from each consumer.
 
 Retention is first a question of disk, a resource the whole installation shares, while cameras serve
 unlike uses. Frigate counts three kinds of recording apart, each with its own duration: the full
@@ -43,7 +43,7 @@ Frigate's list when the history is read, enriches it, and keeps only the facts i
   camera may override (ADR-15). Vyzio decides them and writes them into the configuration it
   generates; Frigate applies them.
 - The detection clip duration is the history's depth: it also governs the detection's image and
-  every severity Frigate keeps for a detection, and it never goes below one day. The floor, and a
+  every severity Frigate keeps for a detection, and it never goes below a floor (HIST-16). The floor, and a
   ceiling, are Vyzio's, enforced at the one place the effective retention is resolved.
 - Full video and motion may be zero. Full video is opt-in, and whether it records is its duration,
   never a flag beside it. A camera always keeps its detection clips: keeping no new video from a

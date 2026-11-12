@@ -15,8 +15,8 @@ the status of a camera must stay current and read without a technical diagnosis 
   the next, and a standard protocol may answer on any port.
 - Sweeping every protocol against every address of a range is costly; most addresses are empty.
 - The video engine knows only the cameras already in surveillance, and its view of a camera follows
-  its own state, not the network's. A camera's status left to an explicit check went stale for
-  hours.
+  its own state, not the network's. A camera's status left to an explicit check stays stale until
+  someone looks.
 - Several cameras of the same maker can share a home; an answer to a broadcast may come from the
   wrong one.
 

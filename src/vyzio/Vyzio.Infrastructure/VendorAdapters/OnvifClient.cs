@@ -528,7 +528,7 @@ internal sealed class OnvifClient(
         return content;
     }
 
-    // A query; soapAction because some stacks refuse its absence, throwOnFailure where the caller must say why (ADR-11/28).
+    // A query; soapAction because some stacks refuse its absence, throwOnFailure where the caller must say why (ADR-04, ADR-11).
     internal async Task<string?> PostSoapAsync(Camera camera, OnvifService service, string soapBody, CancellationToken ct,
         string? soapAction = null, bool throwOnFailure = false)
     {

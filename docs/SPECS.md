@@ -123,7 +123,7 @@ Chaque exigence porte un identifiant `<DOMAINE>-NN`, et chaque cas d'utilisation
 
 ### Pilotage (`PTZ`)
 
-- **PTZ-02** · les contrôles et les positions n'apparaissent, dans la vue live comme dans la section Pilotage des réglages de la caméra, que si l'orientation fonctionne, prouvée ou confirmée par l'utilisateur (CAM-15, CAM-16) ; tant qu'elle ne fonctionne pas, aucune commande inerte : une ligne renvoie vers la page « Connexion » de la caméra, où sa carte dit pourquoi et comment en sortir (CAM-24) ; une orientation désactivée par l'utilisateur n'y laisse rien ;
+- **PTZ-19** · les contrôles et les positions n'apparaissent, dans la vue live, que si l'orientation fonctionne, prouvée ou confirmée par l'utilisateur (CAM-15, CAM-16) ; tant qu'elle ne fonctionne pas, aucune commande inerte : une ligne renvoie vers la page « Connexion » de la caméra, où sa carte dit pourquoi et comment en sortir (CAM-24) ; une orientation désactivée par l'utilisateur n'y laisse rien ;
 - **PTZ-08** · quand la caméra ne répond pas à la lecture de ses positions, l'interface remplace les slots par un message disant qu'elles n'ont pas pu être lues, jamais qu'elles manquent, avec « Réessayer » et le détail technique (UI-01) ; l'écran vie privée le dit de même : une stratégie `ptz_parking` déjà choisie est gardée, et la choisir attend que les positions aient pu être lues.
 
 ### Detection (`DET`)

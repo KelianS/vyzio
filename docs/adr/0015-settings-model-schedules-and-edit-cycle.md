@@ -2,16 +2,17 @@
 
 ## Context
 
-Settings keep growing (retention, detection, privacy, notifications, schedules), and each new one
-used to bring its own storage, its own form and its own way of being saved. Four forces shape them.
+Settings keep growing (retention, detection, privacy, notifications, schedules), and a setting that
+brings its own storage, its own form and its own way of being saved multiplies them. Four forces
+shape them.
 
 - Disk space is shared by the whole installation, yet two cameras rarely serve the same use: a value
   must hold for the installation and still be changeable for one camera (HIST-06, UI-08).
 - Two settings of the same nature must look and behave the same everywhere (UI-18), and a written
-  charter alone did not stop each new screen from drifting.
-- What happens at what time in the house (cutting cameras, silencing channels) was one table per
-  entity, so a range could not target several things and each new kind repeated the table, the
-  validation, the scheduler and the form (SCHED-01).
+  charter alone does not keep each new screen from drifting.
+- What happens at what time in the house (cutting cameras, silencing channels) is the same need for
+  each kind of target: a range that may target several things, without repeating a table, its
+  validation, a scheduler and a form for each kind (SCHED-01).
 - The detection engine reads its generated configuration (ADR-02) only when it restarts, and a
   restart interrupts surveillance. When it happens is the user's choice (UI-12, UI-13), and a
   restart that fails must not pass for a success (UI-17).
@@ -47,7 +48,7 @@ global restart the user triggers.
   covering the moment targets it. Adding a type is a type value, its target kind, its consumer and
   its wording; the rule storage, the API, the calendar and the range editor do not change. A camera
   keeps its privacy strategy and manual toggle (ADR-10), a channel what it notifies (ADR-14); neither
-  holds a range any more.
+  holds a range.
 - **Saving persists, nothing more.** It is immediate, and never touches the
   running engine. An action (checking a connection, removing a camera, cutting surveillance) is not
   a setting: it acts at once and never waits for the restart.

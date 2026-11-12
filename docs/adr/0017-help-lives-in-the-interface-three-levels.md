@@ -3,9 +3,9 @@
 ## Context
 
 The user needs help at the moment of hesitation, in front of the setting that causes it, not in a
-manual somewhere else. User guides kept beside the product were opened by nobody, paraphrased the
-interface (navigation, greyed buttons, options a given user never sees) and duplicated what the
-screens already showed, so they diverged, against the single home of an information (COMMON-05).
+manual somewhere else. A guide kept beside the product is not where the hesitation happens, paraphrases the
+interface (navigation, greyed buttons, options a given user never sees) and duplicates what the
+screens already show, so it diverges, against the single home of an information (COMMON-05).
 
 The product is local-first: its help must open offline and match the installation in front of the
 user (principle 3). A tooltip cannot carry a multi-step task, a list of conditions or a link.
@@ -20,7 +20,7 @@ one before was not enough.
 - **Level 2, a tooltip behind an explicit trigger** on the setting's name, reachable by finger as by
   mouse. It speaks about the field.
 - **Level 3, a folded help panel** attached to a section or a screen. It speaks about the task: how
-  to do it, what a step needs. It is the only place for what used to be a user guide.
+  to do it, what a step needs. It is the only place for what a user guide would hold.
 - **The tooltip has a verifiable budget**: what overflows it is about the task, and goes down to the
   panel, leaving the tooltip the sentence that suffices.
 - **Diagnosis is not a chapter.** An error carries its remedy and a state reads where it happens

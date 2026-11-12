@@ -18,7 +18,7 @@ references these ADRs rather than copying them.
 | [ADR-09](0009-ptz-positions-resolved-above-the-protocol.md) | PTZ positions are resolved above the protocol, the camera holding its own when it can |
 | [ADR-10](0010-privacy-mode-cumulative-layers.md) | Privacy mode stacks what the camera can do on an engine stop that always happens |
 | [ADR-11](0011-image-settings-read-and-written-live.md) | Image settings are a capability read and written live on the camera, never persisted |
-| [ADR-12](0012-the-history-is-frigates-list-enriched-on-read.md) | The history is Frigate's list, enriched on read; retention is three durations, the history's never below a day |
+| [ADR-12](0012-the-history-is-frigates-list-enriched-on-read.md) | The history is Frigate's list, enriched on read; retention is three durations, the history's with a floor |
 | [ADR-13](0013-frigate-recognises-vyzio-keeps-the-people.md) | Frigate recognises faces; Vyzio keeps the people, their photos and their notification policy |
 | [ADR-14](0014-notifications-and-commands-through-opt-in-messaging-channels.md) | Notifications leave through opt-in messaging channels that carry the image, and the same channels take commands back |
 | [ADR-15](0015-settings-model-schedules-and-edit-cycle.md) | A setting is an installation value a camera may override, declared once, saved without restarting the engine |

@@ -21,7 +21,8 @@ of its configuration (principle 5), and it never claims what it has not observed
   hardware that works.
 - A generic protocol may answer reads without acting, where the maker's own protocol drives the
   hardware ([V380 sheet](../hardware/v380-pro.md)): the order protocols are tried in matters.
-- An add form that copied the camera page drifted from it, and tied every new camera to RTSP.
+- A second setup path beside the camera page has to be kept in step with it, and would tie a new
+  camera to whatever that path checks first.
 
 ## Decision
 

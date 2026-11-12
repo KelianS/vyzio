@@ -4,7 +4,7 @@ using Vyzio.Infrastructure.VendorAdapters;
 
 namespace Vyzio.Infrastructure.CapabilityProviders;
 
-// Image settings over ONVIF; failures propagate so the probe records the camera's real reason (ADR-11/28).
+// Image settings over ONVIF; failures propagate so the probe records the camera's real reason (ADR-04, ADR-11).
 internal sealed class OnvifImageSettingsProvider(OnvifClient onvif) : IImageSettingsCapabilityProvider
 {
     public SupportedProtocol Protocol => SupportedProtocol.Onvif;

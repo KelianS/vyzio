@@ -1,7 +1,7 @@
 import type { Camera } from '../../domain/entities/camera.entity'
 import type { Capability } from '../../domain/entities/camera_capability_binding.entity'
 
-/** What a camera's Orientation offers outside its card (PTZ-02). */
+/** What a camera's Orientation offers outside its card (PTZ-19). */
 export const OrientationControl = {
   Off: 'off',
   Usable: 'usable',

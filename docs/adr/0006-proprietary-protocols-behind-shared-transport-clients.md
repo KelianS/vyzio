@@ -14,8 +14,8 @@ camera offers nothing else. Two such protocols are in reach today:
   with two V380 cameras a broadcast may be answered by the other one.
 
 Each capability writing its own framing, login and error handling would copy the same protocol
-several times, each copy with its own mistakes: an early DVRIP transcription broke the PTZ and the
-image settings alike, and was only found against a reference client and a real camera. A capability
+several times, each copy with its own mistakes, and a mistake in the shared framing breaks every capability at
+once, found only against a reference client and a real camera. A capability
 probe that swallows a failure leaves the user with a generic message instead of the cause (UI-01).
 
 Frigate reads RTSP only, and does not speak DVRIP.
