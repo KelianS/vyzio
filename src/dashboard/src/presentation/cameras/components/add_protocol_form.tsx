@@ -8,6 +8,7 @@ import type {
 import { Button } from '../../../common/ui/button'
 import { Input } from '../../../common/ui/input'
 import { Switch } from '../../../common/ui/switch'
+import { SECRET_KEYBOARD, TEXT_KEYBOARD } from '../../../common/settings/text_keyboard'
 import { PROTOCOL_LABELS, SPECIFIC_ACCOUNT_HELP } from '../protocol_labels'
 import { ALL_PROTOCOLS } from '../camera_connection_values'
 import { Picker } from './protocol_choice'
@@ -106,11 +107,16 @@ function AddProtocolForm({
           <>
             <label className="flex flex-col gap-1 text-sm">
               <span className="text-muted-foreground">Identifiant</span>
-              <Input value={username} onChange={(event) => setUsername(event.target.value)} />
+              <Input
+                {...TEXT_KEYBOARD.identifier}
+                value={username}
+                onChange={(event) => setUsername(event.target.value)}
+              />
             </label>
             <label className="flex flex-col gap-1 text-sm">
               <span className="text-muted-foreground">Mot de passe</span>
               <Input
+                {...SECRET_KEYBOARD}
                 type="password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}

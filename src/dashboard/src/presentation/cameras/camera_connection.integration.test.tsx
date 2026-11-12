@@ -977,6 +977,63 @@ describe('CameraConnectionView', () => {
     expect(form.getByRole('textbox', { name: 'Identifiant' })).toBeVisible()
   })
 
+  it('onOpenAdvanced_ShouldTakeTheCameraAccessAsTyped_WhenAPhoneWouldCapitaliseOrCorrectIt', async () => {
+    // Arrange
+    connectionNetwork({ [BINDINGS]: ok([rtspStream]) })
+    renderScreen(<CameraConnectionView />, connectionTab())
+
+    // Act
+    await userEvent.click(await screen.findByText('Avancé'))
+
+    // Assert
+    const address = screen.getByLabelText('Adresse')
+    expect(address).toHaveAttribute('inputmode', 'url')
+    expect(address).toHaveAttribute('autocapitalize', 'none')
+    expect(address).toHaveAttribute('autocorrect', 'off')
+    expect(address).toHaveAttribute('spellcheck', 'false')
+    const userName = screen.getByLabelText('Identifiant')
+    expect(userName).toHaveAttribute('autocapitalize', 'none')
+    expect(userName).toHaveAttribute('autocorrect', 'off')
+    expect(userName).toHaveAttribute('spellcheck', 'false')
+    expect(screen.getByLabelText('Mot de passe')).toHaveAttribute('autocomplete', 'new-password')
+  })
+
+  it('onSwitchSpecificAccount_ShouldTakeTheProtocolAccountAsTyped_WhenAPhoneWouldCapitaliseOrCorrectIt', async () => {
+    // Arrange
+    connectionNetwork({ [BINDINGS]: ok([rtspStream]) })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    const box = await protocolBox('RTSP')
+
+    // Act
+    await userEvent.click(box.getByRole('switch', { name: 'Compte spécifique' }))
+
+    // Assert
+    const userName = box.getByLabelText('Identifiant')
+    expect(userName).toHaveAttribute('autocapitalize', 'none')
+    expect(userName).toHaveAttribute('autocorrect', 'off')
+    expect(userName).toHaveAttribute('spellcheck', 'false')
+    expect(box.getByLabelText('Mot de passe')).toHaveAttribute('autocomplete', 'new-password')
+  })
+
+  it('onOpenProtocolForm_ShouldTakeTheSpecificAccountAsTyped_WhenAPhoneWouldCapitaliseOrCorrectIt', async () => {
+    // Arrange
+    connectionNetwork({ [BINDINGS]: ok([rtspStream]) })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    await userEvent.click(await screen.findByText('Avancé'))
+    await userEvent.click(await screen.findByRole('button', { name: 'Ajouter un protocole' }))
+    const form = within(screen.getByRole('group', { name: 'Ajouter un protocole' }))
+
+    // Act
+    await userEvent.click(form.getByRole('switch', { name: 'Compte spécifique' }))
+
+    // Assert
+    const userName = form.getByLabelText('Identifiant')
+    expect(userName).toHaveAttribute('autocapitalize', 'none')
+    expect(userName).toHaveAttribute('autocorrect', 'off')
+    expect(userName).toHaveAttribute('spellcheck', 'false')
+    expect(form.getByLabelText('Mot de passe')).toHaveAttribute('autocomplete', 'new-password')
+  })
+
   it('onCheckProtocol_ShouldKeepNoPendingChangeAndAllowRemoval_WhenABoxWasEditedThenPutBack', async () => {
     // Arrange
     connectionNetwork({
@@ -1475,6 +1532,23 @@ describe('CameraConnectionView', () => {
     ).toBeInTheDocument()
     await userEvent.click(card.getByText('Options'))
     expect(card.getByLabelText('Chemin du flux')).toBeInTheDocument()
+  })
+
+  it('onAddStream_ShouldTakeThePathAsTyped_WhenAPhoneWouldCapitaliseOrCorrectIt', async () => {
+    // Arrange
+    connectionNetwork({ [BINDINGS]: ok([rtspStream]) })
+    renderScreen(<CameraConnectionView />, connectionTab())
+    const stream = await optionsOf('Flux vidéo')
+
+    // Act
+    await userEvent.click(await stream.findByRole('button', { name: 'Ajouter un flux' }))
+
+    // Assert
+    const form = within(screen.getByRole('group', { name: 'Ajouter un flux' }))
+    const path = await form.findByLabelText('Chemin du flux')
+    expect(path).toHaveAttribute('autocapitalize', 'none')
+    expect(path).toHaveAttribute('autocorrect', 'off')
+    expect(path).toHaveAttribute('spellcheck', 'false')
   })
 
   it('onAddStream_ShouldAddATypedPathAndCheckIt_WhenTheCameraListsNoStream', async () => {

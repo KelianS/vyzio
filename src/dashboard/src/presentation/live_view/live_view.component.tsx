@@ -28,8 +28,8 @@ import {
 import { buildCamerasPresenter } from '../cameras/cameras.presenter'
 import type { LiveQuality } from '../../domain/entities/camera.entity'
 
-// Edge to edge on every layout; 100dvh where the browser keeps its bars (LIVE-10).
-const SCREEN = 'fixed inset-x-0 top-0 z-40 h-dvh'
+// Edge to edge, 100dvh where the browser keeps its bars (LIVE-10); no pull to reload, no double-tap zoom.
+const SCREEN = 'fixed inset-x-0 top-0 z-40 h-dvh touch-manipulation overscroll-none'
 
 const LAYOUT: Record<LiveLayout, { screen: string; picture: string; controls: string }> = {
   // The controls fill the height the picture leaves, so they can centre in it.
@@ -98,7 +98,7 @@ export function LiveViewScreen() {
   const label = camera?.displayName ?? ''
 
   const closed = (body: ReactNode) => (
-    <main aria-label={label || 'Direct'} className={cn(SCREEN, 'bg-surface-inverse')}>
+    <main data-live aria-label={label || 'Direct'} className={cn(SCREEN, 'bg-surface-inverse')}>
       <div className="flex size-full items-center justify-center px-6 text-center text-surface-inverse-foreground">
         {body}
       </div>
@@ -240,6 +240,7 @@ export function LiveView({
 
   return (
     <main
+      data-live
       aria-label={label}
       className={cn(SCREEN, place.screen)}
       onPointerDownCapture={controls.hold}

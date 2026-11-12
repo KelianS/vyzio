@@ -101,7 +101,7 @@ export function AddCameraView() {
     {
       id: 'add-host',
       label: 'Adresse',
-      nature: { kind: 'text', placeholder: '192.168.1.50' },
+      nature: { kind: 'text', placeholder: '192.168.1.50', keyboard: 'address' },
       help: 'L’adresse de la caméra sur votre réseau local.',
       value: uido.form.host,
       onChange: (value) => presenter.onFormChanged({ host: value as string }),
@@ -109,7 +109,7 @@ export function AddCameraView() {
     {
       id: 'add-username',
       label: 'Identifiant',
-      nature: { kind: 'text' },
+      nature: { kind: 'text', keyboard: 'identifier' },
       value: uido.form.username ?? '',
       onChange: (value) => presenter.onFormChanged({ username: (value as string) || null }),
     },
