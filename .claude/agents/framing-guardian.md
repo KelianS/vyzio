@@ -34,9 +34,8 @@ Each rule of `docs.md` that can apply, and in particular:
 
 1. **Order** (DOCS-01, DOCS-02, DOCS-04, DOCS-24): does the change alter the need, a recorded
    decision or the architecture without the matching document in the same branch, or the docs
-   branch it is stacked on? Does it change those documents for behaviour it does not deliver, with
-   no implementation stacked on it? Search `docs/adr/` for the subject, not only the files the diff
-   touches.
+   branch it is stacked on? Does it bring those documents to `main` ahead of the code that delivers
+   them (DOCS-24)? Search `docs/adr/` for the subject, not only the files the diff touches.
 2. **Shape** (DOCS-03): does the diff add, remove or change a container, an external system, a
    network flow, the ownership or retention of data, or a quality attribute? Look at the compose
    files, `nginx.conf`, outbound clients, listeners and persisted data, not only `docs/`.
