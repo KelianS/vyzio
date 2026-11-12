@@ -28,12 +28,13 @@ the options it rejected. Everything else has its home:
 
 - **The same decision moves**: the ADR is rewritten to its new target, the option it leaves goes
   under its "Options rejected" (DOCS-09). No "amended by", no correction stacked at the end.
-- **The decision is replaced or merged into another**: the ADR that takes it over summarises it
-  under its own "Options rejected", and the old file is deleted in the same change (DOCS-10).
+- **The decision is replaced or merged into another**: the old file is deleted and the numbering
+  closed up (DOCS-10).
+- **A new subject**: a new ADR, numbered next (DOCS-10).
 
 ## Citing one
 
-By its number, `ADR-44`: a link to its file in a document, a one-line comment in code
+By its number, `ADR-04`: a link to its file in a document, a one-line comment in code
 (COMMON-02, COMMON-03). Never by a section or a letter of its decision, which moves when the ADR is
 rewritten.
 

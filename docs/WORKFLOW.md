@@ -51,7 +51,8 @@ level between the ADR and the code. Each has its own home, nothing is copied.
 **Scaling rules:**
 - The body of the SAD does not move when a decision is added: a new ADR is a file in `adr/` plus one
   index line. The SAD **points at** the index, it does not copy it.
-- An ADR is rewritten when its decision moves (DOCS-09); a replaced or merged one is deleted (DOCS-10).
+- An ADR is rewritten when its decision moves (DOCS-09); a replaced or merged one is deleted, the
+  numbering kept gap-free (DOCS-10).
 
 ## The SAD
 

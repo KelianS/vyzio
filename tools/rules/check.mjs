@@ -1,5 +1,6 @@
 // Checks docs/rules: well-formed and unique IDs, a level line per rule, every page routed, every cited ID defined.
 // Checks the SPECS and its use cases alike: unique requirement and use case IDs, their paths, no section number (DOCS-17).
+// Checks the ADRs: numbered from 1 with no gap, each indexed, every cited number defined (DOCS-10).
 // Usage: node tools/rules/check.mjs (from the repository root, as `task rules:check` runs it)
 import { execFileSync } from 'node:child_process'
 import { readFileSync, readdirSync } from 'node:fs'
@@ -20,6 +21,13 @@ const UC_FILE = /^([a-z]+)-(\d{2})-[a-z0-9-]+\.md$/
 const UC_TITLE = /^# UC-([A-Z]+)-(\d{2}) · \S/
 const PATH_ROW = /^\| ([NAE]\d+) \| ([^|]+?) \|/
 const PATH_DETAIL = /^### ([NAE]\d+) · (.+)$/
+const ADR_DIR = 'docs/adr'
+const ADR_INDEX = path.posix.join(ADR_DIR, 'README.md')
+const ADR_FILE = /^(\d{4})-[a-z0-9-]+\.md$/
+const ADR_TITLE = /^# ADR-(\d+)\b/
+const CITED_ADR = /\bADR-(\d+)\b/g
+// A review case describes a hypothetical change, whose ADR does not exist.
+const ADR_CITATION_EXEMPT = 'tools/review-cases/'
 const SECTION_SIGN = /§ ?\d/
 // A section number after the word SPECS, on its line or the next comment line, as in "2.3" or "§9".
 const SPECS_SECTION =
@@ -94,6 +102,25 @@ for (const file of readdirSync(UC_DIR).filter((f) => f.endsWith('.md') && f !== 
   useCases.set(id, { where, paths: new Set(table.keys()) })
 }
 
+const adrIndex = readFileSync(ADR_INDEX, 'utf8')
+const adrs = new Set()
+for (const file of readdirSync(ADR_DIR).filter((f) => f.endsWith('.md') && f !== 'README.md' && f !== 'TEMPLATE.md')) {
+  const where = path.posix.join(ADR_DIR, file)
+  const name = ADR_FILE.exec(file)
+  const title = ADR_TITLE.exec(readFileSync(where, 'utf8').split(/\r?\n/)[0] ?? '')
+  if (!name || !title) {
+    problems.push(`${where}: an ADR is named <NNNN>-<slug>.md and titled "# ADR-<NN>: <decision>"`)
+    continue
+  }
+  const number = Number(name[1])
+  if (Number(title[1]) !== number) problems.push(`${where}: its title does not carry ADR-${name[1]}`)
+  if (!adrIndex.includes(`](${file})`)) problems.push(`${where}: missing from the index of ${ADR_INDEX}`)
+  adrs.add(number)
+}
+for (let n = 1; n <= adrs.size; n++) {
+  if (!adrs.has(n)) problems.push(`${ADR_DIR}: ADR-${String(n).padStart(2, '0')} is missing, the numbering has a gap (DOCS-10)`)
+}
+
 const requirements = new Map()
 for (const file of productFiles) {
   readFileSync(file, 'utf8')
@@ -128,6 +155,11 @@ for (const file of tracked) {
   if (text.includes('\0')) continue // Binary.
   text.split(/\r?\n/).forEach((line, i) => {
     const where = `${file}:${i + 1}`
+    if (!file.startsWith(ADR_CITATION_EXEMPT)) {
+      for (const [id, number] of line.matchAll(CITED_ADR)) {
+        if (!adrs.has(Number(number))) problems.push(`${where}: cites ${id}, which no ADR defines (DOCS-10)`)
+      }
+    }
     for (const id of line.match(cited) ?? []) {
       if (!defined.has(id)) problems.push(`${where}: cites ${id}, which no rule page defines`)
     }
@@ -155,5 +187,5 @@ if (problems.length > 0) {
   process.exit(1)
 }
 console.log(
-  `${defined.size} rules in ${pages.length} pages, ${requirements.size} requirements, ${useCases.size} use cases, every citation resolved`,
+  `${defined.size} rules in ${pages.length} pages, ${requirements.size} requirements, ${useCases.size} use cases, ${adrs.size} ADRs, every citation resolved`,
 )

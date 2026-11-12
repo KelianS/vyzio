@@ -124,13 +124,14 @@ When the decision it records moves, the ADR is rewritten in the same branch as t
 present tense, and the option it leaves goes under its "Options rejected" (DOCS-08). No "amended
 by" in its status, no correction stacked at its end, no ADR written only to amend another.
 
-### DOCS-10 · A replaced or merged ADR is deleted, its number never reused
+### DOCS-10 · ADRs are numbered from ADR-01 with no gap
 
-**Level**: Required · **Verified by**: Review
+**Level**: Required · **Verified by**: Tool: `task rules:check`
 
-The ADR that takes the decision over summarises it under its own "Options rejected"; the old file
-is deleted in the same change, every citation of its number is repointed, and the
-[index](../adr/README.md) is updated. Git keeps the history.
+A new ADR takes the next number. One that is replaced or merged into another is deleted: the ADR
+that takes it over summarises it under its own "Options rejected", the last ADR takes the freed
+number, and every citation of both numbers is repointed and the [index](../adr/README.md) updated,
+in the same change. Git keeps the history.
 
 ## Every document
 
