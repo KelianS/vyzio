@@ -13,9 +13,7 @@ templates and framing documents are in English.
 
 **Exceptions**: `docs/SPECS.md` and its use cases `docs/uc/`, which frame the product for a French
 market and are read by non-engineers; what the interface shows the user, wherever it is written:
-the dashboard strings and the vendor sheets `src/vyzio/vendors/*.md` served as vendor assistance;
-the bodies of the ADRs accepted while they were written in French, read as they are until
-translated. A new ADR is English.
+the dashboard strings and the vendor sheets `src/vyzio/vendors/*.md` served as vendor assistance.
 
 ### COMMON-02 · A comment holds on one line
 
@@ -29,11 +27,11 @@ explanation belongs in an ADR, and the comment names it.
 **Level**: Required · **Verified by**: Review
 
 No history, no commit hash, no incident told, no "used to": they age in silence and duplicate the
-ADR. An ADR reference is welcome: `(ADR-44)`.
+ADR. An ADR reference is welcome: `(ADR-15)`.
 
 ```csharp
 // ✗ Moved here after the retry storm of the v0.2 hub, see 3e5fcf8.
-// ✓ Bounded so a camera that never answers cannot hold the probe loop (ADR-23).
+// ✓ Bounded so a camera that never answers cannot hold the probe loop (ADR-05).
 ```
 
 ### COMMON-04 · A business value is never compared with a string literal

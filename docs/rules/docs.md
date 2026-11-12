@@ -36,7 +36,7 @@ only `docs/`.
 
 **Exceptions**: a docs branch the implementation pull request is stacked on (DOCS-24).
 
-### DOCS-04 · The code never contradicts an accepted ADR, the SAD, the SPECS or a use case
+### DOCS-04 · The code never contradicts an ADR, the SAD, the SPECS or a use case
 
 **Level**: Required · **Verified by**: Review
 
@@ -129,7 +129,7 @@ network and are reviewed there.
 
 One is written only when reversing the decision costs a migration, a contract change, a new
 container or a new dependency, or when it opens or closes a flow leaving the home network (privacy
-first, ADR-70). An ADR never describes a state, a wording or a screen: that is the SPECS or a use
+first, ADR-03). An ADR never describes a state, a wording or a screen: that is the SPECS or a use
 case; what a camera model does is its hardware sheet; the *how* is the code and its tests.
 
 ### DOCS-08 · An ADR states its target, its history only under "Options rejected"
@@ -148,9 +148,6 @@ When the decision it records moves, the ADR is rewritten in the same branch as t
 present tense, and the option it leaves goes under its "Options rejected" (DOCS-08). No "amended
 by", no correction stacked at its end, no ADR written only to amend another.
 
-**Exceptions**: the ADRs accepted before [`adr/TEMPLATE.md`](../adr/TEMPLATE.md), as they stand
-until their decision moves; then they are rewritten to it, or deleted under DOCS-22.
-
 ### DOCS-22 · A replaced or merged ADR is deleted, its citations repointed
 
 **Level**: Required · **Verified by**: Review
@@ -158,9 +155,6 @@ until their decision moves; then they are rewritten to it, or deleted under DOCS
 The ADR that takes the decision over summarises it under its own "Options rejected"; the old file
 is deleted, every citation of its number is repointed to the ADR that now holds the decision, and
 the [index](../adr/README.md) is updated, in the same change. Git keeps the history.
-
-**Exceptions**: the ADRs superseded before [`adr/TEMPLATE.md`](../adr/TEMPLATE.md), kept until the
-ADR that took them over is rewritten to it.
 
 ### DOCS-23 · ADRs are numbered from ADR-01 with no gap
 
@@ -187,8 +181,7 @@ document names the behaviour, the code holds the value. An ADR names a value by 
 its number.
 
 **Exceptions**: the SAD's network flow matrix (DOCS-05); the service levels of the SPECS, the
-target the code must meet (DOCS-20); the ADRs accepted before
-[`adr/TEMPLATE.md`](../adr/TEMPLATE.md), until they are rewritten to it.
+target the code must meet (DOCS-20).
 
 ### DOCS-12 · No document restates an ADR
 
