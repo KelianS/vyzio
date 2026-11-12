@@ -70,6 +70,8 @@ global restart the user triggers.
 - ✅ Cutting a camera never waits on a deferred restart: it is an action (ADR-10).
 - ⚠️ The engine and Vyzio may diverge for as long as the user leaves the restart pending; the
   divergence is shown, never forced.
+- ⚠️ Recording which settings wait makes each setting identifiable to the application layer, not
+  only to the interface that declares it.
 - ⚠️ Every settings screen carries a draft, a shared component of the interface foundation (ADR-01),
   never rebuilt per screen.
 - ⚠️ The privacy scheduler switches the targeted cameras one by one; grouping them into one reload
@@ -94,3 +96,5 @@ global restart the user triggers.
 | Saving means applying, the restart merged in the background | Neither chosen nor visible, the interruption of surveillance is decided for the user; it needs a merging queue that buys only that masking. |
 | A synchronous restart on every save | Interrupts surveillance at each setting and charges the installation's delay to one page. |
 | The API says before saving whether a restart is needed | Saving costs nothing to announce once the restart is a separate act. |
+| A single pending flag that names nothing | The user cannot tell what a restart would take up (UI-14). |
+| The trigger names the domains waiting | A domain is a category of the information architecture; the user recognises a setting, not a domain. |

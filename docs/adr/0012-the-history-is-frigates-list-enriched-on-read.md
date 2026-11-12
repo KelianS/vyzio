@@ -47,7 +47,8 @@ Frigate's list when the history is read, enriches it, and keeps only the facts i
   ceiling, are Vyzio's, enforced at the one place the effective retention is resolved.
 - Full video and motion may be zero. Full video is opt-in, and whether it records is its duration,
   never a flag beside it. A camera always keeps its detection clips: keeping no new video from a
-  camera is privacy mode (ADR-10), which stops new recordings and erases none.
+  camera is privacy mode (ADR-10), which stops new recordings and erases none of
+  the clips already kept.
 
 ## Consequences
 

@@ -466,8 +466,8 @@ public sealed class FrigateConfigApplier(
     }
 
     // The installation's own retention, at the root of the file — what every camera follows unless
-    // it says otherwise. Recording stays on: an enabled camera keeps at least a day of event clips,
-    // and not wanting video from a camera is said by disabling it (ADR-12).
+    // it says otherwise. Recording stays on: an enabled camera keeps at least a day of event clips
+    // (ADR-12).
     private static FrigateRecordConfig BuildInstallationRecord(RecordingSettings installation)
     {
         var policy = RetentionPolicy.ForInstallation(installation);

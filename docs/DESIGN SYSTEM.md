@@ -258,7 +258,8 @@ A setting is saved; surveillance is restarted separately
 - The restart's trigger, `Appliquer les changements`, names **the pending state**, still true when read
   two days later; its question, `Redémarrer la surveillance maintenant ?`, names **the act** and states
   the interruption when deciding. The trigger appears only when something is pending, and names the
-  settings that wait ([SPECS](SPECS.md) UI-14). A failed restart reads as a **breakdown**, persistent, with `Réessayer`.
+  settings that wait ([SPECS](SPECS.md) UI-14). A failed restart reads as a **breakdown**,
+  persistent, with `Réessayer`.
 
 The underlying rule: **never name the mechanism, always name the effect.** Principle 2 forbids naming
 the engine, not saying what is happening.
