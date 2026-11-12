@@ -57,6 +57,22 @@ describe('DetectionHistoryView', () => {
     expect(alert).toHaveTextContent('GET /api/detection-events/history · 500')
   })
 
+  it('onOpenHelp_ShouldPointToPrivacyModeToRecordNothing_WhenTheUserAsksHowFarTheHistoryGoes', async () => {
+    // Arrange
+    fakeNetwork({
+      ...reference,
+      'GET /api/detection-events/history': ok({ items: [], nextCursor: null }),
+    })
+    renderScreen(<DetectionHistoryView />)
+
+    // Act
+    await userEvent.click(await screen.findByText('Jusqu’où cette page remonte-t-elle ?'))
+
+    // Assert
+    expect(screen.getByText(/activez sa vie privée/)).toBeVisible()
+    expect(screen.queryByText(/désactivez-la/)).not.toBeInTheDocument()
+  })
+
   it('onLoadMore_ShouldAppendTheOlderDetections_WhenTheUserAsksForMore', async () => {
     // Arrange
     const network = fakeNetwork({
