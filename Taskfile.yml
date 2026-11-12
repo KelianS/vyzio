@@ -170,7 +170,7 @@ tasks:
   # --- Rules ---
 
   rules:check:
-    desc: Checks docs/rules, the SPECS and its use cases (IDs, level lines, routing, paths, citations)
+    desc: Checks docs/rules, the SPECS, its use cases and the ADRs (IDs, level lines, routing, paths, numbering, citations)
     cmds:
       - node tools/rules/check.mjs
 

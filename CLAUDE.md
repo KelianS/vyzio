@@ -29,7 +29,7 @@ Follow the delivery gate in [`docs/WORKFLOW.md`](docs/WORKFLOW.md) § Git, throu
 | A user goal and its journeys (nominal, alternative, failure) | its use case under [`docs/uc/`](docs/uc/), listed in the SPECS index |
 | The rules a change must respect, and how each is verified | [`docs/rules/`](docs/rules/) (routing [`README`](docs/rules/README.md)) |
 | The system overview: containers, network flows, data ownership, threats | [`docs/SAD.md`](docs/SAD.md) |
-| One precise architectural decision (the *why* of a choice) | [`docs/adr/`](docs/adr/) (index [`README`](docs/adr/README.md)) |
+| One precise structural decision (the *why* of a choice) | [`docs/adr/`](docs/adr/) (index [`README`](docs/adr/README.md)) |
 | How a component works in detail (the *how*) | the code and its tests, which name their ADR |
 | What a camera model was measured to do | [`docs/hardware/`](docs/hardware/), one dated sheet per model |
 | Execution order, slicing, priorities | the [GitHub issues](https://github.com/KelianS/vyzio/issues) (`gh issue list`) |

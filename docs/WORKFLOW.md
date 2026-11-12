@@ -39,7 +39,7 @@ Steps 1 and 2 are written first, but reach `main` only with the code of step 4 (
 | **Use case** | One user goal: its actor, conditions, nominal, alternative and failure paths, and the rules only it needs | [`uc/`](uc/), one `<domain>-<nn>-<slug>.md` per goal, written to [`uc/TEMPLATE.md`](uc/TEMPLATE.md) | medium |
 | **Rules** | The constraints a diff is checked against, with their level and what verifies them | [`rules/`](rules/), routed by [`rules/README.md`](rules/README.md) | follows the code |
 | **SAD** | The system overview, and what the code does not easily show (§ The SAD) | [`SAD.md`](SAD.md) | high |
-| **ADR** | One structural decision per file (Context, Options, Decision, Consequences), within the bar of DOCS-07 | [`adr/`](adr/), one `NNNN-slug.md` per decision, index [`adr/README.md`](adr/README.md) | frozen once `accepted` |
+| **ADR** | One structural decision per file, within the bar of DOCS-07 | [`adr/`](adr/), one `NNNN-slug.md` per decision, written to [`adr/TEMPLATE.md`](adr/TEMPLATE.md), index [`adr/README.md`](adr/README.md) | high, rewritten when its decision moves |
 | **Design system** | The dashboard's design system, never one feature (DOCS-13) | [`DESIGN SYSTEM.md`](DESIGN%20SYSTEM.md) | high |
 | **Hardware sheet** | The raw measurements of one camera model, each dated; measurements only, no decision and no *how* | [`hardware/`](hardware/), one `.md` per model | grows with each measurement |
 | **Investigation** | Exploration, trials, reverse engineering, captures | [`investigations/`](investigations/) | disposable |
@@ -53,7 +53,8 @@ level between the ADR and the code. Each has its own home, nothing is copied.
 **Scaling rules:**
 - The body of the SAD does not move when a decision is added: a new ADR is a file in `adr/` plus one
   index line. The SAD **points at** the index, it does not copy it.
-- An accepted ADR is frozen (DOCS-09); a superseded one is marked, never deleted (DOCS-10).
+- An ADR is rewritten when its decision moves (DOCS-21); a replaced or merged one is deleted
+  (DOCS-22), the numbering kept gap-free (DOCS-23).
 
 ## The SAD
 

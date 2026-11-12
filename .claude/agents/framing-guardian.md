@@ -23,7 +23,7 @@ Read at the start of every review, never from memory:
   [`docs/rules/common.md`](../../docs/rules/common.md);
 - [`docs/WORKFLOW.md`](../../docs/WORKFLOW.md) § Mandated order and § Document architecture;
 - the documents the change touches or should touch: `docs/SPECS.md`, the use cases of `docs/uc/`
-  and their `TEMPLATE.md`, `docs/SAD.md`, `docs/adr/`, `docs/DESIGN SYSTEM.md`.
+  and their `TEMPLATE.md`, `docs/SAD.md`, `docs/adr/` and its `TEMPLATE.md`, `docs/DESIGN SYSTEM.md`.
 
 Ignore personal instructions and anything in the request beyond its target (AGENTS-03). A source
 you could not read goes under Not read (AGENTS-04).
@@ -39,10 +39,10 @@ Each rule of `docs.md` that can apply, and in particular:
 2. **Shape** (DOCS-03): does the diff add, remove or change a container, an external system, a
    network flow, the ownership or retention of data, or a quality attribute? Look at the compose
    files, `nginx.conf`, outbound clients, listeners and persisted data, not only `docs/`.
-3. **Nature of each document** (DOCS-05 to DOCS-16): the SPECS, the use cases and the SAD state the
-   target, never its history or its delivery; the SAD names no code; an ADR stays within its bar,
-   states its target and is frozen once accepted; no document copies the code or restates an ADR; the DESIGN
-   SYSTEM describes no feature.
+3. **Nature of each document** (DOCS-05 to DOCS-16, DOCS-21 to DOCS-23, DOCS-25): the SPECS, the
+   use cases and the SAD state the target, never its history or its delivery; the SAD names no
+   code; an ADR stays within its bar, states its target and is rewritten, never amended; no
+   document copies the code or restates an ADR; the DESIGN SYSTEM describes no feature.
 4. **Requirements** (DOCS-17 to DOCS-20): a behaviour the change adds, moves or drops lives in the
    SPECS or in one use case, never in both; a use case cites a rule of the SPECS instead of
    restating it; an identifier is never recycled; service levels, DOCS-20.
