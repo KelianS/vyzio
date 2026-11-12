@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode, type TouchEvent } from 'react'
+import { useRef, useState, type PointerEvent, type ReactNode } from 'react'
 import { ArrowDown, ArrowUp, ArrowLeft, ArrowRight, MapPin, Plus } from 'lucide-react'
 import { cn } from '../../../common/ui/utils'
 import { Button } from '../../../common/ui/button'
@@ -38,7 +38,8 @@ const PLACE: Record<
     icon: 'size-5',
     positions: 'flex w-full flex-col items-center gap-2',
     messages: 'flex flex-col items-center gap-2',
-    tiles: 'flex max-w-full gap-3 overflow-x-auto px-1 pb-1',
+    tiles:
+      'flex max-w-full snap-x snap-mandatory scroll-px-1 gap-3 overflow-x-auto overscroll-x-contain px-1 pb-1',
   },
   landscape: {
     panel: 'pointer-events-none absolute inset-0',
@@ -50,7 +51,8 @@ const PLACE: Record<
     positions:
       'absolute bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-1/2 flex max-w-[calc(100%-18rem)] -translate-x-1/2 flex-col items-center gap-2',
     messages: 'pointer-events-auto flex flex-col gap-2 rounded-card bg-card p-2',
-    tiles: 'pointer-events-auto flex gap-3 overflow-x-auto rounded-card bg-card/85 p-2',
+    tiles:
+      'pointer-events-auto flex max-w-full snap-x snap-mandatory scroll-px-2 gap-3 overflow-x-auto overscroll-x-contain rounded-card bg-card/85 p-2',
   },
   wide: {
     panel: 'flex flex-col items-center gap-6',
@@ -82,11 +84,10 @@ function DirButton({
   edge: PtzDirection
   title: string
   children: ReactNode
-  onMouseDown: () => void
-  onMouseUp: () => void
-  onMouseLeave: () => void
-  onTouchStart: (e: TouchEvent) => void
-  onTouchEnd: () => void
+  onPointerDown: (e: PointerEvent<HTMLButtonElement>) => void
+  onPointerUp: () => void
+  onPointerCancel: () => void
+  onLostPointerCapture: () => void
 }) {
   return (
     <button
@@ -167,18 +168,18 @@ function PresetTile({
       disabled={BUSY[state] || (!preset && !editable)}
       aria-pressed={preset ? active : undefined}
       title={tileTitle(preset, editable)}
-      onMouseDown={start}
-      onMouseUp={() => end(true)}
-      onMouseLeave={() => end(false)}
-      onTouchStart={(e) => {
-        e.preventDefault()
-        start()
+      // Pointer events only: a touch also emulates mouse events, which would press the tile twice.
+      onPointerDown={(e) => {
+        if (e.button === 0) start()
       }}
-      onTouchEnd={() => end(true)}
+      onPointerUp={() => end(true)}
+      // A swipe along the row is the browser's: it cancels the press, so a scroll never saves.
+      onPointerCancel={() => end(false)}
+      onPointerLeave={() => end(false)}
       // The long press is our gesture: without this the mobile browser opens its menu over it.
       onContextMenu={(e) => e.preventDefault()}
       className={cn(
-        'relative size-14 shrink-0 touch-none overflow-hidden rounded-md border bg-muted transition-colors',
+        'relative size-14 shrink-0 touch-pan-x overflow-hidden rounded-md border bg-muted transition-colors',
         active ? 'border-primary ring-2 ring-primary' : 'border-border',
         'disabled:opacity-60',
       )}
@@ -252,16 +253,16 @@ export function PtzControlPanel({
   const { presets, calibrated, activePresetId } = uido
   const [loadedThumbs, setLoadedThumbs] = useState<Record<string, boolean>>({})
 
+  // Pointer events only, captured: a touch also emulates mouse events, which would send a second move.
   const dir = (direction: PtzDirection) => ({
-    onMouseDown: () => onPress(direction),
-    onMouseUp: onRelease,
-    onMouseLeave: onRelease,
-    onTouchStart: (e: TouchEvent) => {
-      e.preventDefault()
+    onPointerDown: (e: PointerEvent<HTMLButtonElement>) => {
+      if (e.button !== 0) return
+      e.currentTarget.setPointerCapture(e.pointerId)
       onPress(direction)
     },
-    onTouchEnd: onRelease,
-    onTouchCancel: onRelease,
+    onPointerUp: onRelease,
+    onPointerCancel: onRelease,
+    onLostPointerCapture: onRelease,
   })
 
   const overridePreset =
@@ -277,7 +278,12 @@ export function PtzControlPanel({
     <div className={place.panel}>
       <div {...fade} className={cn(place.joystick, fade.className)}>
         {/* Its own surface keeps the four directions one control, over the picture or the page. */}
-        <div className={cn('relative shrink-0 rounded-full border border-border', place.pad)}>
+        <div
+          className={cn(
+            'relative shrink-0 touch-none rounded-full border border-border',
+            place.pad,
+          )}
+        >
           <div
             className="absolute inset-[30%] rounded-full border-2 border-background/70"
             aria-hidden="true"
@@ -341,7 +347,10 @@ export function PtzControlPanel({
                 : null
 
               return (
-                <div key={presetId} className="flex w-16 shrink-0 flex-col items-center gap-1">
+                <div
+                  key={presetId}
+                  className="flex w-16 shrink-0 snap-start flex-col items-center gap-1"
+                >
                   <PresetTile
                     preset={preset}
                     reserved={isReservedPreset(presetId)}
