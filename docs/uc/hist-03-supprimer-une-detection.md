@@ -35,6 +35,7 @@
 1. L'utilisateur supprime la détection depuis son aperçu ouvert dans l'historique.
 2. Une confirmation courte dit que la détection et sa vidéo seront effacées (HIST-10, UI-19).
 3. Vyzio efface la détection et l'enregistrement de son passage (HIST-10) ; elle quitte le calcul du **Silence** (HIST-12), et ce qui reste sur le disque est dit par HIST-15.
+4. Une notification de la détection qui n'était pas encore partie ne part plus, sur aucun canal (HIST-10).
 
 ### A1 · Une autre détection du même passage perd sa vidéo
 
@@ -56,7 +57,7 @@
 
 ## Règles locales
 
-- **HIST-10** · l'utilisateur doit pouvoir supprimer une detection, une a la fois, depuis son apercu ouvert dans l'historique, apres une confirmation courte qui dit que la detection et sa video seront effacees ; elle disparait alors de tout Vyzio (historique, historique d'une personne, accueil, journal d'envoi de ses notifications, reponses du canal de messagerie), et tout ce que la camera a enregistre pendant le passage qui la contient est efface aussi, video complete comme sequences de mouvement ; ce passage peut durer plus que la detection, et une autre detection du meme passage reste dans l'historique avec son apercu mais sans sa video ; les notifications deja envoyees restent la ou elles ont ete recues ;
+- **HIST-10** · l'utilisateur doit pouvoir supprimer une detection, une a la fois, depuis son apercu ouvert dans l'historique, apres une confirmation courte qui dit que la detection et sa video seront effacees ; elle disparait alors de tout Vyzio (historique, historique d'une personne, accueil, journal d'envoi de ses notifications, reponses du canal de messagerie), et tout ce que la camera a enregistre pendant le passage qui la contient est efface aussi, video complete comme sequences de mouvement ; ce passage peut durer plus que la detection, et une autre detection du meme passage reste dans l'historique avec son apercu mais sans sa video ; les notifications deja envoyees restent la ou elles ont ete recues, et celle qui n'etait pas encore partie ne part plus, sur aucun canal ;
 - **HIST-12** · supprimer les notifications d'une detection les retire aussi du calcul du **Silence** : la detection suivante du meme type sur cette camera peut etre notifiee sans attendre la fin de l'espacement ;
 - **HIST-13** · une detection ne se supprime pas tant que l'enregistrement de son passage est en cours, meme si elle-meme est terminee : elle reviendrait ; l'utilisateur est invite a reessayer une fois l'enregistrement du passage termine ; une detection qui n'existe plus le dit, et quitte la liste ;
 - **HIST-14** · si la surveillance refuse ou ne repond pas, Vyzio ne retire rien de son cote et l'erreur suit UI-01 : sa phrase dit si rien n'a ete efface ou si l'effacement est seulement partiel, son detail ce qui l'etait deja ; une demande d'effacement restee sans reponse compte comme un effacement partiel ; tant que tout n'est pas efface, la detection reste dans l'historique et sa suppression se relance depuis elle pour finir le travail ;

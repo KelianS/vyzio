@@ -11,6 +11,7 @@ namespace Vyzio.Application.UseCases.DetectionEvents;
 public sealed class DeleteDetectionUseCase(
     IFrigateDetectionEraser eraser,
     INotificationRepository notifications,
+    IErasedDetections erased,
     ILogger<DeleteDetectionUseCase> logger)
 {
     public async Task<DetectionErasure> ExecuteAsync(string frigateEventId, CancellationToken ct = default)
@@ -21,6 +22,9 @@ public sealed class DeleteDetectionUseCase(
         // A detection Frigate no longer knows leaves rows pointing at nothing: they go as well.
         if (erasure == DetectionErasure.InProgress)
             return erasure;
+
+        // Its notification may still be waiting for a clip that will never come: it must not leave now.
+        erased.Remember(frigateEventId);
 
         // The messages already delivered stay where they were received; only Vyzio's trace of them goes.
         var removed = await notifications.DeleteForEventAsync(frigateEventId, ct);

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Time.Testing;
 using NSubstitute;
 using Vyzio.Application.UseCases.Cameras;
 using Vyzio.Application.UseCases.DetectionEvents;
@@ -19,6 +20,10 @@ public class SendDetectionNotificationUseCaseTests
     private readonly INotificationChannelSender _discord = FakeSender(NotificationChannel.Discord);
     private readonly IProfileRepository _profiles = Substitute.For<IProfileRepository>();
     private readonly IScheduleRuleRepository _scheduleRules = Substitute.For<IScheduleRuleRepository>();
+    private readonly IErasedDetections _erased = Substitute.For<IErasedDetections>();
+
+    // One minute after the detection of CreateDetection started.
+    private readonly FakeTimeProvider _time = new(LocalTime(2026, 5, 10, 10, 16));
 
     private static NotificationChannelConfig ActiveConfig(NotificationChannel channel = NotificationChannel.Telegram)
         => new()
@@ -71,7 +76,9 @@ public class SendDetectionNotificationUseCaseTests
                 new DetectionProfileResolver(_profiles),
                 Substitute.For<IProfileCameraLinkRepository>(),
                 new CameraDirectory(Substitute.For<ICameraRepository>())),
+            _erased,
             TimeZoneInfo.Local,
+            _time,
             NullLogger<SendDetectionNotificationUseCase>.Instance,
             mediaFinalizationWindow: TimeSpan.Zero);
 
@@ -99,6 +106,37 @@ public class SendDetectionNotificationUseCaseTests
         Assert.False(sent);
         await _telegram.DidNotReceive().SendAsync(
             Arg.Any<OutgoingNotification>(), Arg.Any<ChannelCredentials>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldSendOnNoChannelNorJournalIt_WhenTheUserErasedTheDetection()
+    {
+        // Arrange
+        Configure(ActiveConfig(), ActiveConfig(NotificationChannel.Discord));
+        _erased.Contains("frigate-evt-900").Returns(true);
+
+        // Act
+        var sent = await Build(_telegram, _discord).ExecuteAsync(CreateDetection());
+
+        // Assert
+        Assert.False(sent);
+        await _telegram.DidNotReceiveWithAnyArgs().SendAsync(default!, default!, default);
+        await _discord.DidNotReceiveWithAnyArgs().SendAsync(default!, default!, default);
+        await _notifications.DidNotReceiveWithAnyArgs().AddAsync(default!, default);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldLeaveNoJournalRow_WhenTheUserErasesTheDetectionDuringTheSend()
+    {
+        // Arrange
+        _erased.Contains("frigate-evt-900").Returns(false, true);
+
+        // Act
+        var sent = await Build(_telegram).ExecuteAsync(CreateDetection());
+
+        // Assert
+        Assert.True(sent);
+        await _notifications.DidNotReceiveWithAnyArgs().AddAsync(default!, default);
     }
 
     [Fact]
@@ -293,6 +331,91 @@ public class SendDetectionNotificationUseCaseTests
         Assert.False(sent);
     }
 
+    [Fact]
+    public async Task ExecuteAsync_ShouldSendNothing_WhenTheConfidenceIsUnknown()
+    {
+        // Arrange
+        var detection = CreateDetection() with { Confidence = null };
+
+        // Act
+        var sent = await Build(_telegram).ExecuteAsync(detection);
+
+        // Assert
+        Assert.False(sent);
+        await _telegram.DidNotReceiveWithAnyArgs().SendAsync(default!, default!, default);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldSendNothing_WhenTheDetectionStartedMoreThanThirtyMinutesAgo()
+    {
+        // Arrange
+        _time.SetUtcNow(LocalTime(2026, 5, 10, 10, 46));
+
+        // Act
+        var sent = await Build(_telegram).ExecuteAsync(CreateDetection());
+
+        // Assert
+        Assert.False(sent);
+        await _telegram.DidNotReceiveWithAnyArgs().SendAsync(default!, default!, default);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldSend_WhenTheDetectionStartedThirtyMinutesAgoExactly()
+    {
+        // Arrange
+        _time.SetUtcNow(LocalTime(2026, 5, 10, 10, 45));
+
+        // Act
+        var sent = await Build(_telegram).ExecuteAsync(CreateDetection());
+
+        // Assert
+        Assert.True(sent);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldSendNothing_WhenTheMediaWaitCarriesTheDetectionPastThirtyMinutes()
+    {
+        // Arrange
+        _time.SetUtcNow(LocalTime(2026, 5, 10, 10, 44));
+        _clipProvider.TryGetClipAsync("frigate-evt-900", Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
+            .Returns(_ => { _time.Advance(TimeSpan.FromMinutes(2)); return (Stream?)null; });
+
+        // Act
+        var sent = await Build(_telegram).ExecuteAsync(CreateDetection());
+
+        // Assert
+        Assert.False(sent);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldStillSend_WhenTheMediaWaitIsLong()
+    {
+        // Arrange
+        _clipProvider.TryGetClipAsync("frigate-evt-900", Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
+            .Returns(_ => { _time.Advance(TimeSpan.FromSeconds(40)); return (Stream?)null; });
+
+        // Act
+        var sent = await Build(_telegram).ExecuteAsync(CreateDetection());
+
+        // Assert
+        Assert.True(sent);
+        await _telegram.Received(1).SendAsync(
+            Arg.Any<OutgoingNotification>(), Arg.Any<ChannelCredentials>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldSendNothing_WhenTheStartOfTheDetectionIsUnknown()
+    {
+        // Arrange
+        var detection = CreateDetection() with { StartedAt = null };
+
+        // Act
+        var sent = await Build(_telegram).ExecuteAsync(detection);
+
+        // Assert
+        Assert.False(sent);
+    }
+
     // The detection happens on Sunday 2026-05-10 at 10:15, local time.
     private static ScheduleRule SundayMorningMute(string channel) => new()
     {
@@ -350,7 +473,8 @@ public class SendDetectionNotificationUseCaseTests
             confidence,
             LocalTime(2026, 5, 10, 10, 15),
             hasClip,
-            hasSnapshot);
+            hasSnapshot,
+            StartedAt: LocalTime(2026, 5, 10, 10, 15));
 }
 
 public class LabelRoutingTests

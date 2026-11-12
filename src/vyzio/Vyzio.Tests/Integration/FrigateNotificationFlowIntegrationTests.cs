@@ -2,6 +2,7 @@ using NSubstitute;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Time.Testing;
 using Vyzio.Application.UseCases.Cameras;
 using Vyzio.Application.UseCases.DetectionEvents;
 using Vyzio.Application.UseCases.Frigate;
@@ -11,6 +12,7 @@ using Vyzio.Core.Interfaces;
 using Vyzio.Infrastructure.Notifications;
 using Vyzio.Infrastructure.Persistence;
 using Vyzio.Infrastructure.Persistence.Repositories;
+using Vyzio.Infrastructure.Services;
 
 namespace Vyzio.Tests.Integration;
 
@@ -24,6 +26,8 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
     private readonly StubFrigateEventReader _eventReader;
     private readonly StubClipProvider _clipProvider;
     private readonly TestDetectionQueue _queue;
+    private readonly ErasedDetections _erased = new();
+    private readonly FakeTimeProvider _time = new(MinuteAfterThePayloadsStart);
     private readonly NotifyDetectionUseCase _notify;
     private readonly IngestFrigateEventUseCase _sut;
 
@@ -68,7 +72,9 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
                 new DetectionProfileResolver(new ProfileRepository(_db)),
                 new ProfileCameraLinkRepository(_db),
                 new CameraDirectory(new CameraRepository(_db))),
+            _erased,
             TimeZoneInfo.Local,
+            _time,
             NullLogger<SendDetectionNotificationUseCase>.Instance,
             mediaFinalizationWindow: TimeSpan.Zero);
 
@@ -81,6 +87,9 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
             _queue,
             NullLogger<IngestFrigateEventUseCase>.Instance);
     }
+
+    // The payloads below start at 1778408400 (Unix seconds).
+    private static readonly DateTimeOffset MinuteAfterThePayloadsStart = DateTimeOffset.FromUnixTimeSeconds(1778408460);
 
     // The handler only enqueues (ADR-49): the flow is complete once the queue is drained.
     private async Task<bool> IngestAndNotifyAsync(string payload)
@@ -146,6 +155,57 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
         Assert.Equal(2, await _db.Notifications.CountAsync());
         Assert.Single(_telegram.TextOnly);
         Assert.Single(_discord.TextOnly);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldSendNothingOnAnyChannel_WhenTheUserErasesTheDetectionWhileItsClipIsAwaited()
+    {
+        // Arrange
+        _eventReader.Identity = "Alice";
+        var eraser = Substitute.For<IFrigateDetectionEraser>();
+        eraser.EraseAsync("frigate-ti-005", Arg.Any<CancellationToken>()).Returns(DetectionErasure.Erased);
+        var deletion = new DeleteDetectionUseCase(
+            eraser, _notifications, _erased, NullLogger<DeleteDetectionUseCase>.Instance);
+        _clipProvider.WhileAwaited = () => deletion.ExecuteAsync("frigate-ti-005");
+
+        // Act
+        await IngestAndNotifyAsync(Payload("frigate-ti-005", lifecycle: "end", hasClip: true));
+
+        // Assert
+        Assert.Empty(_telegram.Sent);
+        Assert.Empty(_discord.Sent);
+        Assert.Equal(0, await _db.Notifications.CountAsync());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldSendNothingOnAnyChannel_WhenTheEndReportsADetectionFromTheDayBefore()
+    {
+        // Arrange
+        _eventReader.Identity = "Alice";
+        _time.Advance(TimeSpan.FromDays(1));
+
+        // Act
+        await IngestAndNotifyAsync(Payload("frigate-ti-007", lifecycle: "end"));
+
+        // Assert
+        Assert.Empty(_telegram.Sent);
+        Assert.Empty(_discord.Sent);
+        Assert.Equal(0, await _db.Notifications.CountAsync());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldSendNothingOnAnyChannel_WhenTheEndCarriesNoConfidence()
+    {
+        // Arrange
+        _eventReader.Identity = "Alice";
+        var payload = Payload("frigate-ti-006", lifecycle: "end").Replace("\"top_score\": 0.97,", string.Empty);
+
+        // Act
+        await IngestAndNotifyAsync(payload);
+
+        // Assert
+        Assert.Empty(_telegram.Sent);
+        Assert.Empty(_discord.Sent);
     }
 
     [Fact]
@@ -241,9 +301,16 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
     {
         public Stream? Clip { get; set; }
 
-        public Task<Stream?> TryGetClipAsync(
+        // What happens elsewhere while the notification waits for Frigate to write the clip.
+        public Func<Task>? WhileAwaited { get; set; }
+
+        public async Task<Stream?> TryGetClipAsync(
             string frigateEventId, TimeSpan finalizationWindow = default, CancellationToken ct = default)
-            => Task.FromResult(Clip);
+        {
+            if (WhileAwaited is not null)
+                await WhileAwaited();
+            return Clip;
+        }
 
         public Task<Stream?> ReadClipAsync(string frigateEventId, CancellationToken ct = default)
             => Task.FromResult(Clip);
