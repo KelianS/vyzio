@@ -46,7 +46,7 @@ Every error the API returns is a ProblemDetails (`application/problem+json`): a 
 dependency, an unhandled exception, and a 401, 404 or 405 nobody wrote a body for. It always carries
 a snake_case `code` the interface branches on, a `detail` and the `traceId`, built by `ApiProblem`,
 never by a hand-written object. The interface shows the code, the detail and the trace id on the
-diagnostic line, for support ([SPECS](../SPECS.md) 1.5): the detail never carries a credential nor a
+diagnostic line, for support ([SPECS](../SPECS.md) UI-01, UI-03): the detail never carries a credential nor a
 camera account name, so an unhandled exception gives its type, never its message.
 
 ## Logs

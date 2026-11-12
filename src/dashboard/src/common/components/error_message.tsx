@@ -2,7 +2,7 @@ import { appErrorDiagnostic, appErrorMessage, type AppError } from '../errors/ap
 import { Button } from '../ui/button'
 import { cn } from '../ui/utils'
 
-/** The line support reads under an error: quiet, monospace, selectable to be copied (SPECS 1.5). */
+/** The line support reads under an error: quiet, monospace, selectable to be copied (UI-01). */
 export function DiagnosticLine({ text }: { text: string }) {
   return (
     <p className="mt-1 font-mono text-xs break-all text-muted-foreground select-text">{text}</p>

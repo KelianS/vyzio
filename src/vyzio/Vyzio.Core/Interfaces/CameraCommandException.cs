@@ -1,6 +1,6 @@
 namespace Vyzio.Core.Interfaces;
 
-// A camera command that did not go through; its message is support detail, never a secret (SPECS 1.5).
+// A camera command that did not go through; its message is support detail, never a secret (UI-03).
 public abstract class CameraCommandException(string message, Exception? inner) : Exception(message, inner);
 
 // The camera answered, and said no: privacy mode on, credentials rejected, a malformed answer (ADR-56).

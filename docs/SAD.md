@@ -14,13 +14,13 @@ usable by a non-technical household and keeps it invisible.
 
 | Attribute | Requirement | Architectural impact | Answered by |
 |---|---|---|---|
-| Privacy | No image and no biometric data leaves the house without explicit consent ([SPECS](SPECS.md) 8.2) | Everything that sees an image runs on the hub, and Frigate is never reachable directly. Outbound, only the channels the user configured carry an image; Frigate opens no flow to the internet, and any of its features that would reach it needs its own decision (§ 4) | ADR-03, ADR-16, ADR-17, ADR-49, ADR-50, ADR-70, ADR-72 |
-| Offline | Detection, recording, history and the interface work without internet ([SPECS](SPECS.md) 5.3) | No cloud service in any critical path; the messaging channels and remote access need internet; no model is downloaded at run time, those Frigate does not carry ship with Vyzio | ADR-01, ADR-06, ADR-09, ADR-34, ADR-70 |
+| Privacy | No image and no biometric data leaves the house without explicit consent ([SPECS](SPECS.md) SEC-01) | Everything that sees an image runs on the hub, and Frigate is never reachable directly. Outbound, only the channels the user configured carry an image; Frigate opens no flow to the internet, and any of its features that would reach it needs its own decision (§ 4) | ADR-03, ADR-16, ADR-17, ADR-49, ADR-50, ADR-70, ADR-72 |
+| Offline | Detection, recording, history and the interface work without internet ([SPECS](SPECS.md) SYS-03, SYS-04) | No cloud service in any critical path; the messaging channels and remote access need internet; no model is downloaded at run time, those Frigate does not carry ship with Vyzio | ADR-01, ADR-06, ADR-09, ADR-34, ADR-70 |
 | Target hardware | A modest machine at home: a mini PC, a Raspberry Pi 5, a NAS | One Compose stack, one database file, the detector picked from the hardware found, with a CPU fallback | ADR-06, ADR-34, ADR-37 |
-| Latency | A person signalled while still in view ([SPECS](SPECS.md) 5.2); the live view about a second behind the scene ([SPECS](SPECS.md) 7.2) | Vyzio adds no step on the detection path: detection and recognition stay in Frigate, Vyzio reacts to its events and fetches the media afterwards. The live view's only step is the API's relay, which copies go2rtc's stream without decoding it | ADR-03, ADR-04, ADR-72 |
-| Plug and play | No YAML, no network or protocol knowledge ([SPECS](SPECS.md) 1.3) | Vyzio writes and applies the whole Frigate configuration; cameras are reached through five protocols, their capabilities detected and proven, whatever the brand | ADR-12, ADR-22, ADR-28, ADR-44, ADR-61 |
-| Resilience | A lost camera or a restarting Frigate is visible, never silent ([SPECS](SPECS.md) 2.2) | The API stays alive while Frigate restarts; camera reachability is watched apart from Frigate; Vyzio observes and shows, it never removes or reloads a camera on its own; go2rtc carries every camera, so its stop stops them all | ADR-23, ADR-55, ADR-72 |
-| Diagnosable errors | A plain sentence, then the detail support needs ([SPECS](SPECS.md) 1.5) | A camera that refuses is told apart from one that cannot be reached, from the protocol client up to the screen | ADR-56 |
+| Latency | A person signalled while still in view ([SPECS](SPECS.md) NOTIF-15, NOTIF-12); the live view's delay behind the scene ([SPECS](SPECS.md) LIVE-01) | Vyzio adds no step on the detection path: detection and recognition stay in Frigate, Vyzio reacts to its events and fetches the media afterwards. The live view's only step is the API's relay, which copies go2rtc's stream without decoding it | ADR-03, ADR-04, ADR-72 |
+| Plug and play | No YAML, no network or protocol knowledge ([SPECS](SPECS.md) UI-04, CAM-39) | Vyzio writes and applies the whole Frigate configuration; cameras are reached through five protocols, their capabilities detected and proven, whatever the brand | ADR-12, ADR-22, ADR-28, ADR-44, ADR-61 |
+| Resilience | A lost camera or a restarting Frigate is visible, never silent ([SPECS](SPECS.md) CAM-07, SYS-01) | The API stays alive while Frigate restarts; camera reachability is watched apart from Frigate; Vyzio observes and shows, it never removes or reloads a camera on its own; go2rtc carries every camera, so its stop stops them all | ADR-23, ADR-55, ADR-72 |
+| Diagnosable errors | A plain sentence, then the detail support needs ([SPECS](SPECS.md) UI-01) | A camera that refuses is told apart from one that cannot be reached, from the protocol client up to the screen | ADR-56 |
 
 ---
 
@@ -57,7 +57,7 @@ flowchart TB
     subgraph hub["Vyzio hub, one Docker network"]
         dash["Dashboard<br/>web server and static interface"]
         api["API<br/>product logic"]
-        db[("Database<br/>one file, in the API's volume")]
+        db[("Database<br/>one file, in the API's data folder")]
         mqtt["MQTT broker"]
         subgraph frig["Frigate container"]
             frigate["Frigate<br/>video pipeline"]
@@ -76,7 +76,7 @@ flowchart TB
     frigate -- "MQTT events" --> mqtt
     mqtt -- "MQTT events" --> api
     api -- "MQTT live tuning" --> mqtt
-    api -- "writes the configuration<br/>(shared volume)" --> frigate
+    api -- "writes the configuration<br/>(shared folder)" --> frigate
     api -- "restart" --> docker
     frigate -- RTSP --> go2rtc
     go2rtc -- "RTSP, DVRIP" --> cams
@@ -102,7 +102,7 @@ Every flow the system opens. "Docker network" means a flow that never leaves the
 
 | Source | Direction | Destination | Protocol | Port | Authentication |
 |---|---|---|---|---|---|
-| Browser, home network | to | Dashboard | HTTP and the live view's WebSocket, in the clear by design (ADR-67) | 8080, the one published port | Owner session cookie (ADR-54) |
+| Browser, home network | to | Dashboard | HTTP and the live view's WebSocket, in the clear by design (ADR-67) | 8080 by default, set at install, the one published port | Owner session cookie (ADR-54) |
 | Dashboard | to | API, Docker network | HTTP, WebSocket | 8443 | The owner session cookie, passed through |
 | API | to | Frigate, Docker network | HTTP REST; WebSocket to go2rtc for the live view (ADR-72) | 5000, also bound to the host's loopback | None: unreachable from outside the hub |
 | Frigate | to | MQTT broker, Docker network | MQTT | 1883 | None, anonymous |
@@ -210,7 +210,7 @@ The session is held for the whole move, and the camera stops by itself when the 
 sequenceDiagram
     actor U as User
     participant A as API
-    participant V as Shared volume
+    participant V as Shared folder
     participant D as Docker engine
     participant F as Frigate
     U->>A: save a setting that changes surveillance
@@ -237,13 +237,13 @@ a live tuning that needs no restart goes over MQTT (ADR-35).
 | Cameras, their protocols, capabilities and streams | Vyzio | Database | Until the camera is removed |
 | Profiles and their reference photos | Vyzio, synced to Frigate's face library (ADR-13) | Database, the photos as files beside it | Until removed |
 | Schedule rules, channel settings and pairings, retention settings | Vyzio | Database | Until changed |
-| Notification log, command journal | Vyzio, anchored on the Frigate event | Database | No expiry; a notification row goes with its detection ([SPECS](SPECS.md) 6.2) |
+| Notification log, command journal | Vyzio, anchored on the Frigate event | Database | No expiry; a notification row goes with its detection ([SPECS](SPECS.md) HIST-10) |
 | Owner account and sessions | Vyzio | Database; the password only hashed (ADR-54) | Sessions until revoked |
 | PTZ positions counted by Vyzio, the thumbnails and slot labels | Vyzio (ADR-26, ADR-60, ADR-69) | Database, the thumbnails as files beside it | Until removed |
 | Native PTZ presets | The camera, read on demand (ADR-69) | The camera | Until removed on the camera |
-| Detections, event history, clips, recordings, snapshots | Frigate (ADR-49) | Frigate's media volume and database | Set by Vyzio, never turned off, overridable per camera (ADR-39, ADR-48); the user erases one detection with the recording of its passage, its thumbnail images staying on disk with no expiry ([SPECS](SPECS.md) 6.2) |
+| Detections, event history, clips, recordings, snapshots | Frigate (ADR-49) | Frigate's media folder and database | Set by Vyzio, never turned off, overridable per camera (ADR-39, ADR-48); the user erases one detection with the recording of its passage, its thumbnail images staying on disk with no expiry ([SPECS](SPECS.md) HIST-10, HIST-15) |
 | Face embeddings | Frigate (ADR-03) | Frigate | Follows the library Vyzio syncs |
-| The Frigate configuration | Written by Vyzio, read by Frigate (ADR-12) | Shared volume | Rewritten at each change |
+| The Frigate configuration | Written by Vyzio, read by Frigate (ADR-12) | Shared folder | Rewritten at each change |
 
 **Never leaves the house:** frames, recordings, clips, embeddings and camera accounts. The one
 exception is the image of a notification, sent to the channels the user set up (ADR-50).
@@ -255,11 +255,12 @@ exception is the image of a notification, sent to the channels the user set up (
 | Container | Image | Published | State | Privilege |
 |---|---|---|---|---|
 | Dashboard | Vyzio, from the project registry | One port, to the home network | None | None |
-| API | Vyzio, from the project registry | None | Database and files volume; configuration volume, shared with Frigate | Privileged, to read the accelerators (ADR-34); the host's Docker socket |
+| API | Vyzio, from the project registry | None | Database and files folder; configuration folder, shared with Frigate | Privileged, to read the accelerators (ADR-34); the host's Docker socket |
 | MQTT broker | Mosquitto | None | None | None |
-| Frigate, with go2rtc | Frigate, a pinned version | API on the host's loopback only | Configuration volume; media volume | Privileged, for the accelerators |
+| Frigate, with go2rtc | Frigate, a pinned version | API on the host's loopback only | Configuration folder; media folder | Privileged, for the accelerators |
 
-One Compose stack on one machine, one Docker network. The API exposes two anonymous probes: liveness,
+One Compose stack on one machine, one Docker network; its state lives in folders under one host
+folder the installer chooses, along with the release to run. The API exposes two anonymous probes: liveness,
 read by the container healthcheck and the only one relayed by the dashboard, and readiness (database,
 broker, Frigate), kept on the Docker network (ADR-55).
 

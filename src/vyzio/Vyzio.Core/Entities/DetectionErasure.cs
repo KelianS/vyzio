@@ -1,7 +1,7 @@
 namespace Vyzio.Core.Entities;
 
 /// <summary>
-/// What became of a request to erase one detection from the surveillance (SPECS 6.2).
+/// What became of a request to erase one detection from the surveillance (HIST-14).
 /// </summary>
 public enum DetectionErasure
 {

@@ -10,27 +10,29 @@ Il ne tranche pas les choix de stack, d'algorithmes, de protocoles internes ou d
 
 Il decrit la cible, au present : ni date, ni etat de livraison, ni historique (DOCS-16 de [rules/docs.md](rules/docs.md)).
 
+Il garde ce qui vaut pour tout le produit : la vue d'ensemble, les règles transverses, les niveaux de service, le catalogue de capacités, le périmètre, les critères de succès et l'index des cas d'utilisation. Chaque parcours vit dans son cas d'utilisation, un fichier par objectif de l'utilisateur sous [`uc/`](uc/), écrit selon [`uc/TEMPLATE.md`](uc/TEMPLATE.md) ; il cite les règles d'ici par leur identifiant, sans les redire.
+
 ---
 
-## 1. Vue d'ensemble
+## Vue d'ensemble
 
-### 1.1 Promesse produit
+### Promesse produit
 
 Vyzio est une solution de video-surveillance local-first, pensee pour un public non-technicien. Le systeme doit permettre d'ajouter des cameras existantes, surveiller les zones utiles, reconnaitre des personnes connues, notifier les evenements importants et laisser les donnees sous le controle de l'utilisateur.
 
-### 1.2 Public cible
+### Public cible
 
 - foyers qui veulent une surveillance simple sans dependance cloud obligatoire ;
 - petits sites professionnels qui privilegient la resilience locale ;
 - utilisateurs non-techniciens qui attendent un parcours guide ;
 - utilisateurs plus avances qui veulent garder une option self-hosted.
 
-### 1.3 Modes de mise a disposition
+### Modes de mise a disposition
 
 - **Appliance preconfiguree** : experience plug and play, installation minimale, support prioritaire.
 - **Version open source self-hosted** : installation autonome pour utilisateurs techniques, sans changer la promesse local-first.
 
-### 1.4 Objectifs produit
+### Objectifs produit
 
 - reduire la friction d'installation et de configuration des cameras ;
 - notifier seulement les evenements utiles ;
@@ -38,497 +40,194 @@ Vyzio est une solution de video-surveillance local-first, pensee pour un public 
 - garder la maitrise locale des images et des donnees sensibles ;
 - fournir une interface comprensible sans culture NVR ou domotique.
 
-### 1.5 Erreurs lisibles et diagnosticables
+---
 
-Une erreur se lit a deux niveaux :
+## Identifiants
 
-- une **phrase claire**, sans jargon, qui dit ce qui se passe et, quand il y a quelque chose a faire, quoi faire ;
-- en dessous, le **detail technique complet** : ce qui a ete demande, ce qui a repondu, le code et la raison recus.
+Chaque exigence porte un identifiant `<DOMAINE>-NN`, et chaque cas d'utilisation un identifiant `UC-<DOMAINE>-NN`, ses chemins `N1`, `A1`, `E1` ; on les cite par cet identifiant (DOCS-17), jamais recycle (DOCS-18), et une exigence vit ici ou dans un seul cas d'utilisation (DOCS-19).
 
-Le second niveau s'adresse au support, pas a l'utilisateur : une demande d'aide arrive souvent sous forme de photo de l'ecran, sans journaux, et cette photo doit suffire au diagnostic. Un utilisateur averti doit aussi pouvoir le lire et ouvrir un ticket. Ce sont, avec les replis ou le protocole se choisit par son nom (le repli **Avance** de la page, qui porte les protocoles de la camera, le repli **Options** de chaque carte de capacite et le formulaire d'ajout d'une capacite, cf. 2.3), les seuls endroits de l'interface ou un nom technique peut apparaitre ; il reste discret et ne remplace jamais la phrase claire.
-
-Le detail ne contient jamais de secret : ni mot de passe, ni jeton, ni identifiant de compte camera. Une erreur reste affichee le temps d'etre lue et photographiee.
+| Domaine | Ce qu'il couvre |
+| --- | --- |
+| `UI` | L'interface en général : erreurs, réglages, accueil |
+| `CAM` | Les caméras, leur connexion et leurs capacités |
+| `LIVE` | La vue en direct |
+| `PTZ` | Le pilotage d'une caméra orientable et ses positions |
+| `IMG` | Les réglages image |
+| `PRIV` | Le mode vie privée |
+| `DET` | La détection et la reconnaissance |
+| `PROF` | Les profils des personnes connues |
+| `NOTIF` | Les notifications et le canal de messagerie |
+| `HIST` | L'historique, le stockage et la rétention |
+| `SCHED` | La planification de la maison |
+| `ACCESS` | L'accès à l'interface, sur place et à distance |
+| `SEC` | La sécurité et la confidentialité des données |
+| `SYS` | Le moteur de détection et le fonctionnement hors ligne |
 
 ---
 
-## 2. Parcours camera
+## Règles transverses
 
-### 2.1 User stories
+### Interface (`UI`)
 
-> **En tant qu'utilisateur**, je veux que Vyzio m'aide a connecter mes cameras sans devoir connaitre leur configuration reseau.
+- **UI-01** · Une erreur se lit a deux niveaux : une **phrase claire**, sans jargon, qui dit ce qui se passe et, quand il y a quelque chose a faire, quoi faire ; en dessous, le **detail technique complet** : ce qui a ete demande, ce qui a repondu, le code et la raison recus. Le second niveau s'adresse au support, pas a l'utilisateur : une demande d'aide arrive souvent sous forme de photo de l'ecran, sans journaux, et cette photo doit suffire au diagnostic. Un utilisateur averti doit aussi pouvoir le lire et ouvrir un ticket.
+- **UI-02** · Le detail technique d'une erreur est, avec les replis ou le protocole se choisit par son nom (le repli **Avance** de la page, qui porte les protocoles de la camera, le repli **Options** de chaque carte de capacite et le formulaire d'ajout d'une capacite, cf. CAM-23), le seul endroit de l'interface ou un nom technique peut apparaitre ; il reste discret et ne remplace jamais la phrase claire.
+- **UI-03** · Le detail ne contient jamais de secret : ni mot de passe, ni jeton, ni identifiant de compte camera. Une erreur reste affichee le temps d'etre lue et photographiee : celle qui porte un detail technique, jusqu'a ce que l'utilisateur la ferme.
+- **UI-04** · les parcours camera, profils, historique et reglages doivent etre accessibles sans configuration manuelle de fichiers ;
+- **UI-05** · l'interface doit employer un vocabulaire comprehensible pour un utilisateur non-specialiste ;
+- **UI-06** · le libelle d'une entree de navigation doit dire la nature de l'ecran : **consulter** ou **regler** ; les deux ne se melangent pas dans une meme entree ;
+- **UI-07** · **tout reglage doit avoir un emplacement previsible**, deductible du domaine qu'il gouverne, sans que l'utilisateur ait a connaitre l'organisation interne du produit ;
+- **UI-08** · l'utilisateur doit savoir **sans explication** si un reglage vaut pour toute l'installation ou pour une seule camera, et retrouver le meme reglage aux deux portees sous la meme forme ;
+- **UI-09** · les reglages rares doivent rester **atteignables sans mode a activer** : ils sont mis en profondeur, jamais masques derriere un palier « expert » ;
+- **UI-10** · l'interface doit etre **concue pour le telephone d'abord**, le grand ecran developpant la meme structure ; les actions principales doivent rester faisables sur les deux ;
+- **UI-11** · modifier un reglage ne doit produire **aucun effet** tant que l'utilisateur n'a pas valide ; avant de valider, il doit voir **ce qu'il a modifie** et pouvoir **renoncer** ;
+- **UI-12** · enregistrer un reglage doit **rendre la main immediatement** et ne jamais interrompre la surveillance de sa propre initiative ;
+- **UI-13** · l'interruption de la surveillance doit rester un **acte de l'utilisateur** : il choisit quand redemarrer, le declencheur est atteignable depuis n'importe ou (la vue en direct plein ecran le masque jusqu'au retour), et il ne s'affiche que lorsqu'un reglage l'exige reellement ;
+- **UI-14** · un reglage enregistre mais pas encore repris par la surveillance doit se voir et **dire lesquels** ; l'ecart est autorise et n'oblige a rien, mais ne doit jamais etre silencieux ;
+- **UI-15** · la question de redemarrer ne doit se poser qu'en **quittant les reglages**, jamais en passant d'une page de reglages a une autre ;
+- **UI-16** · une **action** — verifier une connexion, supprimer une camera, couper la surveillance — prend effet tout de suite et ne differe jamais ;
+- **UI-17** · si la surveillance ne reprend pas les reglages enregistres, l'interface doit le signaler de facon persistante et permettre de reessayer ;
+- **UI-18** · **deux reglages de meme nature doivent se presenter de la meme facon** partout dans le produit : meme type de controle, meme alignement, meme place — pour que l'utilisateur apprenne l'interface une fois et non ecran par ecran ;
+- **UI-19** · l'aide et les explications doivent rester **disponibles sans occuper la place** des noms et des valeurs de reglages, et rester atteignables au doigt ; en revanche, ce qui annonce un **cout** ou une **consequence irreversible** reste visible sans geste supplementaire.
 
-> **En tant qu'utilisateur**, je veux nommer clairement chaque camera, afin de comprendre immediatement l'origine d'une notification.
+### Cameras (`CAM`)
 
-> **En tant qu'utilisateur**, je veux definir des zones utiles sur l'image, afin d'ignorer les zones non pertinentes.
+- **CAM-01** · chaque camera doit avoir un nom, un statut visible et une configuration editable ;
+- **CAM-02** · une camera designe **une seule scene** ; un boitier exposant plusieurs objectifs donne autant de cameras, nommables et configurables independamment, mais reconnaissables comme appartenant au meme appareil ;
+- **CAM-03** · les reglages d'une camera sont des onglets sous son nom, dans l'ordre ou se regle une nouvelle camera : « Connexion », « Vie privée », « Détection », « Image et pilotage », « Conservation » ; sa page s'ouvre toujours sur « Connexion », qui porte ses capacites puis, dans Avance, son acces, ses protocoles, son nom et son retrait ;
+- **CAM-04** · une camera est « À configurer » tant qu'elle n'est pas entree en surveillance (flux video qui n'a jamais fonctionne, puis flux fonctionnel en attente du redemarrage), partout ou son etat s'affiche (liste des cameras, en-tete de sa page, accueil, ou sa vignette mene a sa page sans tenter d'image) ; cet etat dit deja qu'elle ne surveille pas encore, et avant un premier fonctionnement du flux il est son seul etat (hors ligne ou erreur de configuration n'ont pas de sens avant) ; il ne revient jamais une fois la camera en surveillance, et une fois le flux fonctionnel, une panne ulterieure, changement de protocole du flux compris, se lit avec les etats habituels ;
+- **CAM-05** · une camera « À configurer » peut deja etre visee par une plage de la planification ou par le choix de cameras d'une personne, qui s'appliquent a son entree en surveillance ; elle n'a pas de vue en direct, et l'historique n'a rien pour elle ; une fois son flux fonctionnel, elle entre en surveillance par le declencheur de redemarrage, qui ne la concerne qu'a partir de la ; d'ici la elle reste « À configurer » (et non « Connectée »), et sa vignette d'accueil mene encore a sa page sans tenter d'image ni ouvrir de vue en direct ; le declencheur « Appliquer les changements » dit ce qui reste a faire ;
+- **CAM-06** · ce qui n'est pas encore regle garde ses valeurs par defaut, sans rien signaler : l'utilisateur n'est pas pousse a tout regler et peut commencer vite ; la detection, la conservation et la vie privee se reglent sans flux, et s'appliquent quand la camera entre en surveillance ; seul ce qui demande une capacite verifiee attend le flux, comme toute verification (CAM-08) ;
+- **CAM-07** · une perte de flux doit etre detectee et visible sans diagnostic technique avance ;
+- **CAM-08** · lorsqu'une camera est hors ligne, l'interface doit le refleter immediatement : le flux live ne doit pas tenter de se charger, et les actions qui requierent une connexion active (controle PTZ, reglages image, test de capacite) doivent etre suspendues avec un message explicite ; les tests de capacite le sont aussi tant que la verification du flux video ne passe pas, ou n'a pas ete refaite depuis un changement de connexion ;
+- **CAM-09** · lorsque Vyzio modifie de sa propre initiative un reglage de la camera pour ameliorer les performances du systeme (et non a la demande de l'utilisateur), il doit memoriser la valeur d'origine et pouvoir la restaurer si la fonction est desactivee ou la camera retiree ; une telle modification ne doit jamais degrader la qualite des enregistrements.
 
-> **En tant qu'utilisateur**, je veux etre informe si une camera devient indisponible, afin de savoir que la surveillance n'est plus fiable.
+### Vie privee (`PRIV`)
 
-> **En tant qu'utilisateur**, je veux verifier rapidement le flux d'une camera depuis l'interface, afin de confirmer que tout fonctionne.
+- **PRIV-01** · le mode vie privee doit empecher toute ingestion du flux camera par le moteur de detection ; aucun enregistrement, aucune detection, aucune notification ne doit etre genere pour une camera en mode vie privee ;
+- **PRIV-02** · le flux RTSP de la camera ne doit pas etre accessible depuis Vyzio ni depuis Frigate pendant la periode de vie privee ;
+- **PRIV-03** · le mode vie privee peut etre active manuellement (bascule instantanee) ou via une plage recurrente (jours de la semaine + heures de debut et de fin) planifiee dans la planification de la maison (SCHED-01), qui peut viser plusieurs cameras a la fois ;
+- **PRIV-04** · le statut vie privee de chaque camera doit etre clairement visible dans l'interface (icone ou badge distinct de l'etat "hors ligne") ; le badge dit ce que la camera a repondu, jamais ce que la strategie promet : "Coupure materielle confirmee" quand la camera a confirme la coupure, "Camera orientee, enregistrement desactive" quand elle a accepte le mouvement vers sa position Parking, "Enregistrement desactive" quand rien n'est demande a la camera ou que sa reponse n'est pas arrivee ;
+- **PRIV-05** · quand la camera ne suit pas (coupure ou mouvement refuse, camera qui ne repond pas, position non enregistree, capacite non verifiee), l'enregistrement reste coupe (ADR-20) et l'interface le dit : le badge nomme ce qui n'a pas eu lieu ("Camera non tournee, enregistrement desactive" pour le parking, "Objectif non coupe, enregistrement desactive" pour la coupure materielle), la vignette le signale avec un lien vers l'ecran vie privee de la camera, et cet ecran affiche une phrase qui dit ce qui s'est passe et quoi faire, avec le detail technique (UI-01) ; de meme a la desactivation, quand la camera ne revient pas sur sa position Surveillance ; quand la demande est interrompue avant la reponse de la camera, l'interface dit que Vyzio ne sait pas ce qu'elle a fait, sans pretendre qu'elle a refuse ;
+- **PRIV-06** · la vignette d'une camera en mode vie privee affiche un etat explicite, avec les mots du badge, plutot qu'un echec de chargement ; la vue live ne s'ouvre pas tant que dure le mode vie privee ;
+- **PRIV-07** · en cas de conflit entre une bascule manuelle et une plage, la bascule manuelle est prioritaire : une camera coupee a la main, pendant une plage ou non, reste coupee a la fin de la plage, jusqu'a ce que l'utilisateur reprenne la surveillance a la main ; une camera dont la surveillance est reprise a la main pendant une plage n'est pas recoupee par cette plage et tient jusqu'a sa fin (des plages qui se suivent ou se chevauchent comptent comme une seule), puis la plage suivante s'applique ; reprendre la surveillance de toutes les cameras suit la meme regle camera par camera ; cette reprise s'arrete aussi quand une plage qui vise la camera est enregistree, et quand Vyzio redemarre, ou les plages sont reevaluees ; tant qu'elle dure, l'ecran vie privee de la camera dit jusqu'a quand, a l'heure de la maison ;
+- **PRIV-08** · l'etat du mode vie privee doit survivre a un redemarrage du systeme (persistance) ;
+- **PRIV-09** · la desactivation du mode vie privee (manuelle ou fin de plage) doit restaurer le flux camera sans intervention utilisateur supplementaire ;
+- **PRIV-10** · chaque caméra peut avoir une stratégie de mode vie privée indépendante : `software_blur` (« Arrêt logiciel », désactivation Frigate uniquement), `ptz_parking` (mouvement physique + désactivation Frigate), `hardware` (coupure native firmware, ex. Tapo) ;
+- **PRIV-11** · `software_blur` est la stratégie par défaut d'une caméra ; il n'existe pas de stratégie « aucune » : le mode vie privée arrête toujours au moins l'enregistrement, la détection et les notifications de Vyzio (PRIV-01), et chaque stratégie ajoute ce que la caméra fait en plus ;
+- **PRIV-12** · le mode `ptz_parking` est **toujours cumulatif avec le fallback software** : la caméra pivote vers sa position Parking (preset 2) ET Frigate est désactivé ; la double couche garantit la protection même si le mouvement PTZ échoue ; à la désactivation, la caméra revient sur sa position Surveillance (preset 1) et l'enregistrement reprend, même si ce retour échoue, ce que l'interface dit (PRIV-05) ;
+- **PRIV-13** · tant que dure le mode vie privee, aucune image de la camera n'est montree ni enregistree ;
+- **PRIV-18** · la page de la caméra propose le mode vie privée et les positions Surveillance et Parking dès l'ajout, sans étape d'ajout dédiée ; seules attendent, la vie privée se réglant sans flux (CAM-06), les stratégies qui demandent une capacité vérifiée (CAM-08 suspend les vérifications tant que le flux ne fonctionne pas), et le parking PTZ, dont les positions s'enregistrent depuis la vue live, qui ne s'ouvre qu'une fois la caméra en surveillance : l'écran vie privée et l'écran de pilotage le disent et mènent à ce qui manque, la connexion tant que le flux ne fonctionne pas, puis le déclencheur de redémarrage ; une orientation à confirmer s'essaie d'abord depuis sa carte (UC-CAM-04), puis ses positions se règlent depuis la vue live.
 
-> **En tant qu'utilisateur**, je veux que Vyzio distingue mes cameras des autres appareils du reseau et m'explique quoi activer, afin de finir l'integration sans connaissance technique du constructeur.
+### Pilotage (`PTZ`)
 
-> **En tant qu'utilisateur**, je veux trouver pendant l'ajout ce que la marque de ma camera demande de preparer dans son application, afin de ne pas chercher la notice ailleurs.
+- **PTZ-02** · les contrôles et les positions n'apparaissent, dans la vue live comme dans la section Pilotage des réglages de la caméra, que si l'orientation fonctionne, prouvée ou confirmée par l'utilisateur (CAM-15, CAM-16) ; tant qu'elle ne fonctionne pas, aucune commande inerte : une ligne renvoie vers la page « Connexion » de la caméra, où sa carte dit pourquoi et comment en sortir (CAM-24) ; une orientation désactivée par l'utilisateur n'y laisse rien ;
+- **PTZ-08** · quand la caméra ne répond pas à la lecture de ses positions, l'interface remplace les slots par un message disant qu'elles n'ont pas pu être lues, jamais qu'elles manquent, avec « Réessayer » et le détail technique (UI-01) ; l'écran vie privée le dit de même : une stratégie `ptz_parking` déjà choisie est gardée, et la choisir attend que les positions aient pu être lues.
 
-> **En tant qu'utilisateur**, je veux pouvoir integrer une camera qui ne supporte pas le RTSP nativement (ex. camera sur batterie ICSee/XMEye), afin de ne pas etre bloque par les limitations du protocole du fabricant.
+### Detection (`DET`)
 
-> **En tant qu'utilisateur**, je veux qu'un boitier a plusieurs objectifs apparaisse comme plusieurs cameras que je nomme separement, afin de retrouver chaque angle de vue par son nom dans mes notifications.
+- **DET-01** · la surveillance doit distinguer au minimum les evenements prioritaires des evenements de bruit ;
+- **DET-02** · un evenement reconnu doit indiquer la camera, l'heure et l'identite estimee si disponible ;
+- **DET-03** · un evenement incertain doit pouvoir etre presente comme tel, sans sur-promettre une certitude.
 
-> **En tant qu'utilisateur**, je veux choisir sur quel flux de ma camera l'analyse est faite, en voyant la resolution de chaque flux et ce que le choix change, afin d'arbitrer moi-meme entre fluidite du systeme et reconnaissance des visages.
+### Profils (`PROF`)
 
-### 2.2 Attendus fonctionnels
+- **PROF-01** · les profils doivent etre modifiables et supprimables depuis l'interface ;
+- **PROF-03** · la politique de notification d'une personne ne regle que les notifications : une personne reglee sur « ne pas me notifier » ne declenche aucune notification, et reste reconnue et nommee dans l'historique ;
+- **PROF-04** · une personne peut etre limitee a certaines cameras pour ses notifications : sans choix, elle est notifiee sur toutes les cameras, y compris une camera ajoutee plus tard ; avec un choix, seulement sur les cameras cochees, et cocher toutes les cameras fige la liste ; la reconnaissance et l'historique ne changent pas selon la camera.
 
-- l'ajout d'une camera tient en un ecran simple : la decouverte reseau et l'acces (nom, adresse, compte) ; choisir une camera decouverte ou saisir son adresse, puis confirmer, cree la camera de ce seul acces, sans port, protocole, chemin, flux ni marque a choisir, et sans verification prealable (voir [ADR-68](adr/0068-a-camera-is-created-from-its-access-alone.md)) ;
-- les reglages d'une camera sont des onglets sous son nom, dans l'ordre ou se regle une nouvelle camera : « Connexion », « Vie privée », « Détection », « Image et pilotage », « Conservation » ; sa page s'ouvre toujours sur « Connexion », qui porte ses capacites puis, dans Avance, son acces, ses protocoles, son nom et son retrait ;
-- l'ajout mene aussitot sur la page de la camera, ouverte sur sa connexion : c'est la que se regle une nouvelle camera, avec les memes ecrans que pour toute camera, sans assistant a part ; a l'arrivee, la page lance « Détecter automatiquement » si la camera n'a jamais ete detectee, et dit ce qui repond ;
-- une camera est « À configurer » tant qu'elle n'est pas entree en surveillance (flux video qui n'a jamais fonctionne, puis flux fonctionnel en attente du redemarrage), partout ou son etat s'affiche (liste des cameras, en-tete de sa page, accueil, ou sa vignette mene a sa page sans tenter d'image) ; cet etat dit deja qu'elle ne surveille pas encore, et avant un premier fonctionnement du flux il est son seul etat (hors ligne ou erreur de configuration n'ont pas de sens avant) ; il ne revient jamais une fois la camera en surveillance, et une fois le flux fonctionnel, une panne ulterieure, changement de protocole du flux compris, se lit avec les etats habituels ; la camera peut deja etre visee par une plage de la planification ou par le choix de cameras d'une personne, qui s'appliquent a son entree en surveillance ; elle n'a pas de vue en direct, et l'historique n'a rien pour elle ; une fois son flux fonctionnel, elle entre en surveillance par le declencheur de redemarrage, qui ne la concerne qu'a partir de la ; d'ici la elle reste « À configurer » (et non « Connectée »), et sa vignette d'accueil mene encore a sa page sans tenter d'image ni ouvrir de vue en direct ; le declencheur « Appliquer les changements » dit ce qui reste a faire ;
-- ce qui n'est pas encore regle garde ses valeurs par defaut, sans rien signaler : l'utilisateur n'est pas pousse a tout regler et peut commencer vite ; la detection, la conservation et la vie privee se reglent sans flux, et s'appliquent quand la camera entre en surveillance ; seul ce qui demande une capacite verifiee attend le flux, comme toute verification (voir plus bas) ;
-- la detection automatique est souhaitee quand elle est possible, avec une saisie manuelle en secours ;
-- la decouverte balaie les plages d'adresses configurees par defaut, plus le /24 de l'adresse IPv4 privee par laquelle le tableau de bord est ouvert (un tableau de bord ouvert par un nom, localhost, une adresse IPv6 ou celle de l'acces a distance n'ajoute rien) ; la confirmation qui precede la recherche previent que chaque adresse des plages qui seront balayees va etre interrogee, et liste ces plages et d'ou vient chacune (plages configurees, adresse du tableau de bord) ; l'ecran d'ajout ne les reaffiche pas apres la recherche ; les plages ne s'y modifient pas : une camera hors de ces plages s'ajoute en saisissant son adresse ;
-- la decouverte reseau doit distinguer au minimum une camera confirmee, une camera probable et un equipement non qualifie ;
-- chaque candidat detecte doit exposer au minimum un libelle de confiance compréhensible et une explication courte des signaux observes ; sa marque ne s'affiche, en texte, que lorsqu'un signal tres sur la designe (une reponse que seul le protocole proprietaire de cette marque donne), jamais devinee d'un port ouvert, d'un nom d'hote ou d'une page web, et aucun candidat ne porte de pastille de marque, connue ou inconnue ;
-- le niveau de confiance doit rester explicable : Vyzio ne doit pas afficher une precision arbitraire ou un score opaque sans justification lisible ;
-- une camera detectee mais non encore exploitable doit rester visible dans un parcours d'assistance plutot que disparaitre silencieusement ;
-- une camera confirmee doit etre clairement distinguable d'un simple equipement reseau joignable, afin d'eviter les faux positifs dans le parcours d'ajout ;
-- le produit doit guider l'utilisateur quand RTSP ou ONVIF doivent etre actives, avec la notice du constructeur (voir la liste des marques plus bas) ;
-- pour les cameras dont le protocole natif n'est pas RTSP, le systeme doit proposer un mode d'integration alternatif transparent pour l'utilisateur, sans exiger de manipulation technique manuelle ;
-- un candidat de la decouverte est presente comme pret des que son flux video est joignable par l'un des protocoles qui savent le porter (RTSP ou un protocole proprietaire), et son ajout ne reprend que son adresse, la detection de sa page retrouvant le reste ; il reste a preparer seulement quand aucun ne le permet, et l'ajout garde alors l'etape qui dit quoi preparer (notice du constructeur, « Réessayer ») ;
-- l'ecran d'ajout propose la liste des marques dont Vyzio a une notice, pour un candidat a preparer comme pour une adresse saisie a la main, parce que ce que demande la marque (ex. creer le compte de la camera dans son application) vient avant l'ajout ; choisir une marque affiche sa notice, et rien d'autre : ce choix n'est pas enregistre et ne change ni la detection ni les capacites ; quand un signal tres sur designe la marque, sa notice est choisie d'office ; sinon la liste reste sur « Autre marque », qui affiche une aide generale courte (ouvrir l'application de la camera, y creer un compte pour Vyzio, activer la video locale si elle le propose) ; la marque n'est jamais un choix a faire pour ajouter la camera ;
-- chaque camera doit avoir un nom, un statut visible et une configuration editable ;
-- l'utilisateur doit pouvoir definir plusieurs zones actives par camera ;
-- une perte de flux doit etre detectee et visible sans diagnostic technique avance ;
-- lorsqu'une camera est hors ligne, l'interface doit le refleter immediatement : le flux live ne doit pas tenter de se charger, et les actions qui requierent une connexion active (controle PTZ, test de capacite) doivent etre suspendues avec un message explicite ; les tests de capacite le sont aussi tant que la verification du flux video ne passe pas, ou n'a pas ete refaite depuis un changement de connexion ;
-- une camera designe **une seule scene** ; un boitier exposant plusieurs objectifs donne autant de cameras, nommables et configurables independamment, mais reconnaissables comme appartenant au meme appareil ;
-- lorsqu'une camera expose plusieurs flux de la meme scene, le produit doit les presenter chacun avec sa resolution quand elle est connue, son role (enregistrement, detection, les deux, ou aucun) et son propre etat, et laisser l'utilisateur choisir, sur le flux lui-meme, celui qui sert a l'analyse et celui qui enregistre ;
-- ce choix doit etre accompagne d'une explication de ce qu'il change concretement (fluidite du systeme d'un cote, finesse de l'image analysee, donc reconnaissance des visages, vignette et images des notifications, de l'autre ; finesse des enregistrements pour le flux qui enregistre) ; il n'est jamais impose silencieusement ;
-- par defaut, c'est le flux le plus leger qui est analyse et le plus detaille qui enregistre : le moteur de detection reduit l'image de toute facon, donc analyser un flux tres detaille coute des ressources sans rien apporter ; ce defaut doit etre annonce comme tel dans l'interface, et le flux detaille doit rester accessible en un geste pour qui veut privilegier la reconnaissance des visages ;
-- il y a toujours exactement un flux qui enregistre : ce flux ne peut etre ni retire, ni prive de ce role tant qu'un autre flux ne l'a pas pris ; donner un role a un flux le retire au flux qui l'avait ;
-- quand plus aucun flux n'a le role de detection (retire ou prive de ce role), l'analyse se fait sur le flux qui enregistre, et la carte du flux video le dit ; un flux de detection en echec ne deplace pas l'analyse de lui-meme : la carte dit que la detection ne fonctionne plus et laisse le choix a l'utilisateur ;
-- le choix du flux d'analyse ne doit jamais degrader les enregistrements.
+### Notifications (`NOTIF`)
 
-### 2.3 Catalogue de capacites, independant de la marque
+- **NOTIF-01** · le produit doit privilegier la pertinence des notifications plutot que la quantite ;
+- **NOTIF-02** · le produit doit supporter au moins un canal de notification utilisable par un public non-tech ; plusieurs canaux pourront coexister selon les besoins utilisateur ;
+- **NOTIF-03** · chaque notification importante doit contenir un contexte minimum : type d'evenement, camera, heure, apercu si autorise ;
+- **NOTIF-04** · si une dependance reseau externe est necessaire pour un canal, ce compromis doit etre explicite et opt-in ;
+- **NOTIF-05** · ajouter un canal ne doit pas ajouter un ecran : les canaux se reglent avec la meme grammaire, seule la facon de s'y connecter change ;
+- **NOTIF-06** · les reglages doivent etre persistants cote Vyzio et ne pas dependre d'une edition manuelle du runtime ;
+- **NOTIF-07** · pendant une plage **sans notification** (SCHED-02), les canaux vises n'envoient rien, tandis que la detection, l'enregistrement et l'historique continuent ; une notification tombee dans la plage est abandonnee, jamais differee a sa fin ; seules les notifications de detection se taisent, jamais les reponses aux commandes (UC-NOTIF-05) ;
+- **NOTIF-08** · une meme commande doit se comporter de la meme facon sur tous les canaux ; seule sa presentation s'adapte a ce que le canal sait afficher ;
+- **NOTIF-09** · **la configuration ne se fait pas depuis un canal de messagerie** : un fil de discussion ne peut porter ni brouillon, ni provenance d'une valeur, ni retour arriere (cf. UI-11) ; les reglages restent dans l'interface. Une conversation est plafonnee au role **resident** (ACCESS-01) quel que soit celui qui l'a appairee, et ne revele jamais un secret ([ADR-54](adr/0054-interface-access-guarded-by-an-owner-account-server-session-in-a-cookie.md)) ;
+- **NOTIF-10** · un canal de messagerie transporte des images fixes et des clips, jamais un flux video continu ;
+- **NOTIF-11** · lorsqu'un canal externe revient, les regles de reprise doivent eviter les rafales de notifications inutiles ;
+- **NOTIF-15** · une notification de personne part pendant que la personne est encore dans le champ de la camera (NOTIF-12) ;
+- **NOTIF-23** · seule une conversation appairee explicitement depuis l'interface doit etre acceptee ; l'appairage doit etre revocable, et un message d'une autre origine doit rester sans reponse ;
+- **NOTIF-25** · des qu'une conversation est reliee ou en cours de liaison, l'interface doit dire si le canal **ecoute encore**, et pourquoi il a cesse : une conversation reliee ne prouve rien, elle survit a la panne qui rend le canal muet. Tant qu'aucune ne l'est, une commande reste sans reponse de toute facon.
 
-> **En tant qu'utilisateur**, je veux que les fonctionnalites avancees (PTZ, mode vie privee materiel, etc.) ne dependent pas de la marque de ma camera mais de ce qu'elle sait reellement faire, afin de ne pas etre prive d'une fonctionnalite uniquement parce que Vyzio ne connait pas ma marque.
+### Historique (`HIST`)
 
-> **En tant qu'utilisateur dont la camera a une fonctionnalite que la detection n'a pas trouvee**, je veux pouvoir suivre un parcours de configuration manuelle plus long pour l'activer, afin de profiter pleinement du produit sans devoir changer de materiel.
+- **HIST-01** · l'utilisateur doit etre informe si la capacite de stockage devient critique ;
+- **HIST-11** · la video d'une detection dont l'enregistrement a ete efface avec une autre ne s'affiche pas en panne : son lecteur dit que la video de ce moment a ete supprimee.
 
-> **En tant qu'utilisateur**, je veux que Vyzio teste reellement une capacite avant de me la proposer (ex. sonder le PTZ), afin de ne jamais me laisser activer une option qui ne fonctionnera pas sur ma camera.
+### Planification (`SCHED`)
 
-**Regles fonctionnelles :**
+- **SCHED-01** · tout ce qui est programme dans la maison se planifie, se voit et se modifie a un seul endroit, la **Planification**, une rubrique des reglages ; ajouter un nouveau type de plage n'ajoute ni formulaire ni ecran : l'ecran d'une plage est le meme pour tous les types, seules changent les cibles proposees et l'effet annonce ;
+- **SCHED-02** · chaque plage a un **type** qui dit ce qu'elle fait, et deux types ne se confondent jamais : une plage **Vie privee** coupe les cameras visees (aucun enregistrement, aucune detection, aucune notification, PRIV-01) ; une plage **Sans notification** laisse filmer et enregistrer et fait seulement taire l'envoi sur les canaux vises (NOTIF-07). Le type se lit a son nom et a son icone, jamais a la seule couleur, et son effet reste visible pendant qu'on regle la plage ;
+- **SCHED-03** · les heures sont celles de la maison, jamais celles de l'appareil qui consulte, et l'ecran le dit.
 
-- les fonctionnalites avancees (flux video, PTZ, mode vie privee materiel, reglages image, reglages de flux, info systeme) sont des **capacites independantes de la marque** : la marque ne sert qu'a choisir la notice de l'ecran d'ajout (2.2), aucune marque n'a de preconfiguration ni de fonctionnalite reservee (voir [ADR-71](adr/0071-the-vendor-is-a-help-hint.md)) ;
-- toute camera accede aux capacites que son materiel permet reellement, par la meme detection ; quand la detection ne trouve pas une capacite, le parcours est plus long (declaration et verification manuelle de la capacite) mais jamais bloquant par principe ;
-- l'utilisateur doit pouvoir declarer manuellement, capacite par capacite, comment y acceder (ex. protocole PTZ : ONVIF ou DVRIP, avec ses parametres de connexion) ; Vyzio doit verifier la capacite par un test reel avant de la proposer activable dans l'interface, jamais sur simple declaration non verifiee ;
-- si une capacite ne peut pas etre verifiee ou echoue au test, l'interface doit l'indiquer clairement et ne pas la presenter comme disponible ;
-- une capacite est **verifiee** quand Vyzio en obtient une preuve en lisant la camera, sans jamais la faire bouger ni lui laisser de changement durable (ex. la camera decrit son orientation, renvoie ses reglages image ; une position d'essai que Vyzio enregistre pour la preuve est aussitot effacee) ; qu'un protocole reponde avec son compte ne prouve jamais une capacite, et une camera qui repond sans montrer la capacite la voit en echec, avec cette raison ;
-- quand la camera ne permet aucune lecture qui la prouve, la capacite est **a confirmer**, jamais verifiee : l'utilisateur l'essaie depuis sa carte (Vyzio annonce ce qui va se passer, puis fait tourner la camera un peu et la ramene, ou la coupe quelques secondes), puis repond a une question simple (« La caméra a bougé ? ») ; oui la rend verifiee, confirmee par lui a cette date, et elle le reste aux verifications suivantes tant que son protocole ne change pas ; non la laisse inutilisable, sans la dire en echec (c'est une reponse, pas une panne), et Vyzio retient cette reponse : ni une verification ni une detection ne repose la question, seule une preuve lue sur la camera, ou son propre oui apres un nouvel essai, la remplace ; sa carte dit comment en sortir : l'essayer a nouveau, volontairement, ce qui repose la question, ou passer par un autre protocole, ou la retirer (ajoutee de nouveau a la main, elle repart a confirmer) ; Vyzio ne decide jamais seul ; l'essai est refuse tant que la camera est en mode vie privee, et suspendu comme toute verification tant que la verification de son flux ne passe pas (2.2) ; une capacite a confirmer n'est utilisee nulle part (commandes d'orientation, strategie de vie privee) tant qu'elle n'est pas confirmee ;
-- la detection automatique essaie, pour chaque capacite autre que le flux video (son ordre est dit plus bas), les protocoles dans un ordre fixe, le meme pour toute camera, les protocoles proprietaires d'abord (ex. sur une V380, l'orientation passe par son protocole avant ONVIF, meme si ONVIF la prouve par une lecture) ; elle garde le premier protocole, dans cet ordre, qui la prouve, ou sur lequel elle est a confirmer, et passe au suivant quand la capacite y manque ou y echoue : quand le protocole a repondu avec le compte et qu'aucune lecture ne peut prouver la capacite, la detection la garde en carte « à confirmer » au lieu de la retirer, et pour une camera sans ce materiel l'utilisateur repond « Non » une seule fois ; une capacite a laquelle l'utilisateur a repondu non n'est remplacee que par une preuve ; l'utilisateur change a la main le protocole de chaque capacite, et la detection ne revient jamais sur ce choix ;
-- les informations de connexion d'une camera se rangent sur **trois niveaux**, chacune a un seul endroit : la **camera** (son nom, son adresse, son compte) ; ses **protocoles**, pour chacun ce qui permet de le joindre (port, et un compte specifique facultatif qui remplace celui de la camera pour ce seul protocole, ex. le compte cloud Tapo) et s'il repond avec ce compte ; ses **capacites**, dont chacune passe par un protocole de la camera et porte ses propres reglages (les flux et leurs roles, inversion gauche-droite) ;
-- le flux video est une capacite comme les autres : une camera qui ne parle que DVRIP et une camera RTSP suivent le meme parcours, de l'ajout a la surveillance ;
-- sous la carte du flux video, chaque flux de la camera est une ligne : sa qualite, son protocole et son chemin, son role, son etat et sa propre verification ; un flux garde sans servir a le role « Aucun », et un flux se retire comme une capacite ; la carte garde un seul etat, qui dit si l'enregistrement et la detection sont assures ; la verification d'une ligne verifie ce seul flux, sauf pour le flux qui enregistre, dont la verification est celle de la camera, et celle de la carte verifie la camera et tous ses flux ; l'echec du flux qui enregistre est celui de la camera, que la carte explique deja ; retirer un flux demande confirmation, qui dit, pour le flux qui detecte, que la detection passe sur le flux qui enregistre ; changer le role d'un flux, en ajouter ou en retirer prend effet aussitot, comme une action (§7.2), alors que l'adresse, les ports et les comptes suivent le brouillon de la page ;
-- l'utilisateur ajoute un flux, verifie aussitot, parmi ceux que la camera dit servir a ce moment, lus par qualite et non par chemin, ou en RTSP en saisissant son chemin ; le chemin d'un flux est son identite et ne change jamais : un chemin errone se corrige en ajoutant le bon flux ;
-- les flux sont trouves une fois, puis la liste appartient a l'utilisateur : un flux retire ne revient pas de lui-meme ; changer le protocole du flux video remplace tous les flux, ce que le choix du protocole dit avant de s'appliquer, et en RTSP un flux a toujours un chemin, saisi par l'utilisateur quand la camera ne liste pas ses flux ou ne repond pas (voir [ADR-65](adr/0065-each-video-stream-is-a-checked-object-with-a-role-under-the-stream-binding.md)) ;
-- a chaque verification, Vyzio demande une seule fois a la camera si un protocole repond avec son compte (joignable, puis compte accepte), et le dit sur ce protocole ; la detection automatique n'essaie une capacite que sur les protocoles qui repondent ; un choix manuel se fait parmi les protocoles de la camera capables de porter cette capacite, qu'ils repondent ou non (une camera sur batterie endormie doit rester configurable), et une capacite dont le protocole ne repond pas echoue en le disant ;
-- l'interface montre chaque information de connexion une seule fois, a son niveau, et chaque niveau a ses propres mots d'etat, les memes pour tous ses elements : une capacite, le flux video compris, fonctionne ou non, un protocole est accessible (joignable et compte accepte) ou non ; l'etat de la camera elle-meme reste la ou il la resume (liste des cameras, en-tete de sa page) ;
-- les mots d'etat d'une capacite, sur sa carte comme sur une ligne de flux : « Fonctionne » (prouvee par une lecture ou confirmee par l'utilisateur, ce que la carte precise avec la date ; pour le flux video, sa derniere verification est passee, jamais un simple port ouvert, la camera n'est pas hors ligne et la detection est assuree comme choisi), « À confirmer » (aucune lecture ne la prouve ; aussi apres « Essayer à nouveau », tant que la question n'a pas de reponse), « Non confirmée » (l'utilisateur a repondu non : inutilisee, sans etre en panne), « En échec » (la derniere verification a echoue, par le protocole ou parce que la camera ne montre pas la capacite ; pour le flux video, aussi quand la camera est hors ligne ou que le flux de detection ne repond pas, la carte disant lequel), « Pas encore vérifié » (le flux video pas verifie depuis un changement de connexion, ou une ligne de flux jamais verifiee), « À configurer » (aucun protocole choisi), « Désactivée » (une orientation coupee par l'utilisateur) ; « Non confirmée » ne concerne que l'orientation et la coupure materielle, « Désactivée » que l'orientation ;
-- les mots d'etat d'un protocole : « Accessible » (la camera repond sur ce port et accepte le compte), « Accès refusé » (elle repond mais refuse le compte, ou le numero d'appareil en V380), « Injoignable » (rien ne repond sur ce port), « Pas encore vérifié » (jamais interroge par ce protocole), seul mot commun aux deux niveaux, pour le meme fait ;
-- les capacites se lisent comme une liste de cartes, le flux video en premier, puisque toutes les autres en dependent ; le choix du protocole d'une capacite et ses reglages sont dans les options de sa carte, et changer de protocole le teste aussitot ; un protocole se verifie sans passer par une capacite, et n'est donc jamais suspendu par un flux en echec ;
-- une capacite en echec dit comment en sortir : quand son protocole ne repond pas, reveiller la camera ou verifier qu'elle est branchee ; quand il refuse le compte, revoir le compte ; sinon la verifier de nouveau ou passer par un autre protocole ; un flux video qui ne repond pas nomme les deux endroits ou cela se corrige, l'acces (adresse, compte) dans Avance, le protocole et les flux dans les options de sa carte ; apres un non, la carte rappelle ce que l'utilisateur a dit avoir vu ; une orientation jamais utilisee se retire (« Retirer »), une orientation en service se desactive (« Désactiver ») ;
-- une fois la camera ajoutee, l'utilisateur peut lui ajouter une capacite (a la suite des capacites, verifiee aussitot) et un protocole (son port, le port habituel par defaut, et un compte specifique facultatif, verifie aussitot) ; il peut retirer un protocole qu'aucune capacite n'utilise et sans modification non enregistree, et Vyzio dit simplement pourquoi il refuse sinon ; le compte specifique d'un protocole dit qu'il n'est presente qu'a la camera, sur le reseau local ; quand chaque capacite a deja sa carte, l'ajout le dit et renvoie aux options des cartes, et quand aucun protocole de la camera ne peut porter une capacite restante, il le dit et renvoie aux memes chemins que les cartes ; une capacite qui a deja sa carte change de protocole depuis les options de cette carte ; pour passer par un protocole que la camera n'a pas encore, l'utilisateur l'ajoute d'abord (« Ajouter un protocole ») : aucun choix de capacite n'en cree un en silence, et la ou aucun protocole de la camera ne convient, Vyzio le dit simplement et renvoie d'abord vers « Détecter automatiquement », puis vers cet ajout ;
-- « Détecter automatiquement », visible sous les capacites sans rien ouvrir, traite les deux niveaux dans l'ordre : il cherche les protocoles habituels de la camera et garde ceux qui repondent, puis choisit le flux video s'il manque et les capacites ; « Rechercher les protocoles », dans Avance, cherche les protocoles de la meme facon sans toucher a aucune capacite : il ajoute les protocoles habituels qui repondent et verifie a nouveau ceux que la camera a deja, qu'il garde tous ;
-- un protocole porte le meme nom partout ou il apparait ; seul le protocole par defaut d'une capacite le precise dans son choix (ex. « RTSP (par défaut) » pour le flux video) ;
-- une camera est creee sans protocole ni flux video (2.2) et ne depend jamais de RTSP : aucune n'est refusee faute de chemin RTSP, c'est la carte du flux video qui le demande quand il le faut ;
-- une camera sans flux video choisi le recoit de « Détecter automatiquement » : Vyzio essaie RTSP puis DVRIP, parmi les protocoles qui repondent (RTSP seulement si la camera y liste ses flux), et garde le premier dont le flux est verifie, ou a defaut le premier qui repond, avec la raison de l'echec ; quand aucun ne convient parce que la camera ne liste pas ses flux en RTSP, la carte du flux le dit et demande le chemin du flux ; la detection reste donc possible tant que le flux n'est pas choisi ;
-- le parcours manuel est presente comme une alternative quand la detection ne trouve pas une capacite, pas comme le parcours par defaut ;
-- lorsque Vyzio modifie de sa propre initiative un reglage de la camera pour ameliorer les performances du systeme (et non a la demande de l'utilisateur), il doit memoriser la valeur d'origine et pouvoir la restaurer si la fonction est desactivee ou la camera retiree ; une telle modification ne doit jamais degrader la qualite des enregistrements.
+### Acces (`ACCESS`)
 
----
+- **ACCESS-01** · Deux roles existent : le **proprietaire**, et le **resident**, qui consulte le direct et l'historique et peut couper une camera, mais ne touche ni aux reglages ni aux secrets. La frontiere est **utiliser / configurer**, jamais « voir / ne pas voir » : un resident voit deja toutes les images. Comment cet acces est protege : [ADR-54](adr/0054-interface-access-guarded-by-an-owner-account-server-session-in-a-cookie.md).
+- **ACCESS-02** · l'appairage d'une conversation de messagerie reste independant : il n'ouvre pas l'interface, et une session n'appaire pas une conversation (UC-NOTIF-04) ;
+- **ACCESS-03** · l'acces a l'interface et aux donnees doit etre protege.
 
-## 3. Detection et reconnaissance
+### Securite et confidentialite (`SEC`)
 
-### 3.1 User stories
+- **SEC-01** · aucune transmission d'image ou de donnee sensible ne doit etre activee par defaut vers un service tiers ;
+- **SEC-02** · aucun compte cloud ne doit etre obligatoire pour le fonctionnement nominal local ;
+- **SEC-03** · sur le reseau domestique, l'interface est servie sans chiffrement : sa confidentialite est celle de ce reseau ; depuis l'exterieur, l'acces passe par le reseau overlay chiffre ([ADR-67](adr/0067-the-home-network-stays-on-http-the-overlay-encrypts-from-outside.md)) ;
+- **SEC-04** · **aucun tiers ne doit pouvoir lire les images en transit** : un acces distant qui ferait dechiffrer le flux par un intermediaire est exclu, quel que soit son confort d'usage.
 
-> **En tant qu'utilisateur**, je veux etre notifie lorsqu'une personne connue est detectee, afin de savoir qui arrive.
+### Systeme (`SYS`)
 
-> **En tant qu'utilisateur**, je veux etre notifie lorsqu'un visage inconnu apparait, afin de pouvoir reagir vite.
-
-> **En tant qu'utilisateur**, je veux choisir quels types de detection doivent generer des evenements utiles, afin d'adapter le systeme a mon contexte (personnes, animaux, vehicules, etc.).
-
-> **En tant qu'utilisateur**, je veux eviter les notifications inutiles, afin que le systeme reste credibile au quotidien.
-
-> **En tant qu'utilisateur**, je veux pouvoir confirmer ou corriger une reconnaissance, afin d'ameliorer la qualite du systeme dans le temps.
-
-### 3.2 Regles fonctionnelles
-
-- la surveillance doit distinguer au minimum les evenements prioritaires des evenements de bruit ;
-- l'utilisateur doit pouvoir configurer les types de detection Frigate pris en compte dans le flux produit ;
-- la configuration doit permettre au minimum d'activer ou desactiver des categories comme les personnes, animaux ou vehicules selon les capacites fournies par Frigate ;
-- un evenement reconnu doit indiquer la camera, l'heure et l'identite estimee si disponible ;
-- un evenement incertain doit pouvoir etre presente comme tel, sans sur-promettre une certitude ;
-- l'utilisateur doit pouvoir corriger une reconnaissance depuis un parcours simple ;
-- le produit doit privilegier la pertinence des notifications plutot que la quantite.
-
-**Sensibilite de detection — auto-reglage :**
-
-> **En tant qu'utilisateur**, je veux que Vyzio se regle tout seul sur une scene agitee (feuillage, route passante), afin de ne pas avoir a comprendre ce qu'est un « reglage de mouvement » pour que le systeme reste fluide.
-
-> **En tant qu'utilisateur**, je veux savoir pourquoi une camera a ete rendue moins sensible et pouvoir figer ce reglage, afin de garder la main si le choix automatique ne me convient pas.
-
-- la sensibilite de detection s'ajuste automatiquement, par camera, en fonction de l'agitation reellement observee sur la scene ; l'utilisateur n'a aucun reglage technique a fournir ;
-- la sensibilite s'exprime en trois niveaux comprehensibles (elevee / moyenne / reduite) — jamais en valeur technique ni en vocabulaire Frigate ;
-- le niveau courant et sa raison doivent etre lisibles par l'utilisateur, qui doit pouvoir **figer** le niveau d'une camera pour desactiver l'ajustement automatique sur celle-ci ;
-- l'ajustement automatique poursuit un objectif de fluidite, jamais de qualite de detection : il ne doit jamais descendre en dessous du niveau le plus bas prevu, et ce compromis doit etre assume explicitement ;
-- l'ajustement ne doit provoquer aucune interruption visible du service (pas de coupure du flux ni des enregistrements).
+- **SYS-01** · l'etat du moteur de detection interne doit etre visible sur trois paliers — actif, redemarrage en cours, indisponible — sans jamais nommer le composant technique sous-jacent ; le palier "redemarrage en cours" s'affiche pendant l'application d'une nouvelle configuration (ex. changement de reglages, activation du mode vie privee) et se resout automatiquement des que le moteur redevient joignable, sans action de l'utilisateur ;
+- **SYS-02** · le moteur de detection interne doit s'adapter automatiquement au materiel disponible (accelerateur dedie, puis carte graphique, puis processeur en dernier recours), sans configuration manuelle ; en l'absence d'accelerateur dedie ou de carte graphique, la frequence d'analyse est reduite automatiquement selon le nombre de cameras actives, dans une plage bornee (SYS-06) garantissant une detection utile sans saturer le processeur ;
+- **SYS-03** · la surveillance locale doit continuer sans Internet ;
+- **SYS-04** · une indisponibilite reseau ne doit pas empecher l'enregistrement local des evenements.
 
 ---
 
-## 4. Gestion des profils
+## Catalogue de capacites, independant de la marque
 
-### 4.1 User stories
+Les fonctionnalites avancees d'une camera sont des capacites, decouvertes et prouvees par les cas d'utilisation UC-CAM-02 a UC-CAM-05 ; les regles ci-dessous valent pour toutes.
 
-> **En tant qu'utilisateur**, je veux ajouter une personne a reconnaitre a partir d'une ou plusieurs photos.
-
-> **En tant qu'utilisateur**, je veux choisir le comportement de notification associe a une personne, afin d'adapter le systeme a mon foyer.
-
-> **En tant qu'utilisateur**, je veux n'etre notifie du passage d'une personne de mon foyer que sur certaines cameras, afin de ne pas etre derange la ou sa presence est normale.
-
-> **En tant qu'utilisateur**, je veux voir la derniere apparition d'une personne connue, afin de garder un historique simple.
-
-> **En tant qu'utilisateur**, je veux supprimer un profil et ses donnees associees, afin de rester maitre de mes donnees.
-
-### 4.2 Attendus fonctionnels
-
-- un profil doit contenir au minimum un nom, des donnees de reference suffisantes et une politique de notification ;
-- les profils doivent etre modifiables et supprimables depuis l'interface ;
-- l'historique recent d'une personne connue doit etre consultable ;
-- la politique de notification d'une personne ne regle que les notifications : une personne reglee sur « ne pas me notifier » ne declenche aucune notification, et reste reconnue et nommee dans l'historique ;
-- une personne peut etre limitee a certaines cameras pour ses notifications : sans choix, elle est notifiee sur toutes les cameras, y compris une camera ajoutee plus tard ; avec un choix, seulement sur les cameras cochees, et cocher toutes les cameras fige la liste ; la reconnaissance et l'historique ne changent pas selon la camera ;
-- la suppression d'un profil doit supprimer ses donnees liees selon la politique produit definie.
-
----
-
-## 5. Notifications
-
-### 5.1 User stories
-
-> **En tant qu'utilisateur**, je veux recevoir une notification utile sur mon telephone quand un evenement important se produit.
-
-> **En tant qu'utilisateur**, je veux pouvoir voir rapidement le contexte de l'evenement sans devoir fouiller dans l'interface.
-
-> **En tant qu'utilisateur**, je veux regler les horaires et le niveau de bruit des notifications, afin de ne pas en etre submerge.
-
-> **En tant qu'utilisateur**, je veux continuer a etre informe meme si je n'ai pas l'interface ouverte.
-
-> **En tant qu'utilisateur**, je veux configurer mes destinations de notification depuis l'interface, afin de ne jamais modifier un fichier a la main.
-
-> **En tant qu'utilisateur**, je veux etre guide pour configurer un canal, tester l'envoi et comprendre les compromis du canal choisi.
-
-> **En tant qu'utilisateur**, je veux choisir quelles categories d'evenements meritent une notification et quel niveau de bruit appliquer selon le contexte.
-
-> **En tant qu'utilisateur**, je veux choisir les informations affichees dans le message, afin de recevoir un contenu utile sans surcharge.
-
-> **En tant qu'utilisateur hors de chez moi**, je veux repondre a une notification par une action (voir la camera, couper la surveillance, verifier l'etat) sans avoir a joindre l'interface.
-
-> **En tant qu'utilisateur**, je veux retrouver les memes commandes quel que soit le canal de messagerie que j'utilise, afin de ne pas reapprendre le produit en changeant de canal.
-
-### 5.2 Attendus fonctionnels
-
-- le produit doit supporter au moins un canal de notification utilisable par un public non-tech ;
-- plusieurs canaux pourront coexister selon les besoins utilisateur ;
-- chaque notification importante doit contenir un contexte minimum : type d'evenement, camera, heure, apercu si autorise ;
-- une notification de personne part pendant que la personne est encore dans le champ de la camera ;
-- l'utilisateur doit pouvoir regler une certitude minimale de notification, et planifier des plages **sans notification** dans la planification de la maison (§7.3) : pendant une telle plage, les canaux vises n'envoient rien, tandis que la detection, l'enregistrement et l'historique continuent ; une notification tombee dans la plage est abandonnee, jamais differee a sa fin ; seules les notifications de detection se taisent, jamais les reponses aux commandes (§5.4) ;
-- si une dependance reseau externe est necessaire pour un canal, ce compromis doit etre explicite et opt-in ;
-- la configuration des canaux retenus doit etre lisible, modifiable et testable depuis l'interface Vyzio ;
-- chaque canal propose doit etre couvert de bout en bout : saisie de ce qu'il demande, verification, etat configure / non configure, test d'envoi ;
-- ajouter un canal ne doit pas ajouter un ecran : les canaux se reglent avec la meme grammaire, seule la facon de s'y connecter change ;
-- le produit doit permettre de regler au minimum les destinations actives, les categories d'evenements notifiees, la certitude minimale et les plages sans notification ;
-- le produit doit permettre de choisir un format de message simple, avec au minimum camera, heure, type d'evenement, identite si connue et apercu si autorise ;
-- les reglages doivent etre persistants cote Vyzio et ne pas dependre d'une edition manuelle du runtime ;
-- les capacites et limites d'un canal doivent etre explicites dans l'interface avant activation.
-
-### 5.3 Regles hors ligne
-
-- la surveillance locale doit continuer sans Internet ;
-- une indisponibilite reseau ne doit pas empecher l'enregistrement local des evenements ;
-- lorsqu'un canal externe revient, les regles de reprise doivent eviter les rafales de notifications inutiles.
-
-### 5.4 Commandes depuis le canal de messagerie
-
-- le canal de messagerie doit fonctionner **dans les deux sens** : recevoir des notifications, et accepter des commandes ;
-- les commandes doivent couvrir l'usage courant a distance — etat du systeme, apercu d'une camera, dernieres detections, mode vie privee, positions PTZ, interruption et reprise de la surveillance — de sorte qu'un acces reseau au produit reste **optionnel** ;
-- une meme commande doit se comporter de la meme facon sur tous les canaux ; seule sa presentation s'adapte a ce que le canal sait afficher ;
-- **la configuration ne se fait pas depuis un canal de messagerie** : un fil de discussion ne peut porter ni brouillon, ni provenance d'une valeur, ni retour arriere (cf. §7.2) ; les reglages restent dans l'interface. Une conversation est plafonnee au role **resident** quel que soit celui qui l'a appairee, et ne revele jamais un secret ([ADR-54](adr/0054-interface-access-guarded-by-an-owner-account-server-session-in-a-cookie.md)) ;
-- seule une conversation appairee explicitement depuis l'interface doit etre acceptee ; l'appairage doit etre revocable, et un message d'une autre origine doit rester sans reponse ;
-- le code qui relie une conversation doit etre a duree de vie courte **et** cesser de valoir apres quelques essais infructueux : un code court que l'on peut deviner sans fin ne protege rien ;
-- une action aux consequences visibles — couper la surveillance, lever le mode vie privee — doit demander une confirmation explicite avant de prendre effet ;
-- un canal qui ne sait pas recevoir reste un canal de notification a part entiere ; l'interface doit le dire avant l'activation, et ne jamais laisser croire qu'on pourra lui parler ;
-- un canal de messagerie transporte des images fixes et des clips, jamais un flux video continu ;
-- l'utilisateur doit pouvoir consulter la trace des commandes recues et de leur issue ;
-- des qu'une conversation est reliee ou en cours de liaison, l'interface doit dire si le canal **ecoute encore**, et pourquoi il a cesse : une conversation reliee ne prouve rien, elle survit a la panne qui rend le canal muet. Tant qu'aucune ne l'est, une commande reste sans reponse de toute facon.
+- **CAM-10** · les fonctionnalites avancees (flux video, PTZ, mode vie privee materiel, reglages image, reglages de flux, info systeme) sont des **capacites independantes de la marque** : la marque ne sert qu'a choisir la notice de l'ecran d'ajout (UC-CAM-01), aucune marque n'a de preconfiguration ni de fonctionnalite reservee (voir [ADR-71](adr/0071-the-vendor-is-a-help-hint.md)) ;
+- **CAM-11** · toute camera accede aux capacites que son materiel permet reellement, par la meme detection ; quand la detection ne trouve pas une capacite, le parcours est plus long (declaration et verification manuelle de la capacite) mais jamais bloquant par principe ;
+- **CAM-12** · le parcours manuel est presente comme une alternative quand la detection ne trouve pas une capacite, pas comme le parcours par defaut ;
+- **CAM-13** · l'utilisateur doit pouvoir declarer manuellement, capacite par capacite, comment y acceder (ex. protocole PTZ : ONVIF ou DVRIP, avec ses parametres de connexion) ; Vyzio doit verifier la capacite par un test reel avant de la proposer activable dans l'interface, jamais sur simple declaration non verifiee ;
+- **CAM-14** · si une capacite ne peut pas etre verifiee ou echoue au test, l'interface doit l'indiquer clairement et ne pas la presenter comme disponible ;
+- **CAM-15** · une capacite est **verifiee** quand Vyzio en obtient une preuve en lisant la camera, sans jamais la faire bouger ni lui laisser de changement durable (ex. la camera decrit son orientation, renvoie ses reglages image ; une position d'essai que Vyzio enregistre pour la preuve est aussitot effacee) ; qu'un protocole reponde avec son compte ne prouve jamais une capacite, et une camera qui repond sans montrer la capacite la voit en echec, avec cette raison ;
+- **CAM-16** · quand la camera ne permet aucune lecture qui la prouve, la capacite est **a confirmer**, jamais verifiee : l'utilisateur l'essaie depuis sa carte et repond a une question simple (UC-CAM-04) ; oui la rend verifiee, confirmee par lui a cette date, et elle le reste aux verifications suivantes tant que son protocole ne change pas ; non la laisse inutilisable, sans la dire en echec (c'est une reponse, pas une panne), et Vyzio retient cette reponse : ni une verification ni une detection ne repose la question, seule une preuve lue sur la camera, ou son propre oui apres un nouvel essai, la remplace ; Vyzio ne decide jamais seul ; l'essai est refuse tant que la camera est en mode vie privee, et suspendu comme toute verification tant que la verification de son flux ne passe pas (CAM-08) ; une capacite a confirmer n'est utilisee nulle part (commandes d'orientation, strategie de vie privee) tant qu'elle n'est pas confirmee ;
+- **CAM-17** · les informations de connexion d'une camera se rangent sur **trois niveaux**, chacune a un seul endroit : la **camera** (son nom, son adresse, son compte) ; ses **protocoles**, pour chacun ce qui permet de le joindre (port, et un compte specifique facultatif qui remplace celui de la camera pour ce seul protocole, ex. le compte cloud Tapo) et s'il repond avec ce compte ; ses **capacites**, dont chacune passe par un protocole de la camera et porte ses propres reglages (les flux et leurs roles, inversion gauche-droite) ;
+- **CAM-18** · le flux video est une capacite comme les autres : une camera qui ne parle que DVRIP et une camera RTSP suivent le meme parcours, de l'ajout a la surveillance ;
+- **CAM-19** · a chaque verification, Vyzio demande une seule fois a la camera si un protocole repond avec son compte (joignable, puis compte accepte), et le dit sur ce protocole ; la detection automatique n'essaie une capacite que sur les protocoles qui repondent ; un choix manuel se fait parmi les protocoles de la camera capables de porter cette capacite, qu'ils repondent ou non (une camera sur batterie endormie doit rester configurable), et une capacite dont le protocole ne repond pas echoue en le disant ;
+- **CAM-20** · l'interface montre chaque information de connexion une seule fois, a son niveau, et chaque niveau a ses propres mots d'etat, les memes pour tous ses elements : une capacite, le flux video compris, fonctionne ou non, un protocole est accessible (joignable et compte accepte) ou non ; l'etat de la camera elle-meme reste la ou il la resume (liste des cameras, en-tete de sa page) ;
+- **CAM-21** · les mots d'etat d'une capacite, sur sa carte comme sur une ligne de flux : « Fonctionne » (prouvee par une lecture ou confirmee par l'utilisateur, ce que la carte precise avec la date ; pour le flux video, sa derniere verification est passee, jamais un simple port ouvert, la camera n'est pas hors ligne et la detection est assuree comme choisi), « À confirmer » (aucune lecture ne la prouve ; aussi apres « Essayer à nouveau », tant que la question n'a pas de reponse), « Non confirmée » (l'utilisateur a repondu non : inutilisee, sans etre en panne), « En échec » (la derniere verification a echoue, par le protocole ou parce que la camera ne montre pas la capacite ; pour le flux video, aussi quand la camera est hors ligne ou que le flux de detection ne repond pas, la carte disant lequel), « Pas encore vérifié » (le flux video pas verifie depuis un changement de connexion, ou une ligne de flux jamais verifiee), « À configurer » (aucun protocole choisi), « Désactivée » (une orientation coupee par l'utilisateur) ; « Non confirmée » ne concerne que l'orientation et la coupure materielle, « Désactivée » que l'orientation ;
+- **CAM-22** · les mots d'etat d'un protocole : « Accessible » (la camera repond sur ce port et accepte le compte), « Accès refusé » (elle repond mais refuse le compte, ou le numero d'appareil en V380), « Injoignable » (rien ne repond sur ce port), « Pas encore vérifié » (jamais interroge par ce protocole), seul mot commun aux deux niveaux, pour le meme fait ;
+- **CAM-23** · les capacites se lisent comme une liste de cartes, le flux video en premier, puisque toutes les autres en dependent ; le choix du protocole d'une capacite et ses reglages sont dans les options de sa carte, et changer de protocole le teste aussitot ; un protocole se verifie sans passer par une capacite, et n'est donc jamais suspendu par un flux en echec ;
+- **CAM-24** · une capacite en echec dit comment en sortir : quand son protocole ne repond pas, reveiller la camera ou verifier qu'elle est branchee ; quand il refuse le compte, revoir le compte ; sinon la verifier de nouveau ou passer par un autre protocole ; un flux video qui ne repond pas nomme les deux endroits ou cela se corrige, l'acces (adresse, compte) dans Avance, le protocole et les flux dans les options de sa carte ; apres un non, la carte rappelle ce que l'utilisateur a dit avoir vu ; une orientation jamais utilisee se retire (« Retirer »), une orientation en service se desactive (« Désactiver ») ;
+- **CAM-25** · un protocole porte le meme nom partout ou il apparait ; seul le protocole par defaut d'une capacite le precise dans son choix (ex. « RTSP (par défaut) » pour le flux video) ;
+- **CAM-26** · une camera est creee sans protocole ni flux video (UC-CAM-01) et ne depend jamais de RTSP : aucune n'est refusee faute de chemin RTSP, c'est la carte du flux video qui le demande quand il le faut ;
+- **CAM-56** · sous la carte du flux video, chaque flux de la camera est une ligne : sa qualite, son protocole et son chemin, son role, son etat et sa propre verification ; un flux garde sans servir a le role « Aucun », et un flux se retire comme une capacite ; la carte garde un seul etat, qui dit si l'enregistrement et la detection sont assures ; la verification d'une ligne verifie ce seul flux, sauf pour le flux qui enregistre, dont la verification est celle de la camera, et celle de la carte verifie la camera et tous ses flux ; l'echec du flux qui enregistre est celui de la camera, que la carte explique deja ; retirer un flux demande confirmation, qui dit, pour le flux qui detecte, que la detection passe sur le flux qui enregistre ; changer le role d'un flux, en ajouter ou en retirer prend effet aussitot, comme une action (UI-16), alors que l'adresse, les ports et les comptes suivent le brouillon de la page.
 
 ---
 
-## 6. Historique, stockage et retention
+## Niveaux de service
 
-### 6.1 User stories
+Un niveau de service est une promesse a l'utilisateur qui pourrait regresser sans qu'une revue de code le voie ; il fixe une cible mesurable, sur le reseau domestique et avec le materiel de l'appliance (DOCS-20). Les regles et les cas d'utilisation le citent par son identifiant.
 
-> **En tant qu'utilisateur**, je veux consulter l'historique recent des evenements, afin de comprendre ce qu'il s'est passe.
-
-> **En tant qu'utilisateur**, je veux choisir combien de temps mes enregistrements sont conserves, afin de gerer mon espace disque.
-
-> **En tant qu'utilisateur**, je veux pouvoir recuperer un clip pertinent, afin de le conserver ou le partager si necessaire.
-
-> **En tant qu'utilisateur**, je veux supprimer une detection de l'historique, avec sa video, afin de ne pas garder chez moi une scene que je ne veux pas conserver.
-
-### 6.2 Attendus fonctionnels
-
-- l'utilisateur doit pouvoir consulter un historique filtre par camera, personne ou type d'evenement ;
-- les clips associes a un evenement doivent etre consultables quand ils existent ;
-- la retention doit etre configurable, sur trois natures d'enregistrement distinctes : la video complete, les portions ou l'image bouge, et les clips rattaches a une detection ; chacune a sa propre duree, et une duree nulle signifie que rien n'est conserve pour cette nature ;
-- une duree de retention doit valoir pour toute l'installation par defaut, et rester surchargeable camera par camera ; une camera qui ne surcharge rien suit l'installation, et l'interface doit rendre visible lequel des deux s'applique ;
-- l'enregistrement de la video complete doit rester un choix explicite, et l'ordre de grandeur de sa consommation disque doit etre annonce avant activation ;
-- une camera dont aucune nature n'est conservee ne doit rien enregistrer du tout ;
-- le systeme doit supprimer automatiquement les donnees arrivees au terme de retention ;
-- l'utilisateur doit pouvoir supprimer une detection, une a la fois, depuis son apercu ouvert dans l'historique, apres une confirmation courte qui dit que la detection et sa video seront effacees ; elle disparait alors de tout Vyzio (historique, historique d'une personne, accueil, journal d'envoi de ses notifications, reponses du canal de messagerie), et tout ce que la camera a enregistre pendant le passage qui la contient est efface aussi, video complete comme sequences de mouvement ; ce passage peut durer plus que la detection, et une autre detection du meme passage reste dans l'historique avec son apercu mais sans sa video ; les notifications deja envoyees restent la ou elles ont ete recues ;
-- la video d'une detection dont l'enregistrement a ete efface avec une autre ne s'affiche pas en panne : son lecteur dit que la video de ce moment a ete supprimee ;
-- supprimer les notifications d'une detection les retire aussi du calcul du **Silence** : la detection suivante du meme type sur cette camera peut etre notifiee sans attendre la fin de l'espacement ;
-- une detection ne se supprime pas tant que l'enregistrement de son passage est en cours, meme si elle-meme est terminee : elle reviendrait ; l'utilisateur est invite a reessayer dans quelques minutes ; une detection qui n'existe plus le dit, et quitte la liste ;
-- si la surveillance refuse ou ne repond pas, Vyzio ne retire rien de son cote et l'erreur suit 1.5 : sa phrase dit si rien n'a ete efface ou si l'effacement est seulement partiel, son detail ce qui l'etait deja ; une demande d'effacement restee sans reponse compte comme un effacement partiel ; tant que tout n'est pas efface, la detection reste dans l'historique et sa suppression se relance depuis elle pour finir le travail ;
-- restent sur le disque de la machine sans plus etre affiches nulle part : la vignette de la detection et l'image du passage, sans echeance ; les visages gardes pour l'apprentissage de la reconnaissance, jusqu'a ce que de plus recents les remplacent ;
-- l'utilisateur doit etre informe si la capacite de stockage devient critique.
+| ID | Ce qui est mesure | Cible |
+| --- | --- | --- |
+| **LIVE-01** | Retard de la video en direct sur la scene | 1,5 s au plus |
+| **NOTIF-12** | Delai entre la reconnaissance d'une personne et le depart de sa notification | 10 s au plus avec une photo, 25 s au plus avec un clip |
+| **SYS-06** | Frequence d'analyse par camera sans accelerateur dedie ni carte graphique | de 1 a 5 images par seconde |
 
 ---
 
-## 7. Dashboard et experience d'usage
-
-### 7.1 User stories
-
-> **En tant qu'utilisateur**, je veux voir rapidement si mon systeme fonctionne correctement.
-
-> **En tant qu'utilisateur**, je veux retrouver les derniers evenements sans passer par plusieurs menus.
-
-> **En tant qu'utilisateur**, je veux gerer mes cameras, mes profils et mes notifications depuis la meme interface.
-
-> **En tant qu'utilisateur**, je veux pouvoir utiliser le systeme depuis un navigateur sur telephone ou ordinateur.
-
-> **En tant qu'utilisateur**, je veux voir ce que filme une camera en video fluide, avec le son quand elle en a, pour suivre ce qui se passe au moment ou ca se passe.
-
-> **En tant qu'utilisateur sur mon telephone**, je veux que la vue en direct occupe tout l'ecran, pour voir l'image en grand et piloter la camera sans qu'une page reste autour.
-
-> **En tant qu'utilisateur non-technicien**, je veux trouver un reglage sans savoir comment le produit est construit.
-
-> **En tant qu'utilisateur exigeant**, je veux acceder aux reglages fins sans qu'ils encombrent le parcours courant.
-
-> **En tant qu'utilisateur**, je veux savoir ce que j'ai modifie avant de valider, et pouvoir renoncer.
-
-> **En tant qu'utilisateur**, je veux choisir moi-meme le moment ou ma surveillance s'interrompt.
-
-> **En tant qu'utilisateur en deplacement**, je veux acceder a l'interface complete depuis l'exterieur de chez moi, sans configurer ma box ni exposer mes cameras sur Internet.
-
-> **En tant qu'utilisateur soucieux de ma vie privee**, je veux que mes images ne transitent jamais en clair chez un tiers pour que je puisse les consulter a distance.
-
-### 7.2 Attendus fonctionnels
-
-- l'accueil doit rendre visible l'etat global du systeme et les notifications recentes ;
-- tant qu'aucune camera n'est ajoutee, l'accueil, ouvert apres la creation du mot de passe (8.3), annonce la mise en service en trois etapes, ajouter une camera, choisir ce qui merite une notification, recevoir les notifications, et mene directement a l'ajout d'une camera et au reglage des notifications ; aucune etape ne demande de fichier a ecrire ;
-- les parcours camera, profils, historique et reglages doivent etre accessibles sans configuration manuelle de fichiers ;
-- l'interface doit employer un vocabulaire comprehensible pour un utilisateur non-specialiste ;
-- le libelle d'une entree de navigation doit dire la nature de l'ecran : **consulter** ou **regler** ; les deux ne se melangent pas dans une meme entree ;
-- **tout reglage doit avoir un emplacement previsible**, deductible du domaine qu'il gouverne, sans que l'utilisateur ait a connaitre l'organisation interne du produit ;
-- l'utilisateur doit savoir **sans explication** si un reglage vaut pour toute l'installation ou pour une seule camera, et retrouver le meme reglage aux deux portees sous la meme forme ;
-- les reglages rares doivent rester **atteignables sans mode a activer** : ils sont mis en profondeur, jamais masques derriere un palier « expert » ;
-- la vue en direct d'une camera montre une **video fluide**, a peu pres une seconde derriere la scene, en qualite economique a l'ouverture ; l'utilisateur passe en haute qualite le temps de la regarder, sans que ce choix soit retenu ni change le reglage de la camera ; une camera qui n'a qu'une qualite n'offre pas ce choix ;
-- le son de la vue en direct est coupe a l'ouverture et s'active d'un geste ; une camera dont le navigateur ne lit pas le son n'offre pas ce geste ;
-- regarder le direct ne doit pas perturber la surveillance de la camera ;
-- la vue en direct est un ecran a part entiere, jamais une fenetre posee sur la page : elle s'ouvre depuis la vignette d'une camera a l'accueil et depuis le pilotage de la page de la camera ; le retour du navigateur la referme et ramene la ou l'on etait, ou a l'accueil quand on l'a atteinte par son adresse ; l'ouvrir depuis les reglages n'est pas quitter les reglages : la question du redemarrage attend qu'on les quitte, alors que des modifications non enregistrees sont signalees comme a tout depart de la page ;
-- une barre ramene en arriere, nomme la camera et porte la qualite et le son ;
-- telephone tenu droit, la barre est au-dessus de la video, jamais posee sur l'image ; la video occupe toute la largeur juste en dessous, puis le pilotage, d'une taille confortable qui ne grandit pas avec la hauteur libre, et les positions juste en dessous, centres dans la place qui reste ; sur grand ecran, la video prend toute la place disponible, la barre posee sur l'image, le pilotage et les positions a cote ; sans pilotage, cette place ne garde que la ligne qui dit pourquoi, quand il y en a une (§11) ;
-- telephone tenu en paysage, la video occupe tout l'ecran : la barre, le pilotage et les positions, enregistrement compris, sont poses dessus, s'effacent apres quelques secondes sans geste, jamais pendant un appui, et reviennent d'un appui sur l'image ; ce qui explique un etat (la raison de l'image de secours, des positions non lues, une calibration a faire, une orientation indisponible) ne s'efface jamais ; le navigateur y masque ses propres barres des le premier geste quand il le permet, avec un bouton pour le lui redemander, et sinon la vue occupe tout ce qu'il laisse visible ;
-- atteinte par son adresse, la vue en direct d'une camera en mode vie privee, hors ligne, a configurer ou qui n'existe plus le dit en une phrase, sans image ni tentative de flux, avec le chemin utile (la page de la camera pour une camera a configurer ou hors ligne) ; la vignette, elle, ne l'ouvre que pour une camera surveillee qui repond (§2.2, §9.2) ;
-- si la video ne peut pas etre lue, parce que le navigateur ne la lit pas ou que le flux n'arrive pas, la vue en direct montre une image rafraichie chaque seconde, dit pourquoi en une phrase et propose de reessayer quand la cause peut passer ; en mode vie privee, ou pour une camera qui n'existe plus, elle le dit sans image ; les vignettes restent des images rafraichies ;
-- l'interface doit etre **concue pour le telephone d'abord**, le grand ecran developpant la meme structure ; les actions principales doivent rester faisables sur les deux ;
-- modifier un reglage ne doit produire **aucun effet** tant que l'utilisateur n'a pas valide ; avant de valider, il doit voir **ce qu'il a modifie** et pouvoir **renoncer** ;
-- enregistrer un reglage doit **rendre la main immediatement** et ne jamais interrompre la surveillance de sa propre initiative ;
-- l'interruption de la surveillance doit rester un **acte de l'utilisateur** : il choisit quand redemarrer, le declencheur est atteignable depuis n'importe ou (la vue en direct plein ecran le masque jusqu'au retour), et il ne s'affiche que lorsqu'un reglage l'exige reellement ;
-- un reglage enregistre mais pas encore repris par la surveillance doit se voir et **dire lesquels** ; l'ecart est autorise et n'oblige a rien, mais ne doit jamais etre silencieux ;
-- la question de redemarrer ne doit se poser qu'en **quittant les reglages**, jamais en passant d'une page de reglages a une autre ;
-- une **action** — verifier une connexion, supprimer une camera, couper la surveillance — prend effet tout de suite et ne differe jamais ;
-- si la surveillance ne reprend pas les reglages enregistres, l'interface doit le signaler de facon persistante et permettre de reessayer ;
-- **deux reglages de meme nature doivent se presenter de la meme facon** partout dans le produit : meme type de controle, meme alignement, meme place — pour que l'utilisateur apprenne l'interface une fois et non ecran par ecran ;
-- l'aide et les explications doivent rester **disponibles sans occuper la place** des noms et des valeurs de reglages, et rester atteignables au doigt ; en revanche, ce qui annonce un **cout** ou une **consequence irreversible** reste visible sans geste supplementaire ;
-- l'etat du moteur de detection interne doit etre visible sur trois paliers — actif, redemarrage en cours, indisponible — sans jamais nommer le composant technique sous-jacent ; le palier "redemarrage en cours" s'affiche pendant l'application d'une nouvelle configuration (ex. changement de reglages, activation du mode vie privee) et se resout automatiquement des que le moteur redevient joignable, sans action de l'utilisateur ;
-- l'acces depuis l'exterieur du domicile doit exister sans exiger de configuration du routeur, et doit fonctionner meme lorsque l'operateur ne fournit pas d'adresse publique dediee ;
-- **aucun tiers ne doit pouvoir lire les images en transit** : un acces distant qui ferait dechiffrer le flux par un intermediaire est exclu, quel que soit son confort d'usage ;
-- l'acces distant ne doit rendre joignable **que le produit** : les cameras et les composants internes ne doivent jamais devenir atteignables depuis l'exterieur ;
-- l'acces distant doit rester **optionnel, gratuit dans son parcours nominal et retirable** ; le produit doit rester entier sans lui, et l'usage local ne doit jamais dependre de sa disponibilite ;
-- si l'acces distant repose sur un service tiers, l'interface doit guider l'utilisateur pas a pas, l'annoncer explicitement, et indiquer que sa disponibilite ne depend pas de Vyzio ;
-- l'acces distant doit se presenter comme un reglage d'installation ordinaire : etat visible, activation et retrait depuis l'interface, sans manipulation de fichier ;
-- le moteur de detection interne doit s'adapter automatiquement au materiel disponible (accelerateur dedie, puis carte graphique, puis processeur en dernier recours), sans configuration manuelle ; en l'absence d'accelerateur dedie ou de carte graphique, la frequence d'analyse est reduite automatiquement selon le nombre de cameras actives, dans une plage bornee garantissant une detection utile sans saturer le processeur.
-
-### 7.3 Planification de la maison
-
-> **En tant qu'utilisateur**, je veux voir et regler a un seul endroit tout ce qui se passe a heure fixe dans la maison, afin de ne pas le recreer camera par camera ni canal par canal.
-
-- tout ce qui est programme dans la maison se planifie, se voit et se modifie a un seul endroit, la **Planification**, une rubrique des reglages ; ajouter un nouveau type de plage n'ajoute ni formulaire ni ecran : l'ecran d'une plage est le meme pour tous les types, seules changent les cibles proposees et l'effet annonce ;
-- la semaine s'y lit d'un coup d'oeil, comme un calendrier : un jour par ligne, du lundi au dimanche, chacun sur ses 24 heures, chaque plage posee a ses heures, concue pour le telephone d'abord ; le moment present y est marque, a l'heure de la maison ; une plage peut passer minuit (22h a 6h) : elle appartient au jour ou elle commence et se termine le lendemain, ce que l'ecran de la plage dit en clair, et la semaine la montre se prolonger sur le lendemain, pour qu'on ne manque pas une coupure en cours en lisant un seul jour ; une plage qui finit a minuit pile s'arrete a la fin de son jour ; une plage courte reste assez large pour etre touchee, des plages qui se chevauchent s'empilent sans qu'aucune soit cachee, et une legende associe chaque motif et icone au nom de son type ; toucher une plage l'ouvre ; quand l'heure de la maison ne peut pas etre lue, le moment present n'est pas marque plutot que marque faux ; la semaine se lit aussi au lecteur d'ecran, chaque plage disant son type, ses heures et ses cibles, et un jour vide qu'il n'y a rien de prevu ;
-- une plage vide (debut = fin), sans jour, sans cible ou mal formee est refusee avec une phrase qui dit quoi changer, jamais comme une erreur du serveur ;
-- chaque plage a un **type** qui dit ce qu'elle fait, et deux types ne se confondent jamais : une plage **Vie privee** coupe les cameras visees (aucun enregistrement, aucune detection, aucune notification, §9.2) ; une plage **Sans notification** laisse filmer et enregistrer et fait seulement taire l'envoi sur les canaux vises (§5.2). Le type se lit a son nom et a son icone, jamais a la seule couleur, et son effet reste visible pendant qu'on regle la plage ;
-- une plage vise plusieurs choses a la fois, plusieurs cameras ou plusieurs canaux, qu'elle nomme ; viser toutes les cameras revient a cocher celles qui existent, une camera ajoutee ensuite n'est pas visee d'office ; une plage dont toutes les cibles ont disparu reste visible, sans effet, et le dit ;
-- une camera ou un canal dit combien de plages s'appliquent a lui, avec le chemin vers la Planification ; la bascule manuelle (couper une camera ou reprendre sa surveillance maintenant) reste sur la camera et garde sa priorite (§9.2) : la planification ne fait que programmer ;
-- les heures sont celles de la maison, jamais celles de l'appareil qui consulte, et l'ecran le dit ;
-- une plage se modifie avec le meme cycle qu'un reglage (§7.2) : rien ne change avant d'avoir enregistre, et l'on peut renoncer ; son type se choisit a sa creation et ne change plus ; une plage enregistree, meme deja commencee, s'applique dans la minute ; supprimer une plage demande une confirmation qui nomme son type et ses cibles.
-
----
-
-## 8. Securite et confidentialite
-
-### 8.1 User stories
-
-> **En tant qu'utilisateur**, je veux que mes images ne quittent pas mon reseau sans mon accord explicite.
-
-> **En tant qu'utilisateur**, je veux proteger l'acces a mon systeme, afin qu'un tiers local ne puisse pas consulter mes donnees.
-
-> **En tant qu'utilisateur**, je veux que mon telephone reste connecte, afin de ne pas ressaisir un mot de passe chaque fois que je jette un oeil a mes cameras.
-
-> **En tant qu'utilisateur**, je veux pouvoir deconnecter un appareil perdu, afin qu'il cesse d'acceder a mes images.
-
-> **En tant qu'utilisateur**, je veux pouvoir changer mon mot de passe, afin de reprendre son acces a qui l'aurait appris.
-
-> **En tant qu'utilisateur**, je veux pouvoir revenir dans mon installation apres avoir oublie mon mot de passe, sans perdre mes cameras ni mon historique.
-
-> **En tant qu'utilisateur**, je veux pouvoir supprimer ou exporter mes donnees, afin de garder le controle.
-
-### 8.2 Regles produit
-
-- aucune transmission d'image ou de donnee sensible ne doit etre activee par defaut vers un service tiers ;
-- aucun compte cloud ne doit etre obligatoire pour le fonctionnement nominal local ;
-- l'acces a l'interface et aux donnees doit etre protege ;
-- sur le reseau domestique, l'interface est servie sans chiffrement : sa confidentialite est celle de ce reseau ; depuis l'exterieur, l'acces passe par le reseau overlay chiffre ([ADR-67](adr/0067-the-home-network-stays-on-http-the-overlay-encrypts-from-outside.md)) ;
-- les fonctions d'acces distant doivent etre explicites, optionnelles et desactivables ;
-- l'utilisateur doit pouvoir supprimer ses donnees produit dans un parcours comprensible ; une detection se supprime une a une depuis l'historique (6.2).
-
-### 8.3 Acces a l'interface
-
-Comment cet acces est protege : [ADR-54](adr/0054-interface-access-guarded-by-an-owner-account-server-session-in-a-cookie.md).
-
-- une installation neuve **s'ouvre sur la creation du mot de passe** du proprietaire : c'est la premiere etape, avant l'ajout d'une camera, et elle ne se saute pas ;
-- une fois connecte, l'utilisateur le reste : rouvrir l'interface depuis le meme appareil ne redemande rien pendant plusieurs semaines ;
-- se deconnecter est possible depuis l'interface, et **deconnecter tous les appareils** l'est aussi — c'est le geste attendu quand un telephone est perdu ;
-- une session terminee ramene a l'ecran de connexion en le disant, jamais sur un ecran vide ou une erreur technique ;
-- **changer son mot de passe** se fait dans l'interface : l'ancien est redemande, et le changement referme toutes les sessions ouvertes ailleurs ;
-- un mot de passe oublie se remet a zero **depuis la machine qui heberge Vyzio**, sans compte cloud ni envoi de courriel. La remise a zero *retire* le mot de passe : l'installation reouvre sur l'ecran de choix pendant une demi-heure, sans rien perdre de ses cameras ni de son historique, puis se reverrouille si personne n'en choisit un ;
-- l'appairage d'une conversation de messagerie reste independant : il n'ouvre pas l'interface, et une session n'appaire pas une conversation (§5.4).
-
-Deux roles existent : le **proprietaire**, et le **resident**, qui consulte le direct et l'historique et peut couper une camera, mais ne touche ni aux reglages ni aux secrets. La frontiere est **utiliser / configurer**, jamais « voir / ne pas voir » : un resident voit deja toutes les images.
-
----
-
-## 9. Mode vie privee
-
-### 9.1 User stories
-
-> **En tant qu'utilisateur**, je veux couper une camera instantanement, afin d'etre certain qu'aucune image de moi ou de mon foyer n'est capturee ni enregistree.
-
-> **En tant qu'utilisateur**, je veux planifier l'arret automatique d'une ou de plusieurs cameras a la fois sur des plages horaires recurrentes (ex. les cameras interieures tous les soirs de 22h a 6h), afin de ne pas avoir a y penser chaque jour.
-
-> **En tant qu'utilisateur**, je veux voir clairement quelle camera est en mode vie privee, afin de savoir a tout moment ce qui surveille et ce qui ne surveille pas.
-
-> **En tant qu'utilisateur**, je veux que la camera soit vraiment eteinte et pas uniquement silencieuse, afin d'avoir la certitude qu'aucun flux n'est accessible, ni par Frigate, ni par Vyzio, ni par personne d'autre sur le reseau.
-
-> **En tant qu'utilisateur**, je veux basculer plusieurs cameras en mode vie privee simultanement (ex. "tout eteindre d'un coup"), afin de ne pas devoir repeter l'action camera par camera.
-
-> **En tant qu'utilisateur**, je veux que mon choix soit maintenu apres un redemarrage du systeme, afin de ne pas devoir reconfigurer la vie privee a chaque fois.
-
-### 9.2 Regles fonctionnelles
-
-- le mode vie privee doit empecher toute ingestion du flux camera par le moteur de detection ; aucun enregistrement, aucune detection, aucune notification ne doit etre genere pour une camera en mode vie privee ;
-- le flux RTSP de la camera ne doit pas etre accessible depuis Vyzio ni depuis Frigate pendant la periode de vie privee ;
-- le mode vie privee peut etre active manuellement (bascule instantanee) ou via une plage recurrente (jours de la semaine + heures de debut et de fin) planifiee dans la planification de la maison (§7.3), qui peut viser plusieurs cameras a la fois ;
-- le statut vie privee de chaque camera doit etre clairement visible dans l'interface (icone ou badge distinct de l'etat "hors ligne") ; le badge dit ce que la camera a repondu, jamais ce que la strategie promet : "Coupure materielle confirmee" quand la camera a confirme la coupure, "Camera orientee, enregistrement desactive" quand elle a accepte le mouvement vers sa position Parking, "Enregistrement desactive" quand rien n'est demande a la camera ou que sa reponse n'est pas arrivee ;
-- quand la camera ne suit pas (coupure ou mouvement refuse, camera qui ne repond pas, position non enregistree, capacite non verifiee), l'enregistrement reste coupe (ADR-20) et l'interface le dit : le badge nomme ce qui n'a pas eu lieu ("Camera non tournee, enregistrement desactive" pour le parking, "Objectif non coupe, enregistrement desactive" pour la coupure materielle), la vignette le signale avec un lien vers l'ecran vie privee de la camera, et cet ecran affiche une phrase qui dit ce qui s'est passe et quoi faire, avec le detail technique (§1.5) ; de meme a la desactivation, quand la camera ne revient pas sur sa position Surveillance ; quand la demande est interrompue avant la reponse de la camera, l'interface dit que Vyzio ne sait pas ce qu'elle a fait, sans pretendre qu'elle a refuse ;
-- la vignette d'une camera en mode vie privee affiche un etat explicite, avec les mots du badge, plutot qu'un echec de chargement ; la vue live ne s'ouvre pas tant que dure le mode vie privee ;
-- en cas de conflit entre une bascule manuelle et une plage, la bascule manuelle est prioritaire : une camera coupee a la main, pendant une plage ou non, reste coupee a la fin de la plage, jusqu'a ce que l'utilisateur reprenne la surveillance a la main ; une camera dont la surveillance est reprise a la main pendant une plage n'est pas recoupee par cette plage et tient jusqu'a sa fin (des plages qui se suivent ou se chevauchent comptent comme une seule), puis la plage suivante s'applique ; reprendre la surveillance de toutes les cameras suit la meme regle camera par camera ; cette reprise s'arrete aussi quand une plage qui vise la camera est enregistree, et quand Vyzio redemarre, ou les plages sont reevaluees ; tant qu'elle dure, l'ecran vie privee de la camera dit jusqu'a quand, a l'heure de la maison ;
-- l'etat du mode vie privee doit survivre a un redemarrage du systeme (persistance) ;
-- la desactivation du mode vie privee (manuelle ou fin de plage) doit restaurer le flux camera sans intervention utilisateur supplementaire ;
-- l'interface doit permettre d'activer ou de desactiver le mode vie privee sur plusieurs cameras simultanement (selection multiple ou action globale "tout couper / tout reactiver"), sans reload Frigate separe par camera — un seul rechargement pour l'ensemble de la selection.
-
-### 9.3 Stratégie de coupure par caméra (PTZ parking)
-
-> **En tant qu'utilisateur avec une caméra PTZ**, je veux qu'elle pivote physiquement à l'activation du mode vie privée, afin d'avoir un signal visuel et physique que la caméra ne capture plus ma pièce.
-
-> **En tant qu'utilisateur**, je veux choisir la stratégie de mode vie privée pour chaque caméra (logiciel, parking PTZ, ou cache matériel si disponible), afin d'adapter le niveau de protection aux capacités de chaque modèle.
-
-> **En tant qu'utilisateur avec une caméra PTZ**, je veux définir la position de surveillance depuis l'interface en orientant la caméra manuellement puis en cliquant "Enregistrer", afin que Vyzio sache toujours où la ramener après le mode vie privée.
-
-> **En tant qu'utilisateur**, je veux gérer plusieurs positions nommées pour ma caméra PTZ — au minimum une position de surveillance et une position de parking — afin de personnaliser les zones couvertes sans devoir repositionner la caméra manuellement à chaque usage.
-
-**Règles fonctionnelles :**
-
-- chaque caméra peut avoir une stratégie de mode vie privée indépendante : `software_blur` (« Arrêt logiciel », désactivation Frigate uniquement), `ptz_parking` (mouvement physique + désactivation Frigate), `hardware` (coupure native firmware, ex. Tapo) ;
-- `software_blur` est la stratégie par défaut d'une caméra ; il n'existe pas de stratégie « aucune » : le mode vie privée arrête toujours au moins l'enregistrement, la détection et les notifications de Vyzio (§9.2), et chaque stratégie ajoute ce que la caméra fait en plus ;
-- l'option `ptz_parking` ne peut être choisie que si l'orientation de la caméra est vérifiée et activée (capacité détectée automatiquement sur la page de la caméra et configurable manuellement) et une fois les positions Surveillance (preset 1) et Parking (preset 2) enregistrées ; l'option `hardware` ne peut être choisie que si la coupure matérielle de la caméra est vérifiée (§2.3) ; une stratégie qui ne peut pas encore être choisie reste dans la liste, grisée, avec la raison et l'endroit où y remédier (enregistrer les positions, vérifier ou essayer la capacité), jamais retirée ([DESIGN SYSTEM](DESIGN%20SYSTEM.md) § Settings screens) ;
-- l'écran vie privée ne dit que ce que fait la stratégie choisie ; quand celle-ci ne peut plus agir (positions ou capacité manquantes), il dit ce qui manque et ce qui reste garanti en attendant, sans promettre son effet ;
-- le mode `ptz_parking` est **toujours cumulatif avec le fallback software** : la caméra pivote vers sa position Parking (preset 2) ET Frigate est désactivé ; la double couche garantit la protection même si le mouvement PTZ échoue ; à la désactivation, la caméra revient sur sa position Surveillance (preset 1) et l'enregistrement reprend, même si ce retour échoue, ce que l'interface dit (§9.2) ;
-- l'utilisateur doit pouvoir définir la position de surveillance (preset "home") via des contrôles PTZ live dans l'interface — une fois orientée, il clique "Définir comme position de surveillance" ;
-- la page de la caméra propose le mode vie privée et les positions Surveillance et Parking dès l'ajout, sans étape d'ajout dédiée ; le mode vie privée se règle sans flux ; seules attendent les stratégies qui demandent une capacité vérifiée (§2.2 suspend les vérifications tant que le flux ne fonctionne pas), et le parking PTZ, dont les positions s'enregistrent depuis la vue live, qui ne s'ouvre qu'une fois la caméra en surveillance : l'écran vie privée et l'écran de pilotage le disent et mènent à ce qui manque, la connexion tant que le flux ne fonctionne pas, puis le déclencheur de redémarrage ; une orientation à confirmer s'essaie d'abord depuis sa carte (§2.3), puis ses positions se règlent depuis la vue live ;
-- lorsque l'utilisateur sélectionne la stratégie `ptz_parking`, l'interface doit afficher un avertissement explicite précisant que le flux vidéo reste techniquement accessible sur le réseau local — seul Vyzio est désactivé et la caméra pivote vers sa position Parking ; cet avertissement est un pré-requis non négociable avant d'enregistrer le choix ;
-- la gestion des positions PTZ expose 4 slots : **preset 1** (Surveillance : ramener la caméra vers la zone surveillée nominale), **preset 2** (Parking vie privée : position de stationnement lors de l'activation du mode vie privée), **presets 3 et 4** personnalisables par l'utilisateur ; les presets 1 et 2 ont des labels fixes, les presets 3 et 4 ont un label libre ;
-- sur une caméra qui garde ses positions elle-même, la caméra fait foi : le slot N de Vyzio est la position N de la caméra, numérotée comme dans l'application du fabricant quand celle-ci propose des positions ; une position enregistrée sous ce numéro dans cette application apparaît sur son slot, une position qui y est supprimée le libère, et les positions au-delà des quatre slots sont ignorées ([ADR-69](adr/0069-the-camera-is-the-only-source-of-truth-for-native-presets.md)) ;
-- chaque slot montre l'un de trois états, quel que soit qui garde la position : **vide** (le signe « + », un appui y enregistre la vue actuelle), **position enregistrée, sans miniature** (par exemple enregistrée dans l'application du fabricant ; un appui y emmène la caméra et prend sa miniature), **position avec sa miniature** (un appui y emmène la caméra) ; seul un slot vide montre « + », et enregistrer par-dessus une position existante demande toujours confirmation ;
-- quand la caméra ne répond pas à la lecture de ses positions, l'interface remplace les slots par un message disant qu'elles n'ont pas pu être lues, jamais qu'elles manquent, avec « Réessayer » et le détail technique (§1.5) ; l'écran vie privée le dit de même : une stratégie `ptz_parking` déjà choisie est gardée, et la choisir attend que les positions aient pu être lues ;
-- la disponibilité des presets est indépendante du protocole de la caméra : Vyzio gère les positions par un mécanisme de homing + mesure du temps de mouvement pour les caméras qui ne supportent pas les presets natifs (voir [ADR-59](adr/0059-ptz-positions-resolved-above-the-protocol-providers-only-move.md) et [ADR-60](adr/0060-ptz-positions-are-counted-in-motion-time-on-a-session-held-for-each-move.md)) ;
-- la capacité Orientation de la caméra dit, dans ses options, où sont gardées ses positions : par la caméra elle-même dès qu'elle sait les garder, même avant la première enregistrée, ou par Vyzio quand la caméra ne sait pas les garder ; dans ce second cas, elle dit que les positions sont moins fiables et qu'il faut calibrer la caméra après chaque démarrage de Vyzio, depuis la vue live.
-
-### 9.4 Miniatures de positions PTZ
-
-> **En tant qu'utilisateur**, je veux voir une miniature de la vue caméra associée à chaque position PTZ enregistrée, afin d'identifier visuellement la zone couverte sans devoir y naviguer.
-
-**Règles fonctionnelles :**
-
-- chaque position enregistrée affiche une miniature de la vue caméra à cette position, dès qu'elle a été prise ;
-- la miniature est capturée automatiquement après chaque enregistrement d'une position et chaque déplacement GoTo vers un preset demandé depuis l'interface, une fois la caméra arrivée à destination ; les déplacements du mode vie privée n'en prennent aucune ;
-- la miniature est persistée côté serveur et survit à un rechargement de l'interface ;
-- une position enregistrée ailleurs (par exemple dans l'application du fabricant) n'a sa première miniature qu'après son premier GoTo ; avant, son slot montre qu'une position existe (§9.3), jamais le signe d'un slot vide ni une image générique ;
-- la miniature est mise à jour à chaque nouveau GoTo.
-
----
-
-## 10. Reglages image avances
-
-> **En tant qu'utilisateur**, je veux ajuster la luminosite, le contraste et la vision nocturne (IR) de mes cameras directement depuis Vyzio, afin de ne pas devoir ouvrir l'application du constructeur pour un simple reglage image.
-
-> **En tant qu'utilisateur**, je veux que ce reglage soit une capacite testee comme les autres (PTZ, vie privee materielle), afin de ne pas me proposer un controle qui ne fonctionnera pas sur ma camera.
-
-**Regles fonctionnelles :**
-
-- les reglages image (luminosite, contraste, saturation, nettete, mode vision nocturne infrarouge) sont une **capacite** au sens de la §2.3 : independante de la marque, testee reellement avant d'etre proposee, jamais activee sur simple declaration ;
-- les valeurs affichees et modifiables sont lues et ecrites en direct sur la camera — Vyzio ne stocke pas de copie locale des reglages, la camera reste la source de verite ;
-- si la camera est hors ligne, le panneau de reglages image doit etre suspendu avec un message explicite (meme regle que PTZ, cf. §2.2) ;
-- une camera dont la capacite reglages image n'est pas verifiee ne doit pas afficher le panneau de controle, quelle que soit sa marque ;
-- le mode vision nocturne expose au minimum trois etats comprehensibles pour un non-technicien : automatique, force actif, force inactif.
-
----
-
-## 11. Pilotage PTZ
-
-> **En tant qu'utilisateur**, je veux pouvoir contrôler ma caméra PTZ directement depuis la vue live, sans passer par un menu de configuration, afin de réorienter la caméra facilement au quotidien.
-
-**Règles fonctionnelles :**
-
-- les contrôles PTZ doivent être accessibles depuis la vue live de la caméra (pas seulement depuis les paramètres) : c'est le parcours d'usage quotidien ;
-- si la caméra est hors ligne, les contrôles sont suspendus avec un message explicite (cf. §2.2) ;
-- les contrôles et les positions n'apparaissent, dans la vue live comme dans la section Pilotage des réglages de la caméra, que si l'orientation fonctionne, prouvée ou confirmée par l'utilisateur (§2.3) ; tant qu'elle ne fonctionne pas, aucune commande inerte : une ligne renvoie vers la page « Connexion » de la caméra, où sa carte dit pourquoi et comment en sortir (§2.3) ; une orientation désactivée par l'utilisateur n'y laisse rien ;
-- certaines caméras tournent à l'envers de la flèche pressée (leur firmware inverse le sens horizontal) : l'utilisateur peut inverser gauche et droite sur la capacité PTZ de la caméra ; Vyzio ne devine pas ce sens, et le réglage ne change ni le haut et le bas, ni les positions enregistrées ;
-- les positions enregistrées et leurs miniatures sont décrites en §9.3 et §9.4.
-
----
-
-## 12. Périmètre produit
+## Perimetre produit
 
 Ce que Vyzio couvre, et ce qu'il ne cherche pas à couvrir. Le contenu d'une version donnée ne vit
 pas ici : il vit dans son jalon GitHub ([WORKFLOW](WORKFLOW.md) § Releases, one milestone each).
 
-### 12.1 Ce que Vyzio couvre
+### Ce que Vyzio couvre
 
 - ajout et gestion de caméras existantes ;
 - surveillance locale avec notifications sur événements prioritaires ;
@@ -536,7 +235,7 @@ pas ici : il vit dans son jalon GitHub ([WORKFLOW](WORKFLOW.md) § Releases, one
 - historique consultable et rétention configurable ;
 - interface web unifiée pour les parcours principaux.
 
-### 12.2 Hors périmètre
+### Hors perimetre
 
 - couverture exhaustive de tous les usages experts d'un NVR ;
 - exposition de chaque capacité avancée dans une UI Vyzio 100 % custom ;
@@ -545,9 +244,55 @@ pas ici : il vit dans son jalon GitHub ([WORKFLOW](WORKFLOW.md) § Releases, one
 
 ---
 
-## 13. Criteres de succes produit
+## Criteres de succes produit
 
 - un utilisateur non-tech doit pouvoir comprendre la promesse, installer le systeme et recevoir ses premieres notifications sans lire de documentation technique ;
 - le systeme doit rester utile meme sans connexion Internet ;
 - les notifications doivent etre suffisamment pertinentes pour ne pas degrader la confiance utilisateur ;
 - la frontiere entre comportement local par defaut et options distantes doit rester explicite a chaque etape.
+
+---
+
+## Index des cas d'utilisation
+
+| ID | Objectif |
+| --- | --- |
+| [UC-UI-01](uc/ui-01-voir-l-etat-du-systeme.md) | Voir l'etat du systeme |
+| [UC-UI-02](uc/ui-02-modifier-un-reglage.md) | Modifier un reglage et l'appliquer |
+| [UC-CAM-01](uc/cam-01-ajouter-une-camera.md) | Ajouter une camera |
+| [UC-CAM-02](uc/cam-02-detecter-les-capacites.md) | Detecter automatiquement les protocoles et les capacites |
+| [UC-CAM-03](uc/cam-03-declarer-une-capacite.md) | Declarer une capacite ou un protocole a la main |
+| [UC-CAM-04](uc/cam-04-confirmer-une-capacite.md) | Confirmer une capacite qu'aucune lecture ne prouve |
+| [UC-CAM-05](uc/cam-05-choisir-les-flux.md) | Choisir les flux d'une camera |
+| [UC-CAM-06](uc/cam-06-verifier-une-camera.md) | Verifier une camera |
+| [UC-CAM-07](uc/cam-07-nommer-une-camera.md) | Nommer une camera |
+| [UC-LIVE-01](uc/live-01-regarder-en-direct.md) | Regarder une camera en direct |
+| [UC-PTZ-01](uc/ptz-01-orienter-la-camera.md) | Orienter la camera |
+| [UC-PTZ-02](uc/ptz-02-gerer-les-positions.md) | Enregistrer et rappeler des positions |
+| [UC-IMG-01](uc/img-01-regler-l-image.md) | Regler l'image d'une camera |
+| [UC-PRIV-01](uc/priv-01-couper-une-camera.md) | Couper une camera |
+| [UC-PRIV-02](uc/priv-02-choisir-la-strategie.md) | Choisir la strategie de vie privee d'une camera |
+| [UC-DET-01](uc/det-01-choisir-ce-qui-est-detecte.md) | Choisir ce qui est detecte |
+| [UC-DET-02](uc/det-02-corriger-une-reconnaissance.md) | Confirmer ou corriger une reconnaissance |
+| [UC-DET-03](uc/det-03-sensibilite.md) | Laisser Vyzio regler la sensibilite, ou la figer |
+| [UC-DET-04](uc/det-04-definir-les-zones.md) | Definir les zones utiles d'une camera |
+| [UC-PROF-01](uc/prof-01-ajouter-une-personne.md) | Ajouter une personne a reconnaitre |
+| [UC-PROF-02](uc/prof-02-regler-les-notifications-d-une-personne.md) | Regler les notifications d'une personne |
+| [UC-PROF-03](uc/prof-03-voir-les-apparitions.md) | Voir les dernieres apparitions d'une personne |
+| [UC-PROF-04](uc/prof-04-supprimer-un-profil.md) | Supprimer un profil |
+| [UC-NOTIF-01](uc/notif-01-recevoir-une-notification.md) | Recevoir une notification d'evenement |
+| [UC-NOTIF-02](uc/notif-02-configurer-un-canal.md) | Configurer un canal de notification |
+| [UC-NOTIF-03](uc/notif-03-choisir-ce-qui-est-notifie.md) | Choisir ce qui merite une notification |
+| [UC-NOTIF-04](uc/notif-04-relier-une-conversation.md) | Relier une conversation de messagerie |
+| [UC-NOTIF-05](uc/notif-05-commander-depuis-la-messagerie.md) | Commander Vyzio depuis la messagerie |
+| [UC-HIST-01](uc/hist-01-consulter-l-historique.md) | Consulter l'historique |
+| [UC-HIST-02](uc/hist-02-regler-la-conservation.md) | Regler la conservation des enregistrements |
+| [UC-HIST-03](uc/hist-03-supprimer-une-detection.md) | Supprimer une detection |
+| [UC-SCHED-01](uc/sched-01-planifier-une-plage.md) | Planifier une plage |
+| [UC-ACCESS-01](uc/access-01-creer-le-mot-de-passe.md) | Creer le mot de passe du proprietaire |
+| [UC-ACCESS-02](uc/access-02-rester-connecte.md) | Se connecter et le rester |
+| [UC-ACCESS-03](uc/access-03-deconnecter-un-appareil.md) | Deconnecter un appareil |
+| [UC-ACCESS-04](uc/access-04-changer-le-mot-de-passe.md) | Changer son mot de passe |
+| [UC-ACCESS-05](uc/access-05-retrouver-l-acces.md) | Retrouver l'acces apres un oubli |
+| [UC-ACCESS-06](uc/access-06-acceder-depuis-l-exterieur.md) | Acceder a l'interface depuis l'exterieur |
+| [UC-SEC-01](uc/sec-01-supprimer-ses-donnees.md) | Supprimer ou exporter ses donnees |

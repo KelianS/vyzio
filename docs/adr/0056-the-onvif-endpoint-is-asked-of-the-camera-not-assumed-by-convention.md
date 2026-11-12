@@ -63,7 +63,7 @@ error status, a SOAP fault, or a malformed answer, the way a Tapo refuses PTZ in
 camera that **could not be reached** (no connection, no ONVIF service found) are two different things
 for the user and for support. Each leaves the API with its own error code, never as an unexplained server error,
 and reaches the screen as a plain sentence with the camera's answer in the diagnostic line
-([SPECS](../SPECS.md) 1.5). Silence within a short wait stays a success: budget cameras execute a
+([SPECS](../SPECS.md) UI-01). Silence within a short wait stays a success: budget cameras execute a
 command on receipt and answer seconds later, and treating their slowness as an error would break V380.
 
 ## Options rejected

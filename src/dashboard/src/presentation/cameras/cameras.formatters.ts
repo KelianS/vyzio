@@ -13,21 +13,21 @@ export const CAPABILITY_LABELS: Record<Capability, string> = {
 /** The video stream, the capability every other one depends on. */
 export const STREAM_LABEL = CAPABILITY_LABELS.stream
 
-/** The way out of a stream that does not answer, wherever it is said: both places it can be fixed (SPECS 2.3). */
+/** The way out of a stream that does not answer, wherever it is said: both places it can be fixed (CAM-24). */
 export const STREAM_REPAIR =
   'vérifiez l’adresse et le compte de la caméra dans Avancé, puis les options du flux vidéo.'
 
 /** A removal button drawn in outline, so it reads as destructive without shouting. */
 export const DESTRUCTIVE_OUTLINE = 'border-destructive text-destructive hover:bg-destructive/10'
 
-/** Why a capability test cannot run, next to every button it greys out (SPECS 2.2). */
+/** Why a capability test cannot run, next to every button it greys out (CAM-08). */
 export const TESTS_SUSPENDED =
   'Les autres capacités se vérifient une fois que le flux vidéo fonctionne.'
 
 const IMAGE_DOES_NOT_ARRIVE =
   'La caméra répond, mais son image n’arrive pas : vérifiez le compte de la caméra dans Avancé, puis les options du flux vidéo.'
 
-// Why the stream's check failed, by what the camera answers now; config_error is the camera's, not the stream's (SPECS 1.5).
+// Why the stream's check failed, by what the camera answers now; config_error is the camera's, not the stream's (UI-01).
 const STREAM_FAILURE_LINES: Record<string, string> = {
   [CameraState.Offline]: `Vyzio ne reçoit pas les images : ${STREAM_REPAIR}`,
   [CameraState.Degraded]: IMAGE_DOES_NOT_ARRIVE,
@@ -63,7 +63,7 @@ export function formatCheckedAt(iso: string): string {
 /** One read, one sentence: the saved positions, wherever their read fails. */
 export const POSITIONS_UNREAD = 'Les positions de cette caméra n’ont pas pu être lues.'
 
-/** Until when a surveillance resumed inside a range holds, in the house's clock (SPECS 9.2). */
+/** Until when a surveillance resumed inside a range holds, in the house's clock (PRIV-07). */
 export function formatPrivacyResume({ until }: PrivacyResume): string {
   const day = WEEK_DAYS.find((d) => d.value === until?.dayOfWeek)
   if (!until || !day) return 'Surveillance reprise malgré les plages en cours.'

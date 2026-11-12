@@ -9,12 +9,12 @@ cet ADR, elle était figée : un seul détecteur `cpu1` de type `cpu`, `detect.f
 les caméras, quel que soit le matériel présent et le nombre de caméras. Cela contredit le principe
 produit #5 (plug & play) : un utilisateur disposant d'un accélérateur dédié (Coral) ou d'une carte
 graphique doit en bénéficier sans rien configurer, et un hôte CPU-only avec plusieurs caméras a besoin
-d'une fréquence d'analyse réduite pour ne pas saturer le processeur (SPECS §7.2).
+d'une fréquence d'analyse réduite pour ne pas saturer le processeur (SYS-02).
 
 Deux contraintes façonnent la décision :
 
 - **Image Docker déployée.** Sur la version Frigate pinnée (`0.17.1`,
-  [`docker-compose.yml`](../../docker-compose.yml)), Coral (edgetpu) et Intel (OpenVINO/onnx)
+  [`compose.yml`](../../compose.yml)), Coral (edgetpu) et Intel (OpenVINO/onnx)
   fonctionnent avec l'image `ghcr.io/blakeblackshear/frigate:0.17.1` déjà déployée. Nvidia (`tensorrt`)
   et AMD (`rocm`) exigent un **variant d'image Docker différent** — recréer le conteneur, pas
   seulement réécrire sa config et le redémarrer (`FrigateConfigApplier.ApplyAsync` fait uniquement ce
@@ -38,8 +38,8 @@ Deux contraintes façonnent la décision :
    détecte et utilise automatiquement OpenVINO comme execution provider GPU, avec **YOLOX** (Megvii,
    [Apache-2.0](https://github.com/Megvii-BaseDetection/YOLOX)) — licence permissive, poids
    pré-entraînés téléchargeables directement (pas d'étape d'export comme YOLOv9), variante `yolox_s`
-   (640×640) bundlée dans l'image `vyzio-api` (Dockerfile) et installée à la demande dans le volume
-   `vyzio-config` partagé avec Frigate par `IFrigateModelAssetInstaller`. Le palier CPU seul garde le
+   (640×640) bundlée dans l'image `vyzio-api` (Dockerfile) et installée à la demande dans le dossier
+   de configuration partagé avec Frigate par `IFrigateModelAssetInstaller`. Le palier CPU seul garde le
    détecteur natif `cpu` (`MobileDet`) — cf. Option 2 pour pourquoi il n'utilise pas YOLOX aussi.
 2. **YOLOX (ou tout modèle de la famille YOLO) également sur le palier CPU seul**, testé en v1. Écarté
    après test terrain : pics CPU à ~800 % avec 2 caméras et détections dégradées (frames perdues sous
@@ -93,9 +93,9 @@ recalculée indépendamment.
   démarrage sinon (`TypeError: stat: path should be string... not NoneType`), aucun défaut implicite
   fonctionnel malgré ce que la doc laisse entendre.
 - `IFrigateModelAssetInstaller` (Infrastructure) copie `yolox_s.onnx` depuis `/app/models` (bundlé dans
-  l'image `vyzio-api`, téléchargé au build — Dockerfile) vers `vyzio-config/model_cache/` (volume
+  l'image `vyzio-api`, téléchargé au build — Dockerfile) vers `/config/model_cache/` (dossier
   partagé avec `frigate`) — seulement si absent, pas à chaque génération de config, et uniquement pour
-  le palier Intel GPU. `frigate` (privilégié, tourne en root) partage ce volume avec `vyzio-api`
+  le palier Intel GPU. `frigate` (privilégié, tourne en root) partage ce dossier avec `vyzio-api`
   (non-root) : le dossier et le fichier installés sont rendus explicitement accessibles en écriture aux
   deux (`File.SetUnixFileMode`), sans quoi une création antérieure par l'un bloque l'autre.
 - La détection matérielle ne sonde que des chemins connus du système de fichiers (aucune dépendance à

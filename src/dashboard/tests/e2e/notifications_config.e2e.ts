@@ -71,7 +71,7 @@ test.describe('NotificationChannelView', () => {
   })
 
   // The criterion for this step: unplugging the network must show in the settings,
-  // or Vyzio looks broken when it is merely waiting (SPECS 5.4).
+  // or Vyzio looks broken when it is merely waiting (NOTIF-25).
   test('NotificationChannelView_ShouldSayItStoppedListeningAndWhy_WhenTheLoopFell', async ({
     page,
   }) => {
@@ -113,7 +113,7 @@ test.describe('NotificationChannelView', () => {
     await expect(page.getByText('Ignoré : conversation non reliée')).toBeVisible()
   })
 
-  // Nothing linked yet: a stopped loop is no failure, a command gets no answer anyway (SPECS 5.4).
+  // Nothing linked yet: a stopped loop is no failure, a command gets no answer anyway (NOTIF-25).
   test('NotificationChannelView_ShouldOfferOnlyTheLink_WhenNoConversationIsLinked', async ({
     page,
   }) => {

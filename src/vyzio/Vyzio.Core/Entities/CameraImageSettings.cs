@@ -1,7 +1,7 @@
 namespace Vyzio.Core.Entities;
 
 // Night vision (IR-cut) mode — ONVIF ver10/schema IrCutFilterMode, exposed as three states
-// a non-technical user can understand (SPECS §10).
+// a non-technical user can understand (IMG-04).
 public enum IrCutMode
 {
     Auto,

@@ -4,7 +4,7 @@ import { SurveillanceEntry } from '../../../common/camera/camera_status'
 const LIVE_VIEW_WAITS =
   'La vue en direct, où se règlent ses positions, s’ouvre une fois la caméra en surveillance'
 
-/** Where positions need the live view: says it waits for surveillance and leads to what is missing (SPECS 9.3). */
+/** Where positions need the live view: says it waits for surveillance and leads to what is missing (PRIV-18). */
 export function SurveillanceFirstNotice({
   cameraId,
   entry,

@@ -19,7 +19,7 @@ internal sealed class DvripSession : IAsyncDisposable
     private readonly Task _reading;
     private int _sequence = 2;
     private volatile bool _closed;
-    // Why the camera side ended, carried into the error support reads (SPECS 1.5).
+    // Why the camera side ended, carried into the error support reads (UI-01).
     private volatile string _closedBy = "connection closed by the camera";
     private int _disposed;
 

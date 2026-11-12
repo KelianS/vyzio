@@ -16,7 +16,7 @@ async function failRead(page: Page, path: string) {
   )
 }
 
-// A read that fails says so with its diagnostic line, never an empty or stale page (SPECS 1.5).
+// A read that fails says so with its diagnostic line, never an empty or stale page (UI-01).
 test.describe('Failed reads', () => {
   test('ConservationView_ShouldShowTheFailure_WhenTheSettingsCannotBeRead', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))

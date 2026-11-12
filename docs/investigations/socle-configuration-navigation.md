@@ -2,7 +2,7 @@
 
 > Document préparatoire, **jetable**. Il ne tranche rien : il établit le constat, pose les critères
 > de décision et compare des propositions. Les choix retenus iront dans un ADR, et les attendus
-> produit correspondants dans [`SPECS.md`](../SPECS.md) §7.
+> produit correspondants dans [`SPECS.md`](../SPECS.md) (UI-04 à UI-19).
 >
 > Déclencheur : item « Refondre le socle de configuration », et son
 > voisin sur la bibliothèque de composants — les deux partagent la même cause.
@@ -100,7 +100,7 @@ portent chacune une phrase complète ; le bloc de configuration Telegram contien
 Le résultat, sur un écran déjà dense, est que le bouton d'action passe inaperçu.
 
 **⑦ Le mobile est une adaptation, pas une conception.** Six points de rupture ad hoc, un master-detail
-à deux colonnes, un header à six liens. À noter : **SPECS §7.2 n'exige aujourd'hui que des actions
+à deux colonnes, un header à six liens. À noter : **SPECS (UI-10) n'exige aujourd'hui que des actions
 « faisables sur mobile et desktop »** — c'est strictement plus faible qu'une conception mobile-first.
 Les SPECS doivent donc être mises à jour avec la direction retenue, sinon le code respectera la
 spécification tout en ratant la cible.
@@ -299,7 +299,7 @@ caché. Rien n'est retiré à l'utilisateur avancé ; c'est l'ordre de rencontre
 
 1. **Trancher** ce document : structure de navigation, Tailwind ou non, D1 ou D2.
 2. **Aligner le cadrage** : ADR sur l'architecture de l'information ; ADR sur les composants ; SPECS
-   §7.2 réécrit en mobile-first ; DESIGN SYSTEM mis à jour.
+   UI-10 réécrit en mobile-first ; DESIGN SYSTEM mis à jour.
 3. **Poser la coquille** : nouvelle barre, routage à deux niveaux, écrans existants branchés tels
    quels dessous — aucune régression fonctionnelle à cette étape.
 4. **Migrer écran par écran** vers les nouveaux composants, en commençant par les réglages
@@ -315,6 +315,6 @@ caché. Rien n'est retiré à l'utilisateur avancé ; c'est l'ordre de rencontre
   maintien tel quel en assumant la contradiction avec le principe #2.
 - **Les profils sont-ils un réglage ?** Ce sont des objets métier que l'utilisateur crée et
   consulte, pas des valeurs. Les ranger sous « Réglages » est discutable.
-- **Un compte / une authentification** est prévu (SPECS §8) et n'a pas de place réservée dans les
+- **Un compte / une authentification** est prévu (ACCESS-03) et n'a pas de place réservée dans les
   propositions ci-dessus.
 - **D1 ou D2** sur le cycle enregistrer/appliquer/annuler.

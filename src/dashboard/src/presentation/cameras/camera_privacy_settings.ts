@@ -14,7 +14,7 @@ interface StrategyDefinition {
   readonly label: string
   /** What happens to this camera while privacy mode is on, whoever turned it on. */
   readonly explanation: string
-  /** Why the strategy cannot be chosen now and where to fix that; null when it can (SPECS 9.3). */
+  /** Why the strategy cannot be chosen now and where to fix that; null when it can (PRIV-15). */
   readonly unavailable: (camera: Camera, setup: PrivacySetup) => string | null
 }
 
@@ -28,7 +28,7 @@ const STILL_VIEWABLE = 'son image reste accessible depuis votre réseau local'
 const ORIENTATION_UNVERIFIED =
   'L’orientation de cette caméra n’est pas vérifiée : voir « Connexion ».'
 const ORIENTATION_OFF = 'L’orientation de cette caméra est désactivée : voir « Connexion ».'
-// Positions are saved from the live view, which only a camera in surveillance has (SPECS 9.3).
+// Positions are saved from the live view, which only a camera in surveillance has (PRIV-18).
 const POSITIONS_WAIT_FOR_STREAM =
   'Ses positions se règlent une fois la caméra en surveillance, et son flux vidéo n’a pas encore fonctionné : voir « Connexion ».'
 const POSITIONS_WAIT_FOR_RESTART =

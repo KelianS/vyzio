@@ -36,7 +36,7 @@ export function NavigationGuard() {
     if (currentLocation.pathname === nextLocation.pathname) return false
     // Read at the moment of leaving: a page that just saved and leaves has not re-rendered the guard yet.
     if (useRootStore.getState().unsavedChanges) return true
-    // Driving the camera from its page is a detour, not leaving the settings (SPECS 7.2).
+    // Driving the camera from its page is a detour, not leaving the settings (LIVE-07).
     const leaving = !isSettings(nextLocation.pathname) && !isLiveViewPath(nextLocation.pathname)
     return pending && isSettings(currentLocation.pathname) && leaving
   })

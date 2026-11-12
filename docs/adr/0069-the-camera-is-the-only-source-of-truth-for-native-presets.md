@@ -49,10 +49,10 @@ is held.
 **b) Slot N is the camera's preset N**: the preset token is the slot number, over ONVIF and over
 DVRIP, so a slot keeps the numbering of a vendor app that offers presets. Never the position in the
 list, never the name. A camera that refuses to store a preset under its slot's number fails the save
-with its reason (SPECS 1.5); a preset whose token is not a slot number is ignored, like those of e).
+with its reason (UI-01); a preset whose token is not a slot number is ignored, like those of e).
 
 **c) Vyzio keeps only what the camera cannot**: each slot's thumbnail, and the free labels of the
-slots the user names (SPECS 9.3). The labels of the fixed slots stay Vyzio's, and the camera's own
+slots the user names (PTZ-05). The labels of the fixed slots stay Vyzio's, and the camera's own
 preset names are not read. When Vyzio reads a slot empty, it drops that slot's thumbnail and free
 label, so neither comes back over another view the vendor app saves there later.
 
@@ -60,7 +60,7 @@ label, so neither comes back over another view the vendor app saves there later.
 the camera there and captures the thumbnail on arrival, like any move to a saved position. Saving
 over a held slot asks first, whatever the thumbnail.
 
-**e) Presets beyond the slots of SPECS 9.3 are ignored**: neither shown nor moved to, and Vyzio clears
+**e) Presets beyond the slots of PTZ-05 are ignored**: neither shown nor moved to, and Vyzio clears
 none of them, apart from the spare slot the DVRIP probe stores and clears (ADR-64).
 
 **f) Over ONVIF, the native tier holds as soon as the camera can store presets, even with none
@@ -73,7 +73,7 @@ probe of ADR-64, which already holds with no preset saved.
 
 **g) A held slot is what the camera answers now.** The panel and the privacy parking prerequisite
 (ADR-57) both read the camera. When it does not answer, they say the positions could not be read,
-never that they are missing, with the failed-read pattern of SPECS 1.5, and the panel offers no slot
+never that they are missing, with the failed-read pattern of UI-01, and the panel offers no slot
 whose state is unknown.
 
 ## Options rejected
@@ -99,7 +99,7 @@ whose state is unknown.
   counts it; one deleted there reads as an empty slot, and its thumbnail and label are dropped.
 - A position moved in the vendor app keeps its old thumbnail until the next tap refreshes it.
 - Every read of the slots costs a round trip to the camera, and the panel and the privacy screen
-  depend on the camera answering; an offline camera already suspends its PTZ controls (SPECS 2.2).
+  depend on the camera answering; an offline camera already suspends its PTZ controls (CAM-08).
 - ONVIF cameras that can store presets but held none now take the native tier at their next probe;
   positions they had counted read as not saved, as ADR-64 describes for a tier change.
 - An ONVIF camera that reports room for presets yet refuses the numbers Vyzio picks cannot save its

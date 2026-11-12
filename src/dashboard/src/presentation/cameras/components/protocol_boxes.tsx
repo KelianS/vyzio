@@ -23,7 +23,7 @@ const ASKS_DEVICE_ID: Record<SupportedProtocol, boolean> = {
   rtsp: false,
 }
 
-/** The protocols the camera speaks, one box each: state, port, specific account, its own check (SPECS 2.3). */
+/** The protocols the camera speaks, one box each: state, port, specific account, its own check (CAM-17). */
 export function ProtocolBoxes({
   protocols,
   loading,

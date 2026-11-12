@@ -14,7 +14,7 @@ C'est la seule chose du produit qui contredit frontalement sa promesse. Un produ
 d'envoyer une image sans consentement explicite mais la sert à qui la demande sur le réseau local ne
 protège rien : il déplace la fuite d'un pas.
 
-[SPECS](../SPECS.md) §8.2 l'exige depuis l'origine (« l'accès à l'interface et aux données doit être
+[SPECS](../SPECS.md) ACCESS-03 l'exige depuis l'origine (« l'accès à l'interface et aux données doit être
 protégé »). Le [SAD](../SAD.md) §9.1 annonçait même « JWT, rate limiting » comme mitigations en
 place — elles ne l'étaient pas. Cet ADR tranche *comment* la barrière est posée.
 
@@ -171,7 +171,7 @@ la même réponse, faute de quoi le geste enfermerait dehors celui qui le fait.
   de l'accès distant ([ADR-51](0051-remote-access-to-the-interface-netbird-overlay-network-operated-by-the-user.md)) ;
   après cet ADR, il devient le **seul** écart entre la cible et la réalité ([SAD](../SAD.md) §8).
 - **Le premier écran du produit change.** Une installation neuve ouvre sur la création du mot de
-  passe, avant l'ajout de la première caméra ([SPECS](../SPECS.md) 8.3).
+  passe, avant l'ajout de la première caméra ([SPECS](../SPECS.md) ACCESS-06).
 - **Un écran qu'on ne peut pas franchir porte son aide sur place** : la connexion et la création du
   compte sont exactement le cas prévu par
   [ADR-53](0053-user-documentation-lives-in-the-interface-three-levels-of-help.md) — l'aide y vit dans

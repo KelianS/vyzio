@@ -28,7 +28,7 @@ export interface FakeCamera {
   privacyMissDetail: string | null
   ptzSupported: boolean
   privacyStrategy: string
-  /** Surveillance resumed by hand inside a Privacy range, and when the ranges end (SPECS 9.2). */
+  /** Surveillance resumed by hand inside a Privacy range, and when the ranges end (PRIV-07). */
   privacyResume: { until: { dayOfWeek: number; time: string } | null } | null
   verifiedCapabilities: string[]
   /** The live view's qualities (ADR-72 c). */
@@ -322,6 +322,8 @@ export interface FakeBackendState {
   liveSockets: string[]
   /** Set, the API refuses every live socket with this close code. */
   liveRefusal?: number
+  /** Set, the camera stops sending: the open streams go quiet, the new ones close as unreachable. */
+  liveSilent?: boolean
   /** Where the installation stands on its password, and where this browser stands with it. */
   access: FakeAccessState
   /** Saved settings that surveillance has not picked up yet (ADR-44). */
@@ -688,16 +690,25 @@ export async function installFakeBackend(
   page: Page,
   state: FakeBackendState = createFakeBackendState(),
 ) {
-  // go2rtc's side of the live socket: answers the codec request, then sends the clip (ADR-72).
+  // go2rtc's side of the live socket: answers the codec request, then sends the clip each second, as a camera keeps filming (ADR-72).
   await page.routeWebSocket(/\/api\/cameras\/[^/]+\/live\/ws/, (socket) => {
     state.liveSockets.push(socket.url())
+    let filming: ReturnType<typeof setInterval> | undefined
+    socket.onClose(() => clearInterval(filming))
     socket.onMessage(() => {
       if (state.liveRefusal) {
         void socket.close({ code: state.liveRefusal, reason: 'refused' })
         return
       }
+      if (state.liveSilent) {
+        void socket.close({ code: 4503, reason: 'stream_unreachable' })
+        return
+      }
       socket.send(JSON.stringify({ type: 'mse', value: LIVE_CLIP_MIME }))
       socket.send(LIVE_CLIP)
+      filming = setInterval(() => {
+        if (!state.liveSilent) socket.send(LIVE_CLIP)
+      }, 1000)
     })
   })
 
@@ -1235,7 +1246,7 @@ export async function installFakeBackend(
           irCutMode: 'auto',
         })
       }
-      // Like the real one: a slot serves a thumbnail only once one was taken (SPECS 9.4).
+      // Like the real one: a slot serves a thumbnail only once one was taken (PTZ-14).
       if (path.endsWith('/thumbnail')) {
         const presetId = Number(rest?.split('/')[3])
         return state.ptz.presets.some((p) => p.presetId === presetId && p.thumbnail)

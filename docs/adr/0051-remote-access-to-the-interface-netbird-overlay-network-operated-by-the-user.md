@@ -85,7 +85,7 @@ l'extérieur. L'accès distant expose donc **exactement ce que le produit expose
 Le client de réseau overlay est **un conteneur que Vyzio démarre lui-même**, par le socket Docker
 qu'il utilise déjà pour appliquer la configuration du moteur de détection — pas une ligne à ajouter
 à la main dans un fichier de déploiement. C'est ce qui permet à l'activation d'être un réglage
-ordinaire (SPECS §7.2) : on colle une clé, le pair apparaît ; on la retire, il disparaît.
+ordinaire (ACCESS-16) : on colle une clé, le pair apparaît ; on la retire, il disparaît.
 
 Le pair **partage l'espace de noms réseau du conteneur qui sert l'interface**. C'est ce qui rend la
 règle ci-dessus structurelle plutôt que déclarative : dans cet espace, il n'existe rien d'autre que

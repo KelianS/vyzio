@@ -280,7 +280,7 @@ function RangeBlock({ block, targets }: { block: BarBlock; targets: string | nul
       )}
       style={{
         top: lane * LANE_PX + 2,
-        // Never narrower than its icon (SPECS 7.3), and never past the bar's end.
+        // Never narrower than its icon (SCHED-05), and never past the bar's end.
         left: `min(${percentOf(start)}, 100% - 1.5rem)`,
         width: `max(1.5rem, ${percentOf(end - start)})`,
       }}

@@ -63,6 +63,6 @@ ce cas, puisque le Coral l'emporte pour la détection.
 - Limite connue et assumée : sur les générations Intel les plus anciennes (≤ 5, pilote `i965`),
   VAAPI peut exiger `LIBVA_DRIVER_NAME=i965` dans l'environnement du conteneur. Non géré — aucun
   matériel de ce type dans le périmètre constaté, et la variable relève du déploiement
-  (`docker-compose.yml`), pas de la configuration générée.
+  (`compose.yml`), pas de la configuration générée.
 - Nvidia et AMD restent hors périmètre pour la même raison qu'ADR-34 : leurs presets exigent un
   variant d'image Docker différent.

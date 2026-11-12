@@ -169,7 +169,7 @@ export function buildCameraConnectionPresenter({
 
   function announceTest(binding: CameraCapabilityBinding) {
     const label = CAPABILITY_LABELS[binding.capability]
-    // The camera's own answer goes to the diagnostic line, never into the sentence (SPECS 1.5).
+    // The camera's own answer goes to the diagnostic line, never into the sentence (UI-01).
     const diagnostic = binding.lastError ? scrubSecrets(binding.lastError) : undefined
     switch (binding.status) {
       case CapabilityStatus.Verified:
@@ -374,7 +374,7 @@ export function buildCameraConnectionPresenter({
         const { connected, guidance } = await container.verifyCamera.execute(cameraId)
         if (connected) toast(`${STREAM_LABEL} : connexion réussie.`, 'success')
         else {
-          // The verifier's own explanation names the stream's mechanics: support detail, never the sentence (SPECS 1.5).
+          // The verifier's own explanation names the stream's mechanics: support detail, never the sentence (UI-01).
           toast(
             `Caméra injoignable : ${STREAM_REPAIR}`,
             'error',

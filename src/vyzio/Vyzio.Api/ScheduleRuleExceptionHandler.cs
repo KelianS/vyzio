@@ -4,7 +4,7 @@ using Vyzio.Core.Common;
 
 namespace Vyzio.Api;
 
-// A rule the user can fix is a refusal with its code, never a server failure (SPECS 7.3).
+// A rule the user can fix is a refusal with its code, never a server failure (SCHED-06).
 internal sealed class ScheduleRuleExceptionHandler : IExceptionHandler
 {
     public async ValueTask<bool> TryHandleAsync(

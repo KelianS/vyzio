@@ -41,7 +41,7 @@ alors une propriété visible du produit, pas un manque silencieux.
 ### Le sens entrant est une capacité comme une autre
 
 Un canal sans transport entrant reste un canal : il reçoit les alertes et n'accepte pas de commandes.
-L'interface le dit **avant** l'activation ([SPECS §5.2](../SPECS.md)), aucune boucle de récupération
+L'interface le dit **avant** l'activation ([SPECS](../SPECS.md) NOTIF-18), aucune boucle de récupération
 ne démarre pour lui, et aucune commande ne lui est publiée. C'est le même raisonnement que le
 catalogue de capacités caméra ([ADR-22](0022-camera-capability-catalogue-brand-protocol-decoupling-vendor-presets-manual-onboarding.md)) :
 le produit s'adapte à ce que le canal sait faire.

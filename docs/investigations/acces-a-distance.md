@@ -24,7 +24,7 @@ argument de vente.
 
 ### Ce que dit — et surtout ne dit pas — le cadrage actuel
 
-- **SPECS** : aucune user story. Le mot « extérieur » n'y apparaît pas. §5.3 ne traite que le sens
+- **SPECS** : aucune user story. Le mot « extérieur » n'y apparaît pas. Les règles hors ligne (SYS-03, SYS-04, NOTIF-11) ne traitent que le sens
   inverse (fonctionner *sans* Internet). **C'est le trou principal** : le besoin n'est pas écrit.
 - **SAD** §9.2 : le schéma d'isolation réseau montre `Internet (optionnel) └─► Cloudflare Tunnel
   ──► 8443`, et l'annexe A liste « Accès distant images : URL signée HMAC + tunnel opt-in ».
@@ -325,7 +325,7 @@ La direction est tranchée en deux décisions, qui sont désormais le foyer du s
   par l'utilisateur (option B ci-dessus). Le relais Vyzio (option D) reste l'horizon, non retenu
   aujourd'hui.
 
-Attendus produit correspondants : [SPECS](../SPECS.md) §5.4 et §7. Exécution :
+Attendus produit correspondants : [SPECS](../SPECS.md) UC-NOTIF-05 et UC-ACCESS-06. Exécution :
 [issue #63](https://github.com/KelianS/vyzio/issues/63). Le SAD a été corrigé du Cloudflare Tunnel qu'il
 inscrivait (§1).
 

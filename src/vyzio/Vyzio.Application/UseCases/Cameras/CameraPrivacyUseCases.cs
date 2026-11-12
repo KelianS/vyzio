@@ -46,7 +46,7 @@ public sealed class ToggleCameraPrivacyModeUseCase(
         return CameraDto.From(camera);
     }
 
-    // A cut ends a resume; resuming by hand inside a range keeps the schedule from cutting again until it ends (SPECS 9.2).
+    // A cut ends a resume; resuming by hand inside a range keeps the schedule from cutting again until it ends (PRIV-07).
     private async Task TrackResumeAsync(string cameraId, bool active, PrivacyModeSource source)
     {
         if (active)
@@ -88,7 +88,7 @@ public sealed class BatchToggleCameraPrivacyModeUseCase(
                 camera.PrivacyModeActive = active;
                 camera.PrivacyModeSource = active ? PrivacyModeSource.Manual : null;
                 answer.ApplyTo(camera);
-                // The same rule as one camera, camera by camera, before the save (SPECS 9.2).
+                // The same rule as one camera, camera by camera, before the save (PRIV-07).
                 if (active) resumes.End(camera.Id); else resumes.Resume(camera.Id, privacyRules);
 
                 camera.UpdatedAt = DateTimeOffset.UtcNow;
@@ -113,7 +113,7 @@ public sealed class BatchToggleCameraPrivacyModeUseCase(
     }
 }
 
-// What the camera did with the last toggle: the lens cut it confirmed, or why it did not follow (SPECS 9.2).
+// What the camera did with the last toggle: the lens cut it confirmed, or why it did not follow (PRIV-05).
 internal sealed record PrivacyCameraAnswer(bool VendorCut, PrivacyMiss? Miss = null, string? MissDetail = null)
 {
     public static readonly PrivacyCameraAnswer Followed = new(VendorCut: false);
@@ -184,7 +184,7 @@ internal static class PrivacyVendorAction
         {
             return await deviceCall();
         }
-        // Best effort, except a lens left shut: it must not be shown as privacy off (SPECS 9.2, ADR-57).
+        // Best effort, except a lens left shut: it must not be shown as privacy off (PRIV-05, ADR-57).
         catch (Exception ex) when (active || camera.PrivacyStrategy == PrivacyStrategy.PtzParking)
         {
             // A caller hanging up is not the camera failing; support must not read it as one.

@@ -13,7 +13,7 @@ export interface StatePill {
   tone: BadgeTone
 }
 
-/** Where a capability stands, the pill of its card and of a stream line (SPECS 2.3). */
+/** Where a capability stands, the pill of its card and of a stream line (CAM-21). */
 export const CapabilityState = {
   Working: 'working',
   Failed: 'failed',
@@ -33,7 +33,7 @@ export const SWITCHED_ON_AND_OFF: Record<Capability, boolean> = {
   image_settings: false,
 }
 
-// The one word both levels share: nobody asked yet (SPECS 2.3).
+// The one word both levels share: nobody asked yet (CAM-22).
 const NOT_CHECKED_YET: StatePill = { label: 'Pas encore vérifié', tone: 'neutral' }
 
 /** The capability level's words, the same on every card and stream line. */
@@ -41,7 +41,7 @@ export const CAPABILITY_STATE_PILLS: Record<CapabilityState, StatePill> = {
   working: { label: 'Fonctionne', tone: 'ok' },
   failed: { label: 'En échec', tone: 'danger' },
   to_confirm: { label: 'À confirmer', tone: 'warn' },
-  // The user's no is an answer, not a failure (SPECS 2.3).
+  // The user's no is an answer, not a failure (CAM-16).
   rejected: { label: 'Non confirmée', tone: 'neutral' },
   unchecked: NOT_CHECKED_YET,
   unconfigured: { label: 'À configurer', tone: 'neutral' },
@@ -95,7 +95,7 @@ export function streamCheckState(
   return STATE_OF_STATUS[binding.status]
 }
 
-/** Every other test goes through the stream's camera: while its check does not pass, they wait (SPECS 2.2). */
+/** Every other test goes through the stream's camera: while its check does not pass, they wait (CAM-08). */
 export function otherTestsSuspended(
   stream: CameraCapabilityBinding | undefined,
   camera: Camera,
@@ -149,7 +149,7 @@ const STATUS_FAILURE_LINES: Record<CapabilityStatus, string | null> = {
   to_confirm: null,
 }
 
-/** The plain sentence of a failed capability card (SPECS 1.5); a protocol not checked yet reads as a plain failure. */
+/** The plain sentence of a failed capability card (UI-01); a protocol not checked yet reads as a plain failure. */
 export function capabilityFailureLine(
   protocolStatus: ProtocolStatus | null,
   status: CapabilityStatus,

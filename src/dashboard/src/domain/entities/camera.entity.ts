@@ -1,5 +1,5 @@
 import type { HouseClock } from './schedule_rule.entity'
-/** Why the camera's part of the last privacy toggle is not confirmed (SPECS 9.2); null when it followed. */
+/** Why the camera's part of the last privacy toggle is not confirmed (PRIV-05); null when it followed. */
 export const PrivacyMiss = {
   PositionMissing: 'position_missing',
   CapabilityUnverified: 'capability_unverified',
@@ -10,7 +10,7 @@ export const PrivacyMiss = {
 
 export type PrivacyMiss = (typeof PrivacyMiss)[keyof typeof PrivacyMiss]
 
-/** How a camera stops filming when privacy mode is on (SPECS 9.3). */
+/** How a camera stops filming when privacy mode is on (PRIV-10). */
 export const PrivacyStrategy = {
   SoftwareBlur: 'software_blur',
   PtzParking: 'ptz_parking',
@@ -68,7 +68,7 @@ export interface Camera {
   privacyMissDetail: string | null
   ptzSupported: boolean
   privacyStrategy: PrivacyStrategy
-  /** Surveillance resumed by hand inside a Privacy range; null when it is not (SPECS 9.2). */
+  /** Surveillance resumed by hand inside a Privacy range; null when it is not (PRIV-07). */
   privacyResume: PrivacyResume | null
   verifiedCapabilities: string[]
   /** The qualities its live view offers; empty while it is not in surveillance. */
@@ -77,7 +77,7 @@ export interface Camera {
   detectedAt: string | null
 }
 
-/** A surveillance resumed by hand inside a Privacy range, held until the ranges let the camera out (SPECS 9.2). */
+/** A surveillance resumed by hand inside a Privacy range, held until the ranges let the camera out (PRIV-07). */
 export interface PrivacyResume {
   /** When the ranges end, in the house's clock; null when they never do. */
   until: HouseClock | null
