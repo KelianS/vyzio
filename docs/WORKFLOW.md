@@ -20,12 +20,14 @@ order; starting the implementation before the upstream documents are aligned is 
    [ADR-53](adr/0053-user-documentation-lives-in-the-interface-three-levels-of-help.md).
    No instructions for use outside the product.
 
+Steps 1 and 2 are written first, but reach `main` only with the code of step 4 (DOCS-24).
+
 ## Practical rules
 
 - A feature that changes neither the need, nor the architecture, nor the plan goes straight to
   implementation, then tests.
 - A feature that contradicts an existing document updates the document first, in the same branch
-  (DOCS-01 to DOCS-04).
+  or the docs branch it is stacked on (DOCS-01 to DOCS-04, DOCS-24).
 - The backlog is never where the strategy is discovered after the fact; it expresses a strategy already
   decided in the SPECS, its use cases and the SAD.
 
@@ -87,8 +89,11 @@ are translated.
 
 ## Git
 
-- Branches: `main`, stable and the target of every pull request; a work branch is named
-  `<type>/<issue>-<slug>`, `type` being a commit type of GIT-01 (`feat/47-live-video-stream`).
+- Branches: `main`, stable and the target of every pull request but one stacked on a docs branch
+  (DOCS-24); a work branch is named `<type>/<issue>-<slug>`, `type` being a commit type of GIT-01
+  (`feat/47-live-video-stream`); its approved framing, if any, is its first commit, or sits on the
+  docs branch it is stacked on (DOCS-24). CI runs on pull requests to `main` only, so a stacked
+  pull request is checked once merged into its docs pull request.
 - Pull requests: review and green tests are mandatory. CI's `ci-ok` job sums up every other job,
   security scans included ([`SECURITY.md`](../SECURITY.md) § What runs on every change), and is
   the check the ruleset of `main` requires. A pull request that changes only documentation runs
@@ -157,7 +162,9 @@ The next release is a GitHub **milestone** named after its version (`v0.3.0`); a
 milestone is out of that release. Before work on a milestone starts, all its issues are framed in
 **one batch**: the open questions are gathered and put to the owner together, each with its options
 and a recommendation, so no product question comes back once the work has started. The
-milestone starts once none of its issues still carries `needs-framing`.
+milestone starts once none of its issues still carries `needs-framing`. The
+[`frame`](../.claude/skills/frame/SKILL.md) skill runs this framing for the assistant, and the
+[`issue`](../.claude/skills/issue/SKILL.md) skill records a new issue.
 
 ## Technology watch
 
