@@ -3,12 +3,13 @@
 An ADR records **one structural decision**: the choice, why it was made, and what it costs. It is
 the *why*; the SAD gives the overview, the code and its tests carry the *how*
 ([`../WORKFLOW.md`](../WORKFLOW.md) § Document architecture). The rules that hold an ADR to its
-nature are DOCS-07, DOCS-08, DOCS-11, DOCS-12 and DOCS-21 to DOCS-23 of
+nature are DOCS-07, DOCS-08, DOCS-11, DOCS-12 and DOCS-21 to DOCS-24 of
 [`../rules/docs.md`](../rules/docs.md); this guide cites them, it does not restate them.
 
 ## When to write one
 
-Only when the decision meets the bar of DOCS-07 (and DOCS-02 for a decision taken in code).
+Only when the decision meets the bar of DOCS-07; its ADR comes in the same branch as the code
+(DOCS-02).
 
 ## What an ADR holds, and what goes elsewhere
 

@@ -124,8 +124,8 @@ When the decision it records moves, the ADR is rewritten in the same branch as t
 present tense, and the option it leaves goes under its "Options rejected" (DOCS-08). No "amended
 by" in its status, no correction stacked at its end, no ADR written only to amend another.
 
-**Exceptions**: the ADRs accepted before [`adr/TEMPLATE.md`](../adr/TEMPLATE.md), until the topic
-ADR that takes them over is written.
+**Exceptions**: the ADRs accepted before [`adr/TEMPLATE.md`](../adr/TEMPLATE.md), until they are
+rewritten to it; a change to one of them rewrites it.
 
 ### DOCS-22 · A replaced or merged ADR is deleted, its citations repointed
 
@@ -135,16 +135,22 @@ The ADR that takes the decision over summarises it under its own "Options reject
 is deleted, every citation of its number is repointed to the ADR that now holds the decision, and
 the [index](../adr/README.md) is updated, in the same change. Git keeps the history.
 
-**Exceptions**: the ADRs accepted before [`adr/TEMPLATE.md`](../adr/TEMPLATE.md), until the topic
-ADR that takes them over is written.
+**Exceptions**: the ADRs accepted before [`adr/TEMPLATE.md`](../adr/TEMPLATE.md), until they are
+rewritten to it; a change to one of them rewrites it.
 
 ### DOCS-23 · ADRs are numbered from ADR-01 with no gap
 
 **Level**: Required · **Verified by**: Tool: `task rules:check`
 
 A new ADR takes the next number; when one is deleted, the last ADR takes its number (DOCS-22 then
-applies to both). Each number is held by one file, listed in the [index](../adr/README.md), and
-only a number that exists is cited.
+applies to both). Each number is held by one file.
+
+### DOCS-24 · Every ADR is indexed, and only an existing ADR is cited
+
+**Level**: Required · **Verified by**: Tool: `task rules:check`
+
+Each ADR has its line in the [index](../adr/README.md); a document or a comment cites an ADR number
+only while its file exists.
 
 ## Every document
 
@@ -157,7 +163,7 @@ document names the behaviour, the code holds the value. An ADR names a value by 
 its number.
 
 **Exceptions**: the SAD's network flow matrix (DOCS-05); the service levels of the SPECS, the
-target the code must meet (DOCS-20); ADRs accepted before this rule, until they are rewritten.
+target the code must meet (DOCS-20); the ADRs accepted before [`adr/TEMPLATE.md`](../adr/TEMPLATE.md), until they are rewritten to it.
 
 ### DOCS-12 · No document restates an ADR
 
