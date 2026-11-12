@@ -122,6 +122,28 @@ describe('AddCameraView', () => {
     expect(screen.getByRole('button', { name: 'Ajouter la caméra' })).toBeDisabled()
   })
 
+  it('onSelectManualEntry_ShouldTakeTheAccessAsTyped_WhenAPhoneWouldCapitaliseOrCorrectIt', async () => {
+    // Arrange
+    fakeNetwork({})
+    renderScreen(<AddCameraView />)
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Saisir l’adresse moi-même' }))
+
+    // Assert
+    expect(screen.getByLabelText('Nom')).not.toHaveAttribute('autocapitalize')
+    const address = screen.getByLabelText('Adresse')
+    expect(address).toHaveAttribute('inputmode', 'url')
+    expect(address).toHaveAttribute('autocapitalize', 'none')
+    expect(address).toHaveAttribute('autocorrect', 'off')
+    expect(address).toHaveAttribute('spellcheck', 'false')
+    const userName = screen.getByLabelText('Identifiant')
+    expect(userName).toHaveAttribute('autocapitalize', 'none')
+    expect(userName).toHaveAttribute('autocorrect', 'off')
+    expect(userName).toHaveAttribute('spellcheck', 'false')
+    expect(screen.getByLabelText('Mot de passe')).toHaveAttribute('autocomplete', 'new-password')
+  })
+
   it('onCreate_ShouldSayWhyAndForSupportAndStay_WhenTheCameraCannotBeCreated', async () => {
     // Arrange
     fakeNetwork({ 'POST /api/cameras': failure(400, 'invalid_camera') })

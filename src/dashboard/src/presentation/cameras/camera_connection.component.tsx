@@ -105,7 +105,7 @@ export function CameraConnectionView() {
     {
       id: 'connection-host',
       label: 'Adresse',
-      nature: { kind: 'text', placeholder: '192.168.1.50' },
+      nature: { kind: 'text', placeholder: '192.168.1.50', keyboard: 'address' },
       help: 'L’adresse de la caméra sur votre réseau local. Elle peut changer si votre box la réattribue.',
       value: draft.values.host,
       onChange: (value) => draft.set('host', value as string),
@@ -113,7 +113,7 @@ export function CameraConnectionView() {
     {
       id: 'connection-username',
       label: 'Identifiant',
-      nature: { kind: 'text' },
+      nature: { kind: 'text', keyboard: 'identifier' },
       value: draft.values.username,
       onChange: (value) => draft.set('username', value as string),
     },

@@ -7,6 +7,7 @@ import { HelpPanel } from '../../../common/components/help_panel'
 import { HelpTrigger } from '../../../common/components/help_trigger'
 import type { AppError } from '../../../common/errors/app_error'
 import { scrubSecrets } from '../../../common/errors/scrub_secrets'
+import { TEXT_KEYBOARD } from '../../../common/settings/text_keyboard'
 import { Button } from '../../../common/ui/button'
 import { Input } from '../../../common/ui/input'
 import type { StreamProtocol } from '../../../domain/entities/camera_capability_binding.entity'
@@ -433,6 +434,7 @@ export function StreamPicker({
         <label className="flex flex-col gap-1 text-sm">
           <span className="text-muted-foreground">Chemin du flux</span>
           <Input
+            {...TEXT_KEYBOARD.identifier}
             placeholder="/stream2"
             value={typed}
             onChange={(event) => onType(event.target.value)}

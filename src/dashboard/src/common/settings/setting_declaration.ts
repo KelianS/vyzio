@@ -10,6 +10,8 @@
  * that is a decision, and that friction is exactly the point.
  */
 
+import type { TextKeyboard } from './text_keyboard'
+
 export interface SettingOption<T extends string = string> {
   readonly value: T
   readonly label: string
@@ -58,8 +60,8 @@ export type SettingNature =
     }
   /** Time of day, "HH:mm" -> a time field (ADR-15). */
   | { readonly kind: 'time' }
-  /** Free text. Rare: often a choice that was misidentified. */
-  | { readonly kind: 'text'; readonly placeholder?: string }
+  /** Free text. Rare: often a choice that was misidentified. Prose unless it says otherwise. */
+  | { readonly kind: 'text'; readonly placeholder?: string; readonly keyboard?: TextKeyboard }
   /** Secret -> a masked field, with a reveal: one must be able to re-read it. */
   | { readonly kind: 'secret'; readonly placeholder?: string }
 

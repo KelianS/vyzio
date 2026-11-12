@@ -131,7 +131,7 @@ function ProtocolBox({
     settings.push({
       id: `${id}-device-id`,
       label: 'Numéro de la caméra',
-      nature: { kind: 'text', placeholder: 'ex : 87654321' },
+      nature: { kind: 'text', placeholder: 'ex : 87654321', keyboard: 'identifier' },
       help: 'Affiché dans l’application V380. Vyzio le trouve seul le plus souvent : ne le renseignez que s’il le demande.',
       value: values.deviceId,
       onChange: (value) => onChange({ deviceId: value as string }),
@@ -152,7 +152,7 @@ function ProtocolBox({
       {
         id: `${id}-username`,
         label: 'Identifiant',
-        nature: { kind: 'text' },
+        nature: { kind: 'text', keyboard: 'identifier' },
         value: values.username,
         onChange: (value) => onChange({ username: value as string }),
       },

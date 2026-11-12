@@ -66,8 +66,18 @@ function presetsRead({
 
 // A long press on a saved position asks before redefining it.
 async function askToRedefineSurveillance() {
-  fireEvent.mouseDown(await screen.findByTitle(/^Surveillance \(appui/))
+  fireEvent.pointerDown(await screen.findByTitle(/^Surveillance \(appui/))
   await screen.findByText('Redéfinir cette position ?', undefined, { timeout: 2000 })
+}
+
+// What a phone sends for one tap: the touch, then the mouse events it emulates after it.
+function aTouchTap(target: HTMLElement) {
+  fireEvent.pointerDown(target, { pointerType: 'touch' })
+  fireEvent.touchStart(target)
+  fireEvent.pointerUp(target, { pointerType: 'touch' })
+  fireEvent.touchEnd(target)
+  fireEvent.mouseDown(target)
+  fireEvent.mouseUp(target)
 }
 
 // A held press signals once a second: the first signal leaves about 1 s after the press.
@@ -461,7 +471,7 @@ describe('LiveView', () => {
     renderLiveView()
 
     // Act
-    fireEvent.mouseDown(await screen.findByTitle(/^Surveillance \(appui/))
+    fireEvent.pointerDown(await screen.findByTitle(/^Surveillance \(appui/))
 
     // Assert
     expect(
@@ -489,7 +499,7 @@ describe('LiveView', () => {
     const left = await screen.findByTitle('Gauche')
 
     // Act
-    fireEvent.mouseDown(left)
+    fireEvent.pointerDown(left)
 
     // Assert
     await sentWithin(network, START, 100)
@@ -530,15 +540,48 @@ describe('LiveView', () => {
     })
     renderLiveView()
     const up = await screen.findByTitle('Haut')
-    fireEvent.mouseDown(up)
+    fireEvent.pointerDown(up)
     await sentWithin(network, SIGNAL, 2500)
 
     // Act
-    fireEvent.mouseUp(up)
+    fireEvent.pointerUp(up)
 
     // Assert
     await sentWithin(network, STOP)
     expect(network.sent.filter(({ route }) => route === START)).toHaveLength(1)
+  })
+
+  it('onPress_ShouldSendOneMove_WhenATouchTapAlsoEmulatesTheMouse', async () => {
+    // Arrange
+    const network = fakeNetwork({ [PRESETS]: presetsRead(), [START]: ok(), [STOP]: ok() })
+    renderLiveView()
+    const up = await screen.findByTitle('Haut')
+
+    // Act
+    aTouchTap(up)
+
+    // Assert
+    await sentWithin(network, STOP)
+    expect(network.sent.filter(({ route }) => route === START)).toHaveLength(1)
+  })
+
+  it('onGoTo_ShouldNotGo_WhenALongPressOnAPositionEndsWithTheEmulatedMouse', async () => {
+    // Arrange
+    const network = fakeNetwork({ [PRESETS]: presetsRead({ presets: [makePreset()] }) })
+    renderLiveView()
+    const tile = await screen.findByTitle(SURVEILLANCE)
+    fireEvent.pointerDown(tile, { pointerType: 'touch' })
+    fireEvent.touchStart(tile)
+    await screen.findByText('Redéfinir cette position ?', undefined, { timeout: 2000 })
+
+    // Act
+    fireEvent.pointerUp(tile, { pointerType: 'touch' })
+    fireEvent.touchEnd(tile)
+    fireEvent.mouseDown(tile)
+    fireEvent.mouseUp(tile)
+
+    // Assert
+    expect(network.sent).not.toContainEqual(expect.objectContaining({ route: GOTO }))
   })
 
   it('onPress_ShouldSignalTheMove_WhenThePressLasts', async () => {
@@ -547,21 +590,21 @@ describe('LiveView', () => {
     renderLiveView()
 
     // Act
-    fireEvent.mouseDown(await screen.findByTitle('Bas'))
+    fireEvent.pointerDown(await screen.findByTitle('Bas'))
 
     // Assert
     await sentWithin(network, SIGNAL, 2500)
   })
 
-  it('onRelease_ShouldStopTheMove_WhenThePointerLeavesTheButton', async () => {
+  it('onRelease_ShouldStopTheMove_WhenTheButtonLosesThePointer', async () => {
     // Arrange
     const network = fakeNetwork({ [PRESETS]: presetsRead(), [START]: ok(), [STOP]: ok() })
     renderLiveView()
     const up = await screen.findByTitle('Haut')
-    fireEvent.mouseDown(up)
+    fireEvent.pointerDown(up)
 
     // Act
-    fireEvent.mouseLeave(up)
+    fireEvent.lostPointerCapture(up)
 
     // Assert
     await sentWithin(network, STOP)
@@ -572,10 +615,10 @@ describe('LiveView', () => {
     const network = fakeNetwork({ [PRESETS]: presetsRead(), [START]: ok(), [STOP]: ok() })
     renderLiveView()
     const down = await screen.findByTitle('Bas')
-    fireEvent.touchStart(down)
+    fireEvent.pointerDown(down)
 
     // Act
-    fireEvent.touchCancel(down)
+    fireEvent.pointerCancel(down)
 
     // Assert
     await sentWithin(network, STOP)
@@ -585,7 +628,7 @@ describe('LiveView', () => {
     // Arrange
     const network = fakeNetwork({ [PRESETS]: presetsRead(), [START]: ok(), [SIGNAL]: failure(404) })
     renderLiveView()
-    fireEvent.mouseDown(await screen.findByTitle('Haut'))
+    fireEvent.pointerDown(await screen.findByTitle('Haut'))
     await sentWithin(network, SIGNAL, 2500)
 
     // Act
@@ -604,7 +647,7 @@ describe('LiveView', () => {
       [SIGNAL]: ok(),
     })
     renderLiveView()
-    fireEvent.mouseDown(await screen.findByTitle('Haut'))
+    fireEvent.pointerDown(await screen.findByTitle('Haut'))
     await screen.findByText('La caméra a refusé la commande')
 
     // Act
@@ -624,11 +667,11 @@ describe('LiveView', () => {
     })
     renderLiveView()
     const up = await screen.findByTitle('Haut')
-    fireEvent.mouseDown(up)
+    fireEvent.pointerDown(up)
     await screen.findByText('La caméra a refusé la commande')
 
     // Act
-    fireEvent.mouseUp(up)
+    fireEvent.pointerUp(up)
     await sentWithin(network, STOP)
 
     // Assert
@@ -646,11 +689,11 @@ describe('LiveView', () => {
     })
     renderLiveView()
     const up = await screen.findByTitle('Haut')
-    fireEvent.mouseDown(up)
+    fireEvent.pointerDown(up)
     await screen.findByText(/signal lost/, undefined, { timeout: 2500 })
 
     // Act
-    fireEvent.mouseUp(up)
+    fireEvent.pointerUp(up)
     await sentWithin(network, STOP)
 
     // Assert
@@ -724,7 +767,7 @@ describe('LiveView', () => {
     // Arrange
     const network = fakeNetwork({ [PRESETS]: presetsRead(), [START]: ok(), [STOP]: ok() })
     const { unmount } = renderLiveView()
-    fireEvent.mouseDown(await screen.findByTitle('Haut'))
+    fireEvent.pointerDown(await screen.findByTitle('Haut'))
     await sentWithin(network, START)
 
     // Act

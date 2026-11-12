@@ -44,5 +44,6 @@ public sealed class IngestFrigateEventUseCase(
             consumedEvent.Confidence,
             consumedEvent.OccurredAt,
             consumedEvent.HasClip,
-            consumedEvent.HasSnapshot);
+            consumedEvent.HasSnapshot,
+            consumedEvent.StartedAt);
 }

@@ -155,12 +155,14 @@ function ChangePasswordForm({
         )}
       </div>
 
-      {/* A refusal is read beside the field it refused, never in a notification that fades. */}
-      {refused && (
-        <p role="alert" className="text-sm font-medium text-danger">
-          Mot de passe actuel incorrect.
-        </p>
-      )}
+      {/* A refusal is read beside the field it refused, in a line kept so the button never jumps. */}
+      <div className="min-h-5">
+        {refused && (
+          <p role="alert" className="text-sm font-medium text-destructive">
+            Mot de passe actuel incorrect.
+          </p>
+        )}
+      </div>
 
       <Button type="submit" disabled={changing || incomplete}>
         {changing ? 'Un instant…' : 'Changer le mot de passe'}

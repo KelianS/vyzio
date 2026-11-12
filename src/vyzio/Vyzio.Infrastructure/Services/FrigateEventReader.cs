@@ -61,15 +61,19 @@ public sealed class FrigateEventReader(HttpClient httpClient) : IFrigateEventRea
         => (moment.ToUnixTimeMilliseconds() / 1000d).ToString("0.######", CultureInfo.InvariantCulture);
 
     private static FrigateDetection ToDetection(FrigateEventDto dto)
-        => new(
+    {
+        var start = DateTimeOffset.FromUnixTimeMilliseconds((long)(dto.StartTime * 1000));
+        return new(
             dto.Id,
             dto.Camera,
             dto.Label,
             ResolveSubLabel(dto.SubLabel),
             dto.TopScore ?? dto.Data?.TopScore,
-            DateTimeOffset.FromUnixTimeMilliseconds((long)(dto.StartTime * 1000)),
+            start,
             dto.HasClip,
-            dto.HasSnapshot);
+            dto.HasSnapshot,
+            start);
+    }
 
     // Frigate answers sub_label as a string on some versions and as an array on others.
     private static string? ResolveSubLabel(JsonElement? subLabel)

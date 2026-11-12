@@ -66,12 +66,14 @@ export function PasswordScreen({
           </p>
         </div>
 
-        {/* A refusal is read beside the field it refused, never in a notification that fades. */}
-        {error !== undefined && (
-          <p role="alert" className="text-sm font-medium text-danger">
-            {error}
-          </p>
-        )}
+        {/* A refusal is read beside the field it refused, in a line kept so the button never jumps. */}
+        <div className="min-h-5">
+          {error !== undefined && (
+            <p role="alert" className="text-sm font-medium text-destructive">
+              {error}
+            </p>
+          )}
+        </div>
 
         <Button
           type="submit"

@@ -25,12 +25,17 @@ public sealed class SendDetectionNotificationUseCase(
     IFrigateClipProvider clipProvider,
     DetectionMessageFormatter formatter,
     PersonAlertPolicy personAlertPolicy,
+    IErasedDetections erased,
     TimeZoneInfo timeZone,
+    TimeProvider time,
     ILogger<SendDetectionNotificationUseCase> logger,
     TimeSpan? mediaFinalizationWindow = null) : IDetectionNotificationDispatcher
 {
     private static readonly string[] DefaultAllowedLabels = ["person_unknown", "person_known"];
     private static readonly TimeSpan DefaultMediaFinalizationWindow = TimeSpan.FromSeconds(20);
+
+    // A notification reports what is happening now; past this, the detection is history, not news (NOTIF-31, NOTIF-32).
+    private static readonly TimeSpan MaximumDetectionAge = TimeSpan.FromMinutes(30);
 
     private readonly TimeSpan mediaWindow = mediaFinalizationWindow ?? DefaultMediaFinalizationWindow;
 
@@ -83,18 +88,43 @@ public sealed class SendDetectionNotificationUseCase(
         {
             (photo, video) = await GatherMediaAsync(config, sender.Descriptor.Capabilities, enabledFields, detection, ct);
 
-            logger.LogInformation(
-                "Sending {Channel} notification for event {EventId} label={Label} photo={HasPhoto} video={HasVideo}",
-                config.Channel, detection.EventId, detection.Label, photo is not null, video is not null);
+            // Gathering the media can outlast the detection: the user may have erased it meanwhile (HIST-10).
+            if (erased.Contains(detection.EventId))
+            {
+                logger.LogInformation("{Channel} notification for event {EventId} dropped: the user erased the detection",
+                    config.Channel, detection.EventId);
+                return false;
+            }
+
+            // Measured at the last moment, so no wait before it can let an old detection through.
+            if (detection.StartedAt is not { } startedAt)
+            {
+                logger.LogInformation("{Channel} notification for event {EventId} dropped: its start time is unknown",
+                    config.Channel, detection.EventId);
+                return false;
+            }
+
+            var age = time.GetUtcNow() - startedAt;
+            if (age > MaximumDetectionAge)
+            {
+                logger.LogInformation(
+                    "{Channel} notification for event {EventId} dropped: it started {AgeSeconds}s ago, beyond {MaximumAgeSeconds}s",
+                    config.Channel, detection.EventId, (int)age.TotalSeconds, (int)MaximumDetectionAge.TotalSeconds);
+                return false;
+            }
 
             await sender.SendAsync(new OutgoingNotification(message, photo, video), config.Credentials, ct);
-            await notifications.AddAsync(Journal(config.Channel, detection, NotificationStatus.Sent), ct);
+            logger.LogInformation(
+                "Sent {Channel} notification for event {EventId} label={Label} age={AgeSeconds}s score={Score} photo={HasPhoto} video={HasVideo}",
+                config.Channel, detection.EventId, detection.Label, (int)age.TotalSeconds, detection.Confidence,
+                photo is not null, video is not null);
+            await JournalUnlessErasedAsync(Journal(config.Channel, detection, NotificationStatus.Sent), ct);
             return true;
         }
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Channel {Channel} refused event {EventId}.", config.Channel, detection.EventId);
-            await notifications.AddAsync(Journal(config.Channel, detection, NotificationStatus.Failed, ex.Message), ct);
+            await JournalUnlessErasedAsync(Journal(config.Channel, detection, NotificationStatus.Failed, ex.Message), ct);
             return false;
         }
         finally
@@ -118,11 +148,19 @@ public sealed class SendDetectionNotificationUseCase(
             return false;
         }
 
+        // An unknown confidence never passes the threshold: it cannot be shown to be above it (NOTIF-30).
+        if (detection.Confidence is not { } confidence)
+        {
+            logger.LogInformation("{Channel} skipped for event {EventId}: its confidence is unknown",
+                config.Channel, detection.EventId);
+            return false;
+        }
+
         var minimumConfidence = Math.Clamp(config.MinimumConfidence, 0f, 1f);
-        if (detection.Confidence.HasValue && detection.Confidence.Value < minimumConfidence)
+        if (confidence < minimumConfidence)
         {
             logger.LogDebug("{Channel} skipped for event {EventId}: confidence={Confidence:F2} < min={Min:F2}",
-                config.Channel, detection.EventId, detection.Confidence.Value, minimumConfidence);
+                config.Channel, detection.EventId, confidence, minimumConfidence);
             return false;
         }
 
@@ -199,6 +237,13 @@ public sealed class SendDetectionNotificationUseCase(
             logger.LogWarning("Snapshot unavailable for event {EventId} — falling back to text message", detection.EventId);
 
         return (photo, video);
+    }
+
+    // An erasure that lands during the send has already cleared the journal: the row must not come back (HIST-10, HIST-12).
+    private async Task JournalUnlessErasedAsync(Notification row, CancellationToken ct)
+    {
+        if (!erased.Contains(row.FrigateEventId))
+            await notifications.AddAsync(row, ct);
     }
 
     private static Notification Journal(

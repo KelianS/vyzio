@@ -86,6 +86,8 @@ public static class ServiceCollectionExtensions
 
         // Singleton queue so the MQTT handler can hand a detection over and return (ADR-12).
         services.AddSingleton<IDetectionNotificationQueue, DetectionNotificationQueue>();
+        // Shared by the erasure and the notification still on its way for the same detection (HIST-10).
+        services.AddSingleton<IErasedDetections, ErasedDetections>();
 
         return services;
     }
