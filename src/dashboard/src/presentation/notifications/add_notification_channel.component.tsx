@@ -10,7 +10,7 @@ import { buildAddNotificationChannelPresenter } from './add_notification_channel
 import { addNotificationChannelReducer } from './add_notification_channel.reducer'
 import { buildInitialAddNotificationChannelUido } from './add_notification_channel.uido'
 
-/** Adding a channel is one task, one page (UI-25): the list of what Vyzio can talk through. */
+/** Adding a channel is one task, one page: the list of what Vyzio can talk through. */
 export function AddNotificationChannelView() {
   const { notifications: container } = useAppContainer()
   const [uido, dispatch] = useReducer(

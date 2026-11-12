@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 
-/** Page draft (ADR-15): edits are local until save, scoped to one page so it stays visible. */
+/** Page draft (UI-11): edits are local until save, scoped to one page so it stays visible. */
 
 /** A change, named in the user's words. */
 export interface DraftChange {

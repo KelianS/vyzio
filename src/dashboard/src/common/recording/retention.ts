@@ -34,7 +34,7 @@ const RETENTION_EXPLANATION: Record<RetentionWindow, string> = {
     'Combien de temps vos détections restent consultables — aperçu et vidéo compris. C’est la profondeur de la page Historique.',
 }
 
-// Said in the help of each duration: outside the row it was running text, which is banned (ADR-15).
+// Said in the help of each duration: outside the row it was running text, which is banned (UI-19).
 const RETENTION_ZERO_NOTE = 'Mettre 0 signifie que rien n’est conservé de cette nature.'
 const RETENTION_FLOOR_NOTE = 'Au moins un jour : c’est ce que votre historique peut remonter.'
 
