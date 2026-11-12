@@ -34,7 +34,7 @@ public sealed class SendDetectionNotificationUseCase(
     private static readonly string[] DefaultAllowedLabels = ["person_unknown", "person_known"];
     private static readonly TimeSpan DefaultMediaFinalizationWindow = TimeSpan.FromSeconds(20);
 
-    // A notification reports what is happening now; past this, the detection is history, not news (NOTIF-31).
+    // A notification reports what is happening now; past this, the detection is history, not news (NOTIF-31, NOTIF-32).
     private static readonly TimeSpan MaximumDetectionAge = TimeSpan.FromMinutes(30);
 
     private readonly TimeSpan mediaWindow = mediaFinalizationWindow ?? DefaultMediaFinalizationWindow;
