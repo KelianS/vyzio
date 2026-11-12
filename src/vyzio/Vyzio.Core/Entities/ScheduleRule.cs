@@ -8,10 +8,10 @@ namespace Vyzio.Core.Entities;
 /// <summary>What a scheduled rule does to its targets during its range (ADR-63).</summary>
 public enum ScheduleRuleKind
 {
-    /// <summary>The targeted cameras are in privacy mode (SPECS 9.2).</summary>
+    /// <summary>The targeted cameras are in privacy mode (PRIV-01).</summary>
     Privacy,
 
-    /// <summary>The targeted channels send no detection notification; recording goes on (SPECS 5.2).</summary>
+    /// <summary>The targeted channels send no detection notification; recording goes on (NOTIF-07).</summary>
     MuteNotifications,
 }
 
@@ -22,7 +22,7 @@ public enum ScheduleTargetKind
     Channel,
 }
 
-/// <summary>What the user must change for a rule to be kept (SPECS 7.3).</summary>
+/// <summary>What the user must change for a rule to be kept (SCHED-06).</summary>
 public enum ScheduleRuleRefusal
 {
     UnknownKind,
@@ -60,7 +60,7 @@ public class ScheduleRule
     [Required, MaxLength(5)]
     public required string StartTime { get; set; }
 
-    // "HH:mm"; before StartTime, the range ends the next day (SPECS 7.3)
+    // "HH:mm"; before StartTime, the range ends the next day (SCHED-05)
     [Required, MaxLength(5)]
     public required string EndTime { get; set; }
 

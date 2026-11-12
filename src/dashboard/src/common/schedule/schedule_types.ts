@@ -63,7 +63,7 @@ export const minutesOf = (time: string) => {
   return hours * 60 + minutes
 }
 
-/** A range ending before it starts runs into the next day (SPECS 7.3); an unset time says nothing. */
+/** A range ending before it starts runs into the next day (SCHED-05); an unset time says nothing. */
 export const endsNextDay = (start: string, end: string) =>
   start !== '' && end !== '' && minutesOf(end) < minutesOf(start)
 

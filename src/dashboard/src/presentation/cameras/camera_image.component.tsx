@@ -77,7 +77,7 @@ export function CameraImageView() {
       case OrientationControl.Unusable:
         return <OrientationUnavailable cameraId={cameraId} />
       case OrientationControl.Usable:
-        // Positions are saved from the live view, which only a camera in surveillance has (SPECS 9.3).
+        // Positions are saved from the live view, which only a camera in surveillance has (PRIV-18).
         if (entry !== SurveillanceEntry.Watched)
           return <SurveillanceFirstNotice cameraId={cameraId} entry={entry} />
         return (

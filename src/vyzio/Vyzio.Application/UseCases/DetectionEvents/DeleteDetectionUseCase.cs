@@ -5,7 +5,7 @@ using Vyzio.Core.Interfaces;
 namespace Vyzio.Application.UseCases.DetectionEvents;
 
 /// <summary>
-/// Erases one detection for good (SPECS 6.2): Frigate first, and Vyzio's notification rows only once
+/// Erases one detection for good (HIST-10): Frigate first, and Vyzio's notification rows only once
 /// Frigate has let it go, so a refusal leaves both sides as they were.
 /// </summary>
 public sealed class DeleteDetectionUseCase(

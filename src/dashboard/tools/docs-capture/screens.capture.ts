@@ -119,7 +119,7 @@ async function open(page: Page, route: string) {
   await page.waitForLoadState('networkidle')
 }
 
-// The phone viewport: that is the form factor the interface is designed for (SPECS 7.2).
+// The phone viewport: that is the form factor the interface is designed for (UI-10).
 test('phone screens', async ({ page }) => {
   await installFakeBackend(page, state)
   await serveConfiguredAlerts(page)

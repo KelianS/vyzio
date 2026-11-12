@@ -30,7 +30,7 @@ Adding a camera and setting up a camera are two screens doing one job twice (#25
 Every change to the camera model has to be made on both, and the add screen drifts: it still asked
 for a port after the port left every other screen. It also ties a new camera to RTSP: over RTSP
 without a typed path and without a stream list, the camera is refused, although the stream card
-already knows how to ask for the path. And the privacy mode and PTZ positions that SPECS 9.3 wanted
+already knows how to ask for the path. And the privacy mode and PTZ positions that the SPECS wanted
 as an extra add step (#149) would be a third copy of the camera page's own tabs.
 
 ## Options compared
@@ -82,7 +82,7 @@ discovery recognises may still be shown, only to help the user tell the camera a
 
 **f) The camera page is where a new camera is set up**, with the same components as for any camera.
 Privacy mode and PTZ positions are set on its tabs, not in an add step. How the page reads for a new
-camera is framed in [SPECS](../SPECS.md) 2.2.
+camera is framed in [UC-CAM-01](../uc/cam-01-ajouter-une-camera.md).
 
 ## Options rejected
 

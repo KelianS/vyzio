@@ -80,7 +80,7 @@ quelques secondes : l'interface doit donc **afficher la correction sans attendre
 sans quoi le geste paraîtra sans effet.
 
 C'est aussi ce qui remet la correction sur le chemin de l'apprentissage, que
-[SPECS §3.1](../SPECS.md) demande et que la réécriture d'une ligne locale ne pouvait pas atteindre.
+[UC-DET-02](../uc/det-02-corriger-une-reconnaissance.md) demande et que la réécriture d'une ligne locale ne pouvait pas atteindre.
 
 ### L'ingestion MQTT ne sert plus qu'à notifier
 
@@ -140,4 +140,4 @@ il ne conditionne pas ce chantier et n'est pas le mécanisme interne du pipeline
   au lieu de se propager.
 - **Le modèle *review* de Frigate n'est pas lu par l'historique** (regroupement des objets d'un même passage,
   sévérité `alert`/`detection`) : chantier produit distinct, il change ce que l'historique montre, pas
-  d'où il tient sa vérité. Vyzio ne touche une *review* que pour effacer une détection (SPECS 6.2).
+  d'où il tient sa vérité. Vyzio ne touche une *review* que pour effacer une détection (HIST-10).

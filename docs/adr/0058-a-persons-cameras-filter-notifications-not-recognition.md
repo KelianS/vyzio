@@ -8,7 +8,7 @@
 ## Context
 
 ADR-15 restricts **recognition** by camera: outside the cameras linked to a person, a detection is not
-mapped to that person's profile. The need behind it, as SPECS §4 states it, is different: not to
+mapped to that person's profile. The need behind it, as PROF-04 states it, is different: not to
 be alerted about the people of the house where their presence is normal. Filtering recognition serves
 that need badly:
 

@@ -6,7 +6,7 @@ namespace Vyzio.Application.Commands;
 
 /// <summary>
 /// « Montre-moi » — the very frame the live view shows, sent once. A still image, never a stream: a
-/// messaging channel does not carry continuous video (SPECS §5.4).
+/// messaging channel does not carry continuous video (NOTIF-10).
 /// </summary>
 public sealed class SnapshotCommandHandler(GetCamerasUseCase cameras, IFrigateLiveFrameProvider frames)
     : IRemoteCommandHandler

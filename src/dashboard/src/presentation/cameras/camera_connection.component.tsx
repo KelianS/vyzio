@@ -34,7 +34,7 @@ import {
   type ProtocolValues,
 } from './camera_connection_values'
 
-// Protocol names stay out of the draft bar, which sits outside every fold (SPECS 1.5).
+// Protocol names stay out of the draft bar, which sits outside every fold (UI-02).
 const PROTOCOL_DRAFT_LABELS = Object.fromEntries(
   ALL_PROTOCOLS.map((protocol) => [protocolKey(protocol), 'Protocoles']),
 ) as Record<ProtocolKey, string>
@@ -127,7 +127,7 @@ export function CameraConnectionView() {
     },
   ]
 
-  // Every other test goes through the stream's camera: while its check does not pass, they wait (SPECS 2.2).
+  // Every other test goes through the stream's camera: while its check does not pass, they wait (CAM-08).
   const testsSuspended = otherTestsSuspended(streamBindingOf(uido.bindings), camera)
 
   if (uido.cameraGone)
@@ -279,7 +279,7 @@ export function CameraConnectionView() {
                 >
                   {uido.searchingProtocols ? 'Recherche…' : 'Rechercher les protocoles'}
                 </Button>
-                {/* Adding by hand is the way out when the search finds nothing (SPECS 2.3). */}
+                {/* Adding by hand is the way out when the search finds nothing (CAM-48). */}
                 <AddProtocol
                   protocols={uido.protocols}
                   open={uido.protocolFormOpen}

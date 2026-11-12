@@ -28,7 +28,7 @@ vidéosurveillance.
 ## Options comparées
 
 1. **Capacité `StreamConfig` vérifiée, écriture conditionnée à la séparation des flux.** Le débit
-   d'images devient une capacité au sens du catalogue (SPECS §2.3) : indépendante de la marque, liée à
+   d'images devient une capacité au sens du catalogue (CAM-10) : indépendante de la marque, liée à
    un `SupportedProtocol`, vérifiée par un test réel avant d'être proposée — exactement le modèle
    d'`ImageSettings` (ADR-27/28). Vyzio n'écrit le débit que sur le flux qui porte le rôle `detect`,
    et seulement lorsque ce flux est distinct de celui qui porte le rôle `record`.
@@ -65,7 +65,7 @@ effective dépend de la séparation flux de détection / flux d'enregistrement (
 
 - `StreamConfig` suit intégralement le modèle de capacité existant : détection en cascade
   multi-protocole et flag `ManuallyConfigured` (ADR-28), preset par constructeur (ADR-22), vérification
-  par test réel avant d'être proposée (SPECS §2.3). Aucun mécanisme nouveau n'est introduit — c'est une
+  par test réel avant d'être proposée (CAM-13). Aucun mécanisme nouveau n'est introduit — c'est une
   valeur de plus dans un catalogue qui sait déjà les gérer.
 - **Vyzio mémorise le débit observé avant sa première écriture**, par caméra, afin de pouvoir le
   restaurer si l'utilisateur désactive la fonction ou retire la caméra. C'est une **dérogation

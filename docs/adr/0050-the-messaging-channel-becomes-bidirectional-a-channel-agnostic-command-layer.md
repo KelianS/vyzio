@@ -14,7 +14,7 @@ coupe-moi ça ») sans rien exiger de l'installation.
 C'est ce qui permet à l'accès réseau ([ADR-51](0051-remote-access-to-the-interface-netbird-overlay-network-operated-by-the-user.md))
 de rester **optionnel** au lieu d'être le prérequis de tout usage distant.
 
-Deuxième constat, celui-là dans le code : [SPECS §5.2](../SPECS.md) promet que « plusieurs canaux
+Deuxième constat, celui-là dans le code : [SPECS](../SPECS.md) NOTIF-02 promet que « plusieurs canaux
 pourront coexister », mais **rien n'est générique, même dans le sens sortant**. Le port du domaine
 s'appelle `ITelegramNotificationSender`, le use case `SendTelegramDetectionNotificationUseCase`, et
 `NotificationChannelConfig` — entité au nom générique — porte `BotToken` et `ChatId`, qui sont des
@@ -101,7 +101,7 @@ Comme partout, la restitution ne nomme jamais le moteur de détection sous-jacen
   bibliothèques non officielles qui simulent un client WhatsApp maintiennent bien une connexion
   sortante, mais au prix des conditions d'utilisation de Meta et d'un risque de blocage du numéro :
   ce n'est pas une base acceptable pour un produit vendu.
-- **Les commandes dépendent d'Internet**, comme les notifications : [SPECS §5.3](../SPECS.md)
+- **Les commandes dépendent d'Internet**, comme les notifications : [SPECS](../SPECS.md) SYS-03 et NOTIF-11
   s'applique telle quelle. Elles ne remplacent jamais l'accès local, elles le prolongent.
 - **Un journal des commandes** (origine, commande, issue, horodatage) est un fait que Vyzio produit
   et que personne d'autre ne détient — même raisonnement que le journal des notifications

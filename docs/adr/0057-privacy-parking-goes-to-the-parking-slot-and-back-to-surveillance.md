@@ -12,7 +12,7 @@
 ## Context
 
 ADR-25 reserves two slots: preset 1 **Surveillance** and preset 2 **Parking**, the destination of the
-`ptz_parking` strategy. SPECS 9.3 names them the same way, and so does the dashboard. The code sent
+`ptz_parking` strategy. PTZ-05 names them the same way, and so does the dashboard. The code sent
 privacy parking to preset 1, as ADR-21 and ADR-24 had written before ADR-25, and ADR-25's own
 consequences still say so. A camera parked on its Surveillance slot keeps looking at the room.
 
@@ -21,7 +21,7 @@ Parking also called the PTZ provider directly. On a camera without native preset
 were never read: a V380 set to `ptz_parking` did not move at all.
 
 Nothing brought the camera back when privacy ended. While parking and surveillance shared a slot this
-did not show; once parking has its own slot, recording would resume facing the wall. SPECS 9.3 already
+did not show; once parking has its own slot, recording would resume facing the wall. UC-PTZ-02 already
 asks for the return ("afin que Vyzio sache toujours où la ramener après le mode vie privée").
 
 ## Decision
@@ -48,7 +48,7 @@ A position saved in the vendor app is not known yet (#142).
 
 - **Fall back to the mechanical stop when no Parking position is saved.** ADR-21's original sequence,
   and what the README promised. Rejected: the stop can still see part of the room, so the strategy
-  would claim more than it guarantees, and SPECS 9.3 defines parking as the Parking slot.
+  would claim more than it guarantees, and PRIV-12 defines parking as the Parking slot.
 - **Keep the current strategy choice and let an unsaved position fail silently.** Rejected: a
   strategy that does nothing on the camera, with only a log line, is an opaque state (principle 4).
 - **Require the Parking position alone.** Rejected: the return would then depend on a position nobody

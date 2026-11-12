@@ -6,6 +6,7 @@ rules, whose home is [`rules/docs.md`](rules/docs.md), imported here:
 
 @rules/docs.md
 
-The rules broken most often: the SPECS and the SAD state the target, never its history or its
-delivery (DOCS-16); the SAD names no class, file or code layout (DOCS-05); no document copies the
-code (DOCS-11) or restates an ADR (DOCS-12).
+The rules broken most often: the SPECS, the use cases and the SAD state the target, never its
+history or its delivery (DOCS-16); a requirement is cited by its ID (DOCS-17) and lives in the SPECS
+or one use case (DOCS-19), written to [`uc/TEMPLATE.md`](uc/TEMPLATE.md); the SAD names no class,
+file or code layout (DOCS-05); no document copies the code (DOCS-11) or restates an ADR (DOCS-12).

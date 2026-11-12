@@ -18,7 +18,7 @@ const OUTCOME: Record<CommandOutcome, { label: string; muted: boolean }> = {
   rejected: { label: 'Ignoré : conversation non reliée', muted: false },
 }
 
-/** What the channel was asked and how it ended -- the trace SPECS 5.4 requires. */
+/** What the channel was asked and how it ended -- the trace NOTIF-29 requires. */
 export function CommandJournal({
   entries,
   loading,

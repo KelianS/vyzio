@@ -27,7 +27,7 @@ public sealed record CameraCapabilityBindingDto(
         IsConfigured: true,
         // Verified says whether it is usable, Status why (ADR-66).
         Status: SnakeCaseEnum.ToSnakeCase(binding.Status),
-        // Only a PTZ binding has a direction to swap (SPECS 11).
+        // Only a PTZ binding has a direction to swap (PTZ-03).
         PanInverted: binding.Capability == CameraCapability.Ptz
             ? BindingConfig.ReadBool(binding.ConfigJson, BindingConfig.PanInverted)
             : null,
@@ -207,7 +207,7 @@ public sealed class ConfigureCameraCapabilityUseCase(
     }
 }
 
-// Removes a capability binding entirely (SPECS §2.3) — used when a binding no longer applies
+// Removes a capability binding entirely (CAM-24) — used when a binding no longer applies
 // (e.g. a manually-added or now-unsupported capability that keeps surfacing a stale error) and
 // there is no simple on/off flag for it (unlike PTZ's Camera.PtzSupported). The capability then
 // reverts to "available" and can be reconfigured via the manual "+" form.

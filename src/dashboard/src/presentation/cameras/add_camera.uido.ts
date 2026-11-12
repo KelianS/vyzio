@@ -30,7 +30,7 @@ export interface AddCameraUido {
   creating: boolean
 
   message: string | null
-  /** A failure: its sentence, and the diagnostic line when a call failed (SPECS 1.5). */
+  /** A failure: its sentence, and the diagnostic line when a call failed (UI-01). */
   error: { message: string; diagnostic?: string } | null
   confirmScan: boolean
   /** The ranges the search will sweep, read when its confirmation opens so it can name them (ADR-71). */

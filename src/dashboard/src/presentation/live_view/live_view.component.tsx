@@ -28,7 +28,7 @@ import {
 import { buildCamerasPresenter } from '../cameras/cameras.presenter'
 import type { LiveQuality } from '../../domain/entities/camera.entity'
 
-// Edge to edge on every layout; 100dvh where the browser keeps its bars (SPECS 7.2).
+// Edge to edge on every layout; 100dvh where the browser keeps its bars (LIVE-10).
 const SCREEN = 'fixed inset-x-0 top-0 z-40 h-dvh'
 
 const LAYOUT: Record<LiveLayout, { screen: string; picture: string; controls: string }> = {
@@ -61,7 +61,7 @@ const UNAVAILABLE: Record<LiveLayout, string> = {
 
 const AUTO_HIDE: Record<LiveLayout, boolean> = { portrait: false, landscape: true, wide: false }
 
-/** Back where the user came from; home when the address was opened directly (SPECS 7.2). */
+/** Back where the user came from; home when the address was opened directly (LIVE-07). */
 function useBack() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -70,7 +70,7 @@ function useBack() {
   return () => void (reachedDirectly ? navigate('/') : navigate(-1))
 }
 
-// Where what keeps the camera from showing is said and fixed (SPECS 7.2).
+// Where what keeps the camera from showing is said and fixed (LIVE-11).
 function CameraPageLink({ cameraId }: { cameraId: string }) {
   return (
     <Link

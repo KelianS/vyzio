@@ -155,7 +155,7 @@ mais il ne s'applique qu'à la fenêtre « tout » — c'est la seule qui enregi
 - **La configuration générée ne répète pas ce qu'une caméra n'a pas surchargé.** Seul le réglage
   réellement propre à la caméra apparaît sous elle ; sinon le fichier laisserait croire que la valeur
   vient de la caméra alors qu'elle vient de l'installation.
-- **L'alerte de capacité disque critique reste à faire.** SPECS §6.2 l'exige et cette décision la rend
+- **L'alerte de capacité disque critique reste à faire.** HIST-01 l'exige et cette décision la rend
   plus nécessaire, puisque la rétention devient réellement consommatrice ; elle reste un item de
   backlog distinct.
 - ADR-18 est **remplacé sur la rétention et sur l'activation par caméra** : son schéma

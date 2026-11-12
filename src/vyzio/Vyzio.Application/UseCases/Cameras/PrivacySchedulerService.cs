@@ -71,7 +71,7 @@ public sealed class PrivacySchedulerService(
         if (camera.PrivacyModeSource == PrivacyModeSource.Manual)
             return;
 
-        // A resume lasts while a range covers the camera, then the next range applies (SPECS 9.2).
+        // A resume lasts while a range covers the camera, then the next range applies (PRIV-07).
         if (!shouldBeActive)
             resumes.End(camera.Id);
         else if (resumes.Holds(camera.Id))

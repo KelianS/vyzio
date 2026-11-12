@@ -8,7 +8,7 @@ namespace Vyzio.Application.Commands;
 
 /// <summary>
 /// Sends a motorised camera to a position it already knows. Reversible and visible, so it goes
-/// straight through — only what cannot be undone asks first (SPECS §5.4).
+/// straight through — only what cannot be undone asks first (NOTIF-28).
 /// </summary>
 public sealed class PtzPositionCommandHandler(
     GetCamerasUseCase cameras,

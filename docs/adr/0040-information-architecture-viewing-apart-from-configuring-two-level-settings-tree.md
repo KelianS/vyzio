@@ -154,14 +154,14 @@ disponibilité. Un réglage qu'on ne peut atteindre sans avoir compris un mode c
 ### La structure naît du petit écran
 
 Le [SAD](../SAD.md) §2.2 compte déjà une UI grand public **mobile-first** dans la valeur ajoutée de
-Vyzio ; c'est SPECS §7.2 qui est en
+Vyzio ; c'est SPECS (UI-10) qui est en
 retrait, avec un attendu limité à des actions « faisables sur mobile et desktop ». L'écart se répare
 donc du côté des SPECS, pas en révisant l'ambition.
 
 L'arborescence est conçue pour le mobile d'abord : liste → sous-liste → page, **un seul niveau
 visible à la fois**, et le grand écran développe cette structure au lieu qu'elle s'y replie. C'est ce
 qui rend la décision tenable pour la cible réelle du produit, et cela change l'attendu des SPECS
-§7.2, aujourd'hui limité à des actions « faisables sur mobile et desktop ».
+(UI-10), aujourd'hui limité à des actions « faisables sur mobile et desktop ».
 
 ### Une page est nommée une seule fois
 
@@ -204,5 +204,5 @@ tout de suite une hauteur d'écran, donc elle ne peut l'être qu'une fois.
   [ADR-42](0042-interface-component-foundation-shadcn-ui-on-radix-and-tailwind.md) — mais les trois
   décisions partagent le même déclencheur et se livrent ensemble : une arborescence propre remplie de
   formulaires incohérents ne résoudrait rien.
-- **SPECS §7.2 est réécrit** en conception mobile-first, et gagne l'attendu que la portée d'un réglage
+- **SPECS est réécrit** (UI-10, UI-08) en conception mobile-first, et gagne l'attendu que la portée d'un réglage
   soit lisible sans explication.

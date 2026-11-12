@@ -16,10 +16,10 @@ The interface is served over plain HTTP: on the home network, the session cookie
 every preview image travel in the clear (#67). ADR-51 made an encrypted entry point a prerequisite to
 announcing remote access.
 
-Two constraints rule out the usual answers. The interface must open offline (SPECS 1.4), so a
+Two constraints rule out the usual answers. The interface must open offline (SPECS § Objectifs produit), so a
 certificate that can only be obtained or renewed over the internet breaks the local-first promise.
 And no browser may put a full-page warning in front of a user who did nothing wrong: to a
-non-technical household it reads as "this product is broken" (SPECS 1.2, principle 1).
+non-technical household it reads as "this product is broken" (SPECS § Public cible, principle 1).
 
 ## Options compared
 

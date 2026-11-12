@@ -17,7 +17,7 @@ ADR-20 et ADR-21 ont introduit `IVendorCameraAdapter` : une caméra a un `Vendor
 
 ## Décision produit associée
 
-Voir SPECS §2.3 : les fonctionnalités avancées deviennent des **capacités indépendantes de la marque**. Une marque "officiellement supportée" est une marque pour laquelle Vyzio connaît déjà la configuration de ces capacités (preset). Une caméra non répertoriée doit pouvoir accéder aux mêmes capacités via une déclaration manuelle **vérifiée par un test réel**, jamais sur simple déclaration.
+Voir CAM-10 : les fonctionnalités avancées deviennent des **capacités indépendantes de la marque**. Une marque "officiellement supportée" est une marque pour laquelle Vyzio connaît déjà la configuration de ces capacités (preset). Une caméra non répertoriée doit pouvoir accéder aux mêmes capacités via une déclaration manuelle **vérifiée par un test réel**, jamais sur simple déclaration.
 
 ## Options comparées
 
@@ -208,7 +208,7 @@ Marque non reconnue ("Configuration avancée — caméra non répertoriée") :
 ## Conséquences
 
 - ✅ Une nouvelle marque qui parle un protocole déjà supporté (ONVIF, DVRIP) s'ajoute en **donnée** (preset + fiche `vendors/*.md`), sans nouveau code
-- ✅ Les caméras non répertoriées accèdent aux mêmes capacités que les caméras supportées, via un onboarding plus long mais jamais bloquant par principe (SPECS §2.3)
+- ✅ Les caméras non répertoriées accèdent aux mêmes capacités que les caméras supportées, via un onboarding plus long mais jamais bloquant par principe (CAM-11)
 - ✅ Plus aucune résolution fonctionnelle par string libre : tous les champs fermés (`VendorFamily`, `StreamProtocol`, `PrivacyModeSource`, `PrivacyModeStrategy`, `CapabilityProtocol`) sont des enums vérifiés à la compilation — le bug `"tapo"` vs `"tplink_tapo"` ne peut plus se reproduire, ni en lecture ni en écriture
 - ✅ `ptz_parking` se généralise automatiquement à tout futur protocole PTZ (le décorateur `PtzParkingPrivacyProvider` ne connaît aucun détail de protocole)
 - ✅ `VendorFamily` reste l'identifiant de présentation/documentation — aucune rupture pour `vendors/*.md`, les heuristiques de détection (ADR-12) ou l'affichage UI

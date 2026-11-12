@@ -4,7 +4,7 @@
 
 ## Contexte
 
-Le mode vie privee (SPECS §9) exige qu'une camera soit **reellement coupee** : aucun flux RTSP diffuse par la camera, aucun enregistrement, aucune detection. La contrainte cle est que le flux RTSP ne soit accessible par personne sur le reseau local — y compris Frigate, y compris un tiers qui connaitrait l'IP de la camera.
+Le mode vie privee (PRIV-01, PRIV-02) exige qu'une camera soit **reellement coupee** : aucun flux RTSP diffuse par la camera, aucun enregistrement, aucune detection. La contrainte cle est que le flux RTSP ne soit accessible par personne sur le reseau local — y compris Frigate, y compris un tiers qui connaitrait l'IP de la camera.
 
 Une solution qui ne desactive que le pipeline Frigate ne repond pas a cette exigence : la camera continue de diffuser, et quiconque sur le LAN connait son IP peut s'y connecter directement.
 
@@ -99,7 +99,7 @@ CREATE INDEX idx_privacy_schedules_camera ON camera_privacy_schedules(camera_id,
 
 - `privacy_mode_source = "manual"` : la planification ne peut pas desactiver automatiquement ; seul un toggle manuel repasse la source a `null` et rend le controle au scheduler.
 - `privacy_mode_source = "schedule"` : le scheduler desactive a la fin de la fenetre.
-- Quand l'utilisateur reactive manuellement pendant une fenetre planifiee, la source repasse a `null` et le scheduler ne recoupe pas la camera avant la fin de cette fenetre (SPECS 9.2).
+- Quand l'utilisateur reactive manuellement pendant une fenetre planifiee, la source repasse a `null` et le scheduler ne recoupe pas la camera avant la fin de cette fenetre (PRIV-07).
 
 ## Flux d'activation
 

@@ -13,7 +13,7 @@
 ADR-24 gave `PrivacyStrategy` four values, `None` among them, so that a camera without a configured
 strategy would not fall silently onto `SoftwareBlur`. The camera entity defaults to `SoftwareBlur`
 all the same, and `None` never meant "nothing happens": privacy mode always stops Vyzio's recording,
-detection and notifications ([SPECS](../SPECS.md) 9.2), whatever the strategy. `None` asked nothing
+detection and notifications ([SPECS](../SPECS.md) PRIV-01), whatever the strategy. `None` asked nothing
 of the camera, exactly like `SoftwareBlur`, so the privacy screen offered two choices with the same
 effect, one of them named as if privacy did nothing.
 
@@ -22,7 +22,7 @@ effect, one of them named as if privacy did nothing.
 **`PrivacyStrategy` has three values: `SoftwareBlur`, `PtzParking`, `Hardware`.** `SoftwareBlur`
 comes first, so it is both the enum's default and the entity's. The API refuses `none` like any
 unknown value, and its error names the three valid ones. A strategy says what the camera does **on
-top of** the software stop, which always happens ([SPECS](../SPECS.md) 9.3).
+top of** the software stop, which always happens ([SPECS](../SPECS.md) PRIV-11).
 
 ## Options rejected
 
@@ -30,7 +30,7 @@ top of** the software stop, which always happens ([SPECS](../SPECS.md) 9.3).
   "software stop". Rejected: the two behave the same, so the difference can be seen only in the
   settings list, where it suggests a privacy mode that stops nothing (principle 4).
 - **Give `None` a real meaning (privacy mode leaves the camera recording).** Rejected: it
-  contradicts SPECS 9.2, which forbids any recording, detection or notification while privacy mode is on.
+  contradicts PRIV-01, which forbids any recording, detection or notification while privacy mode is on.
 
 ## Consequences
 

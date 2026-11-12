@@ -5,7 +5,7 @@ using Vyzio.Core.Interfaces;
 namespace Vyzio.Application.UseCases.Commands;
 
 /// <summary>
-/// The trace of what a channel was asked, and how it ended (SPECS 5.4). Rejected commands are in it:
+/// The trace of what a channel was asked, and how it ended (NOTIF-29). Rejected commands are in it:
 /// they are the only sign that someone other than the paired conversation is knocking (ADR-50).
 /// </summary>
 public sealed class GetCommandJournalUseCase(

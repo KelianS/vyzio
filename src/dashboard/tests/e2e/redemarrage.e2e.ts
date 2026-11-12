@@ -86,7 +86,7 @@ test.describe('Surveillance restart', () => {
     await page.getByRole('alertdialog').getByRole('button', { name: 'Redémarrer' }).click()
     await page.getByRole('button', { name: /Redémarrage échoué/ }).click()
 
-    // A photo of this dialog is what support receives: the failed request must be readable on it (SPECS 1.5).
+    // A photo of this dialog is what support receives: the failed request must be readable on it (UI-01).
     const dialog = page.getByRole('alertdialog')
     await expect(dialog).toContainText('Vyzio a rencontré une erreur')
     await expect(dialog).toContainText('POST /api/cameras/apply-configuration · 500')

@@ -49,7 +49,7 @@ screenshots.
 **Level**: Required · **Verified by**: Review
 
 The screen after the change, and the same screen before it when an existing one changes, at the
-phone width the interface is designed for ([SPECS](../SPECS.md) 7.2), shot on the fake backend of the
+phone width the interface is designed for ([SPECS](../SPECS.md) UI-10), shot on the fake backend of the
 e2e suite. How: [`CONTRIBUTING.md`](../../CONTRIBUTING.md) § Pull request screenshots.
 
 ### GIT-08 · `task check` is green before the pull request opens

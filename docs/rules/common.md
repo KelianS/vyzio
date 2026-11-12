@@ -11,10 +11,11 @@
 Code, comments, test names, log and exception messages, commits, pull requests, issues, labels,
 templates and framing documents are in English.
 
-**Exceptions**: `docs/SPECS.md`, which frames the product for a French market and is read by
-non-engineers; what the interface shows the user, wherever it is written: the dashboard strings and
-the vendor sheets `src/vyzio/vendors/*.md` served as vendor assistance; the bodies of the ADRs
-accepted while they were written in French, read as they are until translated. A new ADR is English.
+**Exceptions**: `docs/SPECS.md` and its use cases `docs/uc/`, which frame the product for a French
+market and are read by non-engineers; what the interface shows the user, wherever it is written:
+the dashboard strings and the vendor sheets `src/vyzio/vendors/*.md` served as vendor assistance;
+the bodies of the ADRs accepted while they were written in French, read as they are until
+translated. A new ADR is English.
 
 ### COMMON-02 · A comment holds on one line
 

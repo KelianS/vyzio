@@ -66,12 +66,12 @@ on every camera, instead of dropping it. A camera without the hardware is answer
 vendor's proprietary protocol gives, without an account, such as the V380 one. A shared protocol, an
 open port, a hostname or a web page never names the vendor; hostnames and page titles still feed the
 displayed name and the "probably a camera" ranking. Otherwise the user picks the vendor, only to read
-its sheet; the choice is not stored. Where and when the list shows: [SPECS](../SPECS.md) 2.2.
+its sheet; the choice is not stored. Where and when the list shows: [SPECS](../SPECS.md) CAM-38.
 
 **e) Discovery reads no MAC and sends no multicast.** No neighbour table, no MAC prefix table, no
 WS-Discovery multicast. It sweeps by unicast, from the bridge, the configured default ranges plus the
 /24 of the address the dashboard was opened by, only when that address is a private IPv4 one. What
-the discovery screen shows of the ranges: [SPECS](../SPECS.md) 2.2.
+the discovery screen shows of the ranges: [SPECS](../SPECS.md) CAM-29.
 
 **f) No fingerprint for a protocol the cameras do not speak**: the Tapo plug handshake goes.
 

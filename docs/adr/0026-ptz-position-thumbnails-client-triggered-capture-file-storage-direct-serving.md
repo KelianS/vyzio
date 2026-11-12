@@ -4,7 +4,7 @@
 
 ## Contexte
 
-Chaque preset PTZ configuré doit afficher une miniature de la vue caméra à la position enregistrée (SPECS §9.4). La miniature doit être capturée après un GoTo, persistée et servie par l'API.
+Chaque preset PTZ configuré doit afficher une miniature de la vue caméra à la position enregistrée (PTZ-11). La miniature doit être capturée après un GoTo, persistée et servie par l'API.
 
 ## Options comparées
 
