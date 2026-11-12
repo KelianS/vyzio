@@ -1,7 +1,7 @@
 # Architecture decision records (ADR)
 
 One structural decision, one file, written to [`TEMPLATE.md`](TEMPLATE.md). Writing rules and
-lifecycle: DOCS-07, DOCS-08, DOCS-11, DOCS-12 and DOCS-21 to DOCS-24 of
+lifecycle: DOCS-07, DOCS-08, DOCS-11, DOCS-12 and DOCS-21 to DOCS-23, DOCS-25 of
 [`../rules/docs.md`](../rules/docs.md). The SAD ([`../SAD.md`](../SAD.md)) sets the boundaries and
 references these ADRs rather than copying them.
 
