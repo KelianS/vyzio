@@ -235,6 +235,11 @@ body::before {
     -webkit-touch-callout: none;
   }
 
+  /* The live view is not a document: pulling it down never reloads the page and cuts the stream. */
+  html:has(main[data-live]) {
+    overscroll-behavior: none;
+  }
+
   /* A field inside its label stays typed into and pasted into. */
   input,
   textarea {

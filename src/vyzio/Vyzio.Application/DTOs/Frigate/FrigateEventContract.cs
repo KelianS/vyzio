@@ -27,4 +27,5 @@ public sealed record FrigateConsumedEvent(
     DateTimeOffset OccurredAt,
     bool HasClip,
     bool HasSnapshot,
-    IReadOnlyList<string> EnteredZones);
+    IReadOnlyList<string> EnteredZones,
+    DateTimeOffset? StartedAt);

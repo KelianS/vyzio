@@ -86,7 +86,8 @@ public sealed class FrigateEventContractAdapter(FrigateLabelFilter labelFilter)
             ResolveOccurredAt(source, lifecycle),
             source.HasClip,
             source.HasSnapshot,
-            source.EnteredZones?.Where(zone => !string.IsNullOrWhiteSpace(zone)).ToArray() ?? []);
+            source.EnteredZones?.Where(zone => !string.IsNullOrWhiteSpace(zone)).ToArray() ?? [],
+            source.StartTime is { } start ? FromUnixSeconds(start) : null);
 
         return true;
     }
@@ -108,6 +109,9 @@ public sealed class FrigateEventContractAdapter(FrigateLabelFilter labelFilter)
             return DateTimeOffset.UtcNow;
         }
 
-        return DateTimeOffset.FromUnixTimeMilliseconds((long)Math.Round(unixSeconds.Value * 1000));
+        return FromUnixSeconds(unixSeconds.Value);
     }
+
+    private static DateTimeOffset FromUnixSeconds(double unixSeconds)
+        => DateTimeOffset.FromUnixTimeMilliseconds((long)Math.Round(unixSeconds * 1000));
 }

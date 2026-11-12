@@ -11,7 +11,8 @@ public sealed record FrigateDetection(
     float? Confidence,
     DateTimeOffset OccurredAt,
     bool HasClip,
-    bool HasSnapshot);
+    bool HasSnapshot,
+    DateTimeOffset? StartedAt = null);
 
 /// <summary>
 /// Frigate paginates by time, not by page number — its `page=` parameter is inert (ADR-49).

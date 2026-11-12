@@ -218,6 +218,7 @@ Un niveau de service est une promesse a l'utilisateur qui pourrait regresser san
 | --- | --- | --- |
 | **LIVE-01** | Retard de la video en direct sur la scene | 1,5 s au plus |
 | **NOTIF-12** | Delai entre la reconnaissance d'une personne et le depart de sa notification | 10 s au plus avec une photo, 25 s au plus avec un clip |
+| **NOTIF-32** | Age maximal d'une detection, depuis son debut, au depart de sa notification | 30 min |
 | **SYS-06** | Frequence d'analyse par camera sans accelerateur dedie ni carte graphique | de 1 a 5 images par seconde |
 
 ---

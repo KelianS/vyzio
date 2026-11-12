@@ -13,6 +13,7 @@ import {
   type SettingDeclaration,
   type SettingNature,
 } from './setting_declaration'
+import { SECRET_KEYBOARD, TEXT_KEYBOARD } from './text_keyboard'
 
 /** Nature -> control (ADR-43): the only place this choice is made. */
 export function SettingControl({ setting }: { setting: SettingDeclaration }) {
@@ -292,6 +293,7 @@ function TimeControl({ setting }: { setting: SettingDeclaration }) {
 function TextControl({ setting, nature }: { setting: SettingDeclaration; nature: Narrow<'text'> }) {
   return (
     <Input
+      {...TEXT_KEYBOARD[nature.keyboard ?? 'prose']}
       id={setting.id}
       className={cn('w-full', followingClass(setting))}
       placeholder={nature.placeholder}
@@ -314,6 +316,7 @@ function SecretControl({
   return (
     <div className="flex w-full items-center gap-1">
       <Input
+        {...SECRET_KEYBOARD}
         id={setting.id}
         type={revealed ? 'text' : 'password'}
         className="w-full"

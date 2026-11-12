@@ -2,7 +2,7 @@
 name: delivery-reviewer
 description: Review gate run before opening a pull request. Reviews the branch diff for bugs, regressions, over-engineering and the rules of docs/rules, and returns a blocking or passing verdict. Use it on every delivery, after `task check` is green.
 tools: Read, Grep, Glob, Bash
-model: inherit
+model: sonnet
 omitClaudeMd: true
 ---
 

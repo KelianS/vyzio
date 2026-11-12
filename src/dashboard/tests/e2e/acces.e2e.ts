@@ -1,10 +1,26 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Locator, type Page } from '@playwright/test'
 import { installFakeBackend, createFakeBackendState, FAKE_PASSWORD } from './fixtures/fake_backend'
 
 /**
  * The product's front door (ADR-54). These screens are the only ones seen without being in, so what
  * they say is the only help available at that moment.
  */
+
+// The colour the error token resolves to, read the way the browser paints it (DASHBOARD-23).
+async function errorColour(page: Page) {
+  return page.evaluate(() => {
+    const probe = document.createElement('span')
+    probe.style.color = 'var(--destructive)'
+    document.body.append(probe)
+    const colour = getComputedStyle(probe).color
+    probe.remove()
+    return colour
+  })
+}
+
+async function topOf(locator: Locator) {
+  return (await locator.boundingBox())?.y
+}
 
 test.describe('First opening', () => {
   test('AccessGate_ShouldAskForAPasswordBeforeAnythingElse_WhenTheInstallationHasNone', async ({
@@ -64,6 +80,26 @@ test.describe('Sign-in', () => {
 
     await expect(page.getByRole('navigation', { name: 'Navigation principale' })).toBeVisible()
   })
+  test('AccessGate_ShouldShowTheRefusalInTheErrorColourWithoutMovingTheButton_WhenThePasswordIsWrong', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await installFakeBackend(
+      page,
+      createFakeBackendState({ access: { installed: true, signedIn: false } }),
+    )
+    await page.goto('/')
+    const unlock = page.getByRole('button', { name: 'Déverrouiller' })
+    await page.getByLabel('Mot de passe').fill('pas-le-bon-mot')
+    const before = await topOf(unlock)
+
+    await unlock.click()
+
+    const refusal = page.getByRole('alert')
+    await expect(refusal).toContainText('Mot de passe incorrect.')
+    await expect(refusal).toHaveCSS('color', await errorColour(page))
+    expect(await topOf(unlock)).toBe(before)
+  })
 })
 
 test.describe('Password change', () => {
@@ -80,6 +116,25 @@ test.describe('Password change', () => {
     await expect(page.getByRole('alert')).toContainText('Mot de passe actuel incorrect.')
     // A refused field is not a session ending: the screen stays where it was.
     await expect(page.getByRole('heading', { name: 'Vyzio est verrouillé' })).toHaveCount(0)
+  })
+
+  test('AccessView_ShouldShowTheRefusalInTheErrorColourWithoutMovingTheButton_WhenTheCurrentPasswordIsWrong', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await installFakeBackend(page, createFakeBackendState())
+    await page.goto('/settings/acces')
+    const change = page.getByRole('button', { name: 'Changer le mot de passe' })
+    await page.getByLabel('Mot de passe actuel').fill('pas-le-bon-mot')
+    await page.getByLabel('Nouveau mot de passe').fill('un-nouveau-mot')
+    const before = await topOf(change)
+
+    await change.click()
+
+    const refusal = page.getByRole('alert')
+    await expect(refusal).toContainText('Mot de passe actuel incorrect.')
+    await expect(refusal).toHaveCSS('color', await errorColour(page))
+    expect(await topOf(change)).toBe(before)
   })
 
   test('AccessView_ShouldLetOnlyTheNewPasswordUnlock_WhenThePasswordChanges', async ({ page }) => {
