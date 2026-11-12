@@ -121,6 +121,20 @@ public class SendDetectionNotificationUseCaseTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_ShouldLeaveNoJournalRow_WhenTheUserErasesTheDetectionDuringTheSend()
+    {
+        // Arrange
+        _erased.Contains("frigate-evt-900").Returns(false, true);
+
+        // Act
+        var sent = await Build(_telegram).ExecuteAsync(CreateDetection());
+
+        // Assert
+        Assert.True(sent);
+        await _notifications.DidNotReceiveWithAnyArgs().AddAsync(default!, default);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_ShouldCarryTheClipAndTheSnapshot_WhenBothAreAvailable()
     {
         var detection = CreateDetection();

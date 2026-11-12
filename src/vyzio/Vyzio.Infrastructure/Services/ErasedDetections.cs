@@ -5,7 +5,7 @@ namespace Vyzio.Infrastructure.Services;
 internal sealed class ErasedDetections : IErasedDetections
 {
     // As many as the notification queue holds: an older erasure has no notification left to stop.
-    private const int Capacity = 100;
+    private const int Capacity = DetectionNotificationQueue.Capacity;
 
     private readonly Lock _gate = new();
     private readonly Queue<string> _order = new();

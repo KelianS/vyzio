@@ -97,13 +97,13 @@ public sealed class SendDetectionNotificationUseCase(
                 config.Channel, detection.EventId, detection.Label, photo is not null, video is not null);
 
             await sender.SendAsync(new OutgoingNotification(message, photo, video), config.Credentials, ct);
-            await notifications.AddAsync(Journal(config.Channel, detection, NotificationStatus.Sent), ct);
+            await JournalUnlessErasedAsync(Journal(config.Channel, detection, NotificationStatus.Sent), ct);
             return true;
         }
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Channel {Channel} refused event {EventId}.", config.Channel, detection.EventId);
-            await notifications.AddAsync(Journal(config.Channel, detection, NotificationStatus.Failed, ex.Message), ct);
+            await JournalUnlessErasedAsync(Journal(config.Channel, detection, NotificationStatus.Failed, ex.Message), ct);
             return false;
         }
         finally
@@ -208,6 +208,13 @@ public sealed class SendDetectionNotificationUseCase(
             logger.LogWarning("Snapshot unavailable for event {EventId} — falling back to text message", detection.EventId);
 
         return (photo, video);
+    }
+
+    // An erasure that lands during the send has already cleared the journal: the row must not come back (HIST-10, HIST-12).
+    private async Task JournalUnlessErasedAsync(Notification row, CancellationToken ct)
+    {
+        if (!erased.Contains(row.FrigateEventId))
+            await notifications.AddAsync(row, ct);
     }
 
     private static Notification Journal(
