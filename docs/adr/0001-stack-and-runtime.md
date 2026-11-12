@@ -60,8 +60,8 @@ application, built statically and served by its own web server container.
 - ⚠️ No Vyzio event is offered to a third-party integration.
 - ⚠️ Anonymous readiness tells anyone on the Docker network whether a dependency is up; it reveals
   no image, no setting, no secret. Each call costs round trips, so nothing polls it fast.
-- ⚠️ The copied primitives are repository code kept up to date by hand; Tailwind is a permanent
-  build dependency.
+- ⚠️ The copied primitives are repository code kept up to date by hand; Tailwind, and the animation
+  utilities the primitives use, are permanent build dependencies.
 
 ## Options rejected
 
