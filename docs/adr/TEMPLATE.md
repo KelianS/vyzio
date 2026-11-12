@@ -3,13 +3,12 @@
 An ADR records **one structural decision**: the choice, why it was made, and what it costs. It is
 the *why*; the SAD gives the overview, the code and its tests carry the *how*
 ([`../WORKFLOW.md`](../WORKFLOW.md) § Document architecture). The rules that hold an ADR to its
-nature are DOCS-07 to DOCS-12 of [`../rules/docs.md`](../rules/docs.md); this guide cites them,
-it does not restate them.
+nature are DOCS-07, DOCS-08, DOCS-11, DOCS-12 and DOCS-21 to DOCS-23 of
+[`../rules/docs.md`](../rules/docs.md); this guide cites them, it does not restate them.
 
 ## When to write one
 
-Only when the decision meets the bar of DOCS-07. A decision below the bar is not a missing ADR
-(DOCS-02): it lives in the code, its tests, or the document named below.
+Only when the decision meets the bar of DOCS-07 (and DOCS-02 for a decision taken in code).
 
 ## What an ADR holds, and what goes elsewhere
 
@@ -27,10 +26,10 @@ the options it rejected. Everything else has its home:
 ## Changing a decision
 
 - **The same decision moves**: the ADR is rewritten to its new target, the option it leaves goes
-  under its "Options rejected" (DOCS-09). No "amended by", no correction stacked at the end.
-- **The decision is replaced or merged into another**: the old file is deleted and the numbering
-  closed up (DOCS-10).
-- **A new subject**: a new ADR, numbered next (DOCS-10).
+  under its "Options rejected" (DOCS-21).
+- **The decision is replaced or merged into another**: the old file is deleted, its citations
+  repointed (DOCS-22), and the numbering closed up (DOCS-23).
+- **A new subject**: a new ADR, numbered next (DOCS-23).
 
 ## Citing one
 

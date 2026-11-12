@@ -116,7 +116,7 @@ Its title says the target ("X rejected, Y chosen"), not the history ("X attempte
 Corrections are merged into the decision, never stacked as "Correction (a)(b)(c)". The format is
 the one of [`adr/TEMPLATE.md`](../adr/TEMPLATE.md).
 
-### DOCS-09 · An ADR is rewritten to its new target, never amended by another
+### DOCS-21 · An ADR is rewritten to its new target, never amended by another
 
 **Level**: Required · **Verified by**: Review
 
@@ -124,14 +124,27 @@ When the decision it records moves, the ADR is rewritten in the same branch as t
 present tense, and the option it leaves goes under its "Options rejected" (DOCS-08). No "amended
 by" in its status, no correction stacked at its end, no ADR written only to amend another.
 
-### DOCS-10 · ADRs are numbered from ADR-01 with no gap
+**Exceptions**: the ADRs accepted before [`adr/TEMPLATE.md`](../adr/TEMPLATE.md), until the topic
+ADR that takes them over is written.
+
+### DOCS-22 · A replaced or merged ADR is deleted, its citations repointed
+
+**Level**: Required · **Verified by**: Review
+
+The ADR that takes the decision over summarises it under its own "Options rejected"; the old file
+is deleted, every citation of its number is repointed to the ADR that now holds the decision, and
+the [index](../adr/README.md) is updated, in the same change. Git keeps the history.
+
+**Exceptions**: the ADRs accepted before [`adr/TEMPLATE.md`](../adr/TEMPLATE.md), until the topic
+ADR that takes them over is written.
+
+### DOCS-23 · ADRs are numbered from ADR-01 with no gap
 
 **Level**: Required · **Verified by**: Tool: `task rules:check`
 
-A new ADR takes the next number. One that is replaced or merged into another is deleted: the ADR
-that takes it over summarises it under its own "Options rejected", the last ADR takes the freed
-number, and every citation of both numbers is repointed and the [index](../adr/README.md) updated,
-in the same change. Git keeps the history.
+A new ADR takes the next number; when one is deleted, the last ADR takes its number (DOCS-22 then
+applies to both). Each number is held by one file, listed in the [index](../adr/README.md), and
+only a number that exists is cited.
 
 ## Every document
 

@@ -1,6 +1,6 @@
 // Checks docs/rules: well-formed and unique IDs, a level line per rule, every page routed, every cited ID defined.
 // Checks the SPECS and its use cases alike: unique requirement and use case IDs, their paths, no section number (DOCS-17).
-// Checks the ADRs: numbered from 1 with no gap, each indexed, every cited number defined (DOCS-10).
+// Checks the ADRs: numbered from 1 with no gap, each indexed, every cited number defined (DOCS-23).
 // Usage: node tools/rules/check.mjs (from the repository root, as `task rules:check` runs it)
 import { execFileSync } from 'node:child_process'
 import { readFileSync, readdirSync } from 'node:fs'
@@ -113,12 +113,13 @@ for (const file of readdirSync(ADR_DIR).filter((f) => f.endsWith('.md') && f !==
     continue
   }
   const number = Number(name[1])
-  if (Number(title[1]) !== number) problems.push(`${where}: its title does not carry ADR-${name[1]}`)
+  if (adrs.has(number)) problems.push(`${where}: ADR-${number} is already held by another file (DOCS-23)`)
+  if (Number(title[1]) !== number) problems.push(`${where}: its title does not carry ADR-${number}`)
   if (!adrIndex.includes(`](${file})`)) problems.push(`${where}: missing from the index of ${ADR_INDEX}`)
   adrs.add(number)
 }
 for (let n = 1; n <= adrs.size; n++) {
-  if (!adrs.has(n)) problems.push(`${ADR_DIR}: ADR-${String(n).padStart(2, '0')} is missing, the numbering has a gap (DOCS-10)`)
+  if (!adrs.has(n)) problems.push(`${ADR_DIR}: ADR-${String(n).padStart(2, '0')} is missing, the numbering has a gap (DOCS-23)`)
 }
 
 const requirements = new Map()
@@ -157,7 +158,7 @@ for (const file of tracked) {
     const where = `${file}:${i + 1}`
     if (!file.startsWith(ADR_CITATION_EXEMPT)) {
       for (const [id, number] of line.matchAll(CITED_ADR)) {
-        if (!adrs.has(Number(number))) problems.push(`${where}: cites ${id}, which no ADR defines (DOCS-10)`)
+        if (!adrs.has(Number(number))) problems.push(`${where}: cites ${id}, which no ADR defines (DOCS-23)`)
       }
     }
     for (const id of line.match(cited) ?? []) {
