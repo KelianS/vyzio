@@ -100,4 +100,26 @@ test.describe('Base styles', () => {
     ).toBeVisible()
     await fullPageScreenshot(page, { path: 'test-results/socle-parametres.png' })
   })
+
+  test('BaseStyles_ShouldKeepTheFieldSelectableAndItsNameNot_WhenAFieldSitsInsideItsLabel', async ({
+    page,
+  }) => {
+    await installFakeBackend(page, createFakeBackendState())
+    await page.goto('/')
+    await expect(page.getByRole('heading', { name: /sous surveillance|Bienvenue/ })).toBeVisible()
+
+    // A field wrapped in its label, as the camera forms write it.
+    const [name, field] = await page.evaluate(() => {
+      const label = document.createElement('label')
+      const span = document.createElement('span')
+      span.textContent = 'Identifiant'
+      const input = document.createElement('input')
+      label.append(span, input)
+      document.body.append(label)
+      return [getComputedStyle(span).userSelect, getComputedStyle(input).userSelect]
+    })
+
+    expect(name).toBe('none')
+    expect(field).toBe('text')
+  })
 })

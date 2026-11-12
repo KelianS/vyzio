@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { act, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import type { LivePlayback } from '../../../domain/entities/live_playback.entity'
+import type { LiveLayout } from '../live_layout'
 import type { FrigateStatus } from '../../../domain/entities/system_stats.entity'
 import { LiveVideo } from './live_video'
 
@@ -228,4 +229,78 @@ describe('LiveVideo', () => {
     expect(screen.getByText('Redémarrage en cours…')).toBeInTheDocument()
     expect(screen.queryByText(CAMERA_LOST)).not.toBeInTheDocument()
   })
+
+  it.each([
+    { from: 'portrait' as LiveLayout, to: 'landscape' as LiveLayout },
+    { from: 'landscape' as LiveLayout, to: 'portrait' as LiveLayout },
+  ])(
+    'LiveVideo_ShouldKeepPlayingInTheSamePicture_WhenTheDeviceTurnsFrom $from to $to',
+    ({ from, to }) => {
+      // Arrange
+      const played: HTMLVideoElement[] = []
+      const open = (video: HTMLVideoElement) => {
+        played.push(video)
+        return () => undefined
+      }
+      const view = (layout: LiveLayout) => (
+        <LiveVideo
+          cameraId="camera-1"
+          apiBaseUrl=""
+          label="Front Door"
+          frigateStatus="active"
+          quality="low"
+          qualities={['low']}
+          soundOn={false}
+          layout={layout}
+          bar={() => <p>Front Door</p>}
+          onOpen={open}
+          onChooseQuality={vi.fn()}
+          onToggleSound={vi.fn()}
+        />
+      )
+      const { rerender } = render(view(from))
+
+      // Act
+      rerender(view(to))
+
+      // Assert
+      expect(played).toHaveLength(1)
+      expect(screen.getByLabelText('Front Door', { selector: 'video' })).toBe(played[0])
+    },
+  )
+
+  it.each([
+    { layout: 'portrait' as LiveLayout, frame: '640 / 480' },
+    { layout: 'landscape' as LiveLayout, frame: '' },
+  ])(
+    'LiveVideo_ShouldShapeTheFrameAfterTheStreamOnlyUpright_WhenHeld $layout',
+    ({ layout, frame }) => {
+      // Arrange
+      render(
+        <LiveVideo
+          cameraId="camera-1"
+          apiBaseUrl=""
+          label="Front Door"
+          frigateStatus="active"
+          quality="low"
+          qualities={['low']}
+          soundOn={false}
+          layout={layout}
+          bar={() => null}
+          onOpen={() => () => undefined}
+          onChooseQuality={vi.fn()}
+          onToggleSound={vi.fn()}
+        />,
+      )
+      const video = screen.getByLabelText('Front Door', { selector: 'video' })
+      Object.defineProperty(video, 'videoWidth', { value: 640 })
+      Object.defineProperty(video, 'videoHeight', { value: 480 })
+
+      // Act
+      fireEvent(video, new Event('loadedmetadata'))
+
+      // Assert
+      expect(video.parentElement?.style.aspectRatio).toBe(frame)
+    },
+  )
 })

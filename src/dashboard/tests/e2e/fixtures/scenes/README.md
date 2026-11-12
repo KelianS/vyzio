@@ -8,7 +8,9 @@ constraints. Each was cropped to 16:9, downscaled to 1024 x 576 and re-encoded w
 Add a scene only with a licence as free, and record it here.
 
 `entrance.mp4` is one second of `entrance.jpg`, encoded as fragmented H.264 at 640 x 360 without
-sound or metadata: the stream the fake backend sends to the live view. It carries that scene's licence.
+sound or metadata: the stream the fake backend sends to the live view. `entrance_4x3.mp4` is the same
+second cropped to 4:3, at 480 x 360, for a camera that does not film in 16:9. Both carry that scene's
+licence.
 
 | File           | Title                                         | Author         | Source                                                                                                           | Licence                                                       |
 | -------------- | --------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |

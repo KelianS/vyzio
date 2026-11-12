@@ -1390,6 +1390,39 @@ describe('LiveView layouts', () => {
     expect(screen.queryByRole('button', { name: 'Plein écran' })).not.toBeInTheDocument()
   })
 
+  it('LiveView_ShouldGiveTheBrowserBarsBackAndStayOpen_WhenTheUserLeavesFullScreen', async () => {
+    // Arrange
+    holdTheDevice('landscape')
+    const { exit } = offerFullScreen()
+    Object.defineProperty(document, 'fullscreenElement', {
+      value: document.documentElement,
+      configurable: true,
+    })
+    fakeNetwork({})
+    renderOn()
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Quitter le plein écran' }))
+
+    // Assert
+    expect(exit).toHaveBeenCalledTimes(1)
+    expect(screen.getByLabelText('Front Door', { selector: 'video' })).toBeInTheDocument()
+  })
+
+  it('LiveView_ShouldOfferNoWayToLeaveFullScreen_WhenTheBrowserKeepsItsBars', () => {
+    // Arrange
+    holdTheDevice('landscape')
+    offerFullScreen()
+    fakeNetwork({})
+
+    // Act
+    renderOn()
+
+    // Assert
+    expect(screen.getByRole('button', { name: 'Plein écran' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Quitter le plein écran' })).not.toBeInTheDocument()
+  })
+
   it('LiveView_ShouldLeaveFullScreen_WhenTheDeviceTurnsUpright', () => {
     // Arrange
     const turn = holdTheDevice('landscape')

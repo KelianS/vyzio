@@ -221,6 +221,23 @@ export function LiveVideo({
   })
   const { playback, lost } = watched
   const [attempt, setAttempt] = useState(0)
+  // The stream's own shape, once known: held upright, the frame takes it so the picture goes edge to edge.
+  const [ratio, setRatio] = useState<string | null>(null)
+
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+    const measure = () => {
+      if (video.videoWidth > 0 && video.videoHeight > 0)
+        setRatio(`${video.videoWidth} / ${video.videoHeight}`)
+    }
+    video.addEventListener('loadedmetadata', measure)
+    video.addEventListener('resize', measure)
+    return () => {
+      video.removeEventListener('loadedmetadata', measure)
+      video.removeEventListener('resize', measure)
+    }
+  }, [])
 
   // Opened again on a new quality or sound, a retry, an interruption, and when surveillance comes back from a restart.
   useEffect(() => {
@@ -336,15 +353,22 @@ export function LiveVideo({
     </>
   )
 
-  return BAR_ABOVE[layout] ? (
-    <div className="flex flex-col">
-      {bar(controls)}
-      <div className="relative aspect-video w-full overflow-hidden bg-surface-inverse">{media}</div>
-    </div>
-  ) : (
-    <div className="relative size-full overflow-hidden bg-surface-inverse">
-      {media}
-      {bar(controls)}
+  const above = BAR_ABOVE[layout]
+
+  // One tree for every layout: the video element the stream is attached to survives a turn.
+  return (
+    <div className={above ? 'flex flex-col' : 'size-full'}>
+      {above && bar(controls)}
+      <div
+        className={cn(
+          'relative overflow-hidden bg-surface-inverse',
+          above ? 'aspect-video w-full' : 'size-full',
+        )}
+        style={above && ratio ? { aspectRatio: ratio } : undefined}
+      >
+        {media}
+        {!above && bar(controls)}
+      </div>
     </div>
   )
 }
