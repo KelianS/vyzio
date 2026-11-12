@@ -8,8 +8,9 @@ nature are DOCS-07, DOCS-08, DOCS-11, DOCS-12 and DOCS-21 to DOCS-23, DOCS-25 of
 
 ## When to write one
 
-When the choice is structural and costly to change, the bar of DOCS-07; an obvious or reversible
-choice does not get one. Its ADR comes in the same branch as the code (DOCS-02).
+An ADR documents a structural choice, one that meets the bar of DOCS-07; an obvious choice, or one
+easy to reverse and below that bar, does not deserve one. Its ADR comes in the same branch as the
+code (DOCS-02).
 
 An ADR in this folder is in force: it carries no status, and the pull request that merges it is
 its validation.
