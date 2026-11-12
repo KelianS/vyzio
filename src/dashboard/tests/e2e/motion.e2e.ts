@@ -93,6 +93,14 @@ test.describe('Press feedback', () => {
     })
   })
 
+  test('JoystickArrow_ShouldShrinkSlightly_WhenItIsHeld', async ({ page }) => {
+    const camera = makeFakeCamera({ ptzSupported: true, verifiedCapabilities: ['ptz'] })
+    await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
+    await page.goto('/cameras/camera-1/direct')
+
+    expect(await pressed(page.getByTitle('Haut'))).toEqual({ scale: '0.97', opacity: '1' })
+  })
+
   test('Button_ShouldDimInsteadOfShrinking_WhenThePhoneAsksForLessMotion', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.goto('/')
