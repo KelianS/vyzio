@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import 'tw-animate-css';
 
 /* Le theme sombre suit une classe posee sur <html>, pas seulement la preference
    systeme : l'utilisateur doit pouvoir choisir. `ThemePreference` applique l'une
@@ -272,4 +273,72 @@ h3 {
 /* A calendar fill told apart by its pattern, never by colour alone (DESIGN SYSTEM § Palette). */
 @utility bg-stripes {
   background-image: repeating-linear-gradient(135deg, var(--accent) 0 5px, var(--card) 5px 9px);
+}
+
+/* ---------------------------------------------------------------------------
+   Motion (DESIGN SYSTEM § Motion): one curve, three durations, one press, and
+   what remains when the phone asks for less motion.
+   --------------------------------------------------------------------------- */
+
+:root {
+  --ease-calm: cubic-bezier(0.23, 1, 0.32, 1);
+  --duration-press: 100ms;
+  --duration-short: 150ms;
+  --duration-long: 200ms;
+}
+
+@theme inline {
+  --default-transition-timing-function: var(--ease-calm);
+}
+
+/* The registry primitives keep their enter and exit classes; the tokens reach them by their slot (DASHBOARD-22). */
+@layer base {
+  [data-slot='dialog-overlay'],
+  [data-slot='dialog-content'],
+  [data-slot='alert-dialog-overlay'],
+  [data-slot='alert-dialog-content'] {
+    --tw-ease: var(--ease-calm);
+    --tw-animation-duration: var(--duration-long);
+  }
+
+  [data-slot='popover-content'],
+  [data-slot='select-content'],
+  [data-slot='tooltip-content'] {
+    --tw-ease: var(--ease-calm);
+    --tw-animation-duration: var(--duration-short);
+  }
+}
+
+@utility press {
+  transition-property: color, background-color, border-color, box-shadow, opacity, scale;
+  transition-duration: var(--duration-press);
+  transition-timing-function: var(--ease-calm);
+
+  &:not(:disabled):active {
+    scale: 0.97;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &:not(:disabled):active {
+      scale: none;
+      opacity: 0.8;
+    }
+  }
+}
+
+/* Unlayered, so it outranks the primitive's `transition-all` without editing it. */
+[data-slot='button'] {
+  @apply press;
+}
+
+/* Unlayered, so it outranks the utilities that set these on each layer: the fade stays. */
+@media (prefers-reduced-motion: reduce) {
+  [data-state] {
+    --tw-enter-scale: 1;
+    --tw-exit-scale: 1;
+    --tw-enter-translate-x: 0;
+    --tw-enter-translate-y: 0;
+    --tw-exit-translate-x: 0;
+    --tw-exit-translate-y: 0;
+  }
 }

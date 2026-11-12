@@ -54,7 +54,7 @@ export function DetectionList({
             <button
               type="button"
               aria-label={`Ouvrir la détection : ${formatEventTitle(event, labels)}`}
-              className={`${BARE_TILE} focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring`}
+              className={`press ${BARE_TILE} focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring`}
               onClick={() =>
                 onOpenMedia({ type: 'none', eventId: event.eventId, expired: event.mediaExpired })
               }
@@ -71,7 +71,7 @@ export function DetectionList({
             <button
               type="button"
               aria-label={`Voir l’aperçu — ${formatEventTitle(event, labels)}`}
-              className="shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              className="press shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
               // The tile shows the crop, opening shows the wide shot: two images, not two sizes.
               onClick={() =>
                 onOpenMedia({

@@ -33,7 +33,7 @@ export function AccessGate({ children }: { children: ReactNode }) {
         <button
           type="button"
           onClick={() => void presenter.onLoad()}
-          className="text-sm font-medium underline"
+          className="press text-sm font-medium underline"
         >
           Réessayer
         </button>
