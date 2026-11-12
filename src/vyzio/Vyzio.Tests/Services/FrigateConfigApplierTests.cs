@@ -668,8 +668,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
         Assert.Contains("default: 3", yaml[snapshotsIndex..], StringComparison.OrdinalIgnoreCase);
     }
 
-    // ADR-12: a camera that keeps nothing no longer exists — an enabled camera keeps at least a day
-    // of event clips, and not wanting its video is said by disabling the camera itself.
+    // An enabled camera keeps at least a day of event clips (ADR-12).
     [Fact]
     public async Task ApplyAsync_ShouldKeepADayAndStayRecorded_WhenACameraAsksForZeroEventClipDays()
     {
