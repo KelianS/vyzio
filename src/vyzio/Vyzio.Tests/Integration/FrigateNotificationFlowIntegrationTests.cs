@@ -2,6 +2,7 @@ using NSubstitute;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Time.Testing;
 using Vyzio.Application.UseCases.Cameras;
 using Vyzio.Application.UseCases.DetectionEvents;
 using Vyzio.Application.UseCases.Frigate;
@@ -26,6 +27,7 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
     private readonly StubClipProvider _clipProvider;
     private readonly TestDetectionQueue _queue;
     private readonly ErasedDetections _erased = new();
+    private readonly FakeTimeProvider _time = new(MinuteAfterThePayloadsStart);
     private readonly NotifyDetectionUseCase _notify;
     private readonly IngestFrigateEventUseCase _sut;
 
@@ -72,6 +74,7 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
                 new CameraDirectory(new CameraRepository(_db))),
             _erased,
             TimeZoneInfo.Local,
+            _time,
             NullLogger<SendDetectionNotificationUseCase>.Instance,
             mediaFinalizationWindow: TimeSpan.Zero);
 
@@ -84,6 +87,9 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
             _queue,
             NullLogger<IngestFrigateEventUseCase>.Instance);
     }
+
+    // The payloads below start at 1778408400 (Unix seconds).
+    private static readonly DateTimeOffset MinuteAfterThePayloadsStart = DateTimeOffset.FromUnixTimeSeconds(1778408460);
 
     // The handler only enqueues (ADR-49): the flow is complete once the queue is drained.
     private async Task<bool> IngestAndNotifyAsync(string payload)
@@ -169,6 +175,37 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
         Assert.Empty(_telegram.Sent);
         Assert.Empty(_discord.Sent);
         Assert.Equal(0, await _db.Notifications.CountAsync());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldSendNothingOnAnyChannel_WhenTheEndReportsADetectionFromTheDayBefore()
+    {
+        // Arrange
+        _eventReader.Identity = "Alice";
+        _time.Advance(TimeSpan.FromDays(1));
+
+        // Act
+        await IngestAndNotifyAsync(Payload("frigate-ti-007", lifecycle: "end"));
+
+        // Assert
+        Assert.Empty(_telegram.Sent);
+        Assert.Empty(_discord.Sent);
+        Assert.Equal(0, await _db.Notifications.CountAsync());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldSendNothingOnAnyChannel_WhenTheEndCarriesNoConfidence()
+    {
+        // Arrange
+        _eventReader.Identity = "Alice";
+        var payload = Payload("frigate-ti-006", lifecycle: "end").Replace("\"top_score\": 0.97,", string.Empty);
+
+        // Act
+        await IngestAndNotifyAsync(payload);
+
+        // Assert
+        Assert.Empty(_telegram.Sent);
+        Assert.Empty(_discord.Sent);
     }
 
     [Fact]

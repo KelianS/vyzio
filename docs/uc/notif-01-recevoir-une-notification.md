@@ -27,6 +27,7 @@
 | A1 | Être notifié d'un visage inconnu | Alternative | Un visage inconnu apparaît |
 | A2 | La personne n'est pas notifiée ici | Alternative | Sa politique, ou ses caméras, l'excluent |
 | A3 | Une plage sans notification est en cours | Alternative | La plage vise le canal |
+| A4 | La détection n'est plus une nouvelle | Alternative | Sa certitude est inconnue, ou elle a commencé trop tôt |
 | E1 | Le canal externe est indisponible | Échec | Le réseau ou le service du canal ne répond pas |
 
 ## Détail des chemins
@@ -51,6 +52,11 @@
 1. Une plage sans notification vise le canal (SCHED-02).
 2. Le canal n'envoie rien, et la notification est abandonnée, jamais différée (NOTIF-07).
 
+### A4 · La détection n'est plus une nouvelle
+
+1. La certitude de la détection est inconnue (NOTIF-30), ou elle a commencé trop tôt au moment de partir (NOTIF-31).
+2. Rien n'est envoyé, sur aucun canal ; la détection reste dans l'historique.
+
 ### E1 · Le canal externe est indisponible
 
 1. Le réseau ou le service du canal ne répond pas : la surveillance et l'enregistrement locaux continuent (SYS-03, SYS-04).
@@ -58,7 +64,8 @@
 
 ## Règles locales
 
-Aucune.
+- **NOTIF-30** · une detection dont la certitude est inconnue n'est jamais notifiee : rien ne montre qu'elle atteint la certitude minimale choisie (UC-NOTIF-03) ;
+- **NOTIF-31** · une detection commencee depuis plus de 30 minutes au moment ou sa notification part, ou dont le debut est inconnu, n'est jamais notifiee : une notification dit ce qui se passe maintenant, le reste se consulte dans l'historique.
 
 ## Points ouverts
 
