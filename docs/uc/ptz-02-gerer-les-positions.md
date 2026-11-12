@@ -80,7 +80,10 @@
 - **PTZ-12** · la miniature est capturée automatiquement après chaque enregistrement d'une position et chaque déplacement GoTo vers un preset demandé depuis l'interface, une fois la caméra arrivée à destination ; les déplacements du mode vie privée n'en prennent aucune ;
 - **PTZ-13** · la miniature est persistée côté serveur et survit à un rechargement de l'interface ;
 - **PTZ-14** · une position enregistrée ailleurs (par exemple dans l'application du fabricant) n'a sa première miniature qu'après son premier GoTo ; avant, son slot montre qu'une position existe (PTZ-07), jamais le signe d'un slot vide ni une image générique ;
-- **PTZ-15** · la miniature est mise à jour à chaque nouveau GoTo.
+- **PTZ-15** · la miniature est mise à jour à chaque nouveau GoTo ;
+- **PTZ-16** · l'arrivée sur une position s'annonce, et le slot de la position où se trouve la caméra se lit comme actif ;
+- **PTZ-17** · la section Pilotage des réglages de la caméra ne montre que l'état de la calibration et mène à la vue en direct, seul endroit où l'on pilote, enregistre et calibre ;
+- **PTZ-18** · tant qu'une caméra dont Vyzio garde les positions n'est pas calibrée, le pilotage le dit et propose de la calibrer sur place ; ses slots ne s'enregistrent pas avant.
 
 ## Points ouverts
 

@@ -11,7 +11,7 @@
 
 - le propriétaire est connecté (UC-ACCESS-02).
 
-**Résultat en succès** : chaque nature d'enregistrement est gardée la durée choisie, puis supprimée d'elle-même (HIST-05, HIST-09).
+**Résultat en succès** : chaque nature d'enregistrement est gardée la durée choisie, puis supprimée d'elle-même (HIST-16, HIST-09).
 
 **Résultats en échec** : la surveillance ne reprend pas les réglages enregistrés, et l'interface le signale (E1).
 
@@ -22,14 +22,13 @@
 | N1 | Régler les durées de l'installation | Nominal | Le propriétaire ouvre la conservation de l'installation |
 | A1 | Surcharger une durée pour une caméra | Alternative | Le propriétaire ouvre l'onglet « Conservation » d'une caméra |
 | A2 | Activer l'enregistrement de la vidéo complète | Alternative | Le propriétaire donne une durée à la vidéo complète |
-| A3 | Ne rien conserver pour une caméra | Alternative | Toutes les natures d'une caméra reçoivent une durée nulle |
 | E1 | La surveillance ne reprend pas le réglage | Échec | Le redémarrage de la surveillance échoue |
 
 ## Détail des chemins
 
 ### N1 · Régler les durées de l'installation
 
-1. Le propriétaire règle la durée de chaque nature d'enregistrement pour toute l'installation (HIST-05, HIST-06).
+1. Le propriétaire règle la durée de chaque nature d'enregistrement pour toute l'installation (HIST-16, HIST-06).
 2. Il voit ce qu'il a modifié, enregistre (UI-11), puis applique les changements (UC-UI-02).
 
 ### A1 · Surcharger une durée pour une caméra
@@ -42,20 +41,15 @@
 1. Avant l'activation, l'écran annonce l'ordre de grandeur de la consommation disque (HIST-07, UI-19).
 2. Le chemin reprend à N1, pas 2.
 
-### A3 · Ne rien conserver pour une caméra
-
-1. Toutes les natures de la caméra reçoivent une durée nulle : elle n'enregistre plus rien (HIST-08).
-
 ### E1 · La surveillance ne reprend pas le réglage
 
 1. L'interface le signale de façon persistante et permet de réessayer (UI-17).
 
 ## Règles locales
 
-- **HIST-05** · la retention doit etre configurable, sur trois natures d'enregistrement distinctes : la video complete, les portions ou l'image bouge, et les clips rattaches a une detection ; chacune a sa propre duree, et une duree nulle signifie que rien n'est conserve pour cette nature ;
 - **HIST-06** · une duree de retention doit valoir pour toute l'installation par defaut, et rester surchargeable camera par camera ; une camera qui ne surcharge rien suit l'installation, et l'interface doit rendre visible lequel des deux s'applique ;
 - **HIST-07** · l'enregistrement de la video complete doit rester un choix explicite, et l'ordre de grandeur de sa consommation disque doit etre annonce avant activation ;
-- **HIST-08** · une camera dont aucune nature n'est conservee ne doit rien enregistrer du tout ;
+- **HIST-16** · la retention doit etre configurable, sur trois natures d'enregistrement distinctes : la video complete, les portions ou l'image bouge, et les clips rattaches a une detection ; chacune a sa propre duree ; une duree nulle signifie que rien n'est conserve pour la video complete ou les portions ou l'image bouge ; les clips rattaches a une detection, qui font l'historique, sont gardes au moins un jour, et l'ecran le dit avant la saisie ; ne vouloir aucune video d'une camera se fait en la desactivant ;
 - **HIST-09** · le systeme doit supprimer automatiquement les donnees arrivees au terme de retention.
 
 ## Points ouverts

@@ -89,14 +89,21 @@ press; text to read stays selectable, and so does a field, even inside its label
 ### Settings screens
 
 A setting **is declared, it is not drawn**: its nature determines its control, alignment, provenance and
-undo ([ADR-15](adr/0015-settings-model-schedules-and-edit-cycle.md), the home of the control
-table). A page **does not name itself**: whatever led there has named it
+undo ([ADR-15](adr/0015-settings-model-schedules-and-edit-cycle.md); the table from a nature to its
+control is the settings renderer's, in code). A page **does not name itself**: whatever led there has named it
 ([ADR-15](adr/0015-settings-model-schedules-and-edit-cycle.md)).
 `SettingsPage` has no title; `SettingsSection` opens one only in a page covering several subjects, and a
 section title repeating the page's means one more page was needed. A section title is in the heading
 serif, a setting label in the body weight. A page opens on a lede only to say what its name leaves
 out, a scope, a default, a timing, a state or where to look instead; a lede that rephrases the name
 is dropped.
+
+A settings row is always, in this order: **name, help trigger, control, provenance, undo**. The
+control sits in one column of common width across the app; on a small screen the row folds into
+two lines, the name above, the control below, keeping that column. A followed value reads greyed,
+an own value reads normally, never with a caption; undo appears only where there is something to
+undo and names the value it restores. A page lists its most common setting first; a new setting
+is placed by its expected frequency, never at the end, and the rare ones go to `Avancé`.
 
 **An option that cannot be chosen yet stays in the list**, greyed and not selectable, with the reason
 and the way out on a quieter second line under its label (`text-xs text-muted-foreground`): what is
@@ -218,6 +225,7 @@ A label states the **nature** of a screen, viewing or configuring, never its aud
 - Viewing: `Accueil`, `Direct`, `Historique`.
 - Configuring: `Réglages`, then a section (`Caméras`, `Détection`, `Conservation`, `Notifications`,
   `Planification`, `Accès`, `Système`).
+- Known people (`Personnes`) sit under `Détection`, next to what names them.
 - Banned as entries: `Expert` (an audience, not a content), and `Alertes` for a settings screen (it
   promises a list of events, which lives under `Historique`).
 
@@ -236,12 +244,16 @@ A label states the **nature** of a screen, viewing or configuring, never its aud
 ### Editing cycle
 
 A setting is saved; surveillance is restarted separately
-([ADR-15](adr/0015-settings-model-schedules-and-edit-cycle.md),
-[ADR-15](adr/0015-settings-model-schedules-and-edit-cycle.md)).
+([ADR-15](adr/0015-settings-model-schedules-and-edit-cycle.md)).
 
 - **`Enregistrer`** is the single verb of validation: it persists, nothing more. Never `Appliquer`
   (promises an effect that does not happen) nor `Mettre en service` (hides the interruption).
 - **`Annuler`** is the single verb of abandonment: back to the last saved state.
+- The draft is **per page**: it groups what that page changed, and leaving a modified page asks for
+  confirmation. Its bar sits in one fixed place, the same on every screen, never in the flow of the
+  content. Undoing an override is a draft change like any other.
+- A value's **provenance** (followed or its own) and its **edit state** (saved or in the draft)
+  read separately.
 - The draft announces **what has changed**, never an interruption: that belongs to the restart.
 - The restart's trigger, `Appliquer les changements`, names **the pending state**, still true when read
   two days later; its question, `Redémarrer la surveillance maintenant ?`, names **the act** and states

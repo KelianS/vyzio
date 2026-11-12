@@ -30,7 +30,8 @@
 
 ## Règles locales
 
-- **PROF-02** · un profil doit contenir au minimum un nom, des donnees de reference suffisantes et une politique de notification.
+- **PROF-02** · un profil doit contenir au minimum un nom, des donnees de reference suffisantes et une politique de notification ;
+- **PROF-07** · chaque photo d'un profil dit si elle sert deja a la reconnaissance ; une photo qui n'y sert pas encore peut etre renvoyee.
 
 ## Points ouverts
 

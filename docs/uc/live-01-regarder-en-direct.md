@@ -94,7 +94,9 @@
 - **LIVE-13** · si la video s'arrete en cours de lecture parce que la camera ne repond plus, la vue en direct ne laisse pas une image figee passer pour le direct : quelques secondes sans nouvelle image suffisent, et un flux que la camera cesse d'envoyer le fait savoir aussitot ; elle le dit en une phrase, sans image, et reprend d'elle-meme au retour de la camera, sans rechargement ; une coupure entre le navigateur et Vyzio, elle, se reconnecte ;
 - **LIVE-14** · telephone tenu droit, le cadre de la video prend la forme de l'image de la camera : elle occupe toute la largeur, sans bande sur les cotes ni recadrage ;
 - **LIVE-15** · quand le navigateur masque ses propres barres, un bouton les lui fait rendre sans quitter la vue, la video continuant ;
-- **LIVE-16** · la video continue quand le telephone tourne, dans un sens comme dans l'autre, sans rouvrir la vue.
+- **LIVE-16** · la video continue quand le telephone tourne, dans un sens comme dans l'autre, sans rouvrir la vue ;
+- **LIVE-17** · pendant que la surveillance redemarre (SYS-01), les vignettes de l'accueil et la vue en direct montrent une attente plutot qu'une image figee ou cassee, et reprennent d'elles-memes quand elle repond de nouveau, sans rechargement ;
+- **LIVE-18** · activer le mode vie privee referme aussitot toute vue en direct ouverte de la camera, qui le dit en une phrase, sans image.
 
 ## Points ouverts
 
