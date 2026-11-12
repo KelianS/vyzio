@@ -3,7 +3,7 @@ export interface SettingsRubric {
   /** Route segment under `/settings`. */
   readonly slug: string
   readonly label: string
-  /** What the rubric governs, in a few words — a full sentence would compete with the label (ADR-15). */
+  /** What the rubric governs, in a few words — a full sentence would compete with the label. */
   readonly summary: string
 }
 

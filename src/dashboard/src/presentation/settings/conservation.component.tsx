@@ -110,7 +110,7 @@ function ConservationForm({
         max: settings.maxDays,
       },
       help: retentionHelp(window),
-      // A cost stays visible without an extra gesture (ADR-15).
+      // A cost stays visible without an extra gesture (UI-19).
       consequence: window === 'continuous' && current > 0 ? CONTINUOUS_DISK_WARNING : undefined,
       value: current,
       onChange: (days) => draft.set(field, days as number),

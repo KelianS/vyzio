@@ -216,7 +216,7 @@ function RuleForm({
       id: 'rule-kind',
       label: 'Type',
       nature: { kind: 'choice', options: KIND_OPTIONS },
-      // The effect is the point of the choice: it stays visible, never behind a gesture (ADR-15).
+      // The effect is the point of the choice: it stays visible, never behind a gesture (UI-19).
       consequence: type.effect,
       // What a rule targets depends on its type: once it exists, its type stays.
       disabled: rule !== null,

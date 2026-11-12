@@ -18,7 +18,7 @@ const PERSON_PAGES = [
   { slug: 'cameras', label: 'Caméras' },
 ]
 
-/** The pages of one person, mirroring the camera shell (UI-08). */
+/** The pages of one person, mirroring the camera shell. */
 export function PersonView() {
   const { profileId } = useParams()
   const { profiles: container } = useAppContainer()
