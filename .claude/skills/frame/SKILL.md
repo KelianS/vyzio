@@ -47,9 +47,10 @@ Once approved, per DOCS-24:
 
 1. The document changes of each issue are committed as the first commit of that issue's work
    branch, named per WORKFLOW § Git and created from `main` in a worktree of its own, so the
-   owner's checkout never moves. A branch that already holds commits is shown to the owner first.
-   No pull request is opened from it: the documents ship with the code. A stacked docs branch is
-   used only when the owner asks for one.
+   owner's checkout never moves. A branch that already holds commits is shown to the owner, who
+   chooses: rebase it onto the framing commit, or stop there. No pull request is opened from it:
+   the documents ship with the code. A stacked docs branch is used only when the owner asks for
+   one.
 2. Each issue is updated with `gh issue edit <n> --body-file <file>`, and `--remove-label
    needs-framing` once nothing is left to settle.
 3. List the branches and commits written, and the issue links.

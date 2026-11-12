@@ -1,5 +1,5 @@
 agent: product-guardian
-prompt: frame issue #99999
+prompt: frame issue #99999 (launch it even if that issue cannot be read: reporting what it could not read is what the case checks)
 cites: Not read:
 cites: 99999
 absent: Not read: none

@@ -34,6 +34,8 @@ direction, authentication), the ownership or retention of data, or a quality att
 compose files, the web server configuration, outbound clients, listeners and persisted data, not
 only `docs/`.
 
+**Exceptions**: a docs branch the implementation pull request is stacked on (DOCS-24).
+
 ### DOCS-04 · The code never contradicts an accepted ADR, the SAD, the SPECS or a use case
 
 **Level**: Required · **Verified by**: Review
@@ -49,9 +51,10 @@ the subject, not only the files the diff touches.
 
 An approved change to the SPECS, a use case, an ADR or the SAD merges with the code that delivers
 it: as the first commit of the implementation branch, in its pull request, or on a docs branch
-whose own pull request the implementation pull request is stacked on, the two merged together. A
-pull request that changes these documents for behaviour it does not deliver, with no implementation
-pull request stacked on it, is a finding.
+whose pull request targets `main` while the implementation pull request targets that docs branch,
+the implementation merged first so the two reach `main` together. A pull request to `main` that
+changes these documents for behaviour it does not deliver, with no implementation merged into it,
+is a finding.
 
 Why: `main` never describes a behaviour that is not implemented.
 
