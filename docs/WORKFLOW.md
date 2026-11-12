@@ -20,14 +20,14 @@ order; starting the implementation before the upstream documents are aligned is 
    [ADR-53](adr/0053-user-documentation-lives-in-the-interface-three-levels-of-help.md).
    No instructions for use outside the product.
 
-Steps 1 and 2 are written first, but reach `main` only with the code of step 4 (DOCS-21).
+Steps 1 and 2 are written first, but reach `main` only with the code of step 4 (DOCS-24).
 
 ## Practical rules
 
 - A feature that changes neither the need, nor the architecture, nor the plan goes straight to
   implementation, then tests.
 - A feature that contradicts an existing document updates the document first, in the same branch
-  (DOCS-01 to DOCS-04).
+  or the docs branch it is stacked on (DOCS-01 to DOCS-04, DOCS-24).
 - The backlog is never where the strategy is discovered after the fact; it expresses a strategy already
   decided in the SPECS, its use cases and the SAD.
 
@@ -91,7 +91,8 @@ are translated.
 
 - Branches: `main`, stable and the target of every pull request; a work branch is named
   `<type>/<issue>-<slug>`, `type` being a commit type of GIT-01 (`feat/47-live-video-stream`); its
-  approved framing is its first commit (DOCS-21).
+  approved framing, if any, is its first commit, or sits on the docs branch it is stacked on
+  (DOCS-24).
 - Pull requests: review and green tests are mandatory. CI's `ci-ok` job sums up every other job,
   security scans included ([`SECURITY.md`](../SECURITY.md) § What runs on every change), and is
   the check the ruleset of `main` requires. A pull request that changes only documentation runs

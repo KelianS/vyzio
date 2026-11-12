@@ -14,7 +14,7 @@ A user story, a journey, a rule, a service level or the product scope that chang
 [`SPECS.md`](../SPECS.md) or in its use case under [`uc/`](../uc/) before the code that delivers
 it, in the same pull request.
 
-**Exceptions**: a docs branch the implementation pull request is stacked on (DOCS-21).
+**Exceptions**: a docs branch the implementation pull request is stacked on (DOCS-24).
 
 ### DOCS-02 · A structural decision comes with its ADR in the same branch
 
@@ -22,6 +22,8 @@ it, in the same pull request.
 
 A decision taken in code that meets the ADR bar (DOCS-07) and has no ADR is a finding. A decision
 below the bar is not a missing ADR.
+
+**Exceptions**: a docs branch the implementation pull request is stacked on (DOCS-24).
 
 ### DOCS-03 · A change to the system's shape updates the SAD in the same branch
 
@@ -39,14 +41,17 @@ only `docs/`.
 A change that would is preceded by the document's update, in the same branch. Search `docs/adr/` for
 the subject, not only the files the diff touches.
 
-### DOCS-21 · Framing never reaches `main` ahead of the code that delivers it
+**Exceptions**: a docs branch the implementation pull request is stacked on (DOCS-24).
+
+### DOCS-24 · Framing never reaches `main` ahead of the code that delivers it
 
 **Level**: Required · **Verified by**: Review
 
-An approved change to the SPECS, a use case or an ADR merges with the code that delivers it: as the
-first commit of the implementation branch, in its pull request, or on a docs branch the
-implementation pull request is stacked on, the two merged together. A pull request that changes
-these documents for behaviour it does not deliver is a finding.
+An approved change to the SPECS, a use case, an ADR or the SAD merges with the code that delivers
+it: as the first commit of the implementation branch, in its pull request, or on a docs branch
+whose own pull request the implementation pull request is stacked on, the two merged together. A
+pull request that changes these documents for behaviour it does not deliver, with no implementation
+pull request stacked on it, is a finding.
 
 Why: `main` never describes a behaviour that is not implemented.
 
