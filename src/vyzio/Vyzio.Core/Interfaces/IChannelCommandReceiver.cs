@@ -3,14 +3,14 @@ using Vyzio.Core.Entities;
 namespace Vyzio.Core.Interfaces;
 
 /// <summary>
-/// The receiving side of a channel: Vyzio goes and fetches, since it has no public address (ADR-50).
+/// The receiving side of a channel: Vyzio goes and fetches, since it has no public address (ADR-14).
 /// One implementation per channel able to listen, and nothing above it knows which one it holds.
 /// </summary>
 public interface IChannelCommandReceiver
 {
     NotificationChannel Channel { get; }
 
-    /// <summary>Declares the commands in the channel's own grammar, so its autocompletion becomes the documentation (ADR-52).</summary>
+    /// <summary>Declares the commands in the channel's own grammar, so its autocompletion becomes the documentation (ADR-14).</summary>
     Task PublishCommandsAsync(
         IReadOnlyList<RemoteCommandDescriptor> commands,
         ChannelCredentials credentials,

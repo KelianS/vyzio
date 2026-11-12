@@ -90,7 +90,7 @@ export function detectionHistoryReducer(
     case 'CORRECT_STARTED':
       return { ...state, correctingEventId: action.eventId }
     // The correction shows without waiting for the re-read: Frigate takes a few seconds to
-    // propagate it, and a screen that does not move suggests the gesture failed (ADR-49).
+    // propagate it, and a screen that does not move suggests the gesture failed (ADR-12).
     case 'CORRECT_SUCCEEDED':
       return {
         ...state,

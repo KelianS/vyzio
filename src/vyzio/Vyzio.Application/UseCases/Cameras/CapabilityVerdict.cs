@@ -2,7 +2,7 @@ using Vyzio.Core.Entities;
 
 namespace Vyzio.Application.UseCases.Cameras;
 
-// Turns a check's outcome or the user's answer into the binding's one state (ADR-66 c).
+// Turns a check's outcome or the user's answer into the binding's one state (ADR-04.
 internal static class CapabilityVerdict
 {
     public static void Apply(CameraCapabilityBinding binding, CapabilityProof proof)
@@ -29,21 +29,21 @@ internal static class CapabilityVerdict
         }
     }
 
-    // The user's answer stands until a proof: a check never asks the question again (ADR-66 c).
+    // The user's answer stands until a proof: a check never asks the question again (ADR-04.
     private static CapabilityStatus Remembered(CameraCapabilityBinding binding)
     {
         if (binding.ConfirmedAt is not null) return CapabilityStatus.Verified;
         return binding.RejectedAt is null ? CapabilityStatus.ToConfirm : CapabilityStatus.RejectedByUser;
     }
 
-    // The answer survives a failure: a camera asleep for a while keeps what the user saw (ADR-66 c).
+    // The answer survives a failure: a camera asleep for a while keeps what the user saw (ADR-04.
     public static void Fail(CameraCapabilityBinding binding, string? reason)
     {
         binding.Status = CapabilityStatus.Failed;
         binding.LastError = reason;
     }
 
-    // The stream has no proof of its own: its verification is its check (ADR-61).
+    // The stream has no proof of its own: its verification is its check (ADR-04).
     public static void Stream(CameraCapabilityBinding binding, bool previewAvailable, string? reason)
     {
         binding.Status = previewAvailable ? CapabilityStatus.Verified : CapabilityStatus.Failed;
@@ -63,7 +63,7 @@ internal static class CapabilityVerdict
         binding.LastError = null;
     }
 
-    // To confirm, or rejected by the user and tried again on purpose (ADR-66 d).
+    // To confirm, or rejected by the user and tried again on purpose (ADR-04.
     public static bool Askable(CameraCapabilityBinding binding)
         => binding.Status is CapabilityStatus.ToConfirm or CapabilityStatus.RejectedByUser;
 

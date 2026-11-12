@@ -93,7 +93,7 @@ public sealed class HubOverviewApiFactory : WebApplicationFactory<Program>
         });
     }
 
-    // L'accueil lit desormais Frigate : rien a semer en base pour une detection (ADR-49).
+    // L'accueil lit desormais Frigate : rien a semer en base pour une detection (ADR-12).
     private sealed class StubFrigateEventReader : IFrigateEventReader
     {
         public Task<string?> TryGetIdentityAsync(string frigateEventId, CancellationToken ct = default)

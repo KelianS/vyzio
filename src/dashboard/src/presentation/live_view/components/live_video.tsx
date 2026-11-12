@@ -23,7 +23,7 @@ const MAX_RETRY_MS = 15_000
 
 const CAMERA_LOST = 'Cette caméra ne répond plus : la vidéo reprendra dès son retour.'
 
-/** What each failure says, and the way out it offers (ADR-72 e). */
+/** What each failure says, and the way out it offers (ADR-07. */
 const FAILURES: Record<LiveFailure, { sentence: string; frame: boolean; otherQuality: boolean }> = {
   unsupported_browser: {
     sentence: 'Ce navigateur ne lit pas la vidéo en direct : image rafraîchie chaque seconde.',
@@ -179,7 +179,7 @@ function Notice({
   )
 }
 
-/** The live video (ADR-72), filling its frame; its quality and sound go in the bar laid over it. */
+/** The live video (ADR-07), filling its frame; its quality and sound go in the bar laid over it. */
 export function LiveVideo({
   cameraId,
   apiBaseUrl,

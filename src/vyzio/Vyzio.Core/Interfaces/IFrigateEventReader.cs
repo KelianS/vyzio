@@ -3,7 +3,7 @@ using Vyzio.Core.Entities;
 namespace Vyzio.Core.Interfaces;
 
 /// <summary>
-/// Reads detection events from Frigate, which owns them (ADR-49).
+/// Reads detection events from Frigate, which owns them (ADR-12).
 /// </summary>
 public interface IFrigateEventReader
 {

@@ -6,7 +6,7 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Tests.Integration;
 
-// The interface branches on these codes, never on the status a proxy also sends (ADR-56).
+// The interface branches on these codes, never on the status a proxy also sends (ADR-04).
 public class CameraCommandErrorContractTests(CamerasApiFactory factory) : IClassFixture<CamerasApiFactory>
 {
     private async Task<(int Status, JsonElement Body)> AnswerTo(Exception exception)

@@ -151,7 +151,7 @@ Note : `v380_salon` n'a **pas** de sous-flux distinct — `/stream0` et `/stream
 
 ## 5. Accélération matérielle : absente
 
-Config résolue : `"hwaccel_args": ""`. Aucun décodage matériel n'est configuré, alors qu'ADR-34 a déjà
+Config résolue : `"hwaccel_args": ""`. Aucun décodage matériel n'est configuré, alors qu'ADR-08 déjà
 mis en place le passthrough `/dev/dri` et détecte l'iGPU Intel. Sur le palier Openvino,
 `ffmpeg.hwaccel_args: preset-vaapi` supprimerait quasiment le coût de décodage (~9 % ici, davantage
 avec plus de caméras ou de la 4K).
@@ -200,7 +200,7 @@ Vyzio aujourd'hui, vérifié dans la config résolue.
 | Désactiver `lpr` (plaques) | ✅ `enabled: false` |
 | Désactiver la classification (`bird`, custom) | ✅ `enabled: false` |
 | `record` en `-c:v copy`, jamais de ré-encodage | ✅ vérifié dans la ligne de commande ffmpeg |
-| `detect.fps: 5` (recommandation officielle) | ✅ sur le palier non-CPU ; borné 1–5 sur CPU (ADR-34) |
+| `detect.fps: 5` (recommandation officielle) | ✅ sur le palier non-CPU ; borné 1–5 sur CPU (ADR-08) |
 | Passer par go2rtc pour ne pas multiplier les connexions caméra | ✅ pour DVRIP ; le RTSP direct n'a qu'un consommateur |
 
 ### À corriger
@@ -221,11 +221,11 @@ Vyzio aujourd'hui, vérifié dans la config résolue.
 
 - **« Le détecteur CPU n'est pas recommandé »** — la doc affirme qu'OpenVINO en mode CPU est plus
   efficace que le détecteur `cpu` natif. À nuancer : notre test terrain d'OpenVINO/ONNX + YOLOX sur
-  CPU s'est soldé par des pics à 800 % (ADR-34). La doc compare probablement OpenVINO avec un
+  CPU s'est soldé par des pics à 800 % (ADR-08). La doc compare probablement OpenVINO avec un
   **petit** modèle (SSD/MobileNet), pas avec un YOLO. Piste jamais testée : `type: openvino`,
   `device: CPU`, modèle SSD 320×320. À traiter comme une hypothèse, pas comme un acquis.
 - **Modèle 320×320 plutôt que 640×640** — « Frigate optimise spécifiquement cette taille ». Notre
-  palier Intel utilise `yolox_s` en 640×640 (ADR-34) : à re-questionner si le palier est un jour
+  palier Intel utilise `yolox_s` en 640×640 (ADR-08) : à re-questionner si le palier est un jour
   profilé sur du vrai matériel.
 - **Plusieurs instances de détecteur** — recommandé quand `skipped_fps > 0` en continu, ce qui est
   notre cas. Mais ça ne s'applique qu'avec du matériel inexploité : ici le détecteur est déjà

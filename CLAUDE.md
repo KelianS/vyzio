@@ -34,7 +34,7 @@ Follow the delivery gate in [`docs/WORKFLOW.md`](docs/WORKFLOW.md) § Git, throu
 | What a camera model was measured to do | [`docs/hardware/`](docs/hardware/), one dated sheet per model |
 | Execution order, slicing, priorities | the [GitHub issues](https://github.com/KelianS/vyzio/issues) (`gh issue list`) |
 | Dashboard UI: tokens, components, reusable patterns, shared UI words | [`docs/DESIGN SYSTEM.md`](docs/DESIGN%20SYSTEM.md) |
-| How to use a delivered feature | the screen that carries it, in code, [ADR-53](docs/adr/0053-user-documentation-lives-in-the-interface-three-levels-of-help.md) |
+| How to use a delivered feature | the screen that carries it, in code, [ADR-17](docs/adr/0017-help-lives-in-the-interface-three-levels.md) |
 | Process, workflow, documentation governance | [`docs/WORKFLOW.md`](docs/WORKFLOW.md) |
 | Setup, docker, environment variables, tasks | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
 | Vision, positioning | [`README.md`](README.md) |

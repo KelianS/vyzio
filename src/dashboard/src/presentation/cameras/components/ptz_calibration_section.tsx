@@ -4,7 +4,7 @@ import { Link } from 'react-router'
 import { Button } from '../../../common/ui/button'
 import { POSITIONS_UNREAD } from '../cameras.formatters'
 
-/** Says where the camera stands and opens the live view, where all control happens (ADR-46). */
+/** Says where the camera stands and opens the live view, where all control happens (ADR-09). */
 export function PtzCalibrationSection({
   loading,
   error,

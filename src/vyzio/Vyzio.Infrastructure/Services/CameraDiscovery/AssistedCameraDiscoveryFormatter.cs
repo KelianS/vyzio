@@ -2,7 +2,7 @@ using Vyzio.Core.Entities;
 
 namespace Vyzio.Infrastructure.Services.CameraDiscovery;
 
-// ADR-32 — final part of Stage 3 (interpretation): merges the (possibly several) per-protocol
+// ADR-05 — final part of Stage 3 (interpretation): merges the (possibly several) per-protocol
 // candidates produced for the same host into one, and orders/exposes all of them — including
 // device_unknown, lowest priority — so an unrecognized device never disappears silently.
 internal sealed class AssistedCameraDiscoveryFormatter
@@ -54,7 +54,7 @@ internal sealed class AssistedCameraDiscoveryFormatter
             _ => 100,
         };
 
-        // ADR-32: priority ordering lives in one place (DiscoveryProtocolCatalog) shared with the
+        // ADR-05: priority ordering lives in one place (DiscoveryProtocolCatalog) shared with the
         // port/label display — an unregistered discoverySource defaults to 0, same as before.
         var discovery = DiscoveryProtocolCatalog.Lookup(candidate.DiscoverySource)?.Priority ?? 0;
         var stream = string.IsNullOrWhiteSpace(candidate.StreamPath) ? 0 : 5;

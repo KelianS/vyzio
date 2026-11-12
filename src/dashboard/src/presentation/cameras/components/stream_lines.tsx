@@ -322,7 +322,7 @@ function AddStreamForm({
   const selected =
     selectable.find((choice) => choice.key === picked) ??
     (available[protocol] === undefined ? undefined : selectable.at(0))
-  // A typed path is the stream's identity: nothing is added without one (ADR-65 e).
+  // A typed path is the stream's identity: nothing is added without one (ADR-07.
   const pathMissing = selected?.other === true && typed.trim() === ''
 
   function add() {

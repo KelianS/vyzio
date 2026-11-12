@@ -31,7 +31,7 @@ function userSelectOf(locator: Locator) {
   return locator.evaluate((element) => getComputedStyle(element).userSelect)
 }
 
-// The live view plays the camera's stream, the low quality first (ADR-72).
+// The live view plays the camera's stream, the low quality first (ADR-07).
 test.describe('Live view video', () => {
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize(UPRIGHT)

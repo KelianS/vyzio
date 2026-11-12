@@ -1,6 +1,6 @@
 import type { AccessRepository } from '../ports/access.port'
 
-/** The gesture for a lost phone: every device stops opening, this one included (ADR-54). */
+/** The gesture for a lost phone: every device stops opening, this one included (ADR-16). */
 export class SignOutEverywhere {
   constructor(private readonly repository: AccessRepository) {}
 

@@ -9,7 +9,7 @@ public interface IFrigateEventImageProvider
     /// Returns null when the image is not available or the request fails.
     /// </summary>
     /// <param name="finalizationWindow">
-    /// How long the read keeps retrying while Frigate has not written the file yet (ADR-49).
+    /// How long the read keeps retrying while Frigate has not written the file yet (ADR-12).
     /// Zero — the default — reads once, which is what a screen asking for an old event wants.
     /// </param>
     Task<Stream?> TryGetImageAsync(

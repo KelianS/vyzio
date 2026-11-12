@@ -87,7 +87,7 @@ export function buildAddCameraPresenter({ container, dispatch, toast }: AddCamer
       }
     },
 
-    /** Creates the camera from its access alone; returns its id so the screen opens its page, or `null` on failure (ADR-68 a). */
+    /** Creates the camera from its access alone; returns its id so the screen opens its page, or `null` on failure (ADR-04. */
     async onCreate(form: AddCameraForm): Promise<string | null> {
       dispatch({ type: 'CREATE_STARTED' })
       try {
@@ -110,7 +110,7 @@ export function buildAddCameraPresenter({ container, dispatch, toast }: AddCamer
       dispatch({ type: 'CONFIRM_SCAN_SET', value })
     },
 
-    /** Opens the search confirmation and reads the ranges it will sweep, so it can name them (ADR-71). */
+    /** Opens the search confirmation and reads the ranges it will sweep, so it can name them (ADR-04). */
     async onSearchAsked(): Promise<void> {
       dispatch({ type: 'CONFIRM_SCAN_SET', value: true })
       dispatch({ type: 'RANGES_TO_SWEEP_STARTED' })

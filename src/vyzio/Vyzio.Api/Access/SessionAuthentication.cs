@@ -11,7 +11,7 @@ using Vyzio.Core.Entities;
 namespace Vyzio.Api.Access;
 
 /// <summary>
-/// The one way in: an opaque cookie resolved against a session the server can revoke (ADR-54).
+/// The one way in: an opaque cookie resolved against a session the server can revoke (ADR-16).
 /// The cookie is never read anywhere else — a route asks who is calling, not what was sent.
 /// </summary>
 public static class SessionAuthentication
@@ -27,7 +27,7 @@ public static class SessionAuthentication
         {
             HttpOnly = true,
             SameSite = SameSiteMode.Lax,
-            // Only once the transport is encrypted: set today, the cookie would never come back (ADR-54).
+            // Only once the transport is encrypted: set today, the cookie would never come back (ADR-16).
             Secure = response.HttpContext.Request.IsHttps,
             Path = "/",
             Expires = expiresAt

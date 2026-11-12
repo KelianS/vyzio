@@ -8,8 +8,8 @@ namespace Vyzio.Infrastructure.CapabilityProviders;
 // IPtzCapabilityProvider for the V380 Pro proprietary port-8800 protocol.
 // Each step sends one 16-byte PTZ packet on the stream connection (~100ms movement).
 // Continuous move is not supported — the protocol requires a persistent stream loop for
-// sustained movement, which is not implemented here (step-based PTZ is sufficient, ADR-22).
-// The device id comes from V380DeviceIdBootstrap (ADR-61).
+// sustained movement, which is not implemented here (step-based PTZ is sufficient, ADR-04).
+// The device id comes from V380DeviceIdBootstrap (ADR-04).
 internal sealed class V380PtzProvider(
     V380Client client,
     PtzMoveRunner runner,
@@ -33,17 +33,17 @@ internal sealed class V380PtzProvider(
 
     public SupportedProtocol Protocol => SupportedProtocol.V380;
 
-    // The motion time a packet counts, so that its positions share the unit of the others (ADR-60).
+    // The motion time a packet counts, so that its positions share the unit of the others (ADR-09).
     private static readonly TimeSpan PacketLength = TimeSpan.FromMilliseconds(100);
 
     // 23 packets, plus the calibration margin: the 25 that cover the whole pan/tilt range at about 650 ms each.
     public TimeSpan FullRange => 23 * PacketLength;
 
-    // The device number and the login are the protocol's check; V380 has no read that shows a head, so the user confirms (ADR-66).
+    // The device number and the login are the protocol's check; V380 has no read that shows a head, so the user confirms (ADR-04).
     public Task<CapabilityProof> ProveAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
         => Task.FromResult(CapabilityProof.Unprovable());
 
-    // Nothing opened ahead: the camera sets how far a packet moves, so the stream opened per packet does not change it (ADR-60).
+    // Nothing opened ahead: the camera sets how far a packet moves, so the stream opened per packet does not change it (ADR-09).
     public Task<IPtzMotion> OpenMotionAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
         => Task.FromResult<IPtzMotion>(new Motion(this, runner, camera, binding, logger));
 
@@ -82,7 +82,7 @@ internal sealed class V380PtzProvider(
     public Task PtzSavePresetAsync(Camera camera, CameraCapabilityBinding binding, int presetId, CancellationToken ct = default)
         => Task.CompletedTask;
 
-    // Its probe never puts the camera on the native tier: a call is a wiring mistake, never an empty list (ADR-69 g).
+    // Its probe never puts the camera on the native tier: a call is a wiring mistake, never an empty list (ADR-09.
     public Task<IReadOnlySet<int>> ReadPresetsAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
         => throw new NotSupportedException($"{Protocol} keeps no native presets to read.");
 

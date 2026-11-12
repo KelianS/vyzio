@@ -7,7 +7,7 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Application.UseCases.Cameras;
 
-// Resolved through capability bindings, never the brand (ADR-22); parking and its return follow ADR-57.
+// Resolved through capability bindings, never the brand (ADR-04); parking and its return follow ADR-10.
 public sealed class ToggleCameraPrivacyModeUseCase(
     ICameraRepository cameras,
     ICameraCapabilityBindingRepository bindings,
@@ -37,7 +37,7 @@ public sealed class ToggleCameraPrivacyModeUseCase(
         // Applied to the end even if the caller hangs up: privacy must not stop half way.
         camera.UpdatedAt = DateTimeOffset.UtcNow;
         await cameras.UpdateAsync(camera, CancellationToken.None);
-        // Once saved, so no new live view opens behind the cut; the open ones stop now, not at Frigate's restart (ADR-72 b).
+        // Once saved, so no new live view opens behind the cut; the open ones stop now, not at Frigate's restart (ADR-07.
         if (active) live.Cut(camera.Id);
 
         var allCameras = await cameras.GetAllAsync(CancellationToken.None);
@@ -129,7 +129,7 @@ internal sealed record PrivacyCameraAnswer(bool VendorCut, PrivacyMiss? Miss = n
     }
 }
 
-// The camera's part of privacy, best effort: Vyzio stops recording whatever the camera answers (ADR-20).
+// The camera's part of privacy, best effort: Vyzio stops recording whatever the camera answers (ADR-10).
 internal static class PrivacyVendorAction
 {
     public static async Task<PrivacyCameraAnswer> ApplyAsync(
@@ -184,7 +184,7 @@ internal static class PrivacyVendorAction
         {
             return await deviceCall();
         }
-        // Best effort, except a lens left shut: it must not be shown as privacy off (PRIV-05, ADR-57).
+        // Best effort, except a lens left shut: it must not be shown as privacy off (PRIV-05, ADR-10).
         catch (Exception ex) when (active || camera.PrivacyStrategy == PrivacyStrategy.PtzParking)
         {
             // A caller hanging up is not the camera failing; support must not read it as one.

@@ -5,7 +5,7 @@ namespace Vyzio.Core.Entities;
 
 /// <summary>
 /// What an account may do. Two values, never a permission matrix: the line is use versus configure,
-/// not see versus not see — a resident already sees every image (ADR-54).
+/// not see versus not see — a resident already sees every image (ADR-16).
 /// </summary>
 public enum AccountRole
 {
@@ -19,7 +19,7 @@ public enum AccountRole
 /// <summary>
 /// A human access to the installation. One account and one role are populated today; the role exists
 /// from the first migration because a barrier that ignores it cannot be widened without reopening
-/// every route and every screen (ADR-54).
+/// every route and every screen (ADR-16).
 /// </summary>
 [Table("accounts")]
 public class Account
@@ -27,7 +27,7 @@ public class Account
     /// <summary>Below this, a password on a home network is a formality.</summary>
     public const int MinimumPasswordLength = 8;
 
-    /// <summary>How long a host-side reset leaves the installation open to be claimed (ADR-54).</summary>
+    /// <summary>How long a host-side reset leaves the installation open to be claimed (ADR-16).</summary>
     public static readonly TimeSpan ResetWindow = TimeSpan.FromMinutes(30);
 
     [Key]
@@ -35,7 +35,7 @@ public class Account
 
     /// <summary>
     /// Hashed, never encrypted: nothing in the product ever needs to read it back. Null only between a
-    /// host-side reset and the new password being chosen on screen (ADR-54).
+    /// host-side reset and the new password being chosen on screen (ADR-16).
     /// </summary>
     [MaxLength(200)]
     public required string? PasswordHash { get; set; }
@@ -53,7 +53,7 @@ public class Account
 
     /// <summary>
     /// Whether anyone reaching the interface may claim this account. Bounded on purpose: the reset is
-    /// deliberate, but leaving the door open all night because someone was interrupted is not (ADR-54).
+    /// deliberate, but leaving the door open all night because someone was interrupted is not (ADR-16).
     /// </summary>
     public bool IsOpenForReset(DateTimeOffset now)
         => !HasPassword && PasswordForgottenAt is { } forgotten && now - forgotten < ResetWindow;

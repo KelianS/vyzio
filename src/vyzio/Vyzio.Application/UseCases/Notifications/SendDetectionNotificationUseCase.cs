@@ -14,7 +14,7 @@ public interface IDetectionNotificationDispatcher
 
 /// <summary>
 /// Sends one detection on every configured channel. Nothing here knows which channels exist: the
-/// message is composed once, the channel renders it with what it declares it can do (ADR-50).
+/// message is composed once, the channel renders it with what it declares it can do (ADR-14).
 /// </summary>
 public sealed class SendDetectionNotificationUseCase(
     INotificationRepository notifications,
@@ -126,7 +126,7 @@ public sealed class SendDetectionNotificationUseCase(
             return false;
         }
 
-        // Dropped, never delayed: a muted range is a choice, not an outage (ADR-63).
+        // Dropped, never delayed: a muted range is a choice, not an outage (ADR-15).
         var localMoment = TimeZoneInfo.ConvertTime(detection.OccurredAt, timeZone);
         if (ScheduleRuleCoverage.Covers(muteRules, SnakeCaseEnum.ToSnakeCase(config.Channel), localMoment))
         {
@@ -168,7 +168,7 @@ public sealed class SendDetectionNotificationUseCase(
     /// <summary>
     /// Collects what the user asked for, intersected with what the channel can carry. The clip is
     /// fetched first when it is wanted: it being written proves Frigate finalized the event, so the
-    /// snapshot that follows needs no grace window of its own (ADR-49).
+    /// snapshot that follows needs no grace window of its own (ADR-12).
     /// </summary>
     private async Task<(Stream? Photo, Stream? Video)> GatherMediaAsync(
         NotificationChannelConfig config,

@@ -3,8 +3,8 @@ import { HelpCircle } from 'lucide-react'
 import { Fold } from './fold'
 
 /**
- * Third level of help (ADR-53): what speaks of the task, not of a field, and so does not fit a tooltip.
- * Folded by default, attached to its section, not `AdvancedFold`, which is a page position (ADR-40).
+ * Third level of help (ADR-17): what speaks of the task, not of a field, and so does not fit a tooltip.
+ * Folded by default, attached to its section, not `AdvancedFold`, which is a page position (ADR-15).
  * The title is the question the reader is asking, never the name of a chapter.
  */
 export function HelpPanel({

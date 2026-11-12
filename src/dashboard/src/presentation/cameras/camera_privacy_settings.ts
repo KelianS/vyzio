@@ -62,12 +62,12 @@ const STRATEGIES: readonly StrategyDefinition[] = [
     label: 'Orientation à l’écart',
     explanation: `La caméra pivote vers sa position Parking, puis revient sur sa position Surveillance quand le mode vie privée se termine. ${NOTHING_KEPT} Tournée, elle filme toujours et ${STILL_VIEWABLE}.`,
     unavailable: (camera, setup) => {
-      // The camera only turns on a verified orientation it is allowed to use (ADR-57).
+      // The camera only turns on a verified orientation it is allowed to use (ADR-10).
       if (!camera.verifiedCapabilities.includes(ORIENTATION)) return ORIENTATION_UNVERIFIED
       if (!camera.ptzSupported) return ORIENTATION_OFF
       const waiting = positionsWaitOf(camera)
       if (waiting) return waiting
-      // Unknown positions do not lock it: the failed read says so, and the API refuses a missing one (ADR-57).
+      // Unknown positions do not lock it: the failed read says so, and the API refuses a missing one (ADR-10).
       return setup.positionsSaved === false ? POSITIONS_FIRST : null
     },
   },
@@ -128,7 +128,7 @@ export function buildPrivacySettings({
       label: STRATEGY_LABEL,
       nature: { kind: 'choice', options },
       help: 'S’applique à chaque passage en mode vie privée, manuel ou programmé par une plage.',
-      // Only what the chosen strategy does, and what it still lacks, stays visible (ADR-43).
+      // Only what the chosen strategy does, and what it still lacks, stays visible (ADR-15).
       consequence: lines.join('\n\n'),
       value,
       onChange: (next) => onChange(next as PrivacyStrategy),

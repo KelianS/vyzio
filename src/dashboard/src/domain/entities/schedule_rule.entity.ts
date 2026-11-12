@@ -1,4 +1,4 @@
-/** What a scheduled rule does to its targets during its range (ADR-63). */
+/** What a scheduled rule does to its targets during its range (ADR-15). */
 export const ScheduleRuleKind = {
   Privacy: 'privacy',
   MuteNotifications: 'mute_notifications',
@@ -40,7 +40,7 @@ export interface ScheduleRule extends NewScheduleRule {
   createdAt: string
 }
 
-/** The current moment in the house's clock (ADR-63), never the consulting device's. */
+/** The current moment in the house's clock (ADR-15), never the consulting device's. */
 export interface HouseClock {
   /** [0..6], 0 = Sunday. */
   dayOfWeek: number

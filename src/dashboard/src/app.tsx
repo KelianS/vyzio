@@ -127,7 +127,7 @@ function Root() {
   return (
     <AppContainerProvider>
       <ToastProvider>
-        {/* None of the application mounts before someone is in (ADR-54). */}
+        {/* None of the application mounts before someone is in (ADR-16). */}
         <AccessGate>
           <AppShell />
         </AccessGate>
@@ -137,7 +137,7 @@ function Root() {
 }
 
 // A data router (rather than `<BrowserRouter>`): it is what gives access to
-// `useBlocker`, the only way to stop an edited page from being left silently (ADR-41).
+// `useBlocker`, the only way to stop an edited page from being left silently (ADR-15).
 const router = createBrowserRouter([
   {
     element: <Root />,
@@ -148,7 +148,7 @@ const router = createBrowserRouter([
       // A screen of its own, without the header: the picture takes the whole viewport (LIVE-07).
       { path: LIVE_VIEW_ROUTE, element: <LiveViewScreen />, handle: FULL_SCREEN },
 
-      // Settings - a two-level tree (ADR-40). The route carries the selection: it,
+      // Settings - a two-level tree (ADR-15). The route carries the selection: it,
       // and not a screen-held state, is what says where one is.
       {
         path: '/settings',

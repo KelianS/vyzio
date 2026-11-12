@@ -174,7 +174,7 @@ test.describe('LiveView PTZ positions', () => {
     expect(state.ptz.presets).toHaveLength(1)
   })
 
-  // A position saved in the vendor app is held, never empty; a tap goes there and takes its thumbnail (ADR-69).
+  // A position saved in the vendor app is held, never empty; a tap goes there and takes its thumbnail (ADR-09).
   test('LiveView_ShouldGoToTheHeldPositionAndTakeItsThumbnail_WhenTheCameraHeldItWithoutOne', async ({
     page,
   }) => {

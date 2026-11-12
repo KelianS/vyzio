@@ -1,6 +1,6 @@
 import type { StreamProtocol } from './camera_capability_binding.entity'
 
-/** What a stream serves; exactly one stream records, at most one detects (ADR-65). */
+/** What a stream serves; exactly one stream records, at most one detects (ADR-07). */
 export const StreamRole = {
   None: 'none',
   Record: 'record',
@@ -10,7 +10,7 @@ export const StreamRole = {
 
 export type StreamRole = (typeof StreamRole)[keyof typeof StreamRole]
 
-/** A stream of the camera, a line under its video stream card (ADR-38, ADR-65). */
+/** A stream of the camera, a line under its video stream card (ADR-07). */
 export interface CameraStream {
   id: string
   /** 0 is the most detailed as enumerated; the interface shows the measured size, never a tier name. */
@@ -34,7 +34,7 @@ export interface CameraStreamLineup {
   recordStreamId: string | null
   /** The analysed stream: the detect stream, else the recording one. */
   detectStreamId: string | null
-  /** No stream holds the detect role: detection runs on the recording stream (ADR-65 c). */
+  /** No stream holds the detect role: detection runs on the recording stream (ADR-07. */
   detectsOnRecordingStream: boolean
 }
 
@@ -45,7 +45,7 @@ export interface CameraStreamAddition {
   role: StreamRole
 }
 
-/** A stream the camera serves, asked on demand (ADR-65 e); read by quality, its path only in a tooltip. */
+/** A stream the camera serves, asked on demand (ADR-07; read by quality, its path only in a tooltip. */
 export interface AvailableStream {
   /** 0 is the most detailed the camera listed. */
   rank: number

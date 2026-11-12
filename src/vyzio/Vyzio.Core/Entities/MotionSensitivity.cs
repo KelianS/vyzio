@@ -1,6 +1,6 @@
 namespace Vyzio.Core.Entities;
 
-// Most to least sensitive, the tuner's step order; an enum since Frigate's scale runs the other way (ADR-35).
+// Most to least sensitive, the tuner's step order; an enum since Frigate's scale runs the other way (ADR-08).
 public enum MotionSensitivity
 {
     High,

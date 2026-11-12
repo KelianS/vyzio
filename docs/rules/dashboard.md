@@ -174,7 +174,7 @@ state that keeps a failure as text keeps `appErrorDiagnostic(error)` beside it a
 **Level**: Required · **Verified by**: Review; its imports by Tool: ESLint `boundaries/dependencies`
 
 Added with `pnpm dlx shadcn@latest add <name>`, never written by hand, never carrying a business
-rule, importing only other primitives ([ADR-42](../adr/0042-interface-component-foundation-shadcn-ui-on-radix-and-tailwind.md)).
+rule, importing only other primitives ([ADR-01](../adr/0001-stack-and-runtime.md)).
 The Vyzio components built on them live in `common/components/`.
 
 ### DASHBOARD-23 · Styles use the design system tokens only
@@ -188,7 +188,7 @@ literal colour or radius in a component.
 
 **Level**: Required · **Verified by**: Review
 
-[ADR-43](../adr/0043-settings-grammar-a-setting-is-declared-not-drawn.md).
+[ADR-15](../adr/0015-settings-model-schedules-and-edit-cycle.md).
 
 ### DASHBOARD-25 · A shared pattern reuses its shared component
 
@@ -196,13 +196,13 @@ literal colour or radius in a component.
 
 The end-of-page `Avancé` fold, a section's long-form help, a card's `Détails techniques`, a detection
 list and a detection preview each have one component in `common/`: never a rewritten `<details>`, a
-second rendering, or a bare `<img>` that stays broken when surveillance restarts (ADR-40, ADR-53).
+second rendering, or a bare `<img>` that stays broken when surveillance restarts (ADR-15, ADR-17).
 
 ### DASHBOARD-26 · A feature's help is written in its screen
 
 **Level**: Required · **Verified by**: Review
 
-Never in a markdown file ([ADR-53](../adr/0053-user-documentation-lives-in-the-interface-three-levels-of-help.md)).
+Never in a markdown file ([ADR-17](../adr/0017-help-lives-in-the-interface-three-levels.md)).
 Screens stay light, per the [DESIGN SYSTEM](../DESIGN%20SYSTEM.md) § Intent and § Patterns.
 
 ## Tests

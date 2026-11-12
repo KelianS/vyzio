@@ -20,7 +20,7 @@ export const MOVES: Record<OrientationControl, boolean> = {
 /** The Orientation capability's key, wherever a screen checks it. */
 export const ORIENTATION: Capability = 'ptz'
 
-/** Switched off shows nothing; in use, only a verified Orientation moves, as the API refuses any other (ADR-66). */
+/** Switched off shows nothing; in use, only a verified Orientation moves, as the API refuses any other (ADR-04). */
 export function orientationControlOf(camera: Camera): OrientationControl {
   if (!camera.ptzSupported) return OrientationControl.Off
   return camera.verifiedCapabilities.includes(ORIENTATION)

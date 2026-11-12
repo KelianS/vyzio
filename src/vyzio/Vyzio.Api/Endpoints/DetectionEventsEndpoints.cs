@@ -39,7 +39,7 @@ public static class DetectionEventsEndpoints
             return Results.Ok(await useCase.ExecuteAsync(query, ct));
         });
 
-        // Clip proxy — streams MP4 from Frigate with Range support (ADR-17)
+        // Clip proxy — streams MP4 from Frigate with Range support (ADR-12)
         group.MapGet("/{id}/clip", async (string id, IFrigateClipProvider clips, CancellationToken ct) =>
         {
             // An id Frigate could never have issued names no clip, and reaches neither Frigate nor a log.
@@ -49,7 +49,7 @@ public static class DetectionEventsEndpoints
             return Results.Stream(stream, "video/mp4", enableRangeProcessing: true);
         });
 
-        // Image proxies — serve JPEG from Frigate (ADR-17), avoid CORS from browser direct access.
+        // Image proxies — serve JPEG from Frigate (ADR-12), avoid CORS from browser direct access.
         // Two routes because they are two images: the full frame situates, the thumbnail is the crop.
         group.MapGet("/{id}/snapshot", (string id, IFrigateEventImageProvider images, CancellationToken ct) =>
             StreamImageAsync(id, FrigateEventImage.Snapshot, images, ct));

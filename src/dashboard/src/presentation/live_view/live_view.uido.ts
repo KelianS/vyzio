@@ -8,11 +8,11 @@ export type PtzDirection = 'Up' | 'Down' | 'Left' | 'Right'
 export type PresetActivity = 'idle' | 'saving' | 'going'
 
 export interface LiveViewUido {
-  /** The quality watched, for as long as the view is open: never stored (ADR-72 c). */
+  /** The quality watched, for as long as the view is open: never stored (ADR-07. */
   quality: LiveQuality
   /** Off at every opening, a gesture turns it on. */
   soundOn: boolean
-  /** The slots that hold a position; null until read, so no slot passes for empty before the camera answers (ADR-69). */
+  /** The slots that hold a position; null until read, so no slot passes for empty before the camera answers (ADR-09). */
   presets: PtzPreset[] | null
   presetsError: AppError | null
   /** Without a reference the camera does not know where it stands: saved positions are inert. */

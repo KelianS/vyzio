@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => {
     server: {
       proxy: {
         '/health': apiTarget,
-        // The live view's socket goes through the same path (ADR-72).
+        // The live view's socket goes through the same path (ADR-07).
         '/api': { target: apiTarget, ws: true },
       },
     },

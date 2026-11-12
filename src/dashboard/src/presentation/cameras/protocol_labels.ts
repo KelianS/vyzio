@@ -35,7 +35,7 @@ const CARRIERS: Record<Capability, readonly SupportedProtocol[]> = {
   image_settings: ['onvif', 'dvrip'],
 }
 
-/** The protocol a capability falls back on: only the stream has one (ADR-61). */
+/** The protocol a capability falls back on: only the stream has one (ADR-04). */
 const DEFAULT_PROTOCOL: Record<Capability, SupportedProtocol | null> = {
   stream: 'rtsp',
   ptz: null,
@@ -48,7 +48,7 @@ export interface ProtocolOption {
   label: string
 }
 
-/** The camera's protocols that can carry the capability, plus the one it goes through (ADR-61 d). */
+/** The camera's protocols that can carry the capability, plus the one it goes through (ADR-04. */
 export function protocolOptions(
   capability: Capability,
   protocols: readonly CameraProtocol[],

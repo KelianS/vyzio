@@ -156,7 +156,7 @@ export function buildCameraConnectionPresenter({
       toastError(toast, error)
       // A page left open offered a protocol the camera no longer has: show its protocols as they are.
       if (error.code === ApiErrorCode.ProtocolNotOnCamera) readProtocols(cameraId, true)
-      // The camera listed no stream over RTSP: the stream's protocol choice asks for a path (ADR-65 e).
+      // The camera listed no stream over RTSP: the stream's protocol choice asks for a path (ADR-07.
       if (error.code === ApiErrorCode.StreamPathRequired)
         dispatch({ type: 'STREAM_PATH_ASKED', asked: true })
       // The capability was checked or answered elsewhere: show where it stands now.
@@ -202,7 +202,7 @@ export function buildCameraConnectionPresenter({
     }
   }
 
-  /** « Détecter automatiquement »: it may bind the stream, end « À configurer » and wait for a restart (ADR-68 d). */
+  /** « Détecter automatiquement »: it may bind the stream, end « À configurer » and wait for a restart (ADR-04. */
   async function detect(cameraId: string, host: string) {
     dispatch({ type: 'DETECT_STARTED' })
     try {
@@ -244,7 +244,7 @@ export function buildCameraConnectionPresenter({
       readStreams(cameraId)
     },
 
-    /** Gives a stream a role; the stream that had it loses it (ADR-65 b). */
+    /** Gives a stream a role; the stream that had it loses it (ADR-07. */
     async onSetStreamRole(cameraId: string, streamId: string, role: StreamRole) {
       const done = await runStreamTask(streamId, StreamTask.Role, () =>
         container.setCameraStreamRole.execute(cameraId, streamId, role),
@@ -281,7 +281,7 @@ export function buildCameraConnectionPresenter({
       readBindings(cameraId, true)
     },
 
-    /** Asks the camera what it serves over a protocol, each time the add form opens or changes protocol (ADR-65 e). */
+    /** Asks the camera what it serves over a protocol, each time the add form opens or changes protocol (ADR-07. */
     async onListAvailableStreams(cameraId: string, protocol: StreamProtocol) {
       const isLatest = (nextAvailableRead[protocol] ??= latestOnly())()
       dispatch({ type: 'AVAILABLE_STREAMS_STARTED', protocol })
@@ -415,7 +415,7 @@ export function buildCameraConnectionPresenter({
 
     onDetect: detect,
 
-    /** A camera never detected runs detection as its page opens, shown as if the user had asked (ADR-68 b). */
+    /** A camera never detected runs detection as its page opens, shown as if the user had asked (ADR-04. */
     onArrive(cameraId: string, host: string, neverDetected: boolean) {
       if (!neverDetected || detectedOnArrival.has(cameraId)) return
       detectedOnArrival.add(cameraId)
@@ -468,7 +468,7 @@ export function buildCameraConnectionPresenter({
       )
     },
 
-    /** The user's try of a capability to confirm; once done, the card asks whether it worked (ADR-66). */
+    /** The user's try of a capability to confirm; once done, the card asks whether it worked (ADR-04). */
     async onTry(cameraId: string, capability: Capability) {
       const tried = await runTask(cameraId, capability, CapabilityTask.Try, async () => {
         await container.tryCameraCapability.execute(cameraId, capability)

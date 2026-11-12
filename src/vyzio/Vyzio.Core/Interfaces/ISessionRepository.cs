@@ -13,6 +13,6 @@ public interface ISessionRepository
     /// <summary>Closes one access. False when nothing matched — an already dead cookie is not a failure.</summary>
     Task<bool> RevokeAsync(string tokenHash, DateTimeOffset now, CancellationToken ct = default);
 
-    /// <summary>The gesture for a lost phone: every device of an account stops opening at once (ADR-54).</summary>
+    /// <summary>The gesture for a lost phone: every device of an account stops opening at once (ADR-16).</summary>
     Task<int> RevokeAllAsync(string accountId, DateTimeOffset now, CancellationToken ct = default);
 }

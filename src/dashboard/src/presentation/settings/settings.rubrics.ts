@@ -1,9 +1,9 @@
-/** Settings rubrics, declared as data (ADR-40) — organized by functional domain, never by scope or screen of origin. */
+/** Settings rubrics, declared as data (ADR-15) — organized by functional domain, never by scope or screen of origin. */
 export interface SettingsRubric {
   /** Route segment under `/settings`. */
   readonly slug: string
   readonly label: string
-  /** What the rubric governs, in a few words — a full sentence would compete with the label (ADR-43). */
+  /** What the rubric governs, in a few words — a full sentence would compete with the label (ADR-15). */
   readonly summary: string
 }
 

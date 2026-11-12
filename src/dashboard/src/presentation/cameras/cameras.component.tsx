@@ -6,7 +6,7 @@ import { CameraList } from './components/camera_list'
 import { CameraPage } from './components/camera_page'
 import { buildCamerasPresenter } from './cameras.presenter'
 
-/** The Cameras rubric: the list, then the chosen camera, which the route names (ADR-40). */
+/** The Cameras rubric: the list, then the chosen camera, which the route names (ADR-15). */
 export function CamerasView() {
   const { cameraId } = useParams()
   const { cameras: container } = useAppContainer()

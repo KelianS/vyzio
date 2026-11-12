@@ -1,6 +1,6 @@
 namespace Vyzio.Core.Entities;
 
-// Hardware video decoding available to Frigate's ffmpeg (ADR-34). Deliberately separate from
+// Hardware video decoding available to Frigate's ffmpeg (ADR-08). Deliberately separate from
 // FrigateDetectorKind: a host can carry a Coral accelerator *and* an Intel iGPU — the classic
 // Frigate build — in which case inference runs on the Coral while decoding still belongs on the
 // GPU. Tying the two together would silently lose that.

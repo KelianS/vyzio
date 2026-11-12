@@ -2,9 +2,9 @@
 
 This folder holds the **help sheets** the add screen shows for a camera brand: what to prepare in
 the vendor app before adding the camera. The vendor is a help hint only
-([ADR-71](../../../docs/adr/0071-the-vendor-is-a-help-hint.md)): it selects a sheet, and nothing
+([ADR-04](../../../docs/adr/0004-the-camera-model.md)): it selects a sheet, and nothing
 else. No detection, capability or camera setting depends on it; every capability is detected and
-proven the same way, whatever the brand (ADR-66). What a camera model was measured to do lives in
+proven the same way, whatever the brand (ADR-04). What a camera model was measured to do lives in
 its sheet under [`docs/hardware/`](../../../docs/hardware/).
 
 ---
@@ -58,6 +58,6 @@ Markdown links `[label](url)` are clickable in the UI. Static assets go in `vend
 3. Add its row to the table above.
 
 Discovery names the vendor by itself only on a very strong signal: an answer that only this
-vendor's proprietary protocol gives, without an account (ADR-71). Without one, the user picks the
+vendor's proprietary protocol gives, without an account (ADR-04). Without one, the user picks the
 vendor from the list on the add screen. A protocol the vendor speaks is a capability provider, not a
 vendor entry: a new one takes its place in the protocol priority of each capability it serves.

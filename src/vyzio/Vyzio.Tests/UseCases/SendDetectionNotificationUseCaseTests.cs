@@ -167,7 +167,7 @@ public class SendDetectionNotificationUseCaseTests
     }
 
     // The completion bar of the channel generalization: one detection, every configured channel,
-    // and nothing in the use case that names either of them (ADR-50).
+    // and nothing in the use case that names either of them (ADR-14).
     [Fact]
     public async Task ExecuteAsync_ShouldSendTheSameDetectionOnEveryChannel_WhenSeveralChannelsAreConfigured()
     {
@@ -463,7 +463,7 @@ public class DetectionMessageFormatterTests
         Assert.Contains("08:30", result);
     }
 
-    // The message leaves the domain without markup: emphasis is the channel's business (ADR-50).
+    // The message leaves the domain without markup: emphasis is the channel's business (ADR-14).
     [Fact]
     public void Format_ShouldEmitNoMarkup_WhenTheHeadlineNamesAnIdentity()
     {

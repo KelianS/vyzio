@@ -44,7 +44,7 @@ public sealed class FrigateConfigApplier(
         if (string.IsNullOrWhiteSpace(configPath))
             return false;
 
-        // Retention is an installation-wide setting a camera may override (ADR-39), so it reaches the
+        // Retention is an installation-wide setting a camera may override (ADR-15), so it reaches the
         // applier through a port rather than through WriteConfigAsync's signature — no caller changes.
         var installation = await recordingSettings.GetAsync(ct);
         var (document, detectorKind) = BuildDocument(cameras, installation);
@@ -134,7 +134,7 @@ public sealed class FrigateConfigApplier(
         IReadOnlyList<Camera> cameras,
         RecordingSettings installation)
     {
-        // A camera whose stream has no protocol yet has nothing to hand to Frigate (ADR-61).
+        // A camera whose stream has no protocol yet has nothing to hand to Frigate (ADR-04).
         var validatedCameras = cameras.Where(camera => camera.InSurveillance).ToList();
 
         var plan = detectorPlanner.Plan(validatedCameras.Count);
@@ -165,12 +165,12 @@ public sealed class FrigateConfigApplier(
                             Enabled = true,
                             Fps = detectFps,
                             // Only ever emitted from a real measured size. Left unset otherwise so
-                            // Frigate applies its own default rather than a size we guessed (ADR-38).
+                            // Frigate applies its own default rather than a size we guessed (ADR-07).
                             Width = detectStream?.HasKnownResolution == true ? detectStream.Width : null,
                             Height = detectStream?.HasKnownResolution == true ? detectStream.Height : null,
                         },
                         // Persisted level mirrored into the config so it survives a Frigate restart —
-                        // the tuning loop applies changes over MQTT at runtime (ADR-35).
+                        // the tuning loop applies changes over MQTT at runtime (ADR-08).
                         Motion = new FrigateMotionConfig
                         {
                             ContourArea = FrigateMotionSettingsPublisher.ToContourArea(camera.MotionSensitivity),
@@ -184,7 +184,7 @@ public sealed class FrigateConfigApplier(
                             Enabled = true,
                             BoundingBox = true,
                             // An image outliving its clip, or dying before it, would make the history
-                            // lie about its own depth: one duration answers for both (ADR-48).
+                            // lie about its own depth: one duration answers for both (ADR-12).
                             Retain = new FrigateRetainConfig
                             {
                                 Default = RetentionPolicy.Resolve(installation, camera).EventClipDays,
@@ -219,7 +219,7 @@ public sealed class FrigateConfigApplier(
             };
         }
 
-        // One go2rtc stream per stream Frigate or the live view reads holds the camera's only connection for it (ADR-72 a).
+        // One go2rtc stream per stream Frigate or the live view reads holds the camera's only connection for it (ADR-07.
         var streams = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
         foreach (var camera in validatedCameras)
         {
@@ -229,16 +229,16 @@ public sealed class FrigateConfigApplier(
             }
         }
 
-        // Always written: without candidates, Frigate gives go2rtc a STUN one, which would ask a public server (ADR-70).
+        // Always written: without candidates, Frigate gives go2rtc a STUN one, which would ask a public server (ADR-03).
         var go2rtc = new FrigateGo2rtcConfig
         {
             Streams = streams.Count > 0 ? streams : null,
             Webrtc = new FrigateWebrtcConfig { Candidates = [], IceServers = [] },
-            // A camera that is off would log a refused connection on every retry; Vyzio reports it once (ADR-23).
+            // A camera that is off would log a refused connection on every retry; Vyzio reports it once (ADR-05).
             Log = new FrigateGo2rtcLogConfig { Rtsp = "error" },
         };
 
-        // On with the first active camera; the small model's files ship with Vyzio, the large one stays off (ADR-70).
+        // On with the first active camera; the small model's files ship with Vyzio, the large one stays off (ADR-03).
         var faceRecognition = activeCameras.Any(c => c.Value.Enabled)
             ? new FrigateFaceRecognitionConfig { Enabled = true, ModelSize = "small" }
             : null;
@@ -254,7 +254,7 @@ public sealed class FrigateConfigApplier(
             {
                 Path = settings.Frigate.DatabasePath,
             },
-            // Frigate would ask GitHub for its latest release at every start (ADR-70).
+            // Frigate would ask GitHub for its latest release at every start (ADR-03).
             Telemetry = new FrigateTelemetryConfig { VersionCheck = false },
             Logger = BuildLogger(),
             Ffmpeg = BuildFfmpeg(plan.HwAccel),
@@ -269,7 +269,7 @@ public sealed class FrigateConfigApplier(
         return (document, detectorKind);
     }
 
-    // Vyzio already reports a lost stream once (ADR-23); these loggers would repeat it on every retry.
+    // Vyzio already reports a lost stream once (ADR-05); these loggers would repeat it on every retry.
     private static FrigateLoggerConfig BuildLogger() => new()
     {
         Default = "info",
@@ -283,13 +283,13 @@ public sealed class FrigateConfigApplier(
     };
 
     // Software decoding is one of the most expensive things Frigate does, and it is pure waste when
-    // a GPU is present (ADR-34). `preset-vaapi` is the codec-agnostic option: the QuickSync presets
+    // a GPU is present (ADR-08). `preset-vaapi` is the codec-agnostic option: the QuickSync presets
     // suit gen13+/Arc better but exist only in per-codec variants (`-h264`/`-h265`), and Vyzio does
     // not record each camera's codec — so they are not selectable today (backlog).
     private static FrigateFfmpegGlobalConfig BuildFfmpeg(FrigateHwAccel hwAccel) => new()
     {
         HwaccelArgs = hwAccel == FrigateHwAccel.Vaapi ? "preset-vaapi" : null,
-        // A camera that is off is retried slowly; Vyzio, not Frigate, reports that it is off (ADR-23).
+        // A camera that is off is retried slowly; Vyzio, not Frigate, reports that it is off (ADR-05).
         RetryInterval = 30,
     };
 
@@ -298,7 +298,7 @@ public sealed class FrigateConfigApplier(
     // costs over a plain SSD. Reverted for the CPU-only tier after field testing showed CPU spikes to
     // ~800% with 2 cameras and degraded detection (frames dropped under load) — even the smallest
     // YOLOX variant is heavier per-inference than the native `cpu` detector's own model (MobileDet),
-    // which field testing separately confirmed reliable (ADR-34).
+    // which field testing separately confirmed reliable (ADR-08).
     private static Dictionary<string, FrigateDetectorConfig> BuildDetectors(FrigateDetectorKind detectorKind) =>
         detectorKind switch
         {
@@ -318,7 +318,7 @@ public sealed class FrigateConfigApplier(
         };
 
     // YOLOX (Apache-2.0 — no redistribution concern, unlike YOLOv9's GPL-3.0 or YOLO-NAS's
-    // non-commercial weights, ADR-34) replaces ssdlite_mobilenet_v2 on the Openvino/Intel-GPU tier
+    // non-commercial weights, ADR-08) replaces ssdlite_mobilenet_v2 on the Openvino/Intel-GPU tier
     // only — bundled into the vyzio-api image and installed into the shared config volume by
     // IFrigateModelAssetInstaller. EdgeTpu and the native Cpu detector ship their own default model.
     private static FrigateModelConfig? BuildModel(FrigateDetectorKind detectorKind) =>
@@ -335,7 +335,7 @@ public sealed class FrigateConfigApplier(
             }
             : null;
 
-    // One input per role, as Frigate requires: one when a stream carries both, two otherwise (ADR-38, ADR-65 g).
+    // One input per role, as Frigate requires: one when a stream carries both, two otherwise (ADR-07.
     private static List<FrigateInputConfig> BuildInputs(Camera camera)
     {
         var recording = camera.RecordStream;
@@ -349,7 +349,7 @@ public sealed class FrigateConfigApplier(
         return [Input(camera, detect, ["detect"]), Input(camera, recording, ["record"])];
     }
 
-    // Frigate reads every stream back from go2rtc, never from the camera itself (ADR-72 a).
+    // Frigate reads every stream back from go2rtc, never from the camera itself (ADR-07.
     private static FrigateInputConfig Input(Camera camera, CameraStream? stream, List<string> roles) => new()
     {
         Path = Go2rtcStreams.Restream(Go2rtcStreams.Name(camera.FrigateCameraName, stream)),
@@ -467,7 +467,7 @@ public sealed class FrigateConfigApplier(
 
     // The installation's own retention, at the root of the file — what every camera follows unless
     // it says otherwise. Recording stays on: an enabled camera keeps at least a day of event clips,
-    // and not wanting video from a camera is said by disabling it (ADR-48).
+    // and not wanting video from a camera is said by disabling it (ADR-12).
     private static FrigateRecordConfig BuildInstallationRecord(RecordingSettings installation)
     {
         var policy = RetentionPolicy.ForInstallation(installation);
@@ -556,7 +556,7 @@ public sealed class FrigateConfigApplier(
     }
 
     // Same shape at the root and under a camera — Frigate accepts the full RecordConfig in both
-    // places, so Vyzio's global/override model needs no translation (ADR-39).
+    // places, so Vyzio's global/override model needs no translation (ADR-15).
     private sealed class FrigateRecordConfig
     {
         public bool? Enabled { get; init; }

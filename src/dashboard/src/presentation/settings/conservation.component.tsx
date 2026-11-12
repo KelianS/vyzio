@@ -40,7 +40,7 @@ const DRAFT_LABELS: Record<keyof RecordingSettingsUpdate, string> = {
   eventClipDays: RETENTION_LABEL.eventClip,
 }
 
-/** Installation-wide retention (ADR-39), in the settings grammar (ADR-43) and draft cycle (ADR-41). */
+/** Installation-wide retention (ADR-12), in the settings grammar (ADR-15) and draft cycle (ADR-15). */
 export function ConservationView() {
   // Still wired through the "cameras" container, a holdover from where this section used to live.
   const { cameras: container, hub: hubContainer } = useAppContainer()
@@ -110,7 +110,7 @@ function ConservationForm({
         max: settings.maxDays,
       },
       help: retentionHelp(window),
-      // A cost stays visible without an extra gesture (ADR-43).
+      // A cost stays visible without an extra gesture (ADR-15).
       consequence: window === 'continuous' && current > 0 ? CONTINUOUS_DISK_WARNING : undefined,
       value: current,
       onChange: (days) => draft.set(field, days as number),

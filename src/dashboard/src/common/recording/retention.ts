@@ -1,4 +1,4 @@
-// Shared vocabulary for the three retention windows (ADR-39). Frigate's own words — continuous,
+// Shared vocabulary for the three retention windows (ADR-12). Frigate's own words — continuous,
 // motion, alerts/detections — never surface: the user is told what is kept, not which bucket holds
 // it (principes produit #1 et #2).
 
@@ -22,7 +22,7 @@ export const RETENTION_UPDATE_FIELD = {
 export const RETENTION_LABEL: Record<RetentionWindow, string> = {
   continuous: 'Vidéo complète',
   motion: 'Séquences de mouvement',
-  // Named after its observable effect, not after the Frigate bucket carrying it (ADR-49).
+  // Named after its observable effect, not after the Frigate bucket carrying it (ADR-12).
   eventClip: 'Historique de détection',
 }
 
@@ -34,7 +34,7 @@ const RETENTION_EXPLANATION: Record<RetentionWindow, string> = {
     'Combien de temps vos détections restent consultables — aperçu et vidéo compris. C’est la profondeur de la page Historique.',
 }
 
-// Said in the help of each duration: outside the row it was running text, which is banned (ADR-43).
+// Said in the help of each duration: outside the row it was running text, which is banned (ADR-15).
 const RETENTION_ZERO_NOTE = 'Mettre 0 signifie que rien n’est conservé de cette nature.'
 const RETENTION_FLOOR_NOTE = 'Au moins un jour : c’est ce que votre historique peut remonter.'
 
@@ -44,7 +44,7 @@ export function retentionHelp(window: RetentionWindow): string {
   return `${RETENTION_EXPLANATION[window]} ${note}`
 }
 
-/** The floor of a duration: only the one carrying the history has one (ADR-48). */
+/** The floor of a duration: only the one carrying the history has one (ADR-12). */
 export function retentionMinDays(window: RetentionWindow, minEventClipDays: number): number {
   return window === 'eventClip' ? minEventClipDays : 0
 }
@@ -55,6 +55,6 @@ export function formatDays(days: number): string {
   return days === 1 ? '1 jour' : `${days} jours`
 }
 
-// The order of magnitude ADR-18 requires to be shown before switching full-video recording on.
+// The order of magnitude ADR-12 requires to be shown before switching full-video recording on.
 export const CONTINUOUS_DISK_WARNING =
   'Compter environ 1 à 3 Go par jour et par caméra pour la vidéo complète.'

@@ -22,7 +22,7 @@ public sealed record CameraImageSettingsDto(int Brightness, int Contrast, int Sa
         SnakeCaseEnum.FromSnakeCase<Vyzio.Core.Entities.IrCutMode>(IrCutMode));
 }
 
-// Reads image settings live from the camera (ADR-27) — nothing persisted on the Vyzio side.
+// Reads image settings live from the camera (ADR-11) — nothing persisted on the Vyzio side.
 // Requires a configured AND verified ImageSettings binding; never offered on declaration alone.
 public sealed class GetCameraImageSettingsUseCase(
     ICameraRepository cameras,

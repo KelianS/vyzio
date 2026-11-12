@@ -15,7 +15,7 @@ export const createSystemStatsSlice: StateCreator<SystemStatsSlice> = (set) => (
       const systemStats = await getSystemStats.execute()
       set({ systemStats })
     } catch {
-      // Polling failure is silently ignored — the next poll retries (ADR-33).
+      // Polling failure is silently ignored — the next poll retries (ADR-02).
     }
   },
 })

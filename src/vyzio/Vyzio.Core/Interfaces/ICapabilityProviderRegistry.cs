@@ -2,7 +2,7 @@ using Vyzio.Core.Entities;
 
 namespace Vyzio.Core.Interfaces;
 
-// Resolution is by (capability, protocol), never by vendor (ADR-22, ADR-71).
+// Resolution is by (capability, protocol), never by vendor (ADR-04).
 public interface ICapabilityProviderRegistry
 {
     // Throws if no provider is registered for the given protocol — a missing registration
@@ -15,6 +15,6 @@ public interface ICapabilityProviderRegistry
 
     IStreamCapabilityProvider ResolveStream(SupportedProtocol protocol);
 
-    // Protocols with a registered provider for this capability, in its priority order (ADR-71 b); empty for none.
+    // Protocols with a registered provider for this capability, in its priority order (ADR-04; empty for none.
     IReadOnlyList<SupportedProtocol> GetRegisteredProtocols(CameraCapability capability);
 }

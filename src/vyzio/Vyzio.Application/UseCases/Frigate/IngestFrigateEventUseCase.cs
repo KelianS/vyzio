@@ -10,7 +10,7 @@ public sealed class IngestFrigateEventUseCase(
     IDetectionNotificationQueue notificationQueue,
     ILogger<IngestFrigateEventUseCase> logger)
 {
-    // Parses, filters, hands over — and never waits: the MQTT client processes the next message meanwhile (ADR-49).
+    // Parses, filters, hands over — and never waits: the MQTT client processes the next message meanwhile (ADR-12).
     public Task<bool> ExecuteAsync(string topic, string payload, CancellationToken ct = default)
     {
         if (!contractAdapter.TryParseRelevantEvent(payload, out var consumedEvent) || consumedEvent is null)
@@ -18,7 +18,7 @@ public sealed class IngestFrigateEventUseCase(
             return Task.FromResult(false);
         }
 
-        // Vyzio stores nothing anymore: only the end of an event can trigger anything (ADR-49).
+        // Vyzio stores nothing anymore: only the end of an event can trigger anything (ADR-12).
         if (!string.Equals(consumedEvent.Lifecycle, "end", StringComparison.OrdinalIgnoreCase))
         {
             return Task.FromResult(false);

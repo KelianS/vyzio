@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace Vyzio.Core.Common;
 
-// Single source of truth for enum <-> snake_case string conversion (ADR-22 point 0).
+// Single source of truth for enum <-> snake_case string conversion (COMMON-04).
 // Used both by EF Core persistence (Vyzio.Infrastructure) and by any boundary that needs to
 // parse a free-form string (API request, discovery heuristic) into a typed enum.
 public static class SnakeCaseEnum

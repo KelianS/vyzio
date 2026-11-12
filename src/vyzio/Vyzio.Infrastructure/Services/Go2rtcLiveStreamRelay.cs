@@ -33,7 +33,7 @@ internal sealed class ClientWebSocketUpstream : ILiveStreamUpstream
     }
 }
 
-// Copies frames both ways between the viewer and go2rtc's MSE socket, reading only go2rtc's text messages to scrub them (ADR-72 b).
+// Copies frames both ways between the viewer and go2rtc's MSE socket, reading only go2rtc's text messages to scrub them (ADR-07.
 public sealed partial class Go2rtcLiveStreamRelay : ILiveStreamRelay
 {
     private const int BufferSize = 64 * 1024;

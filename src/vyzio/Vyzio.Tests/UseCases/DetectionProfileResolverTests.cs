@@ -5,7 +5,7 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Tests.UseCases;
 
-// Recognition is whole: a profile resolves on every camera (ADR-58).
+// Recognition is whole: a profile resolves on every camera (ADR-13).
 public class DetectionProfileResolverTests
 {
     private readonly IProfileRepository _profiles = Substitute.For<IProfileRepository>();

@@ -7,7 +7,7 @@ namespace Vyzio.Infrastructure.Notifications;
 
 /// <summary>
 /// Talks to a Discord room through the bot that also listens there: one identity for both directions
-/// (ADR-52), attachments in the same message as the text.
+/// (ADR-14), attachments in the same message as the text.
 /// </summary>
 public sealed class DiscordNotificationSender(HttpClient httpClient) : INotificationChannelSender
 {

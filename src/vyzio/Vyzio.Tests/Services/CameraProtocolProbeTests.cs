@@ -14,7 +14,7 @@ using Vyzio.Tests.Services.Hosting;
 
 namespace Vyzio.Tests.Services;
 
-// The protocol level: reach, then login with the protocol's account (ADR-61). Capabilities are tested on their bindings, elsewhere.
+// The protocol level: reach, then login with the protocol's account (ADR-04). Capabilities are tested on their bindings, elsewhere.
 // The clock stays still: the verdict comes from what the peer answered, not from how fast.
 public sealed class CameraProtocolProbeTests
 {

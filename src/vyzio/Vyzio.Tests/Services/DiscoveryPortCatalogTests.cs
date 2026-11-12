@@ -3,7 +3,7 @@ using Vyzio.Infrastructure.Services.CameraDiscovery;
 
 namespace Vyzio.Tests.Services;
 
-// ADR-32: the catalog is the single home for "which port may carry which protocol". The pipeline
+// ADR-05: the catalog is the single home for "which port may carry which protocol". The pipeline
 // tests exercise the fingerprint mechanism on ephemeral ports, so the mapping itself is asserted
 // here rather than by binding a well-known port on the machine running the suite.
 public class DiscoveryPortCatalogTests
@@ -18,7 +18,7 @@ public class DiscoveryPortCatalogTests
     public void FingerprintsForPort_ShouldOfferTheExpectedProtocol_WhenThePortConventionallyCarriesIt(int port, SupportedProtocol expected)
         => Assert.Contains(DiscoveryPortCatalog.FingerprintsForPort(port), f => f.Protocol == expected);
 
-    // The cameras do not speak KLAP, the Tapo smart-home protocol: discovery never attempts it (ADR-71).
+    // The cameras do not speak KLAP, the Tapo smart-home protocol: discovery never attempts it (ADR-05).
     [Fact]
     public void Fingerprints_ShouldNotAttemptTapoKlap_WhenTheCatalogueIsBuilt()
     {

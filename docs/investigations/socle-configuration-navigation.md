@@ -34,7 +34,7 @@ Recensé dans le code, c'est la matière que la future arborescence doit ranger.
 
 **Portée installation** (une seule valeur pour tout le système) :
 
-- durées de conservation ×3 (`RecordingSettingsSection`) — *introduites par ADR-39, sans domicile* ;
+- durées de conservation ×3 (`RecordingSettingsSection`) — *introduites par ADR-12, sans domicile* ;
 - notifications : catégories notifiées, champs inclus dans le message, format, anti-spam (cooldown),
   plage horaire active ;
 - canal Telegram : token, chat ID, confiance minimale, activation ;
@@ -69,7 +69,7 @@ Recensé dans le code, c'est la matière que la future arborescence doit ranger.
 Sept constats. Les deux premiers sont la cause ; les autres en découlent.
 
 **① Il n'existe aucun endroit dont la fonction soit « régler l'installation ».** C'est la cause
-racine. Quand ADR-39 a produit le premier réglage global, il n'y avait littéralement pas de case où
+racine. Quand ADR-15 produit le premier réglage global, il n'y avait littéralement pas de case où
 le mettre — il a atterri dans la barre latérale de l'écran Caméras, entre « Saisie manuelle » et la
 liste des candidats. Renommer l'écran en « Paramètres » n'a fait que déplacer l'incohérence : c'est
 désormais une page « Paramètres » dont la fonction principale est d'ajouter des caméras.
@@ -89,7 +89,7 @@ et temporaire*), et ce n'est pas une dette d'implémentation : c'est un écran a
 navigation principale.
 
 **⑤ Le cycle enregistrer / appliquer / annuler n'a pas de vocabulaire.** Trois états se superposent :
-la modification locale, l'enregistrement côté Vyzio, l'application au moteur de détection (ADR-38).
+la modification locale, l'enregistrement côté Vyzio, l'application au moteur de détection (ADR-07).
 Chaque écran les traite différemment : la fiche de connexion a un bouton « Enregistrer », la
 rétention enregistre à la sortie du champ sans bouton, « Appliquer » vit dans la barre latérale, loin
 du réglage modifié. L'utilisateur ne peut ni voir **ce qu'il a changé**, ni annuler.
@@ -122,7 +122,7 @@ Toute proposition ci-dessous est jugée là-dessus. Les trois premiers sont éli
 1. **Extensibilité** — ajouter un réglage doit avoir une réponse évidente à « il va où ? », sans
    arbitrage ni ADR à chaque fois.
 2. **Portée lisible** — l'utilisateur doit savoir sans effort s'il règle *une caméra* ou *toute
-   l'installation*. C'est le modèle posé par ADR-39 ; la navigation doit le rendre visible.
+   l'installation*. C'est le modèle posé par ADR-15 ; la navigation doit le rendre visible.
 3. **Mobile-first** — la structure doit naître du petit écran, pas y survivre.
 4. **Progressivité** — le courant d'abord, le niche accessible mais pas dans le chemin.
 5. **Coût de transition** — refonte incrémentale ou big-bang ; combien d'écrans réécrits.
@@ -151,7 +151,7 @@ Accueil · Direct · Historique                              [⚙ Réglages]
 ```
 
 C'est le modèle des réglages d'iOS/Android et celui de Frigate lui-même. Chaque rubrique de réglages
-d'installation a une page jumelle au niveau caméra, ce qui donne à la surcharge d'ADR-39 une forme
+d'installation a une page jumelle au niveau caméra, ce qui donne à la surcharge d'ADR-15 une forme
 visible : *le même écran, un cran plus bas*.
 
 **Pour** — répond aux six critères. Extensible sans limite (un réglage nouveau = une ligne dans une
@@ -218,14 +218,14 @@ fois — exactement ce qu'on cherche à supprimer. Et l'utilisateur qui revient 
 Deux modèles cohérents ; le mélange actuel est le vrai défaut.
 
 - **D1. Enregistrement immédiat partout** — pas de bouton, la valeur part à la sortie du champ (ce que
-  fait ADR-39). Cohérent avec le mobile, où un bouton en bas de page est hors écran. Impose alors un
+  fait ADR-15). Cohérent avec le mobile, où un bouton en bas de page est hors écran. Impose alors un
   **retour arrière par champ** — le mécanisme ↺ existe déjà — et une barre « configuration à
   appliquer » persistante, ancrée en bas d'écran plutôt qu'insérée au fil du contenu.
 - **D2. Brouillon explicite** — modifications locales, barre d'actions collante *n modifications ·
   Annuler · Enregistrer*, et le détail de ce qui a changé. Répond directement à « l'utilisateur ne
   voit pas ce qu'il a modifié », au prix d'un état de brouillon à tenir partout.
 
-D1 + retour arrière par champ est plus léger et prolonge l'acquis d'ADR-39 ; D2 est plus explicite
+D1 + retour arrière par champ est plus léger et prolonge l'acquis d'ADR-15 ; D2 est plus explicite
 mais plus coûteux. **À trancher** — c'est le point de l'étude où la réponse est le moins évidente.
 
 ---
@@ -283,7 +283,7 @@ plutôt qu'à faire passer dans le choix d'une bibliothèque.
 ## 6. Recommandation
 
 **Option A** (séparer consulter et régler) **+ C2** (avancé replié par page) **+ F ou G** selon la
-réponse sur Tailwind. Sur le cycle enregistrer/appliquer : **D1**, en prolongement d'ADR-39, sauf
+réponse sur Tailwind. Sur le cycle enregistrer/appliquer : **D1**, en prolongement d'ADR-15, sauf
 argument contraire.
 
 A est la seule option qui traite le constat ② — l'absence de second niveau — donc la seule qui tienne

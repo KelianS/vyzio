@@ -16,7 +16,7 @@ interface ScheduleCountLineProps {
   onRetry: () => void
 }
 
-/** A camera or a channel does not list its ranges: it says how many apply, and where they are (ADR-63). */
+/** A camera or a channel does not list its ranges: it says how many apply, and where they are (ADR-15). */
 export function ScheduleCountLine({
   rules,
   kind,

@@ -1,4 +1,4 @@
-// One installation-wide retention window (ADR-39). `default` is the value Vyzio ships with, which
+// One installation-wide retention window (ADR-15). `default` is the value Vyzio ships with, which
 // is what lets the interface offer a way back to it and name it.
 interface RetentionSetting {
   days: number
@@ -10,7 +10,7 @@ export interface RecordingSettings {
   motion: RetentionSetting
   eventClip: RetentionSetting
   maxDays: number
-  /** Floor of the duration carrying the history: zero is not an answer there (ADR-48). */
+  /** Floor of the duration carrying the history: zero is not an answer there (ADR-12). */
   minEventClipDays: number
 }
 

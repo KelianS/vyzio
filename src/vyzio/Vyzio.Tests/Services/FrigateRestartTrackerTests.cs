@@ -19,7 +19,7 @@ public class FrigateRestartTrackerTests
         Assert.True(tracker.IsRestarting);
     }
 
-    // A config Frigate cannot start on must not leave the hub showing a restart forever (ADR-33).
+    // A config Frigate cannot start on must not leave the hub showing a restart forever (ADR-02).
     [Fact]
     public void IsRestarting_ShouldTurnFalse_WhenTheRestartWindowHasElapsed()
     {

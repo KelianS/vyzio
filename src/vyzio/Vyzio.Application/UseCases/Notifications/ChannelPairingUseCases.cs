@@ -6,7 +6,7 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Application.UseCases.Notifications;
 
-/// <summary>Where the pairing of a channel stands; a channel that cannot listen has none to show (ADR-52).</summary>
+/// <summary>Where the pairing of a channel stands; a channel that cannot listen has none to show (ADR-14).</summary>
 public sealed class GetChannelPairingUseCase(
     INotificationChannelCatalog catalog,
     IChannelPairingRepository pairings,
@@ -23,7 +23,7 @@ public sealed class GetChannelPairingUseCase(
 
 /// <summary>
 /// Issues the code the user carries over to the conversation. Pairing always starts here, never in a
-/// thread: the settings are the only place Vyzio knows it is really the owner talking (ADR-50).
+/// thread: the settings are the only place Vyzio knows it is really the owner talking (ADR-14).
 /// </summary>
 public sealed class StartChannelPairingUseCase(
     INotificationChannelCatalog catalog,
@@ -59,7 +59,7 @@ public sealed class RevokeChannelPairingUseCase(IChannelPairingRepository pairin
 
 /// <summary>
 /// Whether the channel is still listening. A pairing that holds says nothing about the loop: the link
-/// is saved, the loop is not, and only one of the two survives losing the network (ADR-52).
+/// is saved, the loop is not, and only one of the two survives losing the network (ADR-14).
 /// </summary>
 public sealed class GetChannelListeningUseCase(
     INotificationChannelCatalog catalog,

@@ -141,7 +141,7 @@ public class CameraReachabilityPollerServiceTests
         Assert.Equal("online", camera.Status);
     }
 
-    // Frigate no longer repeats a lost stream, so this line is how the logs show a camera going off and back (ADR-23).
+    // Frigate no longer repeats a lost stream, so this line is how the logs show a camera going off and back (ADR-05).
 
     [Fact]
     public async Task ExecuteAsync_ShouldLogTheCameraGoingOffline_WhenItStopsAnswering()

@@ -24,7 +24,7 @@ public class IngestFrigateEventUseCaseTests
         var processed = await sut.ExecuteAsync("frigate/events", EndPayload("frigate-evt-101", "person"));
 
         Assert.True(processed);
-        // The identity is resolved later, off the handler (ADR-49).
+        // The identity is resolved later, off the handler (ADR-12).
         _queue.Received(1).TryEnqueue(
             Arg.Is<FrigateDetection>(detection =>
                 detection.EventId == "frigate-evt-101"

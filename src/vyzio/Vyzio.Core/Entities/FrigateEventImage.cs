@@ -2,7 +2,7 @@ namespace Vyzio.Core.Entities;
 
 /// <summary>
 /// The two images Frigate writes for an event. Neither is a resize of the other: a tile wants the
-/// crop, a notification wants the context (ADR-49).
+/// crop, a notification wants the context (ADR-12).
 /// </summary>
 public enum FrigateEventImage
 {

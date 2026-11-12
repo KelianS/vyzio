@@ -6,7 +6,7 @@ namespace Vyzio.Application.UseCases.Commands;
 
 /// <summary>
 /// The authentication boundary of the inbound channel: only the paired conversation is served, and any
-/// other origin leaves with nothing but a line in the journal (ADR-50).
+/// other origin leaves with nothing but a line in the journal (ADR-14).
 /// </summary>
 public sealed class HandleIncomingCommandUseCase(
     IRemoteCommandRegistry registry,

@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react'
 import { HelpPanel } from './help_panel'
 
 /**
- * These tests cover the ADR-53 decision: the third level of help is **folded by default**,
+ * These tests cover the ADR-17 decision: the third level of help is **folded by default**,
  * and it only opens by itself where the task is not done yet.
  */
 describe('HelpPanel', () => {

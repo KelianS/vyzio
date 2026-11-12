@@ -1,6 +1,6 @@
 namespace Vyzio.Core.Entities;
 
-// What a stream serves in Frigate; one stream records and at most one detects (ADR-65).
+// What a stream serves in Frigate; one stream records and at most one detects (ADR-07).
 public enum StreamRole
 {
     None,

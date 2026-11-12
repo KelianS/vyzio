@@ -5,7 +5,7 @@ using Vyzio.Core.Interfaces;
 namespace Vyzio.Application.Commands;
 
 /// <summary>
-/// « Qu'est-ce qui se passe chez moi » — the same overview the home screen reads, said out loud (ADR-50).
+/// « Qu'est-ce qui se passe chez moi » — the same overview the home screen reads, said out loud (ADR-14).
 /// </summary>
 public sealed class SystemStateCommandHandler(GetHubOverviewUseCase overview, TimeZoneInfo timeZone)
     : IRemoteCommandHandler

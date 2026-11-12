@@ -57,7 +57,7 @@ const MESSAGE_FIELD_OPTIONS = [
 
 const TRIGGERS_LABEL = 'Ce qui déclenche une notification'
 
-/** Second level of the Notifications rubric: one channel, whichever it is (ADR-40, ADR-50). */
+/** Second level of the Notifications rubric: one channel, whichever it is (ADR-14, ADR-15). */
 export function NotificationChannelView() {
   const { channel: slug } = useParams()
   const channel = parseNotificationChannelName(slug)
@@ -233,7 +233,7 @@ function ChannelForm({
     {
       id: 'channel-media',
       label: 'Ce qui est envoyé',
-      // A channel that cannot carry video does not offer it: the capability decides (ADR-50).
+      // A channel that cannot carry video does not offer it: the capability decides (ADR-14).
       nature: {
         kind: 'choice',
         options: MEDIA_MODE_OPTIONS.filter(
@@ -365,7 +365,7 @@ function ChannelForm({
               </div>
             )}
             <SettingsList settings={when} />
-            {/* Outside the list: a count and a link are not a setting (ADR-43, ADR-63). */}
+            {/* Outside the list: a count and a link are not a setting (ADR-15). */}
             <ScheduleCountLine
               rules={uido.rules}
               kind={ScheduleRuleKind.MuteNotifications}

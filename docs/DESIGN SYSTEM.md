@@ -66,7 +66,7 @@ element (a status pill, a badge, a header navigation link); a rounded rectangle 
 
 ## Component foundation
 
-Two tiers, never confused ([ADR-42](adr/0042-interface-component-foundation-shadcn-ui-on-radix-and-tailwind.md)):
+Two tiers, never confused ([ADR-01](adr/0001-stack-and-runtime.md)):
 
 - **Primitives**: shadcn/ui code copied into the repository (accessibility, focus, keyboard), modified
   **only** for the theme, never with a business rule inside, outside the project's writing discipline.
@@ -89,9 +89,9 @@ press; text to read stays selectable, and so does a field, even inside its label
 ### Settings screens
 
 A setting **is declared, it is not drawn**: its nature determines its control, alignment, provenance and
-undo ([ADR-43](adr/0043-settings-grammar-a-setting-is-declared-not-drawn.md), the home of the control
+undo ([ADR-15](adr/0015-settings-model-schedules-and-edit-cycle.md), the home of the control
 table). A page **does not name itself**: whatever led there has named it
-([ADR-40](adr/0040-information-architecture-viewing-apart-from-configuring-two-level-settings-tree.md)).
+([ADR-15](adr/0015-settings-model-schedules-and-edit-cycle.md)).
 `SettingsPage` has no title; `SettingsSection` opens one only in a page covering several subjects, and a
 section title repeating the page's means one more page was needed. A section title is in the heading
 serif, a setting label in the body weight. A page opens on a lede only to say what its name leaves
@@ -104,7 +104,7 @@ missing, and the screen where it is fixed. The saved value is the exception: whe
 act, it stays choosable, so the draft can come back to it, and its consequence line gives the reason.
 
 **A check, a choice that runs a test, adding or removing are actions**, never draft values
-([ADR-41](adr/0041-settings-edit-cycle-an-explicit-draft-and-saving-means-applying.md)): they act at
+([ADR-15](adr/0015-settings-model-schedules-and-edit-cycle.md)): they act at
 once and return a result. Only declared settings follow the page's draft.
 
 ### Cards
@@ -133,7 +133,7 @@ the user gave included). Each feature's words are its use case's.
 | Fold | Where | Holds |
 | --- | --- | --- |
 | `Options` | Inside a card, closed | That card's settings |
-| `Avancé` | The end of the page, closed | Rare settings: a position, not a mode (ADR-40) |
+| `Avancé` | The end of the page, closed | Rare settings: a position, not a mode (ADR-15) |
 | `En savoir plus` panel | Next to what it explains | Task help (§ Help) |
 | `Détails techniques` | The end of a card, closed | Figures for support (§ Technical details) |
 
@@ -142,7 +142,7 @@ None stands in for another: no setting in help or technical details, no help in 
 ### Help: three levels, not a manual
 
 How to use a feature lives **in the screen that carries it**
-([ADR-53](adr/0053-user-documentation-lives-in-the-interface-three-levels-of-help.md)), at three depths:
+([ADR-17](adr/0017-help-lives-in-the-interface-three-levels.md)), at three depths:
 what is **visible** (a label and its cost), a setting's **tooltip**, a section's **`En savoir plus`**
 panel. **A tooltip fits in two sentences**: what overflows is about the task, not the field, and goes to
 the panel. A **cost** never moves down: it stays visible without a gesture.
@@ -213,7 +213,7 @@ the user learns the interface once.
 ### Navigation
 
 A label states the **nature** of a screen, viewing or configuring, never its audience
-([ADR-40](adr/0040-information-architecture-viewing-apart-from-configuring-two-level-settings-tree.md)).
+([ADR-15](adr/0015-settings-model-schedules-and-edit-cycle.md)).
 
 - Viewing: `Accueil`, `Direct`, `Historique`.
 - Configuring: `Réglages`, then a section (`Caméras`, `Détection`, `Conservation`, `Notifications`,
@@ -236,8 +236,8 @@ A label states the **nature** of a screen, viewing or configuring, never its aud
 ### Editing cycle
 
 A setting is saved; surveillance is restarted separately
-([ADR-41](adr/0041-settings-edit-cycle-an-explicit-draft-and-saving-means-applying.md),
-[ADR-44](adr/0044-surveillance-restart-an-explicit-user-act-grouped-and-deferred.md)).
+([ADR-15](adr/0015-settings-model-schedules-and-edit-cycle.md),
+[ADR-15](adr/0015-settings-model-schedules-and-edit-cycle.md)).
 
 - **`Enregistrer`** is the single verb of validation: it persists, nothing more. Never `Appliquer`
   (promises an effect that does not happen) nor `Mettre en service` (hides the interruption).
@@ -257,4 +257,4 @@ the engine, not saying what is happening.
   the nominal journey (product principle 2). The diagnostic line of an error is not the nominal journey.
 - Never an opaque state without a readable justification (principle 4).
 - Never instructions for use outside the product, nor help that paraphrases the screen: navigation, a
-  greyed-out button, a missing option already read on screen (ADR-53).
+  greyed-out button, a missing option already read on screen (ADR-17).

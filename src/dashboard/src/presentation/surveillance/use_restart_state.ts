@@ -1,6 +1,6 @@
 import { useRootStore } from '../../infrastructure/store/root.store'
 
-/** What the header trigger and the navigation guard both show of a restart (ADR-44). */
+/** What the header trigger and the navigation guard both show of a restart (ADR-15). */
 export function useRestartState() {
   const restarting = useRootStore((state) => state.restarting)
   const failure = useRootStore((state) => state.restartFailure)

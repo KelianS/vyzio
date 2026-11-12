@@ -48,7 +48,7 @@ export const CAPABILITY_STATE_PILLS: Record<CapabilityState, StatePill> = {
   switched_off: { label: 'Désactivée', tone: 'neutral' },
 }
 
-// Proven or confirmed works; to confirm waits for the user's try; the user's no is kept apart, the rest failed (ADR-66).
+// Proven or confirmed works; to confirm waits for the user's try; the user's no is kept apart, the rest failed (ADR-04).
 const STATE_OF_STATUS: Record<CapabilityStatus, CapabilityState> = {
   verified: CapabilityState.Working,
   to_confirm: CapabilityState.ToConfirm,
@@ -57,7 +57,7 @@ const STATE_OF_STATUS: Record<CapabilityStatus, CapabilityState> = {
   rejected_by_user: CapabilityState.Rejected,
 }
 
-// What the camera showed or the user answered was never in use, so no switch hides it (ADR-66).
+// What the camera showed or the user answered was never in use, so no switch hides it (ADR-04).
 const WINS_OVER_THE_SWITCH: Record<CapabilityStatus, boolean> = {
   to_confirm: true,
   missing: true,
@@ -83,7 +83,7 @@ export function shownState(state: CapabilityState, asking: boolean): CapabilityS
   return asking ? CapabilityState.ToConfirm : state
 }
 
-/** The stream's own check, the camera's (ADR-65 f): never an open port alone, so the verdict of its last check rules. */
+/** The stream's own check, the camera's (ADR-07: never an open port alone, so the verdict of its last check rules. */
 export function streamCheckState(
   binding: CameraCapabilityBinding,
   camera: Camera,
@@ -118,7 +118,7 @@ export function streamBindingOf(
   return bindings.find((b) => IS_STREAM[b.capability])
 }
 
-/** The protocol level's words, a box's pill: its last check, reach then login with its account (ADR-61). */
+/** The protocol level's words, a box's pill: its last check, reach then login with its account (ADR-04). */
 const PROTOCOL_STATE_PILLS: Record<ProtocolStatus, StatePill> = {
   answers: { label: 'Accessible', tone: 'ok' },
   refused: { label: 'Accès refusé', tone: 'danger' },
@@ -139,7 +139,7 @@ const FAILURE_LINES: Record<ProtocolStatus, string> = {
     'La dernière vérification a échoué : relancez-la, ou choisissez une autre façon de la joindre dans ses options.',
 }
 
-// A camera that answered without the capability says so before what the protocol said (ADR-66).
+// A camera that answered without the capability says so before what the protocol said (ADR-04).
 const STATUS_FAILURE_LINES: Record<CapabilityStatus, string | null> = {
   missing:
     'La caméra répond, mais ne montre pas cette capacité : choisissez une autre façon de la joindre dans ses options.',

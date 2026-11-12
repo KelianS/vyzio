@@ -25,17 +25,17 @@ public sealed record CameraCapabilityBindingDto(
         binding.VerifiedAt,
         binding.LastError,
         IsConfigured: true,
-        // Verified says whether it is usable, Status why (ADR-66).
+        // Verified says whether it is usable, Status why (ADR-04).
         Status: SnakeCaseEnum.ToSnakeCase(binding.Status),
         // Only a PTZ binding has a direction to swap (PTZ-03).
         PanInverted: binding.Capability == CameraCapability.Ptz
             ? BindingConfig.ReadBool(binding.ConfigJson, BindingConfig.PanInverted)
             : null,
-        // Whether the camera keeps the positions itself or Vyzio counts them (ADR-64).
+        // Whether the camera keeps the positions itself or Vyzio counts them (ADR-09).
         NativePositions: binding.Capability == CameraCapability.Ptz ? PtzPositionTier.IsNative(binding) : null,
         ConfirmedAt: binding.ConfirmedAt);
 
-    // The stream not chosen yet reads "to configure" over its first protocol (ADR-61).
+    // The stream not chosen yet reads "to configure" over its first protocol (ADR-04).
     public static CameraCapabilityBindingDto UnchosenStream(SupportedProtocol protocol) => new(
         SnakeCaseEnum.ToSnakeCase(CameraCapability.Stream),
         SnakeCaseEnum.ToSnakeCase(protocol),
@@ -47,7 +47,7 @@ public sealed record CameraCapabilityBindingDto(
         Status: SnakeCaseEnum.ToSnakeCase(CapabilityStatus.Failed));
 }
 
-// Executes a real check (ADR-22): the protocol answers, then the capability's read-only proof (ADR-66).
+// Executes a real check (ADR-04): the protocol answers, then the capability's read-only proof (ADR-04).
 public sealed class ProbeCameraCapabilityUseCase(
     ICameraRepository cameras,
     ICameraCapabilityBindingRepository bindings,
@@ -56,8 +56,8 @@ public sealed class ProbeCameraCapabilityUseCase(
     CameraProtocolCheck protocolCheck,
     VerifyCameraUseCase verifyStream)
 {
-    // rediscoverEndpoints: resolve where the camera answers from scratch; the cascade forgets once itself (ADR-56).
-    // run: the protocol answers already heard in this gesture, so each protocol is asked once (ADR-61).
+    // rediscoverEndpoints: resolve where the camera answers from scratch; the cascade forgets once itself (ADR-04).
+    // run: the protocol answers already heard in this gesture, so each protocol is asked once (ADR-04).
     public async Task<CameraCapabilityBindingDto?> ExecuteAsync(
         string cameraId,
         CameraCapability capability,
@@ -65,7 +65,7 @@ public sealed class ProbeCameraCapabilityUseCase(
         ProtocolCheckRun? run = null,
         CancellationToken ct = default)
     {
-        // The stream verification is the stream capability's probe (ADR-61).
+        // The stream verification is the stream capability's probe (ADR-04).
         if (capability == CameraCapability.Stream)
         {
             if (await verifyStream.ExecuteAsync(cameraId, run, ct) is null) return null;
@@ -87,7 +87,7 @@ public sealed class ProbeCameraCapabilityUseCase(
         var binding = await bindings.GetAsync(cameraId, capability, ct);
         if (binding is null)
         {
-            // A forgotten address is saved even when there is nothing to probe (ADR-56).
+            // A forgotten address is saved even when there is nothing to probe (ADR-04).
             if (rediscoverEndpoints) await cameras.UpdateAsync(camera, ct);
             return null;
         }
@@ -95,7 +95,7 @@ public sealed class ProbeCameraCapabilityUseCase(
         var protocol = await protocolCheck.CheckAsync(camera, binding.Protocol, run, ct);
         if (!protocol.Answers)
         {
-            // A protocol that is silent or refuses the account fails the capability with its own reason (ADR-61).
+            // A protocol that is silent or refuses the account fails the capability with its own reason (ADR-04).
             CapabilityVerdict.Fail(binding, protocol.LastError);
         }
         else
@@ -129,7 +129,7 @@ public sealed class ProbeCameraCapabilityUseCase(
     }
 }
 
-// Drops both halves of where a camera answers, its row and the process cache, never one alone (ADR-56).
+// Drops both halves of where a camera answers, its row and the process cache, never one alone (ADR-04).
 internal static class CameraEndpointForgetting
 {
     public static void Forget(Camera camera, ICameraProtocolEndpointCache cache)
@@ -139,18 +139,18 @@ internal static class CameraEndpointForgetting
     }
 }
 
-// StreamPath: the first stream's path over RTSP, typed when the camera lists no stream (ADR-65 e).
+// StreamPath: the first stream's path over RTSP, typed when the camera lists no stream (ADR-07.
 public sealed record ConfigureCameraCapabilityRequest(string Capability, string Protocol, string? StreamPath = null);
 
-// A capability goes through a protocol the camera has; another one is added first (ADR-61 d).
+// A capability goes through a protocol the camera has; another one is added first (ADR-04.
 public sealed class ProtocolNotOnCameraException(SupportedProtocol protocol)
     : Exception($"The camera has no {protocol} protocol: add it first.")
 {
     public SupportedProtocol Protocol { get; } = protocol;
 }
 
-// A capability added or moved by hand, probed at once; detection never reverts the choice (ADR-28, ADR-71 b).
-// One of the camera's protocols, answering or not: a sleeping camera stays configurable (ADR-61 d).
+// A capability added or moved by hand, probed at once; detection never reverts the choice (ADR-04.
+// One of the camera's protocols, answering or not: a sleeping camera stays configurable (ADR-04.
 public sealed class ConfigureCameraCapabilityUseCase(
     ICameraRepository cameras,
     ICameraCapabilityBindingRepository bindings,
@@ -182,14 +182,14 @@ public sealed class ConfigureCameraCapabilityUseCase(
             Capability = capability,
         };
 
-        // A new stream protocol lays the streams out again over it; nothing is applied without them (ADR-65 e).
+        // A new stream protocol lays the streams out again over it; nothing is applied without them (ADR-07.
         if (capability == CameraCapability.Stream && protocolChanged
             && !await StreamLayout.TryLayOutAsync(camera, binding, protocol, request.StreamPath, streamEnumerator, time, ct))
         {
             throw new StreamPathRequiredException();
         }
 
-        // The user's confirmation held for the former protocol only (ADR-66).
+        // The user's confirmation held for the former protocol only (ADR-04).
         CapabilityVerdict.Reset(binding, protocol);
         // The swap is the user's; what the former protocol found about the camera (native presets) is not.
         binding.ConfigJson = BindingConfig.Carry(binding.ConfigJson, null, BindingConfig.PanInverted);
@@ -215,7 +215,7 @@ public sealed class RemoveCameraCapabilityUseCase(ICameraRepository cameras, ICa
 {
     public async Task<bool> ExecuteAsync(string cameraId, CameraCapability capability, CancellationToken ct = default)
     {
-        // A camera without its stream has nothing to watch: the stream changes protocol, it is never removed (ADR-61).
+        // A camera without its stream has nothing to watch: the stream changes protocol, it is never removed (ADR-04).
         if (capability == CameraCapability.Stream)
             throw new ArgumentException("The video stream cannot be removed; choose another protocol instead.");
 
@@ -242,7 +242,7 @@ public sealed class GetCameraCapabilitiesUseCase(
 
         var dbBindings = await bindings.GetByCameraAsync(cameraId, ct);
 
-        // The stream first, every other capability depends on it; unchosen, it reads "to configure" (ADR-61).
+        // The stream first, every other capability depends on it; unchosen, it reads "to configure" (ADR-04).
         var stream = dbBindings.FirstOrDefault(b => b.Capability == CameraCapability.Stream);
         var result = new List<CameraCapabilityBindingDto>
         {

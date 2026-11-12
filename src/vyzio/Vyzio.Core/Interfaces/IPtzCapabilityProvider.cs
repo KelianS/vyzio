@@ -2,33 +2,33 @@ using Vyzio.Core.Entities;
 
 namespace Vyzio.Core.Interfaces;
 
-// Motion primitives of one protocol, never of a brand (ADR-22); positions are resolved above it (ADR-59).
+// Motion primitives of one protocol, never of a brand (ADR-04); positions are resolved above it (ADR-09).
 public interface IPtzCapabilityProvider
 {
     SupportedProtocol Protocol { get; }
 
-    // Motion time in one direction that covers the whole mechanical range from anywhere, an estimate until measured (ADR-60).
+    // Motion time in one direction that covers the whole mechanical range from anywhere, an estimate until measured (ADR-09).
     TimeSpan FullRange { get; }
 
-    // The capability's read-only proof, once its protocol answered; never a login, never a move (ADR-66).
+    // The capability's read-only proof, once its protocol answered; never a login, never a move (ADR-04).
     Task<CapabilityProof> ProveAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default);
 
     Task PtzGoToPresetAsync(Camera camera, CameraCapabilityBinding binding, int presetId, CancellationToken ct = default);
 
-    // Stores the current view as the camera's preset of that number; raises the camera's refusal of the number (ADR-69 b).
+    // Stores the current view as the camera's preset of that number; raises the camera's refusal of the number (ADR-09.
     Task PtzSavePresetAsync(Camera camera, CameraCapabilityBinding binding, int presetId, CancellationToken ct = default);
 
-    // The numbers of the presets the camera keeps, as it answers now; raises a CameraCommandException when it cannot say (ADR-69 g).
+    // The numbers of the presets the camera keeps, as it answers now; raises a CameraCommandException when it cannot say (ADR-09.
     Task<IReadOnlySet<int>> ReadPresetsAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default);
 
-    // Opens what a move needs, login included, so that no move waits on it (ADR-60).
+    // Opens what a move needs, login included, so that no move waits on it (ADR-09).
     Task<IPtzMotion> OpenMotionAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default);
 
     // Current pan/tilt in normalized ONVIF space [-1, 1], or null when the camera cannot report it.
     Task<(float Pan, float Tilt)?> GetPtzPositionAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default);
 }
 
-// The moves of one camera over what the provider opened for them, failures raised as ADR-56 names them; disposing closes it (ADR-60).
+// The moves of one camera over what the provider opened for them, failures raised as ADR-04 names them; disposing closes it (ADR-09).
 public interface IPtzMotion : IAsyncDisposable
 {
     // Moves for the given time and returns the motion time the camera made; zero when skipped for a move still running.

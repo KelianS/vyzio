@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Vyzio.Core.Entities;
 
-// A protocol the camera speaks: how to reach it and whether it answers, one row per camera and protocol (ADR-61).
+// A protocol the camera speaks: how to reach it and whether it answers, one row per camera and protocol (ADR-04).
 [Table("camera_protocols")]
 public class CameraProtocol
 {
@@ -17,10 +17,10 @@ public class CameraProtocol
 
     public SupportedProtocol Protocol { get; set; }
 
-    // Null means the protocol's usual port; for ONVIF, the port is asked of the camera (ADR-56).
+    // Null means the protocol's usual port; for ONVIF, the port is asked of the camera (ADR-04).
     public int? Port { get; set; }
 
-    // Where the camera answers this protocol, asked of the device: the ONVIF device service (ADR-56).
+    // Where the camera answers this protocol, asked of the device: the ONVIF device service (ADR-04).
     [MaxLength(500)]
     public string? Endpoint { get; set; }
 
@@ -34,7 +34,7 @@ public class CameraProtocol
     [MaxLength(500)]
     public string? Password { get; set; }
 
-    // Null until the camera was asked: reach, then login with this protocol's account (ADR-61).
+    // Null until the camera was asked: reach, then login with this protocol's account (ADR-04).
     public ProtocolStatus? Status { get; set; }
 
     public DateTimeOffset? CheckedAt { get; set; }
@@ -55,15 +55,15 @@ public class CameraProtocol
     [NotMapped]
     public bool Answers => Status == ProtocolStatus.Answers;
 
-    // What the user or discovery entered: a row holding it is never dropped as a failed try (ADR-61).
+    // What the user or discovery entered: a row holding it is never dropped as a failed try (ADR-04).
     [NotMapped]
     public bool HoldsUserData => Port is not null || HasSpecificAccount || DeviceId is not null;
 }
 
-// The account a client presents to one protocol of a camera (ADR-61).
+// The account a client presents to one protocol of a camera (ADR-04).
 public sealed record CameraCredentials(string? Username, string? Password);
 
-// The single home of each protocol's usual port; ONVIF has none, its address is asked of the camera (ADR-56).
+// The single home of each protocol's usual port; ONVIF has none, its address is asked of the camera (ADR-04).
 public static class ProtocolPorts
 {
     public static int? Usual(SupportedProtocol protocol) => protocol switch

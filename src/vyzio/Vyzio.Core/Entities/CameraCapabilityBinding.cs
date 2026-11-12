@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Vyzio.Core.Entities;
 
-// Links a camera to the protocol that implements one of its optional capabilities (ADR-22).
+// Links a camera to the protocol that implements one of its optional capabilities (ADR-04).
 // Replaces the scattered booleans (PtzSupported, PrivacyVendorCut) as the source of truth for
 // whether a capability is actually usable — Verified is only ever set by a real probe, never
 // by declaration alone.
@@ -22,10 +22,10 @@ public class CameraCapabilityBinding
 
     public SupportedProtocol Protocol { get; set; }
 
-    // The capability's own settings (BindingConfig); how to reach the protocol is on CameraProtocol (ADR-61).
+    // The capability's own settings (BindingConfig); how to reach the protocol is on CameraProtocol (ADR-04).
     public string? ConfigJson { get; set; }
 
-    // Result of the last check or of the user's answer, never set declaratively (ADR-66).
+    // Result of the last check or of the user's answer, never set declaratively (ADR-04).
     public CapabilityStatus Status { get; set; }
 
     // Usable: proven, or confirmed by the user; read from Status, never written.
@@ -35,20 +35,20 @@ public class CameraCapabilityBinding
     // When the user confirmed the capability over this protocol; kept across checks, cleared by a proof, a protocol change or a "no".
     public DateTimeOffset? ConfirmedAt { get; set; }
 
-    // When the user answered "no" over this protocol; only a proof, a protocol change or their "yes" clears it (ADR-66 c).
+    // When the user answered "no" over this protocol; only a proof, a protocol change or their "yes" clears it (ADR-04.
     public DateTimeOffset? RejectedAt { get; set; }
 
-    // The user chose this protocol by hand: detection never overrides it (ADR-28, ADR-71 b).
+    // The user chose this protocol by hand: detection never overrides it (ADR-04.
     public bool ManuallyConfigured { get; set; }
 
     public DateTimeOffset? VerifiedAt { get; set; }
 
     public string? LastError { get; set; }
 
-    // The stream capability's streams (ADR-65); empty for every other capability.
+    // The stream capability's streams (ADR-07); empty for every other capability.
     public ICollection<CameraStream> Streams { get; set; } = [];
 
-    // When the stream capability found its streams; empty until then, so later checks never re-add one (ADR-65).
+    // When the stream capability found its streams; empty until then, so later checks never re-add one (ADR-07).
     public DateTimeOffset? StreamsFoundAt { get; set; }
 
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;

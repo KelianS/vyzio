@@ -5,7 +5,7 @@ namespace Vyzio.Application.UseCases.Cameras;
 
 public sealed record DetectionStep(CameraCapability Capability, IReadOnlyList<SupportedProtocol> Protocols);
 
-// What detection tries on every camera, whatever its vendor: each capability over its protocols, in priority order (ADR-71 b).
+// What detection tries on every camera, whatever its vendor: each capability over its protocols, in priority order (ADR-04.
 public sealed class DetectionPlan(ICapabilityProviderRegistry registry)
 {
     private static readonly CameraCapability[] DetectedCapabilities =
@@ -25,7 +25,7 @@ public sealed class DetectionPlan(ICapabilityProviderRegistry registry)
             .ToList();
 }
 
-// Level 2 alone: every candidate protocol and every protocol the camera has is checked once (ADR-61).
+// Level 2 alone: every candidate protocol and every protocol the camera has is checked once (ADR-04).
 public sealed class CameraProtocolSearch(DetectionPlan plan, CameraProtocolCheck protocolCheck)
 {
     // Writes on the entity only; the caller drops the tries that could not be reached.
@@ -37,7 +37,7 @@ public sealed class CameraProtocolSearch(DetectionPlan plan, CameraProtocolCheck
     }
 }
 
-// "Rechercher les protocoles": the protocol level only, no capability is bound or tested (ADR-61 d).
+// "Rechercher les protocoles": the protocol level only, no capability is bound or tested (ADR-04.
 public sealed class SearchCameraProtocolsUseCase(
     ICameraRepository cameras,
     ICameraProtocolEndpointCache endpointCache,
@@ -49,7 +49,7 @@ public sealed class SearchCameraProtocolsUseCase(
         var camera = await cameras.GetByIdAsync(cameraId, ct);
         if (camera is null) return null;
 
-        // Looking again: the ONVIF address is asked anew, never trusted from before (ADR-56).
+        // Looking again: the ONVIF address is asked anew, never trusted from before (ADR-04).
         CameraEndpointForgetting.Forget(camera, endpointCache);
         var present = camera.Protocols.Select(entry => entry.Protocol).ToHashSet();
         await search.RunAsync(camera, new ProtocolCheckRun(), ct);

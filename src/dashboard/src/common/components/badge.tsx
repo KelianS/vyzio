@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { Badge as BadgePrimitive } from '../ui/badge'
 import { cn } from '../ui/utils'
 
-/** State badge, built on the shadcn primitive (ADR-42); tone is background-only so text stays readable on any surface. */
+/** State badge, built on the shadcn primitive (ADR-01); tone is background-only so text stays readable on any surface. */
 export type BadgeTone = 'ok' | 'warn' | 'danger' | 'neutral'
 
 const TONE_CLASS: Record<BadgeTone, string> = {

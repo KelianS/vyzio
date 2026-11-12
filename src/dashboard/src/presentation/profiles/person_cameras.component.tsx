@@ -24,7 +24,7 @@ interface CameraValues {
 
 const DRAFT_LABELS: Record<keyof CameraValues, string> = { cameraIds: 'Caméras' }
 
-// The cameras only narrow where a person is signalled; a person never signalled has nothing to narrow (ADR-58).
+// The cameras only narrow where a person is signalled; a person never signalled has nothing to narrow (ADR-13).
 const SIGNALLED: Record<ProfileAlertMode, boolean> = { always: true, never: false }
 
 export function PersonCamerasView() {

@@ -11,7 +11,7 @@ using Vyzio.Infrastructure.VendorAdapters;
 
 namespace Vyzio.Infrastructure.Services.CameraDiscovery;
 
-// ADR-32 — implements Stage 1 (identification, see IdentifyHostsAsync/PingSweepAsync) and
+// ADR-05 — implements Stage 1 (identification, see IdentifyHostsAsync/PingSweepAsync) and
 // Stage 2 (enrichment, see the Discover*SignalsAsync methods) of the discovery pipeline.
 // Stage 3 (interpretation: qualification, vendor on a strong proof only) is deliberately not
 // done here: it lives in AssistedCameraDiscoveryIdentifier/AssistedCameraDiscoveryFormatter, so
@@ -55,7 +55,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
             identifiedHosts.Count,
             string.Join(',', identifiedHosts));
 
-        // Every identified host surfaces, at least as device_unknown; Stage 2 signals outrank it (ADR-32).
+        // Every identified host surfaces, at least as device_unknown; Stage 2 signals outrank it (ADR-05).
         var identificationSignals = identifiedHosts
             .Select(host => BuildRawSignal(
                 ToDisplayName(host),
@@ -69,7 +69,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
                 []))
             .ToList();
 
-        // Stage 2 (ADR-32): the sweep finds ports and protocols, the probes add a path, a name and a ranking.
+        // Stage 2 (ADR-05): the sweep finds ports and protocols, the probes add a path, a name and a ranking.
         var portScanTask = DiscoverPortScanSignalsAsync(identifiedHosts, ct);
         var configuredRtspTask = DiscoverConfiguredRtspSignalsAsync(identifiedHosts, RtspProbePorts, ct);
         var configuredHttpTask = DiscoverConfiguredHttpSignalsAsync(identifiedHosts, HttpProbePorts, ct);
@@ -133,7 +133,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
             .ToList();
     }
 
-    // ADR-32 — the "nmap" stage: TCP-connect every port in DiscoveryPortCatalog on each host. An
+    // ADR-05 — the "nmap" stage: TCP-connect every port in DiscoveryPortCatalog on each host. An
     // open port is a fact; what it means comes from the catalog. Camera-signal ports (unique to a
     // camera protocol) also emit a qualification reason so the host is confirmed as a camera, plus
     // a protocol-specific reason kept for any downstream consumer (e.g. the DVRIP fallback UI).
@@ -222,7 +222,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
             PortServiceLabel: protocol is null ? serviceLabel : null);
     }
 
-    // Dispatches to the protocol-specific fingerprint (ADR-32 correction h). Each is a lightweight,
+    // Dispatches to the protocol-specific fingerprint (ADR-05). Each is a lightweight,
     // credential-free handshake that confirms the protocol actually speaks on the open port.
     private async Task<bool> ConfirmProtocolAsync(SupportedProtocol protocol, string host, int port, CancellationToken ct)
     {
@@ -262,7 +262,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         }
     }
 
-    // DVRIP/XMEye: every response starts with the 0xFF magic byte (ADR-29).
+    // DVRIP/XMEye: every response starts with the 0xFF magic byte (ADR-06).
     private async Task<bool> FingerprintDvripAsync(string host, int port, int timeoutMs, CancellationToken ct)
     {
         try
@@ -299,7 +299,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         return packet;
     }
 
-    // Only V380 firmware answers the credential-free auth frame with a full auth reply, hence the vendor (ADR-71).
+    // Only V380 firmware answers the credential-free auth frame with a full auth reply, hence the vendor (ADR-05).
     private async Task<bool> FingerprintV380Async(string host, int port, int timeoutMs, CancellationToken ct)
     {
         try
@@ -431,7 +431,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         try
         {
             // Only value-add here is the real stream path; "port 554 open" is already the sweep's
-            // job (ADR-32), so an open RTSP port without a usable path produces no signal here.
+            // job (ADR-05), so an open RTSP port without a usable path produces no signal here.
             var streamPath = await ProbeRtspPathsAsync(host, port, DiscoveryPortCatalog.RtspPaths, _settings.Discovery.ProbeTimeoutMs, ct);
             if (string.IsNullOrWhiteSpace(streamPath))
             {
@@ -455,7 +455,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         }
     }
 
-    // HTTP probe: a name and the camera ranking, never the vendor (ADR-71); ONVIF is the sweep's job (ADR-32).
+    // HTTP probe: a name and the camera ranking, never the vendor (ADR-05); ONVIF is the sweep's job (ADR-05).
     private async Task<RawCameraDiscoverySignal?> ProbeConfiguredHttpHostAsync(string host, int port, SemaphoreSlim gate, CancellationToken ct)
     {
         await gate.WaitAsync(ct);
@@ -470,7 +470,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         }
     }
 
-    // ADR-32 — Stage 1 (identification) input: hosts named explicitly by configuration are never
+    // ADR-05 — Stage 1 (identification) input: hosts named explicitly by configuration are never
     // gated behind a liveness check (the admin/user pointed at them directly), while CIDR-swept
     // hosts (auto-enumerated ranges) are numerous and unqualified — those go through the ping
     // sweep before anything else is attempted against them.
@@ -497,7 +497,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         return new ConfiguredHosts(explicitHosts, sweptHosts);
     }
 
-    // ADR-32 — Stage 1 (identification): decide which hosts are worth enriching at all, before
+    // ADR-05 — Stage 1 (identification): decide which hosts are worth enriching at all, before
     // any protocol-specific probe runs. Explicit hosts always pass through. Swept (CIDR) hosts
     // are filtered by an ICMP ping first — trying every protocol probe against every address in
     // a /24 is wasteful, and a ping reply is enough evidence a host exists to justify enriching it.
@@ -654,7 +654,7 @@ internal sealed class AssistedCameraDiscoveryProbePipeline
         }
     }
 
-    // Every candidate path: a single-endpoint firmware (Tapo) answers 404 on the common one (ADR-56).
+    // Every candidate path: a single-endpoint firmware (Tapo) answers 404 on the common one (ADR-05).
     private async Task<RawCameraDiscoverySignal?> ProbeOnvifUnicastEndpointAsync(string host, int port, int timeoutMs, CancellationToken ct)
     {
         foreach (var path in DiscoveryPortCatalog.OnvifPaths)

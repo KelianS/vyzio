@@ -3,7 +3,7 @@ using System.Text.Json.Nodes;
 
 namespace Vyzio.Core.Common;
 
-// One reader and writer for the keys a capability binding keeps in its ConfigJson (ADR-22).
+// One reader and writer for the keys a capability binding keeps in its ConfigJson (ADR-04).
 public static class BindingConfig
 {
     public const string PanInverted = "pan_inverted";

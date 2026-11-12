@@ -4,10 +4,10 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Infrastructure.CapabilityProviders;
 
-// A move whose packet the camera bounds itself (V380, ONVIF RelativeMove): each packet counts StepLength of motion (ADR-60).
+// A move whose packet the camera bounds itself (V380, ONVIF RelativeMove): each packet counts StepLength of motion (ADR-09).
 internal abstract class PtzSteppedMotion(PtzMoveRunner runner, Camera camera, TimeSpan stepLength, ILogger logger) : IPtzMotion
 {
-    // Packets a long move may lose once one went through, and still reach the limit (ADR-59 d).
+    // Packets a long move may lose once one went through, and still reach the limit (ADR-09.
     private const int LostMargin = 2;
 
     protected Camera Camera { get; } = camera;

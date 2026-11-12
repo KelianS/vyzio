@@ -65,7 +65,7 @@ export function ProtocolChoice({
   )
 }
 
-/** Socle dropdown with pre-formatted options (ADR-42). */
+/** Socle dropdown with pre-formatted options (ADR-01). */
 export function Picker({
   value,
   options,

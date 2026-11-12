@@ -20,7 +20,7 @@ function isSettings(pathname: string) {
  * react-router accepts **one block at a time**: two competing `useBlocker` do not
  * share the work, the last one registered wins and the other is ignored silently.
  * Both questions are therefore asked here, in the order they come up - which also
- * guarantees they never stack (ADR-41, ADR-44).
+ * guarantees they never stack (ADR-15).
  */
 export function NavigationGuard() {
   const unsaved = useRootStore((state) => state.unsavedChanges)
@@ -76,7 +76,7 @@ export function NavigationGuard() {
       tone="confirm"
       loading={restarting}
       onConfirm={() => {
-        // Not held during the restart: progress reads on the surveillance status (ADR-33).
+        // Not held during the restart: progress reads on the surveillance status (ADR-02).
         void presenter.onRestart()
         blocker.proceed?.()
       }}

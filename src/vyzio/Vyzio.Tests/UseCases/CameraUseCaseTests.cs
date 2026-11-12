@@ -480,7 +480,7 @@ public class VerifyCameraUseCaseTests
         await _repo.Received(1).UpdateAsync(Arg.Is<Camera>(updated => updated.Status == "online"), Arg.Any<CancellationToken>());
     }
 
-    // ── Stream enumeration on verification (ADR-38) ──
+    // ── Stream enumeration on verification (ADR-07) ──
 
     private Camera GivenReachableCamera(string? path = "/stream1")
     {
@@ -700,7 +700,7 @@ public class VerifyCameraUseCaseTests
         await _streamEnumerator.DidNotReceive().EnumerateAsync(Arg.Any<Camera>(), Arg.Any<SupportedProtocol>(), Arg.Any<CancellationToken>());
     }
 
-    // ── A camera to set up (ADR-68 d) ──
+    // ── A camera to set up (ADR-04 ──
 
     [Fact]
     public async Task ExecuteAsync_ShouldLeaveToSetUpAndSummonTheRestart_WhenTheStreamWorksForTheFirstTime()

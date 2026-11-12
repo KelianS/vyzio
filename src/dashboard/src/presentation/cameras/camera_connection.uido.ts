@@ -43,12 +43,12 @@ export interface CameraConnectionUido {
   bindingsError: AppError | null
   cameraGone: boolean
   detecting: boolean
-  /** Detection ran on this camera since the page opened: a stream it left unchosen says why (ADR-65 e). */
+  /** Detection ran on this camera since the page opened: a stream it left unchosen says why (ADR-07. */
   detected: boolean
   /** What the last detection found, said under its button; null before one finished (CAM-40). */
   detection: DetectionResult | null
   pending: Partial<Record<Capability, CapabilityTask>>
-  /** The capabilities tried and waiting for the user's answer (ADR-66). */
+  /** The capabilities tried and waiting for the user's answer (ADR-04). */
   asking: Partial<Record<Capability, true>>
   manualFormOpen: boolean
   manualConfiguring: boolean
@@ -73,9 +73,9 @@ export interface CameraConnectionUido {
   streamTasks: Partial<Record<string, StreamTask>>
   streamFormOpen: boolean
   addingStream: boolean
-  /** The camera listed no stream over RTSP: the stream's protocol choice asks for a path (ADR-65 e). */
+  /** The camera listed no stream over RTSP: the stream's protocol choice asks for a path (ADR-07. */
   streamPathAsked: boolean
-  /** What the camera serves, by protocol, asked on demand; absent while it is being asked (ADR-65 e). */
+  /** What the camera serves, by protocol, asked on demand; absent while it is being asked (ADR-07. */
   availableStreams: Partial<Record<StreamProtocol, AvailableStream[]>>
   /** A request for that list that failed: never read as an empty list. */
   availableStreamsErrors: Partial<Record<StreamProtocol, AppError>>

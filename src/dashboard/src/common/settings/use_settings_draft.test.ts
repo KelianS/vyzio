@@ -16,7 +16,7 @@ function setup(saved: Values = { continuousDays: 0, motionDays: 7 }) {
 }
 
 /**
- * These tests cover the ADR-41 decision: editing has no effect, and the draft
+ * These tests cover the ADR-15 decision: editing has no effect, and the draft
  * must say **what** changed.
  */
 describe('useSettingsDraft', () => {

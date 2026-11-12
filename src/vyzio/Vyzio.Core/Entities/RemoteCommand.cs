@@ -1,6 +1,6 @@
 namespace Vyzio.Core.Entities;
 
-/// <summary>A command Vyzio accepts from a messaging channel. Declared once, whatever carries it (ADR-50).</summary>
+/// <summary>A command Vyzio accepts from a messaging channel. Declared once, whatever carries it (ADR-14).</summary>
 public enum RemoteCommandName
 {
     SystemState,
@@ -12,7 +12,7 @@ public enum RemoteCommandName
     PtzPosition
 }
 
-/// <summary>The shape of a parameter, so the channel can validate it before Vyzio ever sees it (ADR-52).</summary>
+/// <summary>The shape of a parameter, so the channel can validate it before Vyzio ever sees it (ADR-14).</summary>
 public enum CommandParameterKind
 {
     Camera,
@@ -26,10 +26,10 @@ public enum CommandAuthorization
     /// <summary>Any paired conversation may run it.</summary>
     Paired,
 
-    /// <summary>Consequential enough to require an explicit confirmation in the thread first (ADR-50).</summary>
+    /// <summary>Consequential enough to require an explicit confirmation in the thread first (ADR-14).</summary>
     PairedAndConfirmed,
 
-    /// <summary>The one thing a conversation may do before being paired — it is how it gets paired (ADR-50).</summary>
+    /// <summary>The one thing a conversation may do before being paired — it is how it gets paired (ADR-14).</summary>
     Pairing
 }
 

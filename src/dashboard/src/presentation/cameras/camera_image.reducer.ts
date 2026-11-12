@@ -6,7 +6,7 @@ import type {
 import type { CameraImageAction } from './camera_image.actions'
 import type { CameraImageUido } from './camera_image.uido'
 
-// Sharpness and night vision are not confirmed writable over DVRIP (ADR-29): do not offer them silently.
+// Sharpness and night vision are not confirmed writable over DVRIP (ADR-11): do not offer them silently.
 const WRITES_BEYOND_BASICS: Record<SupportedProtocol, boolean> = {
   onvif: true,
   dvrip: false,
@@ -32,7 +32,7 @@ export function cameraImageReducer(
   action: CameraImageAction,
 ): CameraImageUido {
   switch (action.type) {
-    // Sharpness and night vision stay hidden until the bindings confirm them (ADR-29).
+    // Sharpness and night vision stay hidden until the bindings confirm them (ADR-11).
     case 'SETTINGS_STARTED':
       return {
         ...state,

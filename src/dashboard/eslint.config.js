@@ -195,11 +195,11 @@ export default defineConfig([
               from: { element: { type: 'domain' }, file: { categories: 'test' } },
               allow: { to: { module: { origin: ['external', 'core'], source: 'vitest' } } },
             },
-            // A business rule inside vendored primitives would make an upstream update risky (ADR-42).
+            // A business rule inside vendored primitives would make an upstream update risky (ADR-01).
             {
               from: { element: { types: 'ui-primitive' } },
               disallow: { to: { element: { types: { noneOf: ['ui-primitive'] } } } },
-              message: 'A vendored primitive imports only other primitives (ADR-42)',
+              message: 'A vendored primitive imports only other primitives (ADR-01)',
             },
             // Tests and the app root compose layers on purpose, so they come last.
             {
@@ -244,7 +244,7 @@ export default defineConfig([
   },
   {
     files: ['src/**/*.{ts,tsx}', 'tests/**/*.{ts,tsx}'],
-    // Vendored primitives keep the names the registry generates (ADR-42).
+    // Vendored primitives keep the names the registry generates (ADR-01).
     ignores: ['src/common/ui/**'],
     plugins: { 'file-names': fileNames },
     rules: {
@@ -259,7 +259,7 @@ export default defineConfig([
     },
   },
   {
-    // Vendored primitives export variants beside the component, as upstream does (ADR-42).
+    // Vendored primitives export variants beside the component, as upstream does (ADR-01).
     files: ['src/common/ui/**/*.{ts,tsx}'],
     rules: {
       'react-refresh/only-export-components': 'off',

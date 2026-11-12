@@ -6,7 +6,7 @@ namespace Vyzio.Api;
 /// <summary>
 /// What the person running the installation can do from the host machine, and only from there. Not a
 /// general command line: the single thing the interface cannot offer is a way back in after a
-/// forgotten password, since every screen is behind that password (ADR-54).
+/// forgotten password, since every screen is behind that password (ADR-16).
 /// </summary>
 public static class HostCommands
 {

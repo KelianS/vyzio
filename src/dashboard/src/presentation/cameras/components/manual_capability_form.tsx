@@ -15,7 +15,7 @@ import {
 } from '../protocol_labels'
 import { Picker } from './protocol_choice'
 
-// The stream is never added by hand: a camera is born with it (ADR-61).
+// The stream is never added by hand: a camera is born with it (ADR-04).
 const ADDABLE_CAPABILITIES: Capability[] = ['ptz', 'hardware_privacy', 'image_settings']
 
 /** The manual path of UC-CAM-03: an unbound capability, over one of the camera's protocols, tested at once. */

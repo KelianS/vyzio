@@ -1,7 +1,7 @@
 import { HelpPanel } from '../components/help_panel'
 
 /**
- * The same two questions on both retention screens (ADR-53) -- installation-wide and per camera --
+ * The same two questions on both retention screens (ADR-17) -- installation-wide and per camera --
  * because the answers are the same and would drift if written twice.
  */
 export function RetentionHelp() {

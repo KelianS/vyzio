@@ -5,12 +5,12 @@ import type {
   DiscoveryRange,
 } from '../../domain/entities/discovered_camera.entity'
 
-/** What's being added: a discovered camera, or a manually typed address (ADR-40). */
+/** What's being added: a discovered camera, or a manually typed address (ADR-15). */
 type AddCameraSelection =
   /** Nothing chosen yet. */
   { kind: 'none' } | { kind: 'manual' } | { kind: 'candidate'; index: number }
 
-/** The add form: the camera's access alone, its page's detection finds the rest (ADR-68 a). */
+/** The add form: the camera's access alone, its page's detection finds the rest (ADR-04. */
 export type AddCameraForm = NewCameraInput
 
 export const emptyCameraDraft: AddCameraForm = {
@@ -33,7 +33,7 @@ export interface AddCameraUido {
   /** A failure: its sentence, and the diagnostic line when a call failed (UI-01). */
   error: { message: string; diagnostic?: string } | null
   confirmScan: boolean
-  /** The ranges the search will sweep, read when its confirmation opens so it can name them (ADR-71). */
+  /** The ranges the search will sweep, read when its confirmation opens so it can name them (ADR-04). */
   rangesToSweep: {
     loading: boolean
     ranges: DiscoveryRange[]

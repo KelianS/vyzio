@@ -8,7 +8,7 @@ interface RestartFailure {
 
 export interface SurveillanceRestartSlice {
   restarting: boolean
-  // Persistent: an ephemeral message would let the user believe the settings were taken up (ADR-44).
+  // Persistent: an ephemeral message would let the user believe the settings were taken up (ADR-15).
   restartFailure: RestartFailure | null
   setRestarting: (restarting: boolean) => void
   setRestartFailure: (failure: RestartFailure | null) => void

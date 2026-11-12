@@ -5,7 +5,7 @@ using Vyzio.Infrastructure.VendorAdapters;
 
 namespace Vyzio.Infrastructure.CapabilityProviders;
 
-// IImageSettingsCapabilityProvider for the DVRIP protocol (ADR-29) — Xiongmai/XMEye cameras
+// IImageSettingsCapabilityProvider for the DVRIP protocol (ADR-11) — Xiongmai/XMEye cameras
 // (ICSee, Annke, Sannce, Zosi...). Only Brightness/Contrast/Saturation are confirmed writable,
 // via the "AVEnc.VideoColor.[0]" config block (ConfigGet/ConfigSet, cmd 1042/1044) — validated
 // against real hardware, see docs/investigations/icsee_dvrip_privacy.md.
@@ -25,7 +25,7 @@ internal sealed class DvripImageSettingsProvider(DvripClient dvrip) : IImageSett
 
     public SupportedProtocol Protocol => SupportedProtocol.Dvrip;
 
-    // The brightness read back is the proof (ADR-66).
+    // The brightness read back is the proof (ADR-04).
     public async Task<CapabilityProof> ProveAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
     {
         var config = await dvrip.ConfigGetAsync(camera, VideoColorConfigName, ct);

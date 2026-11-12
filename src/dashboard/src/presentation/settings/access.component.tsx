@@ -11,7 +11,7 @@ import { buildAccessPresenter } from './access.presenter'
 import { accessReducer } from './access.reducer'
 import { buildInitialAccessUido } from './access.uido'
 
-/** What one can do with their own access: change it, leave it, or take it back from every device (ADR-54). */
+/** What one can do with their own access: change it, leave it, or take it back from every device (ADR-16). */
 export function AccessView() {
   const { access: container } = useAppContainer()
   const { toast } = useToast()

@@ -60,7 +60,7 @@ test.describe('CameraConnectionView', () => {
   })
 })
 
-// Each connection detail sits on its level: each stream in its card options, a port and a specific account in its protocol box (ADR-61).
+// Each connection detail sits on its level: each stream in its card options, a port and a specific account in its protocol box (ADR-04).
 test.describe('CameraConnectionView three levels', () => {
   test('CameraConnectionView_ShouldSaveThePortAndSpecificAccountOfAProtocol_WhenTheUserEditsItsBox', async ({
     page,
@@ -141,7 +141,7 @@ test.describe('CameraConnectionView three levels', () => {
   })
 })
 
-// Each stream is a line of the stream card, with its role and its own state (ADR-65).
+// Each stream is a line of the stream card, with its role and its own state (ADR-07).
 test.describe('CameraConnectionView stream lines', () => {
   test('CameraConnectionView_ShouldBringARemovedStreamBackFromTheCamerasList_WhenTheUserAddsItAgain', async ({
     page,
@@ -234,7 +234,7 @@ test.describe('CameraConnectionView capability cards', () => {
   })
 })
 
-// A camera added before the three levels has no protocol yet: detection finds them (ADR-61 d).
+// A camera added before the three levels has no protocol yet: detection finds them (ADR-04.
 test.describe('CameraConnectionView camera without protocols', () => {
   function cameraWithoutProtocols() {
     const state = createFakeBackendState({

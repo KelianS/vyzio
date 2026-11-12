@@ -1,6 +1,6 @@
 namespace Vyzio.Core.Entities;
 
-// Tuning parameters for the motion sensitivity loop (ADR-35). Steers on inferences-per-frame
+// Tuning parameters for the motion sensitivity loop (ADR-08). Steers on inferences-per-frame
 // (detection_fps / camera_fps): Frigate skips inference entirely on frames without motion, so this
 // ratio rises with how much the scene moves.
 //

@@ -1,15 +1,15 @@
-/** A slot that holds a position, whether the camera keeps it or Vyzio counts it (ADR-69). */
+/** A slot that holds a position, whether the camera keeps it or Vyzio counts it (ADR-09). */
 export interface PtzPreset {
   presetId: number
   label: string
   /** Whether its thumbnail was taken: a held slot without one is never shown as empty (PTZ-14). */
   thumbnail: boolean
-  /** Milliseconds of motion right, then down, from the up-left limit, when Vyzio counts it (ADR-60). */
+  /** Milliseconds of motion right, then down, from the up-left limit, when Vyzio counts it (ADR-09). */
   panMs: number | null
   tiltMs: number | null
 }
 
-/** Where privacy parking sends the camera, and where it brings it back (ADR-57). */
+/** Where privacy parking sends the camera, and where it brings it back (ADR-10). */
 export const PARKING_PRESET_ID = 2
 export const SURVEILLANCE_PRESET_ID = 1
 

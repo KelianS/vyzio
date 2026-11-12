@@ -11,7 +11,7 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // No stream is carried over: each camera's stream is chosen again, which lays its streams out (ADR-65).
+            // No stream is carried over: each camera's stream is chosen again, which lays its streams out (ADR-07).
             migrationBuilder.Sql("DELETE FROM camera_streams;");
             migrationBuilder.Sql("DELETE FROM camera_capability_bindings WHERE capability = 'stream';");
 

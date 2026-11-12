@@ -23,7 +23,7 @@ const IN_USE: Record<ChannelPairing['status'], boolean> = {
 
 /**
  * Which conversation may command this installation, started here and nowhere else, because the
- * settings are the only place Vyzio knows it is really the owner talking (ADR-50).
+ * settings are the only place Vyzio knows it is really the owner talking (ADR-14).
  */
 export function ChannelPairingSection({
   displayName,
@@ -132,7 +132,7 @@ export function ChannelPairingSection({
 
 /**
  * The state of the loop, where it happens (principle #4): a linked conversation proves nothing,
- * it is the listening that falls when the network falls (ADR-52).
+ * it is the listening that falls when the network falls (ADR-14).
  */
 function ListeningStatus({ state }: { state: ChannelListening }) {
   if (state.listening) {

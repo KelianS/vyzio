@@ -108,7 +108,7 @@ interface CapabilitySectionProps {
   asking: Partial<Record<Capability, true>>
   manualFormOpen: boolean
   manualConfiguring: boolean
-  /** The stream lines of the stream card (ADR-65). */
+  /** The stream lines of the stream card (ADR-07). */
   streams: StreamLinesState
   intents: CapabilityIntents
 }
@@ -123,7 +123,7 @@ interface StreamLinesState {
   tasks: Partial<Record<string, StreamTask>>
   formOpen: boolean
   adding: boolean
-  /** The camera listed no stream over RTSP: its protocol choice asks for the first one's path (ADR-65 e). */
+  /** The camera listed no stream over RTSP: its protocol choice asks for the first one's path (ADR-07. */
   pathAsked: boolean
   intents: StreamLineIntents
 }
@@ -207,7 +207,7 @@ export function CapabilitySection({
           onClose={intents.onCloseManual}
           onConfigure={intents.onConfigureManually}
         />
-        {/* A stream not chosen yet is detection's to choose, so it does not wait for the stream (ADR-61 b). */}
+        {/* A stream not chosen yet is detection's to choose, so it does not wait for the stream (ADR-04. */}
         <Button
           type="button"
           variant="outline"
@@ -250,7 +250,7 @@ function StreamCard({
   camera: Camera
   /** Undefined until the capabilities are read. */
   binding: CameraCapabilityBinding | undefined
-  /** The camera's protocols, once read: the stream's failure names the way out, its choice lists them (ADR-61). */
+  /** The camera's protocols, once read: the stream's failure names the way out, its choice lists them (ADR-04). */
   protocols: CameraProtocol[]
   protocolsRead: boolean
   detected: boolean
@@ -307,7 +307,7 @@ function StreamCard({
             ) : (
               working && <p>{working}</p>
             )}
-            {/* Whether recording and detection are covered as chosen, outside the fold (ADR-65 c). */}
+            {/* Whether recording and detection are covered as chosen, outside the fold (ADR-07. */}
             {coverage && <p className={cn(failing && 'text-destructive')}>{coverage}</p>}
           </div>
         )
@@ -396,7 +396,7 @@ function StreamCard({
   )
 }
 
-/** What the try does to the camera, said before it acts (ADR-66 d); only what no read can prove is ever tried. */
+/** What the try does to the camera, said before it acts (ADR-04; only what no read can prove is ever tried. */
 const TRY_COSTS: Record<Capability, string | null> = {
   ptz: 'Essayer fait tourner la caméra un peu, puis la ramène.',
   hardware_privacy: 'Essayer coupe la caméra quelques secondes.',
@@ -412,7 +412,7 @@ const TRY_QUESTIONS: Record<Capability, string | null> = {
   image_settings: null,
 }
 
-/** What the user answered, recalled in their words; the card offers to try again on purpose (ADR-66 d). */
+/** What the user answered, recalled in their words; the card offers to try again on purpose (ADR-04. */
 const USERS_NO: Record<Capability, string | null> = {
   ptz: 'Vous avez indiqué que la caméra n’a pas bougé.',
   hardware_privacy: 'Vous avez indiqué que la caméra ne s’est pas coupée.',
@@ -427,7 +427,7 @@ const POSITIONS_IN_CAMERA = 'Cette caméra garde elle-même ses positions enregi
 const POSITIONS_KEPT_BY_VYZIO =
   'Cette caméra ne sait pas garder ses positions : Vyzio les retient à sa place, de façon moins fiable. Après chaque démarrage de Vyzio, calibrez-la depuis la vue en direct.'
 
-/** The left and right swap of a camera that turns the other way (PTZ-03), in the settings grammar (ADR-43). */
+/** The left and right swap of a camera that turns the other way (PTZ-03), in the settings grammar (ADR-15). */
 function panInvertedSetting(
   inverted: boolean,
   saving: boolean,
@@ -496,7 +496,7 @@ function BindingCard({
   function stateLine() {
     switch (state) {
       case CapabilityState.Working:
-        // Confirmed by the user rests on their word, and says so (ADR-66).
+        // Confirmed by the user rests on their word, and says so (ADR-04).
         if (binding.confirmedAt)
           return (
             <p className="text-sm text-muted-foreground">
@@ -529,7 +529,7 @@ function BindingCard({
         // The camera's answer is support detail: a plain sentence leads (UI-01).
         return (
           <div className="text-sm text-destructive">
-            {/* Silence, a refused account or a failed test each have their own way out (ADR-61). */}
+            {/* Silence, a refused account or a failed test each have their own way out (ADR-04). */}
             <p>{capabilityFailureLine(protocol?.status ?? null, binding.status)}</p>
             {binding.lastError && <DiagnosticLine text={scrubSecrets(binding.lastError)} />}
           </div>
@@ -656,7 +656,7 @@ function BindingCard({
           </>
         )
       case CapabilityState.Rejected:
-        // The user's no stands until they try again on purpose (ADR-66 d).
+        // The user's no stands until they try again on purpose (ADR-04.
         return (
           <>
             {tryButton('Essayer à nouveau')}

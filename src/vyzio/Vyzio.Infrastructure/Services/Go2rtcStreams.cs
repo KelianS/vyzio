@@ -2,7 +2,7 @@ using Vyzio.Core.Entities;
 
 namespace Vyzio.Infrastructure.Services;
 
-// How a camera stream is named, sourced and read back inside go2rtc, which carries every camera (ADR-72 a).
+// How a camera stream is named, sourced and read back inside go2rtc, which carries every camera (ADR-07.
 public static class Go2rtcStreams
 {
     // A stream is named by its rank, stable and unique per camera; the first rank takes the plain camera name.

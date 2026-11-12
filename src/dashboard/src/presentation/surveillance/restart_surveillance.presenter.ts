@@ -9,7 +9,7 @@ export interface RestartSurveillancePresenterContext {
   hubContainer: HubContainer
 }
 
-// Restarting the surveillance (ADR-44): its state is shared, the header trigger and the guard both show it.
+// Restarting the surveillance (ADR-15): its state is shared, the header trigger and the guard both show it.
 export function buildRestartSurveillancePresenter({
   camerasContainer,
   hubContainer,

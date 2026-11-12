@@ -53,7 +53,7 @@ exactly as private as the network it sits on: its Wi-Fi encryption, and who is o
 is not delivered yet ([issue #62](https://github.com/KelianS/vyzio/issues/62)): when it is, the
 interface is reached from outside only through the overlay network below, whose tunnel encrypts end
 to end. Why, and the certificate options set aside:
-[ADR-67](docs/adr/0067-the-home-network-stays-on-http-the-overlay-encrypts-from-outside.md).
+[ADR-16](docs/adr/0016-access-and-security.md).
 
 The threat model, surface by surface, lives in [`docs/SAD.md`](docs/SAD.md) § Threat model and is not
 repeated here.
@@ -71,7 +71,7 @@ Tracked in [issue #247](https://github.com/KelianS/vyzio/issues/247).
   supported deployment, and reports based on it will be closed. Remote access is not delivered yet
   ([issue #62](https://github.com/KelianS/vyzio/issues/62)): when it is, it goes through a
   user-operated overlay network, where the hub is a peer and not a gateway
-  ([ADR-51](docs/adr/0051-remote-access-to-the-interface-netbird-overlay-network-operated-by-the-user.md)).
+  ([ADR-16](docs/adr/0016-access-and-security.md)).
 - **An attacker who already has the machine.** Vyzio does not defend against someone with a shell
   on, or physical access to, the host: they hold the database and the disk.
 - **The reset window, while it is open.** Clearing a forgotten password deliberately reopens the

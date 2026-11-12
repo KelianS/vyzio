@@ -7,7 +7,7 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Application.Services;
 
-// I/O half of the motion sensitivity loop (ADR-35): samples Frigate, asks MotionSensitivityTuner
+// I/O half of the motion sensitivity loop (ADR-08): samples Frigate, asks MotionSensitivityTuner
 // what to do, applies the answer over MQTT and persists it. All stepping rules live in the tuner.
 internal sealed class MotionSensitivityTunerService(
     IServiceScopeFactory scopeFactory,

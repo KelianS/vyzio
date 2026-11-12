@@ -6,7 +6,7 @@ namespace Vyzio.Application.UseCases.Commands;
 
 /// <summary>
 /// Runs one received command and journals it, whatever the outcome. Nothing here knows which channel
-/// carried it — the channel is an inbound adapter, not a business path (ADR-50).
+/// carried it — the channel is an inbound adapter, not a business path (ADR-14).
 /// </summary>
 public sealed class ExecuteRemoteCommandUseCase(
     IRemoteCommandRegistry registry,
@@ -27,7 +27,7 @@ public sealed class ExecuteRemoteCommandUseCase(
         try
         {
             var result = await handler.ExecuteAsync(invocation, ct);
-            // Answering nothing is a refusal, and a refusal is exactly what the journal exists to keep (ADR-50).
+            // Answering nothing is a refusal, and a refusal is exactly what the journal exists to keep (ADR-14).
             await JournalAsync(
                 invocation,
                 result.Silent ? CommandOutcome.Rejected : CommandOutcome.Succeeded,

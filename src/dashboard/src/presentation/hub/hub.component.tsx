@@ -236,7 +236,7 @@ function HubOperational({
   // The wait shows on the thumbnail concerned, not only in the modal: cutting reaches the camera
   // itself, and nothing moves on screen before it has answered.
   const privacyBusyIds = new Set(privacyLoading ? (privacyPending?.cameraIds ?? []) : [])
-  // A camera surveillance has not taken in yet watches nothing (ADR-68 d).
+  // A camera surveillance has not taken in yet watches nothing (ADR-04.
   const watched = cameras.filter(
     (camera) =>
       camera.isEnabled &&

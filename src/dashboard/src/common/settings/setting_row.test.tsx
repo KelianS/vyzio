@@ -23,7 +23,7 @@ function declare(overrides: Partial<SettingDeclaration>): SettingDeclaration {
 }
 
 /**
- * These tests cover the **decision** of ADR-43, not the rendering: the nature of
+ * These tests cover the **decision** of ADR-15, not the rendering: the nature of
  * the value determines the control, and the author of a screen has no hold on it.
  * If one of them turns false, it is the grammar that drifted.
  */

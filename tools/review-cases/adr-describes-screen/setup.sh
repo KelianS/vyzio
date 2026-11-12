@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # A new ADR describes a screen and its wording, and is stacked as an amendment of another.
 set -euo pipefail
-cat > docs/adr/0073-the-camera-list-shows-a-banner.md <<'MD'
-# ADR-73: The camera list shows a banner
+cat > docs/adr/0018-the-camera-list-shows-a-banner.md <<'MD'
+# ADR-18: The camera list shows a banner
 
 ## Context
 
-Users miss that a camera stopped answering. This ADR amends ADR-72.
+Users miss that a camera stopped answering. This ADR amends ADR-07.
 
 ## Decision
 

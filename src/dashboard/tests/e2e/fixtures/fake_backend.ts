@@ -31,13 +31,13 @@ export interface FakeCamera {
   /** Surveillance resumed by hand inside a Privacy range, and when the ranges end (PRIV-07). */
   privacyResume: { until: { dayOfWeek: number; time: string } | null } | null
   verifiedCapabilities: string[]
-  /** The live view's qualities (ADR-72 c). */
+  /** The live view's qualities (ADR-07. */
   liveQualities: string[]
-  /** Null until detection first ran: its page runs it on arrival (ADR-68 b). */
+  /** Null until detection first ran: its page runs it on arrival (ADR-04. */
   detectedAt: string | null
 }
 
-/** A protocol the fake camera speaks, as the Connexion page reads it (ADR-61). */
+/** A protocol the fake camera speaks, as the Connexion page reads it (ADR-04). */
 export interface FakeProtocol {
   protocol: string
   port: number | null
@@ -50,7 +50,7 @@ export interface FakeProtocol {
   lastError: string | null
 }
 
-/** A stream line of the fake camera, under its stream card (ADR-65). */
+/** A stream line of the fake camera, under its stream card (ADR-07). */
 export interface FakeStream {
   id: string
   ordinal: number
@@ -97,7 +97,7 @@ export function makeFakeProtocol(overrides: Partial<FakeProtocol> = {}): FakePro
   }
 }
 
-/** A detection as the screens read it: the id is Frigate's, Vyzio holds none of its own (ADR-49). */
+/** A detection as the screens read it: the id is Frigate's, Vyzio holds none of its own (ADR-12). */
 export interface FakeDetectionEvent {
   eventId: string
   camera: string
@@ -291,7 +291,7 @@ function unconfiguredChannel(channel: string): FakeChannelConfig {
 interface FakeAccessState {
   installed: boolean
   signedIn: boolean
-  /** The password was just removed from the host machine (ADR-54). */
+  /** The password was just removed from the host machine (ADR-16). */
   awaitingReset?: boolean
   /** What the fake installation accepts today: changing it must change what opens. */
   password?: string
@@ -318,7 +318,7 @@ function scheduleRefusal(body: Pick<FakeScheduleRule, 'targetIds' | 'startTime' 
 
 export interface FakeBackendState {
   cameras: FakeCamera[]
-  /** Every live socket the interface opened, by address (ADR-72). */
+  /** Every live socket the interface opened, by address (ADR-07). */
   liveSockets: string[]
   /** Set, the API refuses every live socket with this close code. */
   liveRefusal?: number
@@ -328,7 +328,7 @@ export interface FakeBackendState {
   liveFourThirds?: boolean
   /** Where the installation stands on its password, and where this browser stands with it. */
   access: FakeAccessState
-  /** Saved settings that surveillance has not picked up yet (ADR-44). */
+  /** Saved settings that surveillance has not picked up yet (ADR-15). */
   pendingChanges: boolean
   restartFails: boolean
   /** The API itself breaks on the restart, instead of reporting a restart that did not take. */
@@ -347,7 +347,7 @@ export interface FakeBackendState {
     createdAt: string
   }[]
   notificationChannels: Record<string, FakeChannelConfig>
-  /** The state of a channel's incoming loop, and the trace of what was asked of it (ADR-52). */
+  /** The state of a channel's incoming loop, and the trace of what was asked of it (ADR-14). */
   channelListening: Record<string, FakeChannelListening>
   /** A linked conversation, where a test needs one; none means nothing is linked. */
   channelPairing: Record<string, FakeChannelPairing>
@@ -371,25 +371,25 @@ export interface FakeBackendState {
     eventClip: { days: number; default: number }
     maxDays: number
   }
-  /** The camera's stream capability: the protocol that carries it (ADR-61). */
+  /** The camera's stream capability: the protocol that carries it (ADR-04). */
   streamBinding: {
     protocol: string
     lastError: string | null
     /** False for a camera whose stream is still to choose; true when left out. */
     configured?: boolean
   }
-  /** The camera's streams, one line each in the stream card's Options (ADR-65). */
+  /** The camera's streams, one line each in the stream card's Options (ADR-07). */
   streams: FakeStream[]
-  /** What the camera says it serves over RTSP when asked, most detailed first (ADR-65 e). */
+  /** What the camera says it serves over RTSP when asked, most detailed first (ADR-07. */
   servedStreams: Pick<FakeStream, 'path' | 'width' | 'height' | 'fps'>[]
-  /** The protocols the camera speaks, one box each in Avancé (ADR-61). */
+  /** The protocols the camera speaks, one box each in Avancé (ADR-04). */
   protocols: FakeProtocol[]
   /** The protocols a search or a detection finds answering, added to the boxes then. */
   discoverableProtocols: FakeProtocol[]
   /** The camera's PTZ binding as the capability list shows it, when it has one. */
-  /** status: where Orientation stands, verified unless a test says otherwise (ADR-66). */
+  /** status: where Orientation stands, verified unless a test says otherwise (ADR-04). */
   ptzBinding: FakePtzBinding | null
-  /** The control of a camera: its saved positions, and whether it knows where it is (ADR-25). */
+  /** The control of a camera: its saved positions, and whether it knows where it is (ADR-09). */
   ptz: {
     presets: {
       presetId: number
@@ -400,7 +400,7 @@ export interface FakeBackendState {
     }[]
     calibrated: boolean
     currentPosition: { x: number; y: number } | null
-    /** A held press the fake has started and not yet stopped (ADR-60). */
+    /** A held press the fake has started and not yet stopped (ADR-09). */
     holding?: boolean
   }
 }
@@ -435,7 +435,7 @@ export function createFakeBackendState(
   return {
     cameras: [makeFakeCamera()],
     liveSockets: [],
-    // Installed and unlocked by default: every test would otherwise walk through the same door (ADR-54).
+    // Installed and unlocked by default: every test would otherwise walk through the same door (ADR-16).
     access: { installed: true, signedIn: true },
     pendingChanges: false,
     restartFails: false,
@@ -459,7 +459,7 @@ export function createFakeBackendState(
       motionDaysOverride: null,
       eventClipDaysOverride: null,
     },
-    // Values shipped by Vyzio (ADR-39).
+    // Values shipped by Vyzio (ADR-12).
     recordingSettings: {
       continuous: { days: 0, default: 0 },
       motion: { days: 7, default: 7 },
@@ -528,7 +528,7 @@ const DETECTS: Record<FakeStream['role'], boolean> = {
   record_and_detect: true,
 }
 
-/** The lineup as the real server answers it, the roles resolved (ADR-65). */
+/** The lineup as the real server answers it, the roles resolved (ADR-07). */
 function lineupOf(streams: FakeStream[]) {
   const recording = streams.find((stream) => RECORDS[stream.role])
   const detecting = streams.find((stream) => DETECTS[stream.role])
@@ -540,7 +540,7 @@ function lineupOf(streams: FakeStream[]) {
   }
 }
 
-// Over DVRIP the two qualities of ADR-38, never a typed path.
+// Over DVRIP the two qualities of ADR-07, never a typed path.
 const DVRIP_SERVED: FakeBackendState['servedStreams'] = [
   { path: null, width: null, height: null, fps: null },
   { path: '?channel=0&subtype=1', width: null, height: null, fps: null },
@@ -570,7 +570,7 @@ const PATH_REFUSAL: Partial<Record<string, string>> = {
   dvrip: 'unknown_stream_path',
 }
 
-/** The streams laid out over a newly chosen protocol, as the real server does; null when a path is needed (ADR-65 e). */
+/** The streams laid out over a newly chosen protocol, as the real server does; null when a path is needed (ADR-07. */
 function layOut(
   state: FakeBackendState,
   protocol: string,
@@ -619,7 +619,7 @@ function giveRole(streams: FakeStream[], target: FakeStream, role: FakeStream['r
   target.role = role
 }
 
-/** The first time its stream works, a camera to set up becomes a draft that waits for a restart (ADR-68 d). */
+/** The first time its stream works, a camera to set up becomes a draft that waits for a restart (ADR-04. */
 function streamWorked(state: FakeBackendState, camera: FakeCamera | undefined) {
   if (camera?.validationState !== 'to_set_up') return
   camera.validationState = 'draft'
@@ -693,7 +693,7 @@ export async function installFakeBackend(
   page: Page,
   state: FakeBackendState = createFakeBackendState(),
 ) {
-  // go2rtc's side of the live socket: answers the codec request, then sends the clip each second, as a camera keeps filming (ADR-72).
+  // go2rtc's side of the live socket: answers the codec request, then sends the clip each second, as a camera keeps filming (ADR-07).
   await page.routeWebSocket(/\/api\/cameras\/[^/]+\/live\/ws/, (socket) => {
     state.liveSockets.push(socket.url())
     let filming: ReturnType<typeof setInterval> | undefined
@@ -723,7 +723,7 @@ export async function installFakeBackend(
     const path = url.pathname
     const postData = request.postDataJSON?.() as Record<string, unknown> | undefined
 
-    // --- Access (ADR-54) ---
+    // --- Access (ADR-16) ---
     if (path === '/api/access/state' && method === 'GET') {
       return json(route, {
         installed: state.access.installed,
@@ -764,7 +764,7 @@ export async function installFakeBackend(
     }
 
     // Past this line everything needs a session, like the API does: otherwise the harness would be
-    // testing an application nobody runs (ADR-54).
+    // testing an application nobody runs (ADR-16).
     if (!state.access.signedIn) return problem(route, 401, 'unauthorized')
 
     // Guarded like the rest: changing a password is a setting, not a way in.
@@ -816,7 +816,7 @@ export async function installFakeBackend(
       return json(route, state.cameras)
     }
     if (path === '/api/cameras' && method === 'POST') {
-      // Like the real one: created from its access alone, to set up, never detected (ADR-68).
+      // Like the real one: created from its access alone, to set up, never detected (ADR-04).
       const camera = makeFakeCamera({
         id: `camera-${nextId++}`,
         displayName: (postData?.displayName as string) ?? 'Nouvelle caméra',
@@ -837,7 +837,7 @@ export async function installFakeBackend(
       return json(route, camera)
     }
     if (path === '/api/cameras/discovery/ranges' && method === 'GET') {
-      // Like the real one: the configured range, then the /24 the dashboard was opened by (ADR-71).
+      // Like the real one: the configured range, then the /24 the dashboard was opened by (ADR-04).
       return json(route, [
         {
           cidr: '192.168.0.0/24',
@@ -900,7 +900,7 @@ export async function installFakeBackend(
         })
       }
       state.pendingChanges = false
-      // A camera whose stream works enters surveillance; one to set up stays out (ADR-68 d).
+      // A camera whose stream works enters surveillance; one to set up stays out (ADR-04.
       for (const entering of state.cameras.filter((c) => c.validationState === 'draft'))
         entering.validationState = 'validated'
       return json(route, {
@@ -1031,7 +1031,7 @@ export async function installFakeBackend(
         return json(route, state.ptzBinding ? [stream, ptzBindingOf(state.ptzBinding)] : [stream])
       }
       if (rest === '/capabilities/stream' && method === 'PUT') {
-        // Like the real one: a capability goes through one of the camera's protocols (ADR-61 d).
+        // Like the real one: a capability goes through one of the camera's protocols (ADR-04.
         const chosen = postData?.protocol as string
         if (!state.protocols.some((p) => p.protocol === chosen)) {
           return problem(route, 409, 'protocol_not_on_camera')
@@ -1141,7 +1141,7 @@ export async function installFakeBackend(
         state.ptzBinding.confirmedAt = worked ? new Date().toISOString() : null
         if (worked && camera) {
           camera.ptzSupported = true
-          // Like the real list: a confirmed capability counts as verified (ADR-66).
+          // Like the real list: a confirmed capability counts as verified (ADR-04).
           if (!camera.verifiedCapabilities.includes('ptz')) camera.verifiedCapabilities.push('ptz')
         }
         return json(route, ptzBindingOf(state.ptzBinding))
@@ -1167,7 +1167,7 @@ export async function installFakeBackend(
           path: string | null
           role: FakeStream['role']
         }
-        // Like the real one: over RTSP a path, over DVRIP one of its two qualities (ADR-65 e).
+        // Like the real one: over RTSP a path, over DVRIP one of its two qualities (ADR-07.
         if (!PATH_ACCEPTED[body.protocol]?.(body.path ?? '')) {
           return problem(route, 400, PATH_REFUSAL[body.protocol] ?? 'unknown_protocol')
         }
@@ -1272,7 +1272,7 @@ export async function installFakeBackend(
       ])
     }
 
-    // --- The house's calendar (ADR-63) ---
+    // --- The house's calendar (ADR-15) ---
     if (path === '/api/schedules' && method === 'GET') {
       return json(route, state.scheduleRules)
     }
@@ -1312,7 +1312,7 @@ export async function installFakeBackend(
       }
     }
 
-    // --- Recording settings (ADR-39) ---
+    // --- Recording settings (ADR-12) ---
     if (path === '/api/settings/recording') {
       if (method === 'PUT') {
         const body = route.request().postDataJSON() as Record<string, number>
@@ -1477,7 +1477,7 @@ export async function installFakeBackend(
       const profileId = url.searchParams.get('profileId')
       const from = url.searchParams.get('from')
       const to = url.searchParams.get('to')
-      // The cursor is the last returned detection's date, in milliseconds (ADR-49).
+      // The cursor is the last returned detection's date, in milliseconds (ADR-12).
       const cursor = url.searchParams.get('cursor')
 
       const matching = state.detectionHistory

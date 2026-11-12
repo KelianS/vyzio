@@ -18,7 +18,7 @@ public sealed record CameraProtocolDto(
     public static CameraProtocolDto From(CameraProtocol entry) => new(
         SnakeCaseEnum.ToSnakeCase(entry.Protocol),
         entry.Port,
-        // ONVIF has no usual port: the one the camera answered on is read from its address (ADR-56).
+        // ONVIF has no usual port: the one the camera answered on is read from its address (ADR-04).
         entry.EffectivePort ?? PortOfEndpoint(entry.Endpoint),
         entry.Username,
         entry.HasSpecificAccount,
@@ -31,13 +31,13 @@ public sealed record CameraProtocolDto(
         => Uri.TryCreate(endpoint, UriKind.Absolute, out var uri) ? uri.Port : null;
 }
 
-// The answers already heard during one gesture: a protocol is asked once, however many capabilities name it (ADR-61).
+// The answers already heard during one gesture: a protocol is asked once, however many capabilities name it (ADR-04).
 public sealed class ProtocolCheckRun
 {
     internal HashSet<SupportedProtocol> Checked { get; } = [];
 }
 
-// The protocol level's check: reach, then login with the protocol's account, recorded on its row (ADR-61).
+// The protocol level's check: reach, then login with the protocol's account, recorded on its row (ADR-04).
 public sealed class CameraProtocolCheck(ICameraProtocolProbe probe, TimeProvider time)
 {
     // Writes on the entity only; the caller owning the transaction saves the camera.
@@ -115,7 +115,7 @@ public sealed class UpdateCameraProtocolUseCase(
         var changed = reachChanged || entry.DeviceId != request.DeviceId;
         if (!changed) return CameraProtocolDto.From(entry);
 
-        // A port set by hand is where the camera is asked again, never a remembered address (ADR-56).
+        // A port set by hand is where the camera is asked again, never a remembered address (ADR-04).
         if (protocol == SupportedProtocol.Onvif && entry.Port != port)
             CameraEndpointForgetting.Forget(camera, endpointCache);
 
@@ -151,7 +151,7 @@ public enum AddProtocolOutcome
 
 public sealed record AddProtocolResult(AddProtocolOutcome Outcome, CameraProtocolDto? Protocol = null);
 
-// Adds a protocol once the camera exists and checks it at once, reach then login (ADR-61).
+// Adds a protocol once the camera exists and checks it at once, reach then login (ADR-04).
 public sealed class AddCameraProtocolUseCase(ICameraRepository cameras, CameraProtocolCheck protocolCheck, TimeProvider time)
 {
     public async Task<AddProtocolResult> ExecuteAsync(string cameraId, AddCameraProtocolRequest request, CancellationToken ct = default)
@@ -183,7 +183,7 @@ public enum RemoveProtocolOutcome
     InUse,
 }
 
-// Removes a protocol no capability goes through, however many streams or capabilities a camera has (ADR-61).
+// Removes a protocol no capability goes through, however many streams or capabilities a camera has (ADR-04).
 public sealed class RemoveCameraProtocolUseCase(ICameraRepository cameras, ICameraProtocolEndpointCache endpointCache)
 {
     public async Task<RemoveProtocolOutcome> ExecuteAsync(string cameraId, SupportedProtocol protocol, CancellationToken ct = default)
@@ -193,7 +193,7 @@ public sealed class RemoveCameraProtocolUseCase(ICameraRepository cameras, ICame
 
         if (camera.GoesThrough(protocol)) return RemoveProtocolOutcome.InUse;
 
-        // Removing ONVIF drops both halves of where it answered (ADR-56).
+        // Removing ONVIF drops both halves of where it answered (ADR-04).
         if (protocol == SupportedProtocol.Onvif) endpointCache.Forget(camera.Id);
         camera.Protocols.Remove(entry);
         await cameras.UpdateAsync(camera, ct);
@@ -201,13 +201,13 @@ public sealed class RemoveCameraProtocolUseCase(ICameraRepository cameras, ICame
     }
 }
 
-// A new way to reach the stream: the camera is checked again before surveillance takes it up (ADR-44, ADR-61).
+// A new way to reach the stream: the camera is checked again before surveillance takes it up (ADR-04, ADR-15).
 internal static class CameraConnectionChange
 {
     public static void Apply(Camera camera)
     {
         camera.Status = "needs_attention";
-        // A camera whose stream never worked stays to set up: the state only ends on a first success (ADR-68 d).
+        // A camera whose stream never worked stays to set up: the state only ends on a first success (ADR-04.
         if (camera.ValidationState != CameraValidationState.ToSetUp) camera.ValidationState = CameraValidationState.Draft;
         camera.IsEnabled = false;
         camera.LastReachabilityCheckAt = null;
@@ -216,10 +216,10 @@ internal static class CameraConnectionChange
     }
 }
 
-// Writes the configuration of every camera surveillance can take up, without applying it (ADR-44).
+// Writes the configuration of every camera surveillance can take up, without applying it (ADR-15).
 internal static class SurveillanceConfig
 {
-    // changed: the camera the save touched; one still to set up summons no restart (ADR-68 d).
+    // changed: the camera the save touched; one still to set up summons no restart (ADR-04.
     public static async Task WriteAsync(Camera changed, ICameraRepository cameras, IFrigateConfigApplier frigateConfigApplier, CancellationToken ct)
     {
         var applicable = (await cameras.GetAllAsync(ct))

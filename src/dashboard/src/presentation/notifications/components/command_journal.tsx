@@ -14,7 +14,7 @@ const formatReceivedAt = new Intl.DateTimeFormat('fr-FR', {
 const OUTCOME: Record<CommandOutcome, { label: string; muted: boolean }> = {
   succeeded: { label: 'Répondu', muted: true },
   failed: { label: 'Échec', muted: false },
-  // Said as is: it is the only sign that another conversation is knocking at the door (ADR-50).
+  // Said as is: it is the only sign that another conversation is knocking at the door (ADR-14).
   rejected: { label: 'Ignoré : conversation non reliée', muted: false },
 }
 

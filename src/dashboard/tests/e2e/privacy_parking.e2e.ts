@@ -9,7 +9,7 @@ const saved = (presetId: number) => ({
   thumbnail: false,
 })
 
-// Turning away promises a move there and back: both positions come first (ADR-57).
+// Turning away promises a move there and back: both positions come first (ADR-10).
 test.describe('Privacy parking', () => {
   test('CameraPrivacyView_ShouldListParkingGreyedWithWhereToSaveThePositions_WhenTheyAreNotSaved', async ({
     page,

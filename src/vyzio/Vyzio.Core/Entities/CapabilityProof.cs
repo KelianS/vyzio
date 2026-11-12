@@ -1,6 +1,6 @@
 namespace Vyzio.Core.Entities;
 
-// What a capability's read-only check found over a protocol that already answered; a login is never a proof (ADR-66).
+// What a capability's read-only check found over a protocol that already answered; a login is never a proof (ADR-04).
 public enum ProofOutcome
 {
     Proven,

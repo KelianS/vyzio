@@ -9,13 +9,13 @@ namespace Vyzio.Application.UseCases.Cameras;
 // A press of the joystick, resolved to the camera it moves and the direction it moves in.
 public sealed record PtzPress(Camera Camera, CameraCapabilityBinding Binding, IPtzCapabilityProvider Provider, PtzDirection Direction, int Speed);
 
-// The positions Vyzio keeps for a camera without native presets, whatever its protocol, in motion time (ADR-59, ADR-60).
+// The positions Vyzio keeps for a camera without native presets, whatever its protocol, in motion time (ADR-09).
 public sealed class PtzManagedPositions(TimeProvider time, ILogger<PtzManagedPositions> logger)
 {
     // Moved past the known position, or past the full range, so that a calibration reaches the limit.
     public static readonly TimeSpan HomingMargin = TimeSpan.FromMilliseconds(200);
 
-    // A held move stops by itself when the interface has not signalled it for this long (ADR-60).
+    // A held move stops by itself when the interface has not signalled it for this long (ADR-09).
     public static readonly TimeSpan HoldTimeout = TimeSpan.FromSeconds(3);
 
     private const int ReplaySpeed = 50;
@@ -27,7 +27,7 @@ public sealed class PtzManagedPositions(TimeProvider time, ILogger<PtzManagedPos
     public (int X, int Y)? Current(string cameraId)
         => _positions.TryGetValue(cameraId, out var position) ? position : null;
 
-    // False when the camera or its PTZ is not found; registered before any await, so an early release still ends it (ADR-60).
+    // False when the camera or its PTZ is not found; registered before any await, so an early release still ends it (ADR-09).
     public async Task<bool> StartHoldAsync(string cameraId, Func<Task<PtzPress?>> resolve, CancellationToken ct)
     {
         var hold = new Hold();
@@ -65,7 +65,7 @@ public sealed class PtzManagedPositions(TimeProvider time, ILogger<PtzManagedPos
             await EndAsync(hold);
     }
 
-    // Drives the camera to its up-left limit, which becomes (0, 0); throws when it may not have got there (ADR-59).
+    // Drives the camera to its up-left limit, which becomes (0, 0); throws when it may not have got there (ADR-09).
     public async Task HomeAsync(
         Camera camera, CameraCapabilityBinding binding, IPtzCapabilityProvider provider, CancellationToken ct)
     {
@@ -80,7 +80,7 @@ public sealed class PtzManagedPositions(TimeProvider time, ILogger<PtzManagedPos
     {
         if (Current(camera.Id) == (targetX, targetY)) return;
 
-        // One session for the whole recall, homing included: no login between two moves (ADR-60).
+        // One session for the whole recall, homing included: no login between two moves (ADR-09).
         await using var motion = await provider.OpenMotionAsync(camera, binding, ct);
         if (Current(camera.Id) is null)
             await HomeAsync(camera, provider, motion, ct);
@@ -90,7 +90,7 @@ public sealed class PtzManagedPositions(TimeProvider time, ILogger<PtzManagedPos
         await MoveAxisAsync(camera, provider, motion, targetY > y ? PtzDirection.Down : PtzDirection.Up, Math.Abs(targetY - y), ct);
     }
 
-    // The try of a PTZ to confirm: right and back, then down and back; the counted position is forgotten first (ADR-66 d).
+    // The try of a PTZ to confirm: right and back, then down and back; the counted position is forgotten first (ADR-04.
     public async Task NudgeAsync(
         Camera camera, CameraCapabilityBinding binding, IPtzCapabilityProvider provider, TimeSpan each, CancellationToken ct)
     {
@@ -125,7 +125,7 @@ public sealed class PtzManagedPositions(TimeProvider time, ILogger<PtzManagedPos
         logger.LogInformation("PTZ homing started for {Camera}: {Duration} ms up-left, position was {Position}.",
             camera.DisplayName, duration.TotalMilliseconds, known?.ToString() ?? "unknown");
 
-        // Short of the margin, the camera may not have reached its limit: no calibration is claimed (ADR-59 d).
+        // Short of the margin, the camera may not have reached its limit: no calibration is claimed (ADR-09.
         var moved = await MoveAsync(camera, () => motion.MoveForAsync(PtzDirection.UpLeft, ReplaySpeed, duration, ct));
         if (moved < duration - HomingMargin)
         {
@@ -138,7 +138,7 @@ public sealed class PtzManagedPositions(TimeProvider time, ILogger<PtzManagedPos
             camera.DisplayName, moved.TotalMilliseconds);
     }
 
-    // A move that failed may have covered part of its time, or not stopped: the position is no longer known (ADR-60).
+    // A move that failed may have covered part of its time, or not stopped: the position is no longer known (ADR-09).
     private async Task<T> MoveAsync<T>(Camera camera, Func<Task<T>> move)
     {
         try
@@ -187,7 +187,7 @@ public sealed class PtzManagedPositions(TimeProvider time, ILogger<PtzManagedPos
         }
     }
 
-    // A tab closed or a network cut mid-hold must not leave the camera turning to its limit (ADR-60).
+    // A tab closed or a network cut mid-hold must not leave the camera turning to its limit (ADR-09).
     private async Task StopUnsignalledAsync(string cameraId, Hold hold)
     {
         if (!_holds.TryRemove(new KeyValuePair<string, Hold>(cameraId, hold))) return;

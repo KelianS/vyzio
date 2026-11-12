@@ -9,6 +9,6 @@ public interface IFrigateConfigApplier
     Task WriteConfigAsync(IReadOnlyList<Camera> cameras, bool changed, CancellationToken ct = default);
     Task<FrigateConfigApplyResult> ApplyAsync(IReadOnlyList<Camera> cameras, CancellationToken ct = default);
 
-    // Written but not taken up yet: the user decides when to restart (ADR-44).
+    // Written but not taken up yet: the user decides when to restart (ADR-15).
     bool HasPendingChanges { get; }
 }

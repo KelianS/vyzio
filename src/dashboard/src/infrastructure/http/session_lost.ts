@@ -4,7 +4,7 @@ const listeners = new Set<Listener>()
 
 /**
  * A session that ended while a screen was open: the answer lands on any call at all, and the
- * interface must return to sign-in saying so rather than leave an empty screen (ADR-54).
+ * interface must return to sign-in saying so rather than leave an empty screen (ADR-16).
  */
 export function onSessionLost(listener: Listener): () => void {
   listeners.add(listener)

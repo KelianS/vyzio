@@ -19,7 +19,7 @@ namespace Vyzio.Tests.Integration;
 
 /// <summary>
 /// The gate of the step, end to end: asking from one's phone answers, and a stranger asking the very
-/// same thing gets nothing at all (ADR-50).
+/// same thing gets nothing at all (ADR-14).
 /// </summary>
 public sealed class RemoteCommandFlowIntegrationTests : IDisposable
 {
