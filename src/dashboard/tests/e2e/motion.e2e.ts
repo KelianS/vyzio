@@ -146,6 +146,17 @@ test.describe('Layers', () => {
     expect(await frameOf(page.getByRole('dialog'), 'first')).toEqual({ opacity: 0, scale: 0.95 })
   })
 
+  test('Select_ShouldFadeInGrowingSlightly_WhenItOpens', async ({ page }) => {
+    await installFakeBackend(page, createFakeBackendState({ cameras: [] }))
+    await page.goto('/settings/cameras/ajout')
+    await page.getByRole('button', { name: 'Saisir l’adresse moi-même' }).click()
+    await slowDownMotion(page)
+
+    await page.getByRole('combobox', { name: 'Marque' }).click()
+
+    expect(await frameOf(page.getByRole('listbox'), 'first')).toEqual({ opacity: 0, scale: 0.95 })
+  })
+
   test('Overlay_ShouldOnlyFade_WhenItOpens', async ({ page }) => {
     await installFakeBackend(
       page,

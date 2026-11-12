@@ -140,7 +140,7 @@ function ToastChip({
       <button
         type="button"
         aria-label="Fermer"
-        className="shrink-0 opacity-60 hover:opacity-100"
+        className="press shrink-0 opacity-60 hover:opacity-100"
         onClick={() => onDismiss(item.id)}
       >
         <X className="size-4" aria-hidden="true" />

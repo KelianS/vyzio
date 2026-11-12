@@ -76,7 +76,7 @@ export function DetectionThumbnail({ src, alt = '', className }: DetectionThumbn
           aria-label="Réessayer de charger l’aperçu"
           title="Aperçu indisponible — réessayer"
           onClick={retryNow}
-          className="absolute inset-0 flex items-center justify-center text-muted-foreground hover:text-foreground"
+          className="press absolute inset-0 flex items-center justify-center text-muted-foreground hover:text-foreground"
         >
           <RefreshCw className="size-4" aria-hidden="true" />
         </button>
