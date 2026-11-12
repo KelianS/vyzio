@@ -101,13 +101,15 @@ otherwise jump, never decorates. One curve and three durations, never a value wr
   or a tooltip grows from its trigger with a short slide. The viewer layer of a picture (§ Full-screen
   viewing) only fades: a full-bleed surface has no edge to grow from.
 - **A toast** fades in with a short rise and fades out where it stands.
-- **Every press answers.** A button, a control over the picture, a joystick arrow or a position tile
-  shrinks slightly while pressed, so a tap never looks unheard while the answer is on its way.
-  Navigation, a tab bar or a list row, changes colour only: used tens of times a day, it must not
-  move. A screen change is instant.
+- **Every press answers.** Whatever acts when pressed, a button or a control drawn without the button
+  primitive, shrinks slightly while pressed, so a tap never looks unheard while the answer is on its
+  way: the button primitive takes it by itself, any other pressable control takes the `press`
+  utility. Navigation, a tab bar or a list row, changes colour only: used tens of times a day, it
+  must not move. A screen change is instant.
 - **Reduce motion.** When the phone asks for less motion, only fades remain: no growing, no slide,
-  no rise, and a press dims instead of shrinking. One base rule in `src/index.css` carries it, never a
-  class per component. A spinner keeps turning: it is the only sign that work goes on.
+  no rise, and a press dims instead of shrinking. `src/index.css` carries it for the layers and the
+  press; an entrance a component draws itself keeps its movement under `motion-safe:`. A spinner
+  keeps turning: it is the only sign that work goes on.
 
 ## Patterns
 
