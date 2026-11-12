@@ -13,6 +13,7 @@ import {
 import type { buttonVariants } from '../ui/button'
 import { cn } from '../ui/utils'
 import { DiagnosticLine } from './error_message'
+import { useLayerExit } from './layer_exit'
 
 type ButtonVariant = NonNullable<VariantProps<typeof buttonVariants>['variant']>
 
@@ -53,6 +54,7 @@ export function ConfirmModal({
 }: ConfirmModalProps) {
   const [internalLoading, setInternalLoading] = useState(false)
   const isLoading = loading || internalLoading
+  const { open, ref, close } = useLayerExit<HTMLDivElement>(onCancel)
 
   async function handleConfirm(event: MouseEvent) {
     // Stays mounted for the async action; the caller unmounts once it settles.
@@ -67,12 +69,12 @@ export function ConfirmModal({
 
   function handleCancel(event: MouseEvent) {
     event.preventDefault()
-    onCancel()
+    close()
   }
 
   return (
-    <AlertDialog open onOpenChange={(open) => !open && !isLoading && onCancel()}>
-      <AlertDialogContent>
+    <AlertDialog open={open} onOpenChange={(next) => !next && !isLoading && close()}>
+      <AlertDialogContent ref={ref}>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{body}</AlertDialogDescription>
