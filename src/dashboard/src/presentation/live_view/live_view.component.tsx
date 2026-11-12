@@ -28,8 +28,8 @@ import {
 import { buildCamerasPresenter } from '../cameras/cameras.presenter'
 import type { LiveQuality } from '../../domain/entities/camera.entity'
 
-// Edge to edge, 100dvh where the browser keeps its bars (LIVE-10); no pull to reload, no double-tap zoom.
-const SCREEN = 'fixed inset-x-0 top-0 z-40 h-dvh touch-manipulation overscroll-none'
+// Edge to edge, 100dvh where the browser keeps its bars (LIVE-10); a double tap never zooms (pull: index.css).
+const SCREEN = 'fixed inset-x-0 top-0 z-40 h-dvh touch-manipulation'
 
 const LAYOUT: Record<LiveLayout, { screen: string; picture: string; controls: string }> = {
   // The controls fill the height the picture leaves, so they can centre in it.
