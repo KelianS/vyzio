@@ -46,8 +46,8 @@ Frigate's list when the history is read, enriches it, and keeps only the facts i
   every severity Frigate keeps for a detection, and it never goes below one day. The floor, and a
   ceiling, are Vyzio's, enforced at the one place the effective retention is resolved.
 - Full video and motion may be zero. Full video is opt-in, and whether it records is its duration,
-  never a flag beside it. A camera always keeps its detection clips: not wanting any video from a
-  camera is disabling it.
+  never a flag beside it. A camera always keeps its detection clips: keeping no new video from a
+  camera is privacy mode (ADR-10), which stops new recordings and erases none.
 
 ## Consequences
 

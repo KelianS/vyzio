@@ -52,8 +52,8 @@ global restart the user triggers.
   running engine. An action (checking a connection, removing a camera, cutting surveillance) is not
   a setting: it acts at once and never waits for the restart.
 - **Restarting is one explicit, global act.** Any number of saves on any number of pages are taken
-  up by a single restart the user triggers. The pending state is a single flag fed only by the
-  writes that actually change the engine configuration: a setting that writes nothing for the
+  up by a single restart the user triggers. The pending state records which settings wait, fed only
+  by the writes that actually change the engine configuration: a setting that writes nothing for the
   engine, or a save that changes nothing, cannot raise it.
 - **A failed restart is a persistent failure signal.** The saved settings stay the reference; the
   pending state survives until a restart succeeds, and the failure reads as a breakdown with a retry.
@@ -72,8 +72,6 @@ global restart the user triggers.
   divergence is shown, never forced.
 - ⚠️ Every settings screen carries a draft, a shared component of the interface foundation (ADR-01),
   never rebuilt per screen.
-- ⚠️ The pending flag cannot say which settings wait: naming them would carry interface words down
-  to the application layer.
 - ⚠️ The privacy scheduler switches the targeted cameras one by one; grouping them into one reload
   (PRIV-14) is outside this decision.
 
@@ -96,4 +94,3 @@ global restart the user triggers.
 | Saving means applying, the restart merged in the background | Neither chosen nor visible, the interruption of surveillance is decided for the user; it needs a merging queue that buys only that masking. |
 | A synchronous restart on every save | Interrupts surveillance at each setting and charges the installation's delay to one page. |
 | The API says before saving whether a restart is needed | Saving costs nothing to announce once the restart is a separate act. |
-| The trigger names the domains waiting | A domain is a category of the information architecture, not something the user recognises. |
