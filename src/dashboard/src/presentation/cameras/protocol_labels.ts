@@ -48,7 +48,7 @@ export interface ProtocolOption {
   label: string
 }
 
-/** The camera's protocols that can carry the capability, plus the one it goes through (ADR-04. */
+/** The camera's protocols that can carry the capability, plus the one it goes through (ADR-04). */
 export function protocolOptions(
   capability: Capability,
   protocols: readonly CameraProtocol[],

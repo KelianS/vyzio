@@ -12,7 +12,7 @@ using Vyzio.Tests.Services;
 
 namespace Vyzio.Tests.UseCases;
 
-// One detection for every camera family, the real providers and registry over captured exchanges (ADR-04, c).
+// One detection for every camera family, the real providers and registry over captured exchanges (ADR-04).
 public sealed class DetectionReplayTests
 {
     private readonly ICameraRepository _cameras = Substitute.For<ICameraRepository>();

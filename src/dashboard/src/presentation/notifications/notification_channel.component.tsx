@@ -57,7 +57,7 @@ const MESSAGE_FIELD_OPTIONS = [
 
 const TRIGGERS_LABEL = 'Ce qui déclenche une notification'
 
-/** Second level of the Notifications rubric: one channel, whichever it is (ADR-14, ADR-15). */
+/** Second level of the Notifications rubric: one channel, whichever it is (ADR-14, UI-25). */
 export function NotificationChannelView() {
   const { channel: slug } = useParams()
   const channel = parseNotificationChannelName(slug)

@@ -1,6 +1,6 @@
 namespace Vyzio.Core.Entities;
 
-// The close codes a live socket ends with, named by the interface (ADR-07.
+// The close codes a live socket ends with, named by the interface (ADR-07).
 public enum LiveStreamClose
 {
     UnknownCamera = 4404,

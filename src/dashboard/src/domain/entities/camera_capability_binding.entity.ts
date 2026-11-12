@@ -20,7 +20,7 @@ export const CapabilityStatus = {
 
 export type CapabilityStatus = (typeof CapabilityStatus)[keyof typeof CapabilityStatus]
 
-/** The statuses a try applies to: never tried yet, or tried again on purpose after the user's no (ADR-04. */
+/** The statuses a try applies to: never tried yet, or tried again on purpose after the user's no (ADR-04). */
 export const ASKABLE: Record<CapabilityStatus, boolean> = {
   to_confirm: true,
   rejected_by_user: true,

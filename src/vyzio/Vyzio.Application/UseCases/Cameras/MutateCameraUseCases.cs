@@ -22,7 +22,7 @@ public sealed class DiscoverCamerasUseCase(ICameraDiscoveryService discoveryServ
             .Where(camera => camera.StreamBinding is not null)
             .Select(camera => BuildEndpointKey(camera.Host, camera.PortOf(camera.StreamBinding!.Protocol)))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
-        // A camera added from its address alone has no stream port yet: its address is already taken (ADR-04.
+        // A camera added from its address alone has no stream port yet: its address is already taken (ADR-04).
         var addressesWithoutStream = catalog
             .Where(camera => camera.StreamBinding is null)
             .Select(camera => camera.Host.Trim())
@@ -48,7 +48,7 @@ public sealed class GetVendorAssistanceUseCase(IVendorAssistanceService vendorAs
     }
 }
 
-// Nothing runs in the background and nothing reaches the configuration: the page detects it (ADR-04, b).
+// Nothing runs in the background and nothing reaches the configuration: the page detects it (ADR-04).
 public sealed class CreateCameraUseCase(ICameraRepository cameras)
 {
     public async Task<CameraDto> ExecuteAsync(CreateCameraRequest request, CancellationToken ct = default)
@@ -115,7 +115,7 @@ public sealed class VerifyCameraUseCase(
             await bindings.SaveAsync(stream, ct);
         }
 
-        // The one moment the camera is known reachable: Vyzio asks what it serves, with no extra gesture (ADR-07.
+        // The one moment the camera is known reachable: Vyzio asks what it serves, with no extra gesture (ADR-07).
         if (result.Connected && camera.StreamBinding is { } binding)
         {
             var scenes = await streamEnumerator.EnumerateAsync(camera, binding.Protocol, ct);
@@ -123,13 +123,13 @@ public sealed class VerifyCameraUseCase(
             if (scenes.Count > 0) StreamLineup.ApplyFound(binding, scenes[0].Streams, time.GetUtcNow());
         }
 
-        // Every stream is checked; the recording one was, as the camera's own check (ADR-07.
+        // Every stream is checked; the recording one was, as the camera's own check (ADR-07).
         foreach (var other in camera.Streams.Where(entry => entry != camera.RecordStream).ToList())
         {
             await StreamVerification.CheckStreamAsync(camera, other, protocolCheck, verifier, run, ct);
         }
 
-        // Its stream worked once: the camera leaves "to set up" for good, and the restart trigger now concerns it (ADR-04.
+        // Its stream worked once: the camera leaves "to set up" for good, and the restart trigger now concerns it (ADR-04).
         var firstWorked = result.PreviewAvailable && camera.ValidationState == CameraValidationState.ToSetUp;
         if (firstWorked) camera.ValidationState = CameraValidationState.Draft;
 
@@ -259,7 +259,7 @@ public sealed class DeleteCameraUseCase(ICameraRepository cameras, IFrigateConfi
             return null;
         }
 
-        // Never in surveillance, so nothing waits for a restart: it goes at once (ADR-04.
+        // Never in surveillance, so nothing waits for a restart: it goes at once (ADR-04).
         if (camera.ValidationState == CameraValidationState.ToSetUp)
         {
             await cameras.DeleteAsync(camera, ct);
@@ -352,7 +352,7 @@ public sealed class ApplyCameraConfigurationUseCase(ICameraRepository cameras, I
 // The stream is a capability like the others: its protocol must answer with its account before the stream is verified (ADR-04).
 internal static class StreamVerification
 {
-    // The recording stream's check is the camera's; Detail is what support reads (ADR-07.
+    // The recording stream's check is the camera's; Detail is what support reads (ADR-07).
     public static async Task<(CameraVerificationResult Result, string Detail)> RunAsync(
         Camera camera, CameraProtocolCheck protocolCheck, ICameraVerifier verifier, ProtocolCheckRun? run, CancellationToken ct)
     {
@@ -401,7 +401,7 @@ internal static class StreamVerification
 
 internal static class CameraFactory
 {
-    // The access alone: no protocol, stream or brand until detection or the user binds them (ADR-04, b).
+    // The access alone: no protocol, stream or brand until detection or the user binds them (ADR-04).
     public static Camera Build(CreateCameraRequest request, string slug) => new()
     {
         Slug = slug,

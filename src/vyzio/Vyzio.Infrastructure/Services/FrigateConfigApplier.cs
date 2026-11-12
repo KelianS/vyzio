@@ -219,7 +219,7 @@ public sealed class FrigateConfigApplier(
             };
         }
 
-        // One go2rtc stream per stream Frigate or the live view reads holds the camera's only connection for it (ADR-07.
+        // One go2rtc stream per stream Frigate or the live view reads holds the camera's only connection for it (ADR-07).
         var streams = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
         foreach (var camera in validatedCameras)
         {
@@ -335,7 +335,7 @@ public sealed class FrigateConfigApplier(
             }
             : null;
 
-    // One input per role, as Frigate requires: one when a stream carries both, two otherwise (ADR-07.
+    // One input per role, as Frigate requires: one when a stream carries both, two otherwise (ADR-07).
     private static List<FrigateInputConfig> BuildInputs(Camera camera)
     {
         var recording = camera.RecordStream;
@@ -349,7 +349,7 @@ public sealed class FrigateConfigApplier(
         return [Input(camera, detect, ["detect"]), Input(camera, recording, ["record"])];
     }
 
-    // Frigate reads every stream back from go2rtc, never from the camera itself (ADR-07.
+    // Frigate reads every stream back from go2rtc, never from the camera itself (ADR-07).
     private static FrigateInputConfig Input(Camera camera, CameraStream? stream, List<string> roles) => new()
     {
         Path = Go2rtcStreams.Restream(Go2rtcStreams.Name(camera.FrigateCameraName, stream)),

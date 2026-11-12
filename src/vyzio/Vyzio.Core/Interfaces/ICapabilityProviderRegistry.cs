@@ -15,6 +15,6 @@ public interface ICapabilityProviderRegistry
 
     IStreamCapabilityProvider ResolveStream(SupportedProtocol protocol);
 
-    // Protocols with a registered provider for this capability, in its priority order (ADR-04; empty for none.
+    // Protocols with a registered provider for this capability, in its priority order (ADR-04); empty for none.
     IReadOnlyList<SupportedProtocol> GetRegisteredProtocols(CameraCapability capability);
 }

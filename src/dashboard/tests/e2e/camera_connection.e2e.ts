@@ -234,7 +234,7 @@ test.describe('CameraConnectionView capability cards', () => {
   })
 })
 
-// A camera added before the three levels has no protocol yet: detection finds them (ADR-04.
+// A camera added before the three levels has no protocol yet: detection finds them (ADR-04).
 test.describe('CameraConnectionView camera without protocols', () => {
   function cameraWithoutProtocols() {
     const state = createFakeBackendState({

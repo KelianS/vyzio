@@ -4,7 +4,7 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Application.UseCases.Cameras;
 
-// One detection for every camera, whatever its vendor: the protocols once, then each capability over those that answer (ADR-04.
+// One detection for every camera, whatever its vendor: the protocols once, then each capability over those that answer (ADR-04).
 public sealed class DetectCameraCapabilitiesUseCase(
     ICameraRepository cameras,
     ICameraCapabilityBindingRepository bindings,
@@ -25,12 +25,12 @@ public sealed class DetectCameraCapabilitiesUseCase(
         // "Look at this camera again": forget once for the whole cascade, not per candidate (ADR-04).
         CameraEndpointForgetting.Forget(camera, endpointCache);
 
-        // Both levels in order: the protocols first, then the capabilities over those that answer (ADR-04.
+        // Both levels in order: the protocols first, then the capabilities over those that answer (ADR-04).
         var run = new ProtocolCheckRun();
         await protocolSearch.RunAsync(camera, run, ct);
         await cameras.UpdateAsync(camera, ct);
 
-        // A camera without a stream reads "to configure": detection binds it, never moves it (ADR-04.
+        // A camera without a stream reads "to configure": detection binds it, never moves it (ADR-04).
         if (await bindings.GetAsync(cameraId, CameraCapability.Stream, ct) is null)
             await BindStreamAsync(cameraId, registry.GetRegisteredProtocols(CameraCapability.Stream), run, ct);
 
@@ -39,7 +39,7 @@ public sealed class DetectCameraCapabilitiesUseCase(
 
         await DropSilentTriesAsync(cameraId, ct);
 
-        // Once detected, the page no longer runs detection on arrival (ADR-04.
+        // Once detected, the page no longer runs detection on arrival (ADR-04).
         if (await cameras.GetByIdAsync(cameraId, ct) is { } detected)
         {
             detected.DetectedAt = time.GetUtcNow();
@@ -70,7 +70,7 @@ public sealed class DetectCameraCapabilitiesUseCase(
             return;
         }
 
-        // Confirmed by the user, or proven with no higher-priority candidate answering now: only checked again (ADR-04.
+        // Confirmed by the user, or proven with no higher-priority candidate answering now: only checked again (ADR-04).
         if (existing is not null && protocols.Contains(existing.Protocol)
             && (existing.ConfirmedAt is not null || (existing.Verified && !OutrankedByAnAnswer(camera, protocols, existing.Protocol))))
         {
@@ -88,7 +88,7 @@ public sealed class DetectCameraCapabilitiesUseCase(
             return;
         }
 
-        // In priority order, the first candidate that proves it or leaves it to confirm wins (ADR-04.
+        // In priority order, the first candidate that proves it or leaves it to confirm wins (ADR-04).
         CameraCapabilityBindingDto? result = null;
         foreach (var protocol in candidates)
         {
@@ -96,12 +96,12 @@ public sealed class DetectCameraCapabilitiesUseCase(
             if (result?.Verified == true || IsToConfirm(result)) break;
         }
 
-        // A capability its protocol answered for stays to confirm; one no candidate shows is not worth a card (ADR-04.
+        // A capability its protocol answered for stays to confirm; one no candidate shows is not worth a card (ADR-04).
         if (result?.Verified != true && !IsToConfirm(result))
             await bindings.DeleteAsync(cameraId, capability, ct);
     }
 
-    // Only a proof, on any candidate, replaces the user's "no"; a mere "to confirm" never asks again (ADR-04.
+    // Only a proof, on any candidate, replaces the user's "no"; a mere "to confirm" never asks again (ADR-04).
     private async Task KeepTheUsersNoAsync(
         CameraCapabilityBinding rejected,
         DateTimeOffset rejectedAt,
@@ -154,7 +154,7 @@ public sealed class DetectCameraCapabilitiesUseCase(
             && SnakeCaseEnum.TryFromSnakeCase<CapabilityStatus>(result.Status, out var status)
             && status == CapabilityStatus.ToConfirm;
 
-    // The first stream protocol that answers and whose stream check passes, in the registry's order (ADR-04.
+    // The first stream protocol that answers and whose stream check passes, in the registry's order (ADR-04).
     private async Task BindStreamAsync(string cameraId, IReadOnlyList<SupportedProtocol> candidates, ProtocolCheckRun run, CancellationToken ct)
     {
         var camera = await cameras.GetByIdAsync(cameraId, ct);
@@ -184,7 +184,7 @@ public sealed class DetectCameraCapabilitiesUseCase(
         await SurveillanceConfig.WriteAsync(camera, cameras, frigateConfigApplier, ct);
     }
 
-    // Null when no stream could be laid out over the protocol: RTSP is only bound with the streams the camera lists (ADR-07.
+    // Null when no stream could be laid out over the protocol: RTSP is only bound with the streams the camera lists (ADR-07).
     private async Task<bool?> TryStreamAsync(Camera camera, CameraCapabilityBinding binding, SupportedProtocol protocol, ProtocolCheckRun run, CancellationToken ct)
     {
         if (!await StreamLayout.TryLayOutAsync(camera, binding, protocol, typedPath: null, streamEnumerator, time, ct)) return null;

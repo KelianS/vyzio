@@ -98,7 +98,7 @@ public sealed class RtspContractTests
     private static CapturedTcpCamera Replay(string variant, params string[] scenarios)
         => CapturedTcpCamera.Replaying(FixtureProtocol.Rtsp, variant, scenarios);
 
-    // The login is asked on the recording stream, at the path the capture described (ADR-07.
+    // The login is asked on the recording stream, at the path the capture described (ADR-07).
     private static Camera OnStream(CapturedTcpCamera camera, string variant, string password)
         => camera.Camera(password).WithStream(SupportedProtocol.Rtsp, camera.Port, Expected[variant].StreamPath);
 

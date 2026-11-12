@@ -48,7 +48,7 @@ global restart the user triggers.
   its wording; the rule storage, the API, the calendar and the range editor do not change. A camera
   keeps its privacy strategy and manual toggle (ADR-10), a channel what it notifies (ADR-14); neither
   holds a range any more.
-- **Saving persists, nothing more.** It is local to the page, immediate, and never touches the
+- **Saving persists, nothing more.** It is immediate, and never touches the
   running engine. An action (checking a connection, removing a camera, cutting surveillance) is not
   a setting: it acts at once and never waits for the restart.
 - **Restarting is one explicit, global act.** Any number of saves on any number of pages are taken
@@ -88,7 +88,6 @@ global restart the user triggers.
 | A written charter applied in review | It was the arrangement in place, and the screens drifted anyway. |
 | One free component per setting, reviewed | Leaves the freedom whole; only the moment the drift is seen changes. |
 | The screen author chooses the control | Two settings of one nature render differently on two pages. |
-| Help as running text under each setting, or on hover only | Running text drowns names and values; hover does not exist on a phone. |
 | One schedule per entity, a table per type | A range cannot target several things, and each type repeats table, validation, loop and form. |
 | A generic automation engine | Complex automations are out of scope (SPECS § Hors perimetre), and this audience reads a week, not a rule language. |
 | A notification range as an allowed window | The inverse of a privacy range: one calendar would show two opposite readings. |

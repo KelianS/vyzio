@@ -278,7 +278,7 @@ broker, Frigate), kept on the Docker network (ADR-01).
 | Code execution in the API | Accepted: it holds the Docker socket, so the machine. The container is not published, and the restart command is read once from the environment, never from a request ([`SECURITY.md`](../SECURITY.md)) |
 | A command from a stranger on a messaging channel | Only paired, revocable conversations are heard; anything else is ignored without an answer (ADR-14) |
 | A camera account locked out by guesses | Discovery and the ONVIF endpoint search present no account (ADR-04, ADR-05) |
-| Discovery steered at another network through the address a request names | The added range comes only from the address the dashboard was opened by, and only when it is a private IPv4 address, limited to its /24; any other address adds nothing (ADR-04) |
+| Discovery steered at another network through the address a request names | The added range comes only from the address the dashboard was opened by, and only when it is a private IPv4 address, limited to its /24; any other address adds nothing (ADR-05) |
 | Remote access exposing the home network | Overlay peer, end to end encrypted, the home network not advertised (ADR-16) |
 
 ---

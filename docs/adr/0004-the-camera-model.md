@@ -31,8 +31,8 @@ proves it or the user confirms it after trying it.
 
 - **The camera** holds its name, its address and its account. Vyzio's database is the source of
   truth for cameras; the generated configuration derives from it (ADR-02). A camera is created from
-  its access alone, before any check, with no port, protocol, stream or brand; its page sets it up,
-  new or not, and detection runs from there. A camera whose stream never worked stays out of the
+  its access alone, before any check, with no port, protocol, stream or brand; detection and the
+  user's choices complete it afterwards, the same way for a new camera as for any other. A camera whose stream never worked stays out of the
   generated configuration (ADR-02, CAM-04).
 - **A protocol** is one record per protocol the camera speaks: how to reach it (its port, empty for
   the protocol's usual one; its endpoint when the device must be asked for it; its device number
@@ -89,7 +89,8 @@ proves it or the user confirms it after trying it.
   camera take the same path
 - ✅ A silent protocol or a refused account costs one check per gesture, and is named on the protocol
 - ✅ No capability is claimed without an observation, and none that no read can show is locked out
-- ✅ One screen sets up a camera, so a change to the model is made once
+- ✅ A new camera and an existing one share one model and one setup path, so a change to the model is
+  made once
 - ⚠️ Cameras that prove nothing keep their capabilities to confirm until the user tries them; one
   without the hardware shows a card to confirm until the user answers "no"
 - ⚠️ A confirmed capability rests on the user's observation; a later proof replaces it
@@ -122,7 +123,7 @@ proves it or the user confirms it after trying it.
 | The ONVIF port as a user setting | Asks a non-technical owner to know what ONVIF is (principle 5) |
 | Awaiting every command in full | Every step of a slow camera would wait seconds |
 | A refusal named by its HTTP status | A proxy answers the same status when the API is down |
-| An add form aligned on the page, or a wizard | Two flows to keep in step, a draft camera to hold |
+| Creating a camera only once its protocols and streams are checked | A draft camera to hold, and two setup paths to keep in step |
 | Checking the connection before creating the camera, or requiring an RTSP path | Refused cameras the page could have helped with |
 | Discovery handing its findings to the new camera | Findings made without the account, and a second path beside detection |
 | A brand selector, a stored vendor, or an "officially supported" level | Steered detection on a declaration; a brand guarantees nothing a proof does not show |

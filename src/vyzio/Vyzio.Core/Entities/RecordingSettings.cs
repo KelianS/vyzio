@@ -21,7 +21,7 @@ public class RecordingSettings
 
     // Days of complete footage, recorded whether or not anything happens. Zero by default: this is
     // the only window whose disk cost grows with time passing rather than with what occurs, so it
-    // stays a deliberate choice (ADR-12, and the spirit of ADR-12).
+    // stays a deliberate choice (ADR-12).
     public int ContinuousDays { get; set; }
 
     // Days of footage kept only where the image moves.

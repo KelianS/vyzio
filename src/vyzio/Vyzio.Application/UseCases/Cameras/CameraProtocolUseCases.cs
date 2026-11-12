@@ -207,7 +207,7 @@ internal static class CameraConnectionChange
     public static void Apply(Camera camera)
     {
         camera.Status = "needs_attention";
-        // A camera whose stream never worked stays to set up: the state only ends on a first success (ADR-04.
+        // A camera whose stream never worked stays to set up: the state only ends on a first success (ADR-04).
         if (camera.ValidationState != CameraValidationState.ToSetUp) camera.ValidationState = CameraValidationState.Draft;
         camera.IsEnabled = false;
         camera.LastReachabilityCheckAt = null;
@@ -219,7 +219,7 @@ internal static class CameraConnectionChange
 // Writes the configuration of every camera surveillance can take up, without applying it (ADR-15).
 internal static class SurveillanceConfig
 {
-    // changed: the camera the save touched; one still to set up summons no restart (ADR-04.
+    // changed: the camera the save touched; one still to set up summons no restart (ADR-04).
     public static async Task WriteAsync(Camera changed, ICameraRepository cameras, IFrigateConfigApplier frigateConfigApplier, CancellationToken ct)
     {
         var applicable = (await cameras.GetAllAsync(ct))

@@ -34,7 +34,7 @@ export interface CameraStreamLineup {
   recordStreamId: string | null
   /** The analysed stream: the detect stream, else the recording one. */
   detectStreamId: string | null
-  /** No stream holds the detect role: detection runs on the recording stream (ADR-07. */
+  /** No stream holds the detect role: detection runs on the recording stream (ADR-07). */
   detectsOnRecordingStream: boolean
 }
 
@@ -45,7 +45,7 @@ export interface CameraStreamAddition {
   role: StreamRole
 }
 
-/** A stream the camera serves, asked on demand (ADR-07; read by quality, its path only in a tooltip. */
+/** A stream the camera serves, asked on demand (ADR-07); read by quality, its path only in a tooltip. */
 export interface AvailableStream {
   /** 0 is the most detailed the camera listed. */
   rank: number

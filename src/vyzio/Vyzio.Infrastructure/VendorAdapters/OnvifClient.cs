@@ -414,7 +414,7 @@ internal sealed class OnvifClient(
             soapAction: "http://www.onvif.org/ver20/imaging/wsdl/SetImagingSettings");
     }
 
-    // The tokens of the presets the camera keeps; silence, a refusal or an unreadable answer is raised, never read as none (ADR-09.
+    // The tokens of the presets the camera keeps; silence, a refusal or an unreadable answer is raised, never read as none (ADR-09).
     public async Task<IReadOnlyList<string>> GetPresetTokensAsync(Camera camera, string profileToken, CancellationToken ct)
     {
         var body = $"""
@@ -436,7 +436,7 @@ internal sealed class OnvifClient(
         }
     }
 
-    // How many presets the PTZ node can keep, null when the camera does not describe it (ADR-09.
+    // How many presets the PTZ node can keep, null when the camera does not describe it (ADR-09).
     public async Task<int?> GetMaximumNumberOfPresetsAsync(Camera camera, string nodeToken, CancellationToken ct)
     {
         var body = $"""

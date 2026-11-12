@@ -35,7 +35,7 @@ public sealed record CameraStatusDto(
             camera.LastSuccessfulFrameAt);
     }
 
-    // "To set up" is the camera's only status until its stream first works (ADR-04.
+    // "To set up" is the camera's only status until its stream first works (ADR-04).
     public static string StatusOf(Camera camera)
         => camera.ValidationState == CameraValidationState.ToSetUp
             ? SnakeCaseEnum.ToSnakeCase(CameraValidationState.ToSetUp)

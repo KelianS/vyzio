@@ -135,7 +135,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
         Assert.False(applier.HasPendingChanges);
     }
 
-    // Every camera goes through go2rtc, which holds its one connection per stream (ADR-07.
+    // Every camera goes through go2rtc, which holds its one connection per stream (ADR-07).
 
     [Fact]
     public async Task ApplyAsync_ShouldDeclareTheStreamInGo2rtc_WhenACameraStreamsOverRtsp()

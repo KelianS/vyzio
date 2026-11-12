@@ -3,7 +3,7 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Application.UseCases.Cameras;
 
-// How long a try acts on the camera: short enough to come back by itself, long enough to be seen (ADR-04.
+// How long a try acts on the camera: short enough to come back by itself, long enough to be seen (ADR-04).
 public static class CapabilityTry
 {
     public static readonly TimeSpan PtzNudge = TimeSpan.FromMilliseconds(800);
@@ -19,7 +19,7 @@ public enum CapabilityTryOutcome
     PrivacyModeActive,
 }
 
-// A real use the user starts on a capability to confirm, never a probe: it records nothing (ADR-04.
+// A real use the user starts on a capability to confirm, never a probe: it records nothing (ADR-04).
 public sealed class TryCameraCapabilityUseCase(
     ICameraRepository cameras,
     ICameraCapabilityBindingRepository bindings,
@@ -72,7 +72,7 @@ public enum CapabilityAnswerOutcome
 
 public sealed record CapabilityAnswerResult(CapabilityAnswerOutcome Outcome, CameraCapabilityBindingDto? Binding = null);
 
-// The user's answer after a try: yes makes it usable, confirmed by them; no makes it rejected, and remembered (ADR-04.
+// The user's answer after a try: yes makes it usable, confirmed by them; no makes it rejected, and remembered (ADR-04).
 public sealed class ConfirmCameraCapabilityUseCase(
     ICameraRepository cameras,
     ICameraCapabilityBindingRepository bindings,

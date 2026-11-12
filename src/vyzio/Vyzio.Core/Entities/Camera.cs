@@ -70,7 +70,7 @@ public class Camera
 
     public DateTimeOffset? LastSuccessfulFrameAt { get; set; }
 
-    // When detection last ran; null tells the page to run it on arrival (ADR-04.
+    // When detection last ran; null tells the page to run it on arrival (ADR-04).
     public DateTimeOffset? DetectedAt { get; set; }
 
     // The key this camera answers to in Frigate. Set at onboarding and on every rename, never null:
@@ -117,16 +117,16 @@ public class Camera
     [NotMapped]
     public CameraStream? RecordStream => Streams.FirstOrDefault(stream => stream.Records);
 
-    // The stream holding the detect role, else the recording stream (ADR-07.
+    // The stream holding the detect role, else the recording stream (ADR-07).
     [NotMapped]
     public CameraStream? DetectStream => Streams.FirstOrDefault(stream => stream.Detects) ?? RecordStream;
 
-    // What Frigate is handed: an enabled camera in surveillance whose stream has a protocol (ADR-04.
+    // What Frigate is handed: an enabled camera in surveillance whose stream has a protocol (ADR-04).
     [NotMapped]
     public bool InSurveillance
         => IsEnabled && ValidationState == CameraValidationState.Validated && StreamBinding is not null;
 
-    // At most two streams, so watching never opens a third connection: the role streams, plus a verified one when the roles share a stream (ADR-07.
+    // At most two streams, so watching never opens a third connection: the role streams, plus a verified one when the roles share a stream (ADR-07).
     [NotMapped]
     public IReadOnlyList<CameraStream> LiveStreams
     {
@@ -161,7 +161,7 @@ public class Camera
     public CameraCapabilityBinding? StreamBinding
         => Capabilities.FirstOrDefault(binding => binding.Capability == CameraCapability.Stream);
 
-    // A protocol a capability or a stream goes through is never removed (ADR-04, ADR-07.
+    // A protocol a capability or a stream goes through is never removed (ADR-04, ADR-07).
     public bool GoesThrough(SupportedProtocol protocol)
         => Capabilities.Any(binding => binding.Protocol == protocol) || Streams.Any(stream => stream.Protocol == protocol);
 

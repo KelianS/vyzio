@@ -15,10 +15,10 @@ public interface IPtzCapabilityProvider
 
     Task PtzGoToPresetAsync(Camera camera, CameraCapabilityBinding binding, int presetId, CancellationToken ct = default);
 
-    // Stores the current view as the camera's preset of that number; raises the camera's refusal of the number (ADR-09.
+    // Stores the current view as the camera's preset of that number; raises the camera's refusal of the number (ADR-09).
     Task PtzSavePresetAsync(Camera camera, CameraCapabilityBinding binding, int presetId, CancellationToken ct = default);
 
-    // The numbers of the presets the camera keeps, as it answers now; raises a CameraCommandException when it cannot say (ADR-09.
+    // The numbers of the presets the camera keeps, as it answers now; raises a CameraCommandException when it cannot say (ADR-09).
     Task<IReadOnlySet<int>> ReadPresetsAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default);
 
     // Opens what a move needs, login included, so that no move waits on it (ADR-09).

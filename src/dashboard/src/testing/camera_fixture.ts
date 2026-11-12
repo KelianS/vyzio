@@ -28,7 +28,7 @@ export function makeCamera(overrides: Partial<Camera> = {}): Camera {
     connected: true,
     verifiedCapabilities: [],
     liveQualities: ['low'],
-    // Detected once: only a camera just added has its page run detection on arrival (ADR-04.
+    // Detected once: only a camera just added has its page run detection on arrival (ADR-04).
     detectedAt: '2026-07-05T08:00:00Z',
     ...overrides,
   }

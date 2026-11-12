@@ -8,7 +8,7 @@ import type { Camera } from '../../../domain/entities/camera.entity'
 import { formatCameraStatusLabel } from '../../../common/camera/camera_status'
 import { CameraNotFound } from './camera_not_found'
 
-// The pages of one camera, each the twin of an installation page one notch lower (ADR-15).
+// The pages of one camera, each the twin of an installation page one notch lower (UI-08).
 const CAMERA_PAGES = [
   { slug: 'connexion', label: 'Connexion' },
   { slug: 'vie-privee', label: 'Vie privée' },

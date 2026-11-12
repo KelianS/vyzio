@@ -329,7 +329,7 @@ export function PtzControlPanel({
           </div>
         )}
 
-        {/* No slot is offered while the camera has not said which ones it holds (ADR-09. */}
+        {/* No slot is offered while the camera has not said which ones it holds (ADR-09). */}
         {presets && (
           <div {...fade} className={cn(place.tiles, fade.className)}>
             {ALL_PRESET_IDS.map((presetId) => {

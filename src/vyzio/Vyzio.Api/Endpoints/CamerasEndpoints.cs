@@ -135,7 +135,7 @@ public static class CamerasEndpoints
             return Results.File(frame, "image/jpeg");
         });
 
-        // Live video: a socket relayed to go2rtc, refused with a close code the interface names (ADR-07.
+        // Live video: a socket relayed to go2rtc, refused with a close code the interface names (ADR-07).
         group.MapGet("/{id}/live/ws", async (
             string id,
             string? quality,
@@ -345,7 +345,7 @@ public static class CamerasEndpoints
             return result is null ? Results.NotFound() : Results.Ok(result);
         });
 
-        // The user's try of a capability to confirm, then their answer (ADR-04.
+        // The user's try of a capability to confirm, then their answer (ADR-04).
         group.MapPost("/{id}/capabilities/{capability}/try", async (
             string id,
             string capability,
@@ -417,7 +417,7 @@ public static class CamerasEndpoints
             };
         });
 
-        // Level 2 alone: the candidate protocols that answer are added, no capability is touched (ADR-04.
+        // Level 2 alone: the candidate protocols that answer are added, no capability is touched (ADR-04).
         group.MapPost("/{id}/protocols/search", async (string id, SearchCameraProtocolsUseCase useCase, CancellationToken ct) =>
         {
             var list = await useCase.ExecuteAsync(id, ct);

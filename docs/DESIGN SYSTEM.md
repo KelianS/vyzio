@@ -90,8 +90,8 @@ press; text to read stays selectable, and so does a field, even inside its label
 
 A setting **is declared, it is not drawn**: its nature determines its control, alignment, provenance and
 undo ([ADR-15](adr/0015-settings-model-schedules-and-edit-cycle.md); the table from a nature to its
-control is the settings renderer's, in code). A page **does not name itself**: whatever led there has named it
-([ADR-15](adr/0015-settings-model-schedules-and-edit-cycle.md)).
+control is the settings renderer's, in code). A page **does not name itself**: whatever led there
+has named it.
 `SettingsPage` has no title; `SettingsSection` opens one only in a page covering several subjects, and a
 section title repeating the page's means one more page was needed. A section title is in the heading
 serif, a setting label in the body weight. A page opens on a lede only to say what its name leaves
@@ -140,7 +140,7 @@ the user gave included). Each feature's words are its use case's.
 | Fold | Where | Holds |
 | --- | --- | --- |
 | `Options` | Inside a card, closed | That card's settings |
-| `Avancé` | The end of the page, closed | Rare settings: a position, not a mode (ADR-15) |
+| `Avancé` | The end of the page, closed | Rare settings: a position, not a mode (UI-09) |
 | `En savoir plus` panel | Next to what it explains | Task help (§ Help) |
 | `Détails techniques` | The end of a card, closed | Figures for support (§ Technical details) |
 
@@ -220,7 +220,7 @@ the user learns the interface once.
 ### Navigation
 
 A label states the **nature** of a screen, viewing or configuring, never its audience
-([ADR-15](adr/0015-settings-model-schedules-and-edit-cycle.md)).
+([SPECS](SPECS.md) UI-06, UI-24).
 
 - Viewing: `Accueil`, `Direct`, `Historique`.
 - Configuring: `Réglages`, then a section (`Caméras`, `Détection`, `Conservation`, `Notifications`,

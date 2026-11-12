@@ -108,7 +108,7 @@ public sealed class PtzSavePresetUseCase(
 
         if (PtzPositionTier.IsNative(binding))
         {
-            // The camera alone records that the slot is held (ADR-09.
+            // The camera alone records that the slot is held (ADR-09).
             await registry.ResolvePtz(binding.Protocol).PtzSavePresetAsync(camera, binding, presetId, ct);
         }
         else
@@ -127,7 +127,7 @@ public sealed class PtzSavePresetUseCase(
             }, ct);
         }
 
-        // The old thumbnail showed another view: the slot reads held without one until the next capture (ADR-09.
+        // The old thumbnail showed another view: the slot reads held without one until the next capture (ADR-09).
         await thumbnails.DeleteAsync(cameraId, presetId, ct);
         return true;
     }
@@ -184,7 +184,7 @@ internal static class PtzPositionTier
         => BindingConfig.ReadBool(binding.ConfigJson, BindingConfig.SupportsNativePresets);
 }
 
-// The slots that hold a position: the camera's presets of those numbers on the native tier, Vyzio's rows otherwise (ADR-09, g).
+// The slots that hold a position: the camera's presets of those numbers on the native tier, Vyzio's rows otherwise (ADR-09).
 internal static class PtzHeldSlots
 {
     public static bool ReadFromTheCamera(CameraCapabilityBinding? binding) => binding is not null && PtzPositionTier.IsNative(binding);
@@ -215,7 +215,7 @@ public sealed class GetPtzPositionUseCase(ICameraRepository cameras, ICameraCapa
     }
 }
 
-// A slot that holds a position, with what Vyzio keeps of it: its label, whether its thumbnail was taken, and its motion time when Vyzio counts it (ADR-09.
+// A slot that holds a position, with what Vyzio keeps of it: its label, whether its thumbnail was taken, and its motion time when Vyzio counts it (ADR-09).
 public sealed record PtzHeldSlot(int PresetId, string Label, bool Thumbnail, int? PanMs = null, int? TiltMs = null);
 
 public sealed record PtzSlots(IReadOnlyList<PtzHeldSlot> Held, bool Calibrated, (int X, int Y)? Position);
@@ -229,7 +229,7 @@ public sealed class GetPtzPresetsUseCase(
     IPtzThumbnailStore thumbnails,
     PtzManagedPositions positions)
 {
-    // Raises a CameraCommandException when the camera cannot say which slots it holds, never reads them empty (ADR-09.
+    // Raises a CameraCommandException when the camera cannot say which slots it holds, never reads them empty (ADR-09).
     public async Task<PtzSlots> ExecuteAsync(string cameraId, CancellationToken ct = default)
     {
         var rows = await presets.GetAllAsync(cameraId, ct);
@@ -244,7 +244,7 @@ public sealed class GetPtzPresetsUseCase(
         {
             if (!held.Contains(slot))
             {
-                // A slot read empty drops its thumbnail, so it never shows over another view saved there later (ADR-09.
+                // A slot read empty drops its thumbnail, so it never shows over another view saved there later (ADR-09).
                 if (native) await thumbnails.DeleteAsync(cameraId, slot, ct);
                 continue;
             }
@@ -324,7 +324,7 @@ public sealed class SetCameraPrivacyStrategyUseCase(
         return CameraDto.From(camera);
     }
 
-    // A camera that cannot say which slots it holds raises it: choosing parking waits for a read (ADR-09.
+    // A camera that cannot say which slots it holds raises it: choosing parking waits for a read (ADR-09).
     private async Task<bool> BothEndsHeldAsync(Camera camera, CancellationToken ct)
     {
         var binding = await bindings.GetAsync(camera.Id, CameraCapability.Ptz, ct);

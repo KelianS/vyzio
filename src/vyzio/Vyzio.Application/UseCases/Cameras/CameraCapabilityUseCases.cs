@@ -139,18 +139,18 @@ internal static class CameraEndpointForgetting
     }
 }
 
-// StreamPath: the first stream's path over RTSP, typed when the camera lists no stream (ADR-07.
+// StreamPath: the first stream's path over RTSP, typed when the camera lists no stream (ADR-07).
 public sealed record ConfigureCameraCapabilityRequest(string Capability, string Protocol, string? StreamPath = null);
 
-// A capability goes through a protocol the camera has; another one is added first (ADR-04.
+// A capability goes through a protocol the camera has; another one is added first (ADR-04).
 public sealed class ProtocolNotOnCameraException(SupportedProtocol protocol)
     : Exception($"The camera has no {protocol} protocol: add it first.")
 {
     public SupportedProtocol Protocol { get; } = protocol;
 }
 
-// A capability added or moved by hand, probed at once; detection never reverts the choice (ADR-04.
-// One of the camera's protocols, answering or not: a sleeping camera stays configurable (ADR-04.
+// A capability added or moved by hand, probed at once; detection never reverts the choice (ADR-04).
+// One of the camera's protocols, answering or not: a sleeping camera stays configurable (ADR-04).
 public sealed class ConfigureCameraCapabilityUseCase(
     ICameraRepository cameras,
     ICameraCapabilityBindingRepository bindings,
@@ -182,7 +182,7 @@ public sealed class ConfigureCameraCapabilityUseCase(
             Capability = capability,
         };
 
-        // A new stream protocol lays the streams out again over it; nothing is applied without them (ADR-07.
+        // A new stream protocol lays the streams out again over it; nothing is applied without them (ADR-07).
         if (capability == CameraCapability.Stream && protocolChanged
             && !await StreamLayout.TryLayOutAsync(camera, binding, protocol, request.StreamPath, streamEnumerator, time, ct))
         {

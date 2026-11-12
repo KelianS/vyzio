@@ -10,7 +10,7 @@ import {
 } from './settings.rubrics'
 
 /**
- * The settings shell (ADR-15): first level = the sections, second = the pages of
+ * The settings shell (UI-25): first level = the sections, second = the pages of
  * each one.
  *
  * Designed for the small screen first: **one level is visible at a time**, list

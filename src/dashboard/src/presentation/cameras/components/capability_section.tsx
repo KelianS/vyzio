@@ -123,7 +123,7 @@ interface StreamLinesState {
   tasks: Partial<Record<string, StreamTask>>
   formOpen: boolean
   adding: boolean
-  /** The camera listed no stream over RTSP: its protocol choice asks for the first one's path (ADR-07. */
+  /** The camera listed no stream over RTSP: its protocol choice asks for the first one's path (ADR-07). */
   pathAsked: boolean
   intents: StreamLineIntents
 }
@@ -207,7 +207,7 @@ export function CapabilitySection({
           onClose={intents.onCloseManual}
           onConfigure={intents.onConfigureManually}
         />
-        {/* A stream not chosen yet is detection's to choose, so it does not wait for the stream (ADR-04. */}
+        {/* A stream not chosen yet is detection's to choose, so it does not wait for the stream (ADR-04). */}
         <Button
           type="button"
           variant="outline"
@@ -307,7 +307,7 @@ function StreamCard({
             ) : (
               working && <p>{working}</p>
             )}
-            {/* Whether recording and detection are covered as chosen, outside the fold (ADR-07. */}
+            {/* Whether recording and detection are covered as chosen, outside the fold (ADR-07). */}
             {coverage && <p className={cn(failing && 'text-destructive')}>{coverage}</p>}
           </div>
         )
@@ -396,7 +396,7 @@ function StreamCard({
   )
 }
 
-/** What the try does to the camera, said before it acts (ADR-04; only what no read can prove is ever tried. */
+/** What the try does to the camera, said before it acts (ADR-04); only what no read can prove is ever tried. */
 const TRY_COSTS: Record<Capability, string | null> = {
   ptz: 'Essayer fait tourner la caméra un peu, puis la ramène.',
   hardware_privacy: 'Essayer coupe la caméra quelques secondes.',
@@ -412,7 +412,7 @@ const TRY_QUESTIONS: Record<Capability, string | null> = {
   image_settings: null,
 }
 
-/** What the user answered, recalled in their words; the card offers to try again on purpose (ADR-04. */
+/** What the user answered, recalled in their words; the card offers to try again on purpose (ADR-04). */
 const USERS_NO: Record<Capability, string | null> = {
   ptz: 'Vous avez indiqué que la caméra n’a pas bougé.',
   hardware_privacy: 'Vous avez indiqué que la caméra ne s’est pas coupée.',
@@ -656,7 +656,7 @@ function BindingCard({
           </>
         )
       case CapabilityState.Rejected:
-        // The user's no stands until they try again on purpose (ADR-04.
+        // The user's no stands until they try again on purpose (ADR-04).
         return (
           <>
             {tryButton('Essayer à nouveau')}

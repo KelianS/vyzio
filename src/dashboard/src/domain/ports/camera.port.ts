@@ -29,7 +29,7 @@ export interface DiscoveryRequest {
 export interface CameraRepository {
   getAll(): Promise<Camera[]>
   discover(input?: DiscoveryRequest): Promise<DiscoveredCamera[]>
-  /** The ranges a search would sweep, computed without probing anything (ADR-04). */
+  /** The ranges a search would sweep, computed without probing anything (ADR-05). */
   getDiscoveryRanges(): Promise<DiscoveryRange[]>
   getVendorAssistance(input: VendorAssistanceRequest): Promise<VendorAssistance | null>
   create(input: NewCameraInput): Promise<Camera>
@@ -55,7 +55,7 @@ export interface CameraRepository {
   capturePtzPresetThumbnail(cameraId: string, presetId: number): Promise<void>
   // Capability bindings (ADR-04)
   getCapabilities(cameraId: string): Promise<CameraCapabilityBinding[]>
-  /** streamPath: the first stream's path over RTSP, when the camera lists no stream (ADR-07. */
+  /** streamPath: the first stream's path over RTSP, when the camera lists no stream (ADR-07). */
   configureCapability(
     cameraId: string,
     capability: Capability,

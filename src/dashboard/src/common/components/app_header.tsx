@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router'
 import { cn } from '../ui/utils'
 
 /**
- * The main bar (ADR-15). It carries **viewing** only, plus a single way into the
+ * The main bar (UI-24). It carries **viewing** only, plus a single way into the
  * settings: a label must say what kind of screen it opens, viewing or setting, and
  * the two never mix.
  *

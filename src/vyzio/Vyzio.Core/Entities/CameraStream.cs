@@ -20,7 +20,7 @@ public class CameraStream
 
     public SupportedProtocol Protocol { get; set; }
 
-    // Always set over RTSP (ADR-07; over DVRIP null for the main quality, else the secondary query.
+    // Always set over RTSP (ADR-07); over DVRIP null for the main quality, else the secondary query.
     [MaxLength(500)]
     public string? Path { get; set; }
 

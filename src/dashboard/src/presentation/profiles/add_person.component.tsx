@@ -14,7 +14,7 @@ import { buildAddPersonPresenter } from './add_person.presenter'
 import { addPersonReducer } from './add_person.reducer'
 import { buildInitialAddPersonUido } from './add_person.uido'
 
-/** Adding a person is one task, one page (ADR-15). */
+/** Adding a person is one task, one page (UI-25). */
 export function AddPersonView() {
   const { profiles: container } = useAppContainer()
   const { toast } = useToast()

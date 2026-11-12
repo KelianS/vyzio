@@ -8,7 +8,7 @@ export type PtzDirection = 'Up' | 'Down' | 'Left' | 'Right'
 export type PresetActivity = 'idle' | 'saving' | 'going'
 
 export interface LiveViewUido {
-  /** The quality watched, for as long as the view is open: never stored (ADR-07. */
+  /** The quality watched, for as long as the view is open: never stored (ADR-07). */
   quality: LiveQuality
   /** Off at every opening, a gesture turns it on. */
   soundOn: boolean

@@ -3,7 +3,7 @@ import { CameraState, CameraValidation, type Camera } from '../../domain/entitie
 
 type CameraStatusFacts = Pick<Camera, 'status' | 'validationState'>
 
-// Its stream works but surveillance has not taken it in: still in its setup phase, not « Connectée » (ADR-04.
+// Its stream works but surveillance has not taken it in: still in its setup phase, not « Connectée » (ADR-04).
 function waitsForRestart(camera: CameraStatusFacts): boolean {
   return (
     camera.status === CameraState.Online &&
@@ -45,7 +45,7 @@ export function formatStatusTone(camera: Camera): BadgeTone {
   }
 }
 
-/** Whether the camera is watched yet, and what it waits for otherwise (ADR-04. */
+/** Whether the camera is watched yet, and what it waits for otherwise (ADR-04). */
 export const SurveillanceEntry = {
   Watched: 'watched',
   /** Its stream never worked: the way forward is its Connexion tab. */

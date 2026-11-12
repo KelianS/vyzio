@@ -34,7 +34,7 @@ internal sealed class DvripPtzProvider(DvripClient dvrip, PtzMoveRunner runner, 
         await using var session = await dvrip.OpenSessionAsync(camera, ct);
         var native = await DetectNativePresetsAsync(session, camera, ct);
         NativePresetsFlag.Record(binding, native);
-        // A camera that keeps no preset may still turn: never Missing (ADR-04.
+        // A camera that keeps no preset may still turn: never Missing (ADR-04).
         return native ? CapabilityProof.Proven() : CapabilityProof.Unprovable();
     }
 

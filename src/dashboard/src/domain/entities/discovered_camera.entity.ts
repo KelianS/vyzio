@@ -24,14 +24,14 @@ interface DiscoveryTechnicalDetails {
   capabilities: DetectedCapability[]
 }
 
-/** The stream discovery found reachable as is: its protocol, port, and path over RTSP (ADR-04. */
+/** The stream discovery found reachable as is: its protocol, port, and path over RTSP (ADR-04). */
 interface DiscoveredStream {
   protocol: StreamProtocol
   port: number
   path: string | null
 }
 
-/** Where a range to sweep comes from (ADR-04). */
+/** Where a range to sweep comes from (ADR-05). */
 export const DiscoveryRangeSource = {
   Configured: 'configured',
   DashboardAddress: 'dashboard_address',

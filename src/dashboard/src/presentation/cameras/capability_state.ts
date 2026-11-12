@@ -83,7 +83,7 @@ export function shownState(state: CapabilityState, asking: boolean): CapabilityS
   return asking ? CapabilityState.ToConfirm : state
 }
 
-/** The stream's own check, the camera's (ADR-07: never an open port alone, so the verdict of its last check rules. */
+/** The stream's own check, the camera's (ADR-07): never an open port alone, so the verdict of its last check rules. */
 export function streamCheckState(
   binding: CameraCapabilityBinding,
   camera: Camera,

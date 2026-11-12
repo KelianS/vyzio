@@ -57,7 +57,7 @@ internal static class CapabilityTestUseCases
         return enumerator;
     }
 
-    // A camera that lists one stream, so a stream can be laid out over RTSP (ADR-07.
+    // A camera that lists one stream, so a stream can be laid out over RTSP (ADR-07).
     public static ICameraStreamEnumerator ListsOneStream(string path = "/stream1")
     {
         var enumerator = Substitute.For<ICameraStreamEnumerator>();

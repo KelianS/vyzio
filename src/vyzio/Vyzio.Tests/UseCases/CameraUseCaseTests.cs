@@ -700,7 +700,7 @@ public class VerifyCameraUseCaseTests
         await _streamEnumerator.DidNotReceive().EnumerateAsync(Arg.Any<Camera>(), Arg.Any<SupportedProtocol>(), Arg.Any<CancellationToken>());
     }
 
-    // ── A camera to set up (ADR-04 ──
+    // ── A camera to set up (ADR-04) ──
 
     [Fact]
     public async Task ExecuteAsync_ShouldLeaveToSetUpAndSummonTheRestart_WhenTheStreamWorksForTheFirstTime()

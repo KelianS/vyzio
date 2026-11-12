@@ -259,7 +259,7 @@ public class CapabilityProofTests
     }
 }
 
-// Detection over the capability level: the first candidate, in priority order, that proves it or leaves it to confirm (ADR-04, c).
+// Detection over the capability level: the first candidate, in priority order, that proves it or leaves it to confirm (ADR-04).
 public class CapabilityDetectionTests
 {
     private readonly ICameraRepository _cameras = Substitute.For<ICameraRepository>();

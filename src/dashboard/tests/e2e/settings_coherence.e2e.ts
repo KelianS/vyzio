@@ -152,7 +152,7 @@ test.describe('Settings screens coherence', () => {
       await page.goto(path)
       await page.waitForLoadState('networkidle')
 
-      // "Avance" is a position, not a mode (ADR-15): hence a fold, closed on load.
+      // "Avance" is a position, not a mode (UI-09): hence a fold, closed on load.
       const fold = page.locator('details', { has: page.getByText('Avancé', { exact: true }) })
       await expect(fold).toHaveCount(1)
       await expect(fold).not.toHaveAttribute('open', /.*/)

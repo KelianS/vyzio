@@ -33,7 +33,7 @@ export function liveViewReducer(state: LiveViewUido, action: LiveViewAction): Li
         activePresetId: matchPreset(action.presets, action.currentPosition),
         presetsError: null,
       }
-    // Unread is not empty: the slots give way to the failure (ADR-09.
+    // Unread is not empty: the slots give way to the failure (ADR-09).
     case 'PRESETS_FAILED':
       return { ...state, presets: null, presetsError: action.error }
 

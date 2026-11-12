@@ -46,8 +46,8 @@ only through an overlay network the user operates, on which the hub is a peer, n
   creation for a bounded window, then locks again for everyone. Changing a known password happens in
   the interface, asks the old one, closes every session and hands the asking device a new one.
 - **HTTP at home, on purpose.** No certificate, no redirect, nothing that expires. Vyzio operates no
-  domain, no certificate service and no local CA. The trade-off is said in the security policy and
-  once in the interface, never as a warning.
+  domain, no certificate service and no local CA. The trade-off is stated in the security policy
+  (ACCESS-17).
 - **The remote overlay is operated by the user.** Vyzio runs no remote infrastructure: no relay, no
   control plane, no domain. The recommended overlay is NetBird, on an account the user owns; Vyzio
   guides its setup, stores the pairing key like camera credentials, and no third-party credential

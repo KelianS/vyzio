@@ -1,8 +1,8 @@
-/** Why the live view does not play the video, each read with its own sentence (ADR-07. */
+/** Why the live view does not play the video, each read with its own sentence (ADR-07). */
 export type LiveFailure =
   'unsupported_browser' | 'unsupported_codec' | 'unreachable' | 'privacy' | 'removed' | 'no_quality'
 
-/** A failure whose cause may pass, so trying again may succeed (ADR-07. */
+/** A failure whose cause may pass, so trying again may succeed (ADR-07). */
 export const MAY_PASS: Record<LiveFailure, boolean> = {
   unsupported_browser: false,
   unsupported_codec: false,

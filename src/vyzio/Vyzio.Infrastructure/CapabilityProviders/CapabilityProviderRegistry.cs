@@ -31,7 +31,7 @@ public sealed class CapabilityProviderRegistry : ICapabilityProviderRegistry
         _imageSettingsProviders = imageSettings.ToDictionary(p => p.Protocol);
         _streamProviders = stream.ToDictionary(p => p.Protocol);
 
-        // Detection tries them in this order, whatever order they were registered in (ADR-04.
+        // Detection tries them in this order, whatever order they were registered in (ADR-04).
         _ptzProtocolOrder = CapabilityProtocolPriority.Sort(CameraCapability.Ptz, ptz.Select(p => p.Protocol));
         _privacyProtocolOrder = CapabilityProtocolPriority.Sort(CameraCapability.HardwarePrivacy, privacy.Select(p => p.Protocol));
         _imageSettingsProtocolOrder = CapabilityProtocolPriority.Sort(CameraCapability.ImageSettings, imageSettings.Select(p => p.Protocol));

@@ -31,7 +31,7 @@ internal sealed class OnvifPtzProvider(OnvifClient onvif, PtzMoveRunner runner, 
     private readonly ConcurrentDictionary<string, string?> _ptzConfigCache = new();
     private readonly ConcurrentDictionary<string, PtzCapabilities> _capabilitiesCache = new();
 
-    // A described PTZ configuration is the proof; silence or a refusal fails the check, never reads as missing (ADR-04.
+    // A described PTZ configuration is the proof; silence or a refusal fails the check, never reads as missing (ADR-04).
     public async Task<CapabilityProof> ProveAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
     {
         var (token, configToken, nodeToken) = await onvif.GetFirstProfileAsync(camera, ct, throwOnFailure: true);
@@ -47,7 +47,7 @@ internal sealed class OnvifPtzProvider(OnvifClient onvif, PtzMoveRunner runner, 
             return CapabilityProof.Missing($"ONVIF: {camera.Host} answered GetConfigurationOptions without PTZ configuration options.");
         _capabilitiesCache[camera.Id] = caps;
 
-        // Room for one preset on the profile's node is the native tier, even with none saved; it never weighs on the proof (ADR-09.
+        // Room for one preset on the profile's node is the native tier, even with none saved; it never weighs on the proof (ADR-09).
         var maximum = nodeToken is null ? null : await onvif.GetMaximumNumberOfPresetsAsync(camera, nodeToken, ct);
         var supportsNativePresets = maximum > 0;
         NativePresetsFlag.Record(binding, supportsNativePresets);
@@ -63,7 +63,7 @@ internal sealed class OnvifPtzProvider(OnvifClient onvif, PtzMoveRunner runner, 
         await onvif.GotoPresetAsync(camera, token, presetId, ct);
     }
 
-    // A camera that files the preset under another token refused the slot's number (ADR-09.
+    // A camera that files the preset under another token refused the slot's number (ADR-09).
     public async Task PtzSavePresetAsync(Camera camera, CameraCapabilityBinding binding, int presetId, CancellationToken ct = default)
     {
         var token = await GetProfileTokenAsync(camera, ct);
@@ -73,7 +73,7 @@ internal sealed class OnvifPtzProvider(OnvifClient onvif, PtzMoveRunner runner, 
             throw new CameraCommandRefusedException($"ONVIF SetPreset on {camera.Host}: asked for preset token {asked}, the camera stored it under {stored}.");
     }
 
-    // Tokens that are not a number name no slot (ADR-09.
+    // Tokens that are not a number name no slot (ADR-09).
     public async Task<IReadOnlySet<int>> ReadPresetsAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
     {
         var token = await GetProfileTokenAsync(camera, ct);

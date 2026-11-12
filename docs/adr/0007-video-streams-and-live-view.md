@@ -28,9 +28,8 @@ it there, the live view through a socket the API relays.
 
 - **One lens is one camera.** Streams that share a video source are qualities of one scene; a source
   of its own is another camera. The ONVIF profiles say which, by their source.
-- **Streams are ranked by size, not labelled.** The interface shows each stream's measured
-  resolution, and only an exact one is kept: a nominal label (DVRIP) or a size announced for another
-  address than the one used is dropped. A stream is proposed only once the camera attests it exists.
+- **Streams are ranked by size, not labelled.** Only a stream's exact measured resolution is kept: a nominal label (DVRIP) or a size announced for another
+  address than the one used is dropped. A stream exists for Vyzio only once the camera attests it.
 - **Each stream is checked alone and holds one role**: record, detect, both, or none. Exactly one
   stream records; giving a role takes it from the stream that had it, so recording never lapses.
   With no detect stream, detection runs on the recording stream. A failing detect stream does not
@@ -92,7 +91,6 @@ it there, the live view through a socket the API relays.
 | Several recording streams | Frigate takes one; Vyzio would pick behind the user's back |
 | Streams found again at every verification | Brought back what the user removed and pruned what the camera missed once |
 | An editable path on a stream | Another path is another stream |
-| One capability card per stream | Stream qualities are recorder jargon (principle 1) |
 | The live view as one refreshed frame a second | It lags and nothing moves; kept as the fallback |
 | WebRTC | The media bypasses the API, publishes a UDP port and needs a STUN server (ADR-03) |
 | HLS through the API | Several seconds of delay, and URL rewriting |

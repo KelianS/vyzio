@@ -20,7 +20,7 @@ public class AssistedCameraDiscoveryServiceTests
 
     private AssistedCameraDiscoveryService Discovery(VyzioRuntimeSettings settings) => new(settings, _time);
 
-    // With the production stream providers, so the candidate's ready stream is decided (ADR-05.
+    // With the production stream providers, so the candidate's ready stream is decided (ADR-05).
     private AssistedCameraDiscoveryService DiscoveryWithStreams(VyzioRuntimeSettings settings)
         => new(settings, _time, new CapabilityProviderRegistry([], [], [], [new RtspStreamProvider(), new DvripStreamProvider()]));
 

@@ -23,7 +23,7 @@ const MAX_RETRY_MS = 15_000
 
 const CAMERA_LOST = 'Cette caméra ne répond plus : la vidéo reprendra dès son retour.'
 
-/** What each failure says, and the way out it offers (ADR-07. */
+/** What each failure says, and the way out it offers (ADR-07). */
 const FAILURES: Record<LiveFailure, { sentence: string; frame: boolean; otherQuality: boolean }> = {
   unsupported_browser: {
     sentence: 'Ce navigateur ne lit pas la vidéo en direct : image rafraîchie chaque seconde.',

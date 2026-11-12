@@ -69,7 +69,7 @@ Recensé dans le code, c'est la matière que la future arborescence doit ranger.
 Sept constats. Les deux premiers sont la cause ; les autres en découlent.
 
 **① Il n'existe aucun endroit dont la fonction soit « régler l'installation ».** C'est la cause
-racine. Quand ADR-15 produit le premier réglage global, il n'y avait littéralement pas de case où
+racine. Quand ADR-15 a produit le premier réglage global, il n'y avait littéralement pas de case où
 le mettre — il a atterri dans la barre latérale de l'écran Caméras, entre « Saisie manuelle » et la
 liste des candidats. Renommer l'écran en « Paramètres » n'a fait que déplacer l'incohérence : c'est
 désormais une page « Paramètres » dont la fonction principale est d'ajouter des caméras.

@@ -90,7 +90,7 @@ public sealed class PtzManagedPositions(TimeProvider time, ILogger<PtzManagedPos
         await MoveAxisAsync(camera, provider, motion, targetY > y ? PtzDirection.Down : PtzDirection.Up, Math.Abs(targetY - y), ct);
     }
 
-    // The try of a PTZ to confirm: right and back, then down and back; the counted position is forgotten first (ADR-04.
+    // The try of a PTZ to confirm: right and back, then down and back; the counted position is forgotten first (ADR-04).
     public async Task NudgeAsync(
         Camera camera, CameraCapabilityBinding binding, IPtzCapabilityProvider provider, TimeSpan each, CancellationToken ct)
     {
@@ -125,7 +125,7 @@ public sealed class PtzManagedPositions(TimeProvider time, ILogger<PtzManagedPos
         logger.LogInformation("PTZ homing started for {Camera}: {Duration} ms up-left, position was {Position}.",
             camera.DisplayName, duration.TotalMilliseconds, known?.ToString() ?? "unknown");
 
-        // Short of the margin, the camera may not have reached its limit: no calibration is claimed (ADR-09.
+        // Short of the margin, the camera may not have reached its limit: no calibration is claimed (ADR-09).
         var moved = await MoveAsync(camera, () => motion.MoveForAsync(PtzDirection.UpLeft, ReplaySpeed, duration, ct));
         if (moved < duration - HomingMargin)
         {

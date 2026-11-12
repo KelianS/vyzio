@@ -36,8 +36,8 @@ of the camera itself; the engine stop never depends on the camera's answer.
   privacy still applies.
 - **Best effort, except a lens left shut**: switching on stops the engine whatever the camera answers,
   and parking resumes surveillance on switching off even if the camera does not come back. Switching
-  the hardware cut off is strict: a lens that does not reopen leaves privacy on, so the interface never
-  shows surveillance resumed on a shut lens.
+  the hardware cut off is strict: a lens that does not reopen leaves privacy on, so surveillance never
+  resumes on a shut lens.
 - **What the camera did is persisted with the state**: the cut it confirmed, or why it did not follow,
   a position missing, a capability unverified, the camera failing, or an answer cut short. The
   interface reads that, not the strategy (PRIV-04, PRIV-05).

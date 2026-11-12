@@ -151,7 +151,7 @@ Note : `v380_salon` n'a **pas** de sous-flux distinct — `/stream0` et `/stream
 
 ## 5. Accélération matérielle : absente
 
-Config résolue : `"hwaccel_args": ""`. Aucun décodage matériel n'est configuré, alors qu'ADR-08 déjà
+Config résolue : `"hwaccel_args": ""`. Aucun décodage matériel n'est configuré, alors qu'ADR-08 a déjà
 mis en place le passthrough `/dev/dri` et détecte l'iGPU Intel. Sur le palier Openvino,
 `ffmpeg.hwaccel_args: preset-vaapi` supprimerait quasiment le coût de décodage (~9 % ici, davantage
 avec plus de caméras ou de la 4K).

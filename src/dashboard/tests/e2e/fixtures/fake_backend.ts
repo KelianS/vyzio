@@ -31,9 +31,9 @@ export interface FakeCamera {
   /** Surveillance resumed by hand inside a Privacy range, and when the ranges end (PRIV-07). */
   privacyResume: { until: { dayOfWeek: number; time: string } | null } | null
   verifiedCapabilities: string[]
-  /** The live view's qualities (ADR-07. */
+  /** The live view's qualities (ADR-07). */
   liveQualities: string[]
-  /** Null until detection first ran: its page runs it on arrival (ADR-04. */
+  /** Null until detection first ran: its page runs it on arrival (ADR-04). */
   detectedAt: string | null
 }
 
@@ -380,7 +380,7 @@ export interface FakeBackendState {
   }
   /** The camera's streams, one line each in the stream card's Options (ADR-07). */
   streams: FakeStream[]
-  /** What the camera says it serves over RTSP when asked, most detailed first (ADR-07. */
+  /** What the camera says it serves over RTSP when asked, most detailed first (ADR-07). */
   servedStreams: Pick<FakeStream, 'path' | 'width' | 'height' | 'fps'>[]
   /** The protocols the camera speaks, one box each in Avancé (ADR-04). */
   protocols: FakeProtocol[]
@@ -570,7 +570,7 @@ const PATH_REFUSAL: Partial<Record<string, string>> = {
   dvrip: 'unknown_stream_path',
 }
 
-/** The streams laid out over a newly chosen protocol, as the real server does; null when a path is needed (ADR-07. */
+/** The streams laid out over a newly chosen protocol, as the real server does; null when a path is needed (ADR-07). */
 function layOut(
   state: FakeBackendState,
   protocol: string,
@@ -619,7 +619,7 @@ function giveRole(streams: FakeStream[], target: FakeStream, role: FakeStream['r
   target.role = role
 }
 
-/** The first time its stream works, a camera to set up becomes a draft that waits for a restart (ADR-04. */
+/** The first time its stream works, a camera to set up becomes a draft that waits for a restart (ADR-04). */
 function streamWorked(state: FakeBackendState, camera: FakeCamera | undefined) {
   if (camera?.validationState !== 'to_set_up') return
   camera.validationState = 'draft'
@@ -837,7 +837,7 @@ export async function installFakeBackend(
       return json(route, camera)
     }
     if (path === '/api/cameras/discovery/ranges' && method === 'GET') {
-      // Like the real one: the configured range, then the /24 the dashboard was opened by (ADR-04).
+      // Like the real one: the configured range, then the /24 the dashboard was opened by (ADR-05).
       return json(route, [
         {
           cidr: '192.168.0.0/24',
@@ -900,7 +900,7 @@ export async function installFakeBackend(
         })
       }
       state.pendingChanges = false
-      // A camera whose stream works enters surveillance; one to set up stays out (ADR-04.
+      // A camera whose stream works enters surveillance; one to set up stays out (ADR-04).
       for (const entering of state.cameras.filter((c) => c.validationState === 'draft'))
         entering.validationState = 'validated'
       return json(route, {
@@ -1031,7 +1031,7 @@ export async function installFakeBackend(
         return json(route, state.ptzBinding ? [stream, ptzBindingOf(state.ptzBinding)] : [stream])
       }
       if (rest === '/capabilities/stream' && method === 'PUT') {
-        // Like the real one: a capability goes through one of the camera's protocols (ADR-04.
+        // Like the real one: a capability goes through one of the camera's protocols (ADR-04).
         const chosen = postData?.protocol as string
         if (!state.protocols.some((p) => p.protocol === chosen)) {
           return problem(route, 409, 'protocol_not_on_camera')
@@ -1167,7 +1167,7 @@ export async function installFakeBackend(
           path: string | null
           role: FakeStream['role']
         }
-        // Like the real one: over RTSP a path, over DVRIP one of its two qualities (ADR-07.
+        // Like the real one: over RTSP a path, over DVRIP one of its two qualities (ADR-07).
         if (!PATH_ACCEPTED[body.protocol]?.(body.path ?? '')) {
           return problem(route, 400, PATH_REFUSAL[body.protocol] ?? 'unknown_protocol')
         }

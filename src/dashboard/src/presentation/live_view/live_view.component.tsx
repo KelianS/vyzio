@@ -157,7 +157,7 @@ export function LiveViewScreen() {
   }
 }
 
-/** The live video and, on a camera that moves, its control: all control happens here (ADR-09). */
+/** The live video and, on a camera that moves, its control: all control happens here (PTZ-17). */
 export function LiveView({
   cameraId,
   label,

@@ -44,7 +44,7 @@ const answeringNoStream = {
   stream: null,
 }
 
-// What the search confirmation reads before any search (ADR-04).
+// What the search confirmation reads before any search (ADR-05).
 const rangesToSweep = {
   'GET /api/cameras/discovery/ranges': ok([
     {

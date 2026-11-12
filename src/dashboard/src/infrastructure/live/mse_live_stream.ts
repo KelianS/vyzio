@@ -47,7 +47,7 @@ const CODECS_NOT_MATCHED = /codecs not matched/
 const VIDEO_CODEC = /^(avc1|hvc1|hev1)\b/
 const AUDIO_CODEC = /^(mp4a|flac|opus)\b/
 
-// The refusals the API closes with (ADR-07; any other close is a stream that did not arrive.
+// The refusals the API closes with (ADR-07); any other close is a stream that did not arrive.
 const CLOSE_FAILURES: Partial<Record<number, LiveFailure>> = {
   4404: 'removed',
   4409: 'privacy',

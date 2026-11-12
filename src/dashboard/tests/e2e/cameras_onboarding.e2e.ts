@@ -32,7 +32,7 @@ test.describe('AddCameraView', () => {
     await page.goto('/settings/cameras/ajout')
     await expect(page.getByRole('heading', { name: 'Ajouter une caméra' })).toBeVisible()
 
-    // The cost of the search and every range it will sweep are announced before starting it (ADR-04).
+    // The cost of the search and every range it will sweep are announced before starting it (ADR-05).
     await page.getByRole('button', { name: 'Rechercher sur le réseau' }).click()
     const confirmation = page.getByRole('alertdialog')
     await expect(confirmation).toContainText('15 à 30 secondes')
@@ -44,7 +44,7 @@ test.describe('AddCameraView', () => {
     await expect(page.getByRole('textbox', { name: 'Nom' })).toHaveCount(0)
     await page.getByRole('button', { name: /Caméra détectée/ }).click()
 
-    // Only the access is asked: nothing to verify before the camera exists (ADR-04.
+    // Only the access is asked: nothing to verify before the camera exists (ADR-04).
     await expect(page.getByRole('textbox', { name: 'Nom' })).toHaveValue('Caméra détectée')
     await expect(page.getByRole('textbox', { name: 'Chemin du flux' })).toHaveCount(0)
     await expect(page.getByRole('button', { name: 'Vérifier la connexion' })).toHaveCount(0)
@@ -52,7 +52,7 @@ test.describe('AddCameraView', () => {
     await page.getByLabel('Mot de passe').fill('not-a-real-secret')
     await page.getByRole('button', { name: 'Ajouter la caméra' }).click()
 
-    // Adding opens the camera's page, which detects it on arrival (ADR-04.
+    // Adding opens the camera's page, which detects it on arrival (ADR-04).
     await expect(page).toHaveURL(/\/settings\/cameras\/camera-\d+\/connexion$/)
     // The page says what detection found, in plain words, and keeps it on screen.
     await expect(
@@ -63,7 +63,7 @@ test.describe('AddCameraView', () => {
       .getByRole('listitem')
       .filter({ hasText: 'Flux vidéo' })
     await expect(stream.getByText('Fonctionne')).toBeVisible()
-    // Its stream works, but it stays to set up until the restart takes it in (ADR-04.
+    // Its stream works, but it stays to set up until the restart takes it in (ADR-04).
     await expect(page.getByText('À configurer')).toBeVisible()
     await expect(page.getByRole('button', { name: /Appliquer les changements/ })).toBeVisible()
   })

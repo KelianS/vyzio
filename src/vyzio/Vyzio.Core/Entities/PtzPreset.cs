@@ -5,7 +5,7 @@ public sealed class PtzPreset
 {
     public const int SurveillanceSlot = 1;
     public const int ParkingSlot = 2;
-    // The slots of PTZ-05; a camera preset numbered beyond them is ignored (ADR-09.
+    // The slots of PTZ-05; a camera preset numbered beyond them is ignored (ADR-09).
     public const int LastSlot = 4;
 
     public string Id { get; set; } = Guid.NewGuid().ToString("N");

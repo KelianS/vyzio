@@ -37,7 +37,7 @@ public sealed class ToggleCameraPrivacyModeUseCase(
         // Applied to the end even if the caller hangs up: privacy must not stop half way.
         camera.UpdatedAt = DateTimeOffset.UtcNow;
         await cameras.UpdateAsync(camera, CancellationToken.None);
-        // Once saved, so no new live view opens behind the cut; the open ones stop now, not at Frigate's restart (ADR-07.
+        // Once saved, so no new live view opens behind the cut; the open ones stop now, not at Frigate's restart (ADR-07).
         if (active) live.Cut(camera.Id);
 
         var allCameras = await cameras.GetAllAsync(CancellationToken.None);

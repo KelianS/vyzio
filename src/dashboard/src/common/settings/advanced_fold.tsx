@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { ChevronRight } from 'lucide-react'
 
-/** `Avance` is a position at the end of the page, not a mode (ADR-15): one fold, the same everywhere. */
+/** `Avance` is a position at the end of the page, not a mode (UI-09): one fold, the same everywhere. */
 export function AdvancedFold({ lede, children }: { lede?: string; children: ReactNode }) {
   return (
     <details className="group mt-8 rounded-inset border border-border">

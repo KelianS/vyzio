@@ -50,7 +50,7 @@ public sealed record AddCameraStreamRequest(string Protocol, string? Path, strin
 
 public sealed record SetCameraStreamRoleRequest(string Role);
 
-// A stream the camera serves, read by quality; StreamId is the line it already is, null when it is not listed (ADR-07.
+// A stream the camera serves, read by quality; StreamId is the line it already is, null when it is not listed (ADR-07).
 public sealed record AvailableStreamDto(int Rank, string? Path, int? Width, int? Height, int? Fps, string? StreamId)
 {
     public static AvailableStreamDto From(StreamOffer offer)

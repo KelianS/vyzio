@@ -87,10 +87,10 @@ Chaque exigence porte un identifiant `<DOMAINE>-NN`, et chaque cas d'utilisation
 - **UI-16** · une **action** — verifier une connexion, supprimer une camera, couper la surveillance — prend effet tout de suite et ne differe jamais ;
 - **UI-17** · si la surveillance ne reprend pas les reglages enregistres, l'interface doit le signaler de facon persistante et permettre de reessayer ;
 - **UI-18** · **deux reglages de meme nature doivent se presenter de la meme facon** partout dans le produit : meme type de controle, meme alignement, meme place — pour que l'utilisateur apprenne l'interface une fois et non ecran par ecran ;
+- **UI-19** · l'aide et les explications doivent rester **disponibles sans occuper la place** des noms et des valeurs de reglages, et rester atteignables au doigt ; en revanche, ce qui annonce un **cout** ou une **consequence irreversible** reste visible sans geste supplementaire ;
 - **UI-24** · la barre principale ne porte que la consultation et une seule entree **Reglages** ; un reglage n'y entre jamais ;
 - **UI-25** · les reglages forment un arbre a deux niveaux, rubriques puis pages, ranges par domaine fonctionnel, jamais par portee ni par ecran d'origine ;
-- **UI-26** · sur telephone, un seul niveau de l'arbre des reglages est visible a la fois : la liste des rubriques, celle des pages, puis la page ;
-- **UI-19** · l'aide et les explications doivent rester **disponibles sans occuper la place** des noms et des valeurs de reglages, et rester atteignables au doigt ; en revanche, ce qui annonce un **cout** ou une **consequence irreversible** reste visible sans geste supplementaire.
+- **UI-26** · sur telephone, un seul niveau de l'arbre des reglages est visible a la fois : la liste des rubriques, celle des pages, puis la page.
 
 ### Cameras (`CAM`)
 

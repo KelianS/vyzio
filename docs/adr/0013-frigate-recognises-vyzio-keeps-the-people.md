@@ -33,8 +33,7 @@ from it, and applies the person's notification policy itself.
   - the alert mode is a closed set, signalled or never signalled;
   - a person with linked cameras is notified only on them, and a camera Vyzio no longer knows is not
     among them;
-  - a person with none is notified on every camera, including one added later; ticking every camera
-    is a fixed list;
+  - a person with none follows PROF-04;
   - a detection with no identity, or one naming no person, passes this step untouched; the channel's
     own filters and the muting rules (ADR-15) apply afterwards.
 - A person's cameras are a relation of their own, person to camera, removed with either side.

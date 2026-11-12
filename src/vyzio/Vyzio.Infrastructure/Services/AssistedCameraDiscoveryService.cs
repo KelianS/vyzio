@@ -195,7 +195,7 @@ public sealed class AssistedCameraDiscoveryService : ICameraDiscoveryService
         return result;
     }
 
-    // Ready over the first registered stream protocol proven on the host with what its stream needs (ADR-05.
+    // Ready over the first registered stream protocol proven on the host with what its stream needs (ADR-05).
     private DiscoveredStream? GetReadyStream(
         IReadOnlyDictionary<string, List<RawCameraDiscoverySignal>> signalsByHost,
         string host)

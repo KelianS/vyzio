@@ -5,7 +5,7 @@ namespace Vyzio.Application.UseCases.Cameras;
 
 public sealed record DetectionStep(CameraCapability Capability, IReadOnlyList<SupportedProtocol> Protocols);
 
-// What detection tries on every camera, whatever its vendor: each capability over its protocols, in priority order (ADR-04.
+// What detection tries on every camera, whatever its vendor: each capability over its protocols, in priority order (ADR-04).
 public sealed class DetectionPlan(ICapabilityProviderRegistry registry)
 {
     private static readonly CameraCapability[] DetectedCapabilities =
@@ -37,7 +37,7 @@ public sealed class CameraProtocolSearch(DetectionPlan plan, CameraProtocolCheck
     }
 }
 
-// "Rechercher les protocoles": the protocol level only, no capability is bound or tested (ADR-04.
+// "Rechercher les protocoles": the protocol level only, no capability is bound or tested (ADR-04).
 public sealed class SearchCameraProtocolsUseCase(
     ICameraRepository cameras,
     ICameraProtocolEndpointCache endpointCache,

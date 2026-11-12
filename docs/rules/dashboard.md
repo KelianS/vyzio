@@ -196,7 +196,7 @@ literal colour or radius in a component.
 
 The end-of-page `Avancé` fold, a section's long-form help, a card's `Détails techniques`, a detection
 list and a detection preview each have one component in `common/`: never a rewritten `<details>`, a
-second rendering, or a bare `<img>` that stays broken when surveillance restarts (ADR-15, ADR-17).
+second rendering, or a bare `<img>` that stays broken when surveillance restarts (UI-09, ADR-17).
 
 ### DASHBOARD-26 · A feature's help is written in its screen
 

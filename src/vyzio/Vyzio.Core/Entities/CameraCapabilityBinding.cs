@@ -35,10 +35,10 @@ public class CameraCapabilityBinding
     // When the user confirmed the capability over this protocol; kept across checks, cleared by a proof, a protocol change or a "no".
     public DateTimeOffset? ConfirmedAt { get; set; }
 
-    // When the user answered "no" over this protocol; only a proof, a protocol change or their "yes" clears it (ADR-04.
+    // When the user answered "no" over this protocol; only a proof, a protocol change or their "yes" clears it (ADR-04).
     public DateTimeOffset? RejectedAt { get; set; }
 
-    // The user chose this protocol by hand: detection never overrides it (ADR-04.
+    // The user chose this protocol by hand: detection never overrides it (ADR-04).
     public bool ManuallyConfigured { get; set; }
 
     public DateTimeOffset? VerifiedAt { get; set; }

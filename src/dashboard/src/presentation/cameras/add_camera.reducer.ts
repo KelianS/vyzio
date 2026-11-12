@@ -2,7 +2,7 @@ import type { DiscoveredCamera } from '../../domain/entities/discovered_camera.e
 import type { AddCameraAction } from './add_camera.actions'
 import { emptyCameraDraft, type AddCameraUido } from './add_camera.uido'
 
-// Discovery hands over the name and the address only; credentials stay the user's own (ADR-04.
+// Discovery hands over the name and the address only; credentials stay the user's own (ADR-04).
 function draftFromCandidate(state: AddCameraUido, candidate: DiscoveredCamera) {
   return { ...state.form, displayName: candidate.displayName, host: candidate.host }
 }

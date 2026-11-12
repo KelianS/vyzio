@@ -8,7 +8,7 @@ export interface CameraUpdateInput {
   ptzSupported?: boolean | null
 }
 
-/** A camera to add: its access alone, its page's detection finds the rest (ADR-04. */
+/** A camera to add: its access alone, its page's detection finds the rest (ADR-04). */
 export type NewCameraInput = Pick<
   CameraUpdateInput,
   'displayName' | 'host' | 'username' | 'password'
