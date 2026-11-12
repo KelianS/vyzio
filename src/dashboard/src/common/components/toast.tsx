@@ -1,6 +1,15 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react'
 import { CheckCircle2, Info, X, XCircle } from 'lucide-react'
 import { cn } from '../ui/utils'
+import { whenStill } from './layer_exit'
 
 export type ToastTone = 'success' | 'error' | 'info'
 
@@ -9,6 +18,7 @@ interface ToastItem {
   message: string
   tone: ToastTone
   diagnostic?: string
+  leaving?: boolean
 }
 
 interface ToastContextValue {
@@ -27,7 +37,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     // The same failure raised twice in a row is one thing to read, not a pile to close one by one.
     setItems((prev) =>
       prev.some(
-        (item) => item.message === message && item.tone === tone && item.diagnostic === diagnostic,
+        (item) =>
+          !item.leaving &&
+          item.message === message &&
+          item.tone === tone &&
+          item.diagnostic === diagnostic,
       )
         ? prev
         : [...prev, { id, message, tone, diagnostic }],
@@ -35,6 +49,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const dismiss = useCallback((id: number) => {
+    setItems((prev) => prev.map((item) => (item.id === id ? { ...item, leaving: true } : item)))
+  }, [])
+
+  const remove = useCallback((id: number) => {
     setItems((prev) => prev.filter((item) => item.id !== id))
   }, [])
 
@@ -49,7 +67,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         aria-label="Notifications"
       >
         {items.map((item) => (
-          <ToastChip key={item.id} item={item} onDismiss={dismiss} />
+          <ToastChip key={item.id} item={item} onDismiss={dismiss} onGone={remove} />
         ))}
       </div>
     </ToastContext.Provider>
@@ -68,7 +86,16 @@ const TONE_ICON_CLASS: Record<ToastTone, string> = {
   info: 'text-surface-inverse-foreground',
 }
 
-function ToastChip({ item, onDismiss }: { item: ToastItem; onDismiss: (id: number) => void }) {
+function ToastChip({
+  item,
+  onDismiss,
+  onGone,
+}: {
+  item: ToastItem
+  onDismiss: (id: number) => void
+  onGone: (id: number) => void
+}) {
+  const chipRef = useRef<HTMLDivElement>(null)
   // A failure with a diagnostic stays until dismissed: it may have to be photographed (UI-03).
   const closesItself = item.diagnostic === undefined
   useEffect(() => {
@@ -77,12 +104,26 @@ function ToastChip({ item, onDismiss }: { item: ToastItem; onDismiss: (id: numbe
     return () => clearTimeout(timer)
   }, [item.id, onDismiss, closesItself])
 
+  // It leaves the page once its fade has played.
+  useEffect(() => {
+    if (!item.leaving) return
+    return whenStill(chipRef.current, () => onGone(item.id))
+  }, [item.id, item.leaving, onGone])
+
   const Icon = TONE_ICON[item.tone]
 
   return (
     <div
+      ref={chipRef}
       role="status"
-      className="pointer-events-auto flex min-w-60 max-w-sm items-start gap-3 rounded-lg bg-surface-inverse px-4 py-3 text-surface-inverse-foreground shadow-[var(--shadow-soft)]"
+      className={cn(
+        'pointer-events-auto flex min-w-60 max-w-sm items-start gap-3 rounded-lg bg-surface-inverse px-4 py-3 text-surface-inverse-foreground shadow-[var(--shadow-soft)]',
+        // Transitions, not keyframes: a toast raised mid-fade picks up from where it stands.
+        'transition-[opacity,translate] starting:opacity-0 motion-safe:starting:translate-y-2',
+        item.leaving
+          ? 'pointer-events-none opacity-0 duration-(--duration-short)'
+          : 'duration-(--duration-long)',
+      )}
     >
       <Icon
         className={cn('mt-0.5 size-4 shrink-0', TONE_ICON_CLASS[item.tone])}

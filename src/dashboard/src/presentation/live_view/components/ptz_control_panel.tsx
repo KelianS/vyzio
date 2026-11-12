@@ -95,7 +95,7 @@ function DirButton({
       {...handlers}
       className={cn(
         buttonSize,
-        'absolute flex items-center justify-center rounded-full bg-muted text-foreground transition-colors',
+        'press absolute flex items-center justify-center rounded-full bg-muted text-foreground',
         'hover:bg-primary hover:text-primary-foreground active:bg-primary active:text-primary-foreground',
         EDGE_POSITION[edge],
       )}
@@ -178,7 +178,7 @@ function PresetTile({
       // The long press is our gesture: without this the mobile browser opens its menu over it.
       onContextMenu={(e) => e.preventDefault()}
       className={cn(
-        'relative size-14 shrink-0 touch-none overflow-hidden rounded-md border bg-muted transition-colors',
+        'press relative size-14 shrink-0 touch-none overflow-hidden rounded-md border bg-muted',
         active ? 'border-primary ring-2 ring-primary' : 'border-border',
         'disabled:opacity-60',
       )}
