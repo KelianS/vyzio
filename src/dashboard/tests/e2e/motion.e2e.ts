@@ -214,6 +214,65 @@ test.describe('Press feedback on every kind of row', () => {
   })
 })
 
+// Every kind of control drawn without the button primitive presses like a button.
+test.describe('Press feedback on every kind of control', () => {
+  const SHRUNK = { scale: '0.97', opacity: '1' }
+
+  test('ToastClose_ShouldShrinkSlightly_WhenItIsPressed', async ({ page }) => {
+    const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
+    await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
+    await page.goto('/')
+    await pauseTheCamera(page)
+
+    expect(await pressed(page.getByRole('status').getByRole('button', { name: 'Fermer' }))).toEqual(
+      SHRUNK,
+    )
+  })
+
+  test('AccessRetry_ShouldShrinkSlightly_WhenItIsPressed', async ({ page }) => {
+    await installFakeBackend(page, createFakeBackendState())
+    await page.route('**/api/access/state', (route) => route.abort())
+    await page.goto('/')
+    await expect(page.getByText('Vyzio ne répond pas')).toBeVisible()
+
+    expect(await pressed(page.getByRole('button', { name: 'Réessayer' }))).toEqual(SHRUNK)
+  })
+
+  test('DetectionTile_ShouldShrinkSlightly_WhenItIsPressed', async ({ page }) => {
+    await installFakeBackend(
+      page,
+      createFakeBackendState({ detectionHistory: [makeFakeDetectionEvent()] }),
+    )
+    await page.goto('/history')
+
+    expect(await pressed(page.getByRole('button', { name: /Voir l’aperçu/ }))).toEqual(SHRUNK)
+  })
+
+  test('PositionTile_ShouldShrinkSlightly_WhenItIsPressed', async ({ page }) => {
+    const camera = makeFakeCamera({ ptzSupported: true, verifiedCapabilities: ['ptz'] })
+    await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
+    await page.goto('/cameras/camera-1/direct')
+
+    expect(await pressed(page.getByTitle('Enregistrer la position actuelle ici').first())).toEqual(
+      SHRUNK,
+    )
+  })
+
+  test('LiveControl_ShouldDimInsteadOfShrinking_WhenThePhoneAsksForLessMotion', async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
+    await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
+    await page.goto('/cameras/camera-1/direct')
+
+    expect(await pressed(page.getByRole('button', { name: 'Retour' }))).toEqual({
+      scale: 'none',
+      opacity: '0.8',
+    })
+  })
+})
+
 test.describe('Layers', () => {
   test('ConfirmModal_ShouldFadeInGrowingSlightly_WhenItOpens', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))

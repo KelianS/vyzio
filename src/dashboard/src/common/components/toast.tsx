@@ -10,6 +10,7 @@ import {
 import { CheckCircle2, Info, X, XCircle } from 'lucide-react'
 import { cn } from '../ui/utils'
 import { whenStill } from './layer_exit'
+import { PressableControl } from './pressable'
 
 export type ToastTone = 'success' | 'error' | 'info'
 
@@ -135,14 +136,16 @@ function ToastChip({
           </p>
         )}
       </div>
-      <button
-        type="button"
-        aria-label="Fermer"
-        className="press shrink-0 opacity-60 hover:opacity-100"
-        onClick={() => onDismiss(item.id)}
-      >
-        <X className="size-4" aria-hidden="true" />
-      </button>
+      <PressableControl>
+        <button
+          type="button"
+          aria-label="Fermer"
+          className="shrink-0 opacity-60 hover:opacity-100"
+          onClick={() => onDismiss(item.id)}
+        >
+          <X className="size-4" aria-hidden="true" />
+        </button>
+      </PressableControl>
     </div>
   )
 }

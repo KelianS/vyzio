@@ -105,13 +105,13 @@ otherwise jump, never decorates. One curve and three durations, never a value wr
   it comes back rather than showing twice.
 - **Every press answers**, so a tap never looks unheard while the answer is on its way.
   - A **control** (a button, a control over the picture, a retry) shrinks slightly while pressed: the
-    button primitive takes it by itself, any other control takes the `press` utility. A link drawn
-    as a button is an action, and presses like one.
+    button primitive takes it by itself, any other control is wrapped in the shared pressable
+    control. A link drawn as a button is an action, and presses like one.
   - A **surface that leads somewhere** (a header link, a list row, a camera's picture) dims while
     pressed and never moves: used tens of times a day, it must not move. Every list row that leads
     somewhere or picks something is the registry `item`, with its hover and focus; any other such
-    surface is wrapped in the shared pressable surface. Both take the dim by their slot, never by a
-    class on a screen.
+    surface is wrapped in the shared pressable surface.
+  - Every press is taken by a slot, never by a class on a screen.
   - A tab bar keeps its colour change only. A screen change is instant.
 - **Reduce motion.** When the phone asks for less motion, only fades remain: no growing, no slide,
   no rise, and a press dims instead of shrinking. `src/index.css` carries it for the layers and the

@@ -10,6 +10,7 @@ import { presetLabel } from '../live_view.formatters'
 import type { LiveViewUido, PresetActivity, PtzDirection } from '../live_view.uido'
 import type { LiveLayout } from '../live_layout'
 import { fading } from './live_control'
+import { PressableControl } from '../../../common/components/pressable'
 
 const ALL_PRESET_IDS = [1, 2, 3, 4]
 
@@ -90,19 +91,21 @@ function DirButton({
   onLostPointerCapture: () => void
 }) {
   return (
-    <button
-      type="button"
-      title={title}
-      {...handlers}
-      className={cn(
-        buttonSize,
-        'press absolute flex items-center justify-center rounded-full bg-muted text-foreground',
-        'hover:bg-primary hover:text-primary-foreground active:bg-primary active:text-primary-foreground',
-        EDGE_POSITION[edge],
-      )}
-    >
-      {children}
-    </button>
+    <PressableControl>
+      <button
+        type="button"
+        title={title}
+        {...handlers}
+        className={cn(
+          buttonSize,
+          'absolute flex items-center justify-center rounded-full bg-muted text-foreground',
+          'hover:bg-primary hover:text-primary-foreground active:bg-primary active:text-primary-foreground',
+          EDGE_POSITION[edge],
+        )}
+      >
+        {children}
+      </button>
+    </PressableControl>
   )
 }
 
@@ -163,55 +166,57 @@ function PresetTile({
   }
 
   return (
-    <button
-      type="button"
-      disabled={BUSY[state] || (!preset && !editable)}
-      aria-pressed={preset ? active : undefined}
-      title={tileTitle(preset, editable)}
-      // Pointer events only: a touch also emulates mouse events, which would press the tile twice.
-      onPointerDown={(e) => {
-        if (e.button === 0) start()
-      }}
-      onPointerUp={() => end(true)}
-      // A swipe along the row is the browser's: it cancels the press, so a scroll never saves.
-      onPointerCancel={() => end(false)}
-      onPointerLeave={() => end(false)}
-      // The long press is our gesture: without this the mobile browser opens its menu over it.
-      onContextMenu={(e) => e.preventDefault()}
-      className={cn(
-        'press relative size-14 shrink-0 touch-pan-x overflow-hidden rounded-md border bg-muted',
-        active ? 'border-primary ring-2 ring-primary' : 'border-border',
-        'disabled:opacity-60',
-      )}
-    >
-      {!preset ? (
-        <Plus className="mx-auto size-4 text-muted-foreground" aria-hidden="true" />
-      ) : thumbSrc ? (
-        <img
-          key={thumbSrc}
-          src={thumbSrc}
-          alt=""
-          className="size-full object-cover"
-          style={thumbLoaded ? undefined : { visibility: 'hidden' }}
-          onLoad={onThumbLoad}
-          onError={() => {}}
-        />
-      ) : (
-        // Held by the camera before any thumbnail: a position, never the sign of an empty slot (PTZ-14).
-        <MapPin className="mx-auto size-4 text-foreground" aria-hidden="true" />
-      )}
-      {reserved && (
-        <span
-          className="absolute top-0.5 right-0.5 size-1.5 rounded-full bg-accent"
-          aria-hidden="true"
-        />
-      )}
-      {BUSY[state] && (
-        <span className="absolute inset-0 flex items-center justify-center bg-surface-inverse/60 text-xs text-surface-inverse-foreground">
-          …
-        </span>
-      )}
-    </button>
+    <PressableControl>
+      <button
+        type="button"
+        disabled={BUSY[state] || (!preset && !editable)}
+        aria-pressed={preset ? active : undefined}
+        title={tileTitle(preset, editable)}
+        // Pointer events only: a touch also emulates mouse events, which would press the tile twice.
+        onPointerDown={(e) => {
+          if (e.button === 0) start()
+        }}
+        onPointerUp={() => end(true)}
+        // A swipe along the row is the browser's: it cancels the press, so a scroll never saves.
+        onPointerCancel={() => end(false)}
+        onPointerLeave={() => end(false)}
+        // The long press is our gesture: without this the mobile browser opens its menu over it.
+        onContextMenu={(e) => e.preventDefault()}
+        className={cn(
+          'relative size-14 shrink-0 touch-pan-x overflow-hidden rounded-md border bg-muted',
+          active ? 'border-primary ring-2 ring-primary' : 'border-border',
+          'disabled:opacity-60',
+        )}
+      >
+        {!preset ? (
+          <Plus className="mx-auto size-4 text-muted-foreground" aria-hidden="true" />
+        ) : thumbSrc ? (
+          <img
+            key={thumbSrc}
+            src={thumbSrc}
+            alt=""
+            className="size-full object-cover"
+            style={thumbLoaded ? undefined : { visibility: 'hidden' }}
+            onLoad={onThumbLoad}
+            onError={() => {}}
+          />
+        ) : (
+          // Held by the camera before any thumbnail: a position, never the sign of an empty slot (PTZ-14).
+          <MapPin className="mx-auto size-4 text-foreground" aria-hidden="true" />
+        )}
+        {reserved && (
+          <span
+            className="absolute top-0.5 right-0.5 size-1.5 rounded-full bg-accent"
+            aria-hidden="true"
+          />
+        )}
+        {BUSY[state] && (
+          <span className="absolute inset-0 flex items-center justify-center bg-surface-inverse/60 text-xs text-surface-inverse-foreground">
+            …
+          </span>
+        )}
+      </button>
+    </PressableControl>
   )
 }
 

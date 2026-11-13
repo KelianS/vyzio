@@ -8,6 +8,7 @@ import { SignInScreen } from './components/sign_in_screen'
 import { buildAccessGatePresenter } from './access_gate.presenter'
 import { accessGateReducer } from './access_gate.reducer'
 import { buildInitialAccessGateUido } from './access_gate.uido'
+import { PressableControl } from '../../common/components/pressable'
 
 /** Nothing shows before someone is in: first the password to choose, then sign-in (ADR-16). */
 export function AccessGate({ children }: { children: ReactNode }) {
@@ -30,13 +31,15 @@ export function AccessGate({ children }: { children: ReactNode }) {
       <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center gap-4 px-4 text-center">
         <h1 className="font-serif text-2xl">Vyzio ne répond pas</h1>
         <ErrorMessage error={uido.error} className="text-muted-foreground" />
-        <button
-          type="button"
-          onClick={() => void presenter.onLoad()}
-          className="press text-sm font-medium underline"
-        >
-          Réessayer
-        </button>
+        <PressableControl>
+          <button
+            type="button"
+            onClick={() => void presenter.onLoad()}
+            className="text-sm font-medium underline"
+          >
+            Réessayer
+          </button>
+        </PressableControl>
       </main>
     )
   }
