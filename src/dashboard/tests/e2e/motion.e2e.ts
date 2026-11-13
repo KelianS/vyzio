@@ -3,6 +3,7 @@ import {
   installFakeBackend,
   createFakeBackendState,
   makeFakeCamera,
+  makeFakeChannel,
   makeFakeDetectionEvent,
 } from './fixtures/fake_backend'
 
@@ -149,6 +150,67 @@ test.describe('Press feedback on links and rows', () => {
       scale: 'none',
       opacity: '0.7',
     })
+  })
+})
+
+// Every kind of row is the registry `item`: each one dims, links and buttons alike.
+test.describe('Press feedback on every kind of row', () => {
+  test.use({ viewport: { width: 390, height: 844 } })
+
+  const DIMMED = { scale: 'none', opacity: '0.7' }
+
+  test('PersonRow_ShouldDimWithoutMoving_WhenItIsPressed', async ({ page }) => {
+    const alice = {
+      id: 'profile-1',
+      name: 'Alice',
+      category: 'family',
+      alertMode: 'always',
+      lastSeenAt: null,
+      createdAt: '2026-11-01T08:00:00Z',
+    }
+    await installFakeBackend(page, createFakeBackendState({ profiles: [alice] }))
+    await page.goto('/settings/detection/personnes')
+
+    expect(await pressed(page.getByRole('link', { name: /Alice/ }))).toEqual(DIMMED)
+  })
+
+  test('ChannelRow_ShouldDimWithoutMoving_WhenItIsPressed', async ({ page }) => {
+    const state = createFakeBackendState({
+      notificationChannels: { telegram: makeFakeChannel('telegram') },
+    })
+    await installFakeBackend(page, state)
+    await page.goto('/settings/notifications')
+
+    expect(await pressed(page.getByRole('link', { name: /Telegram/ }))).toEqual(DIMMED)
+  })
+
+  test('AddChannelRow_ShouldDimWithoutMoving_WhenItIsPressed', async ({ page }) => {
+    await installFakeBackend(page, createFakeBackendState())
+    await page.goto('/settings/notifications/ajout')
+
+    expect(await pressed(page.getByRole('link', { name: /Telegram/ }))).toEqual(DIMMED)
+  })
+
+  test('SettingsRubricRow_ShouldDimWithoutMoving_WhenItIsPressed', async ({ page }) => {
+    await installFakeBackend(page, createFakeBackendState())
+    await page.goto('/settings')
+
+    expect(
+      await pressed(
+        page
+          .getByRole('navigation', { name: 'Rubriques de réglages' })
+          .getByRole('link', { name: /Caméras/ }),
+      ),
+    ).toEqual(DIMMED)
+  })
+
+  test('DiscoveredCameraRow_ShouldDimWithoutMoving_WhenItIsPressed', async ({ page }) => {
+    await installFakeBackend(page, createFakeBackendState({ cameras: [] }))
+    await page.goto('/settings/cameras/ajout')
+    await page.getByRole('button', { name: 'Rechercher sur le réseau' }).click()
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Rechercher' }).click()
+
+    expect(await pressed(page.getByRole('button', { name: /Caméra détectée/ }))).toEqual(DIMMED)
   })
 })
 
