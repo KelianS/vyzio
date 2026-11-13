@@ -36,14 +36,14 @@ RUN apk add --no-cache docker-cli tzdata icu-libs su-exec curl
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
 
 # YOLOX (Apache-2.0) pretrained ONNX model, Openvino/Intel-GPU tier only — installed into Frigate's
-# shared config volume on demand by IFrigateModelAssetInstaller (ADR-34). Apache-2.0 permits bundling
+# shared config volume on demand by IFrigateModelAssetInstaller (ADR-08). Apache-2.0 permits bundling
 # in this image, unlike YOLOv9 (GPL-3.0) or YOLO-NAS (non-commercial weights). The CPU-only tier uses
 # Frigate's own native `cpu` detector — field testing showed YOLOX overloads it, even the smallest
 # variant.
 RUN mkdir -p /app/models \
 	&& curl -fsSL -o /app/models/yolox_s.onnx https://github.com/Megvii-BaseDetection/YOLOX/releases/download/0.1.1rc0/yolox_s.onnx
 
-# Frigate's small face model files, pinned by digest, so Frigate never downloads them; licences in ADR-70.
+# Frigate's small face model files, pinned by digest, so Frigate never downloads them; licences in ADR-03.
 ARG FACE_MODELS_URL=https://github.com/NickM-27/facenet-onnx/releases/download/v1.0
 RUN mkdir -p /app/models/facedet \
 	&& curl -fsSL -o /app/models/facedet/facedet.onnx "${FACE_MODELS_URL}/facedet.onnx" \

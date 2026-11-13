@@ -1,7 +1,7 @@
 namespace Vyzio.Core.Interfaces;
 
 /// <summary>
-/// Writes a corrected identity back to Frigate, which owns it (ADR-49). A correction kept locally
+/// Writes a corrected identity back to Frigate, which owns it (ADR-12). A correction kept locally
 /// would teach the engine nothing.
 /// </summary>
 public interface IFrigateIdentityWriter

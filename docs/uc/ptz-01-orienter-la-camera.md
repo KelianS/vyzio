@@ -32,7 +32,7 @@
 
 ### N1 · Orienter la caméra depuis le direct
 
-1. L'utilisateur trouve le pilotage dans la vue en direct (PTZ-01), parce que l'orientation fonctionne (PTZ-02).
+1. L'utilisateur trouve le pilotage dans la vue en direct (PTZ-01), parce que l'orientation fonctionne (PTZ-19).
 2. Il presse une flèche : la caméra tourne dans ce sens.
 
 ### A1 · Aller à une position enregistrée
@@ -47,7 +47,7 @@
 ### E1 · L'orientation ne fonctionne pas
 
 1. L'orientation n'est ni prouvée, ni confirmée par l'utilisateur (CAM-21).
-2. Aucune commande inerte : une ligne renvoie vers la page « Connexion » de la caméra, où sa carte dit pourquoi et comment en sortir (PTZ-02, CAM-24) ; une orientation désactivée n'y laisse rien.
+2. Aucune commande inerte : une ligne renvoie vers la page « Connexion » de la caméra, où sa carte dit pourquoi et comment en sortir (PTZ-19, CAM-24) ; une orientation désactivée n'y laisse rien.
 
 ### E2 · La caméra est hors ligne
 

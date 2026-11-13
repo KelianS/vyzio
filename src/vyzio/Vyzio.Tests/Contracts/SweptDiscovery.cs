@@ -5,7 +5,7 @@ using Vyzio.Tests.Services.Hosting;
 
 namespace Vyzio.Tests.Contracts;
 
-// The discovery port sweep run against one replaying camera, its port mapped to the protocol fingerprinted there (ADR-32).
+// The discovery port sweep run against one replaying camera, its port mapped to the protocol fingerprinted there (ADR-05).
 internal static class SweptDiscovery
 {
     public static async Task<DetectedPortSignal> DetectedPortAsync(CapturedTcpCamera camera, SupportedProtocol protocol)

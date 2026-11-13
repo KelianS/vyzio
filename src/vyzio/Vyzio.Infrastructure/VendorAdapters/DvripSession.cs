@@ -4,7 +4,7 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Infrastructure.VendorAdapters;
 
-// One logged-in DVRIP connection held for several commands: they go out in order, their answers are matched in order (ADR-60).
+// One logged-in DVRIP connection held for several commands: they go out in order, their answers are matched in order (ADR-09).
 internal sealed class DvripSession : IAsyncDisposable
 {
     private readonly TcpClient _tcp;
@@ -37,7 +37,7 @@ internal sealed class DvripSession : IAsyncDisposable
     // False once the camera dropped the connection: the next command needs a new session.
     public bool IsOpen => !_closed;
 
-    // Sends a command and waits for its answer; null when the camera stays silent once it has it (ADR-56).
+    // Sends a command and waits for its answer; null when the camera stays silent once it has it (ADR-04).
     public async Task<string?> ExecuteAsync(int cmdCode, Func<string, string> buildPayload, CancellationToken ct)
         => await AnswerOfAsync(await SendAsync(cmdCode, buildPayload, ct), ct);
 
@@ -68,7 +68,7 @@ internal sealed class DvripSession : IAsyncDisposable
         return answer.Task;
     }
 
-    // The answer within the command wait; null when the camera stays silent, raised as unreachable when it hung up (ADR-56).
+    // The answer within the command wait; null when the camera stays silent, raised as unreachable when it hung up (ADR-04).
     private async Task<string?> AnswerOfAsync(Task<string?> answer, CancellationToken ct)
     {
         using var deadline = new CancellationTokenSource(_answerWait, _time);
@@ -80,7 +80,7 @@ internal sealed class DvripSession : IAsyncDisposable
         }
         catch (OperationCanceledException) when (deadline.IsCancellationRequested && !ct.IsCancellationRequested)
         {
-            // Budget cameras execute on receipt and may answer late: silence within the wait stays a success (ADR-56).
+            // Budget cameras execute on receipt and may answer late: silence within the wait stays a success (ADR-04).
             return null;
         }
     }

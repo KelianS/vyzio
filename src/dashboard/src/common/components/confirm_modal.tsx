@@ -39,7 +39,7 @@ const CONFIRM_VARIANT: Record<Required<ConfirmModalProps>['tone'], ButtonVariant
   default: 'secondary',
 }
 
-/** Confirmation dialog on the shadcn AlertDialog primitive (ADR-42): focus trap and Escape come from Radix. */
+/** Confirmation dialog on the shadcn AlertDialog primitive (ADR-01): focus trap and Escape come from Radix. */
 export function ConfirmModal({
   title,
   body,

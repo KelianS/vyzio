@@ -5,7 +5,7 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Application.UseCases.Notifications;
 
-/// <summary>Why a detection naming a person is signalled or not, before any channel (ADR-58).</summary>
+/// <summary>Why a detection naming a person is signalled or not, before any channel (ADR-13).</summary>
 public enum PersonAlertDecision
 {
     Signalled,
@@ -14,7 +14,7 @@ public enum PersonAlertDecision
 }
 
 /// <summary>
-/// Whether the person a detection names is signalled at all (ADR-58).
+/// Whether the person a detection names is signalled at all (ADR-13).
 /// A detection naming no profile is left to the channels.
 /// </summary>
 public sealed class PersonAlertPolicy(

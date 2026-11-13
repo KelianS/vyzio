@@ -6,7 +6,7 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Tests.UseCases;
 
-// On the native tier the camera alone holds the slot: Vyzio orders it stored and keeps no row (ADR-69).
+// On the native tier the camera alone holds the slot: Vyzio orders it stored and keeps no row (ADR-09).
 public class PtzSavePresetUseCaseTests
 {
     private readonly ICameraRepository _cameras = Substitute.For<ICameraRepository>();

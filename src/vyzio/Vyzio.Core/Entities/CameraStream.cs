@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Vyzio.Core.Entities;
 
-// A video access point, a row under the stream binding with its own role and check; ranked, never labelled (ADR-38, ADR-65).
+// A video access point, a row under the stream binding with its own role and check; ranked, never labelled (ADR-07).
 [Table("camera_streams")]
 public class CameraStream
 {
@@ -20,18 +20,18 @@ public class CameraStream
 
     public SupportedProtocol Protocol { get; set; }
 
-    // Always set over RTSP (ADR-65 e); over DVRIP null for the main quality, else the secondary query.
+    // Always set over RTSP (ADR-07); over DVRIP null for the main quality, else the secondary query.
     [MaxLength(500)]
     public string? Path { get; set; }
 
-    // Real pixels as reported; null when the protocol gave no exact size (DVRIP nominal labels, ADR-38).
+    // Real pixels as reported; null when the protocol gave no exact size (DVRIP nominal labels, ADR-07).
     public int? Width { get; set; }
 
     public int? Height { get; set; }
 
     public int? Fps { get; set; }
 
-    // Changed only through StreamLineup, which holds the one-recording-stream guard (ADR-65).
+    // Changed only through StreamLineup, which holds the one-recording-stream guard (ADR-07).
     public StreamRole Role { get; set; }
 
     public bool Verified { get; set; }
@@ -44,7 +44,7 @@ public class CameraStream
 
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
 
-    // XMEye extra-stream selector, verified on real hardware (ADR-38).
+    // XMEye extra-stream selector, verified on real hardware (ADR-07).
     public const string DvripSecondaryQuery = "?channel=0&subtype=1";
 
     public bool HasKnownResolution => Width is > 0 && Height is > 0;

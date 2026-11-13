@@ -51,7 +51,8 @@
 - **IMG-01** · les reglages image (luminosite, contraste, saturation, nettete, mode vision nocturne infrarouge) sont une **capacite** au sens du catalogue (CAM-10, CAM-13) : independante de la marque, testee reellement avant d'etre proposee, jamais activee sur simple declaration ;
 - **IMG-02** · les valeurs affichees et modifiables sont lues et ecrites en direct sur la camera — Vyzio ne stocke pas de copie locale des reglages, la camera reste la source de verite ;
 - **IMG-03** · une camera dont la capacite reglages image n'est pas verifiee ne doit pas afficher le panneau de controle, quelle que soit sa marque ;
-- **IMG-04** · le mode vision nocturne expose au minimum trois etats comprehensibles pour un non-technicien : automatique, force actif, force inactif.
+- **IMG-04** · le mode vision nocturne expose au minimum trois etats comprehensibles pour un non-technicien : automatique, force actif, force inactif ;
+- **IMG-05** · un reglage que le protocole de la camera ne sait pas faire n'est pas propose : son controle n'apparait pas, plutot qu'un controle sans effet.
 
 ## Points ouverts
 

@@ -10,10 +10,10 @@ namespace Vyzio.Infrastructure.VendorAdapters;
 
 // Thrown on a diagnosable DVRIP failure (login rejected, Ret != 100, connection error) —
 // propagated so ProbeCameraCapabilityUseCase surfaces it as LastError instead of a generic
-// message (same rationale as CameraCommandException, ADR-28 follow-up).
+// message (same rationale as CameraCommandException, ADR-04 follow-up).
 public sealed class DvripCallException(string message, Exception? inner = null) : Exception(message, inner);
 
-// Pure DVRIP (Xiongmai/XMEye "Sofia") protocol client, singleton and stateless (ADR-29).
+// Pure DVRIP (Xiongmai/XMEye "Sofia") protocol client, singleton and stateless (ADR-06).
 internal sealed class DvripClient(TimeProvider time)
 {
     private const int LoginCmd = 1000;
@@ -23,7 +23,7 @@ internal sealed class DvripClient(TimeProvider time)
     private const int ConfigSetCmd = 1040;
     private static readonly TimeSpan CommandTimeout = TimeSpan.FromSeconds(5);
 
-    // Connects and logs in within 5 s, raised as refused or unreachable (ADR-56); the session then carries as many commands as needed (ADR-60).
+    // Connects and logs in within 5 s, raised as refused or unreachable (ADR-04); the session then carries as many commands as needed (ADR-09).
     public async Task<DvripSession> OpenSessionAsync(Camera camera, CancellationToken ct)
     {
         using var deadline = new CancellationTokenSource(CommandTimeout, time);
@@ -51,7 +51,7 @@ internal sealed class DvripClient(TimeProvider time)
         }
     }
 
-    // The protocol level's login: connect, then log in with the DVRIP account; nothing else is sent (ADR-61).
+    // The protocol level's login: connect, then log in with the DVRIP account; nothing else is sent (ADR-04).
     public async Task<ProtocolAnswer> CheckLoginAsync(Camera camera, CancellationToken ct)
     {
         var port = camera.PortOf(SupportedProtocol.Dvrip);
@@ -115,7 +115,7 @@ internal sealed class DvripClient(TimeProvider time)
     // ConfigManager.setConfig (cmd 1044) — writes back the full config node for configName.
     // Callers must round-trip: read via ConfigGetAsync, mutate only the known fields, write the
     // whole node back — never construct a config from scratch (unknown/undocumented schema per
-    // firmware, ADR-29). Bounded to 5s total, same rationale as ConfigGetAsync.
+    // firmware, ADR-06). Bounded to 5s total, same rationale as ConfigGetAsync.
     public async Task ConfigSetAsync(Camera camera, string configName, JsonNode config, CancellationToken ct)
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);

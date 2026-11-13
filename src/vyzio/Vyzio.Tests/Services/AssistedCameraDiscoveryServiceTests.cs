@@ -20,7 +20,7 @@ public class AssistedCameraDiscoveryServiceTests
 
     private AssistedCameraDiscoveryService Discovery(VyzioRuntimeSettings settings) => new(settings, _time);
 
-    // With the production stream providers, so the candidate's ready stream is decided (ADR-61 b).
+    // With the production stream providers, so the candidate's ready stream is decided (ADR-05).
     private AssistedCameraDiscoveryService DiscoveryWithStreams(VyzioRuntimeSettings settings)
         => new(settings, _time, new CapabilityProviderRegistry([], [], [], [new RtspStreamProvider(), new DvripStreamProvider()]));
 
@@ -203,7 +203,7 @@ public class AssistedCameraDiscoveryServiceTests
         Assert.DoesNotContain("http_camera_signature", candidate.QualificationReasons);
     }
 
-    // ADR-32: ONVIF is detected by the port-sweep SOAP fingerprint, regardless of any web UI —
+    // ADR-05: ONVIF is detected by the port-sweep SOAP fingerprint, regardless of any web UI —
     // which confirms the protocol, hence the ONVIF capability. Which ports carry that fingerprint
     // in production is the catalog's business, asserted in DiscoveryPortCatalogTests.
     [Fact]
@@ -293,7 +293,7 @@ public class AssistedCameraDiscoveryServiceTests
         catch (IOException) { }
     }, ct);
 
-    // Shaped like a Tapo (ADR-56): 404 on the common path, every service on /onvif/service.
+    // Shaped like a Tapo (ADR-05): 404 on the common path, every service on /onvif/service.
     private static Task RespondOnvifOnSingleEndpointAsync(TcpListener listener, CancellationToken ct) => Task.Run(async () =>
     {
         const string notFound = "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
@@ -342,7 +342,7 @@ public class AssistedCameraDiscoveryServiceTests
         catch (System.Net.Sockets.SocketException) { }
     }, ct);
 
-    // ADR-32: an identified host that matches no protocol/vendor signal no longer disappears —
+    // ADR-05: an identified host that matches no protocol/vendor signal no longer disappears —
     // it now surfaces as a device_unknown "network_host" baseline candidate (backlog: "show
     // everything found, even unmatched, at lower priority"). This replaces the old expectation
     // that a rejected SOAP gateway produced literally zero output.
@@ -503,7 +503,7 @@ public class AssistedCameraDiscoveryServiceTests
         Assert.Equal("camera_likely", result[1].Qualification);
     }
 
-    // Identification filters what to enrich, never what is shown (ADR-32).
+    // Identification filters what to enrich, never what is shown (ADR-05).
     [Fact]
     public async Task DiscoverAsync_ShouldStillShowTheHostAsUnknown_WhenAnIdentifiedHostMatchesNoSignal()
     {
@@ -557,7 +557,7 @@ public class AssistedCameraDiscoveryServiceTests
         Assert.Equal("http_service", candidate.DiscoverySource);
     }
 
-    // ADR-32: an open port whose fingerprint fails is NOT mislabelled — it surfaces as an
+    // ADR-05: an open port whose fingerprint fails is NOT mislabelled — it surfaces as an
     // "unidentified open port" (this is the Tapo-isn't-V380 fix). Here a dumb listener never
     // completes the V380 handshake, so it must show up unidentified, not as V380.
     [Fact]

@@ -46,7 +46,7 @@ internal sealed class CapturedTcpCamera : IAsyncDisposable
         get { lock (_asked) return [.. _answers.Keys.Where(key => !_asked.ContainsKey(key))]; }
     }
 
-    // A camera on this peer, reached on its protocol line (ADR-61), with the fixture account and the given password.
+    // A camera on this peer, reached on its protocol line (ADR-04), with the fixture account and the given password.
     public Camera Camera(string password)
     {
         var camera = new Camera

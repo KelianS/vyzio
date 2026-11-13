@@ -7,7 +7,7 @@ using Vyzio.Infrastructure.VendorAdapters;
 
 namespace Vyzio.Infrastructure.Services;
 
-// The protocol level's check: reach the protocol, then log in once with its account; never a guessed account (ADR-61).
+// The protocol level's check: reach the protocol, then log in once with its account; never a guessed account (ADR-04).
 internal sealed class CameraProtocolProbe(
     OnvifEndpointResolver onvifResolver,
     OnvifClient onvif,

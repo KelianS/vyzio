@@ -25,7 +25,8 @@ const ADR_DIR = 'docs/adr'
 const ADR_INDEX = path.posix.join(ADR_DIR, 'README.md')
 const ADR_FILE = /^(\d{4})-[a-z0-9-]+\.md$/
 const ADR_TITLE = /^# ADR-(\d+)\b/
-const CITED_ADR = /\bADR-(\d+)\b/g
+// Numbers joined by a slash after "ADR-" are each a citation.
+const CITED_ADR = /\bADR-(\d+(?:\/\d+)*)\b/g
 // A review case describes a hypothetical change, whose ADR does not exist.
 const ADR_CITATION_EXEMPT = 'tools/review-cases/'
 const SECTION_SIGN = /§ ?\d/
@@ -157,8 +158,10 @@ for (const file of tracked) {
   text.split(/\r?\n/).forEach((line, i) => {
     const where = `${file}:${i + 1}`
     if (!file.startsWith(ADR_CITATION_EXEMPT)) {
-      for (const [id, number] of line.matchAll(CITED_ADR)) {
-        if (!adrs.has(Number(number))) problems.push(`${where}: cites ${id}, which no ADR defines (DOCS-25)`)
+      for (const [, numbers] of line.matchAll(CITED_ADR)) {
+        for (const number of numbers.split('/')) {
+          if (!adrs.has(Number(number))) problems.push(`${where}: cites ADR-${number}, which no ADR defines (DOCS-25)`)
+        }
       }
     }
     for (const id of line.match(cited) ?? []) {

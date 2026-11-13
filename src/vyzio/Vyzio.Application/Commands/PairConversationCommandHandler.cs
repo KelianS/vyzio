@@ -5,7 +5,7 @@ namespace Vyzio.Application.Commands;
 
 /// <summary>
 /// The only command an unpaired conversation may run, because it is how it stops being one. A wrong or
-/// stale code gets no answer at all — a stranger must not even learn that Vyzio is there (ADR-50).
+/// stale code gets no answer at all — a stranger must not even learn that Vyzio is there (ADR-14).
 /// </summary>
 public sealed class PairConversationCommandHandler(
     IChannelPairingRepository pairings,

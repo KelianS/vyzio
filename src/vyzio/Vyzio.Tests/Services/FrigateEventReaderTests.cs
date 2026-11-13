@@ -9,7 +9,7 @@ public class FrigateEventReaderTests
     [Fact]
     public async Task QueryAsync_ShouldThrowFrigateUnavailable_WhenTheSurveillanceIsUnreachable()
     {
-        // An empty list would read as "no detection", which is a different thing entirely (ADR-49).
+        // An empty list would read as "no detection", which is a different thing entirely (ADR-12).
         var reader = new FrigateEventReader(
             new HttpClient(new UnreachableHandler()) { BaseAddress = new Uri("http://frigate:5000/") });
 

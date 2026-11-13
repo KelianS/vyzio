@@ -5,7 +5,7 @@ namespace Vyzio.Api;
 
 /// <summary>
 /// The surveillance not answering is a state the screens must name, not a 500 they can only shrug
-/// at: without it there is no history at all, and that is not an empty history (ADR-49).
+/// at: without it there is no history at all, and that is not an empty history (ADR-12).
 /// </summary>
 internal sealed class FrigateUnavailableExceptionHandler : IExceptionHandler
 {

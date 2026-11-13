@@ -50,7 +50,8 @@
 - **ACCESS-13** · l'acces distant ne doit rendre joignable **que le produit** : les cameras et les composants internes ne doivent jamais devenir atteignables depuis l'exterieur ;
 - **ACCESS-14** · l'acces distant doit rester **optionnel, gratuit dans son parcours nominal et retirable** ; les fonctions d'acces distant doivent etre explicites, optionnelles et desactivables ; le produit doit rester entier sans lui, et l'usage local ne doit jamais dependre de sa disponibilite ;
 - **ACCESS-15** · si l'acces distant repose sur un service tiers, l'interface doit guider l'utilisateur pas a pas, l'annoncer explicitement, et indiquer que sa disponibilite ne depend pas de Vyzio ;
-- **ACCESS-16** · l'acces distant doit se presenter comme un reglage d'installation ordinaire : etat visible, activation et retrait depuis l'interface, sans manipulation de fichier.
+- **ACCESS-16** · l'acces distant doit se presenter comme un reglage d'installation ordinaire : etat visible, activation et retrait depuis l'interface, sans manipulation de fichier ;
+- **ACCESS-17** · le compromis d'un domicile servi en clair (SEC-03) est dit une fois, dans l'aide du reglage d'acces distant, jamais comme un avertissement.
 
 ## Points ouverts
 

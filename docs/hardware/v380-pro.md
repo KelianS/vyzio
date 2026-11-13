@@ -5,6 +5,8 @@ architecture.
 
 | Recorded | Measurement |
 |---|---|
+| 2026-11-12 | The infrared light command of an open-source V380 client, sent on the connection that moves the head, changes nothing on the camera, and the vendor app offers no night vision or image setting (measured before 2026-06-30) |
+| 2026-11-12 | ONVIF offers no `GetPrivacyMasks`, and `SetVideoEncoderConfiguration` cannot be reached (measured before 2026-06-30) |
 | 2026-10-05 | The camera stops sending sound while it moves: through go2rtc 1.9.10, the sound track's timestamps run on without the gap, so after several moves it lagged the video by 26 s over 4 minutes |
 | 2026-10-05 | Through go2rtc 1.9.10, the main stream is H.264 1920 x 1080 and the sub-stream H.264 640 x 480, both with AAC audio that MSE plays as sent |
 | 2026-10-05 | An ONVIF PTZ move turns the camera for 1 to 3 seconds and cannot be stopped: the firmware answers nothing during that time (stop and other commands tried), so ONVIF PTZ is unusable for precise control; a firmware defect, reported by the owner |

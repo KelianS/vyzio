@@ -17,7 +17,7 @@ order; starting the implementation before the upstream documents are aligned is 
 5. **Tests**, targeted validation of the modified slice, mandatory.
 6. **Help inside the interface**: every deliverable feature is documented **in the screen that carries
    it**, across the three levels of
-   [ADR-53](adr/0053-user-documentation-lives-in-the-interface-three-levels-of-help.md).
+   [ADR-17](adr/0017-help-lives-in-the-interface-three-levels.md).
    No instructions for use outside the product.
 
 Steps 1 and 2 are written first, but reach `main` only with the code of step 4 (DOCS-24).
@@ -43,7 +43,7 @@ Steps 1 and 2 are written first, but reach `main` only with the code of step 4 (
 | **Design system** | The dashboard's design system, never one feature (DOCS-13) | [`DESIGN SYSTEM.md`](DESIGN%20SYSTEM.md) | high |
 | **Hardware sheet** | The raw measurements of one camera model, each dated; measurements only, no decision and no *how* | [`hardware/`](hardware/), one `.md` per model | grows with each measurement |
 | **Investigation** | Exploration, trials, reverse engineering, captures | [`investigations/`](investigations/) | disposable |
-| **User help** | How to use a delivered feature | the screen that carries it, in code (ADR-53) | follows the feature |
+| **User help** | How to use a delivered feature | the screen that carries it, in code (ADR-17) | follows the feature |
 
 The chain: the SAD gives the **overview**, an ADR **settles** a decision (and states the options it
 rejected), and the code and its tests carry the **how**: a one-line comment naming the ADR, a test
@@ -77,7 +77,7 @@ rules that hold each document to its nature are [`rules/docs.md`](rules/docs.md)
 
 Vision goes to [`../README.md`](../README.md) · the need to `SPECS.md` and its use cases · the
 system overview to `SAD.md` · a decision to its ADR · the execution plan to **the issues** · how to
-use a feature to **the screen itself** (ADR-53).
+use a feature to **the screen itself** (ADR-17).
 
 Every document states its own role in its header (DOCS-15). When in doubt, climb to the right level: vision,
 need, architecture, execution, use. Never copy information from one document into another (COMMON-05).
@@ -85,8 +85,7 @@ need, architecture, execution, use. Never copy information from one document int
 ## Language
 
 The repository is written in English, with the exceptions of COMMON-01: `SPECS.md` and its use
-cases, what the interface shows the user, and the bodies of the ADRs accepted in French until they
-are translated.
+cases, and what the interface shows the user.
 
 ## Git
 

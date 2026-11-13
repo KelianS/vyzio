@@ -7,7 +7,7 @@ export interface SystemStats {
   storage: StorageStats | null
   cameras: CameraFps[]
   detection: DetectionConfig
-  // Saved settings that surveillance has not picked up yet (ADR-44).
+  // Saved settings that surveillance has not picked up yet (ADR-15).
   pendingChanges: boolean
 }
 

@@ -3,7 +3,7 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Infrastructure.Services;
 
-// Probes known device paths instead of shelling out to nvidia-smi or lsusb, and only for the tiers the pinned Frigate image can actually use (ADR-34).
+// Probes known device paths instead of shelling out to nvidia-smi or lsusb, and only for the tiers the pinned Frigate image can actually use (ADR-08).
 public sealed class HardwareAccelerationDetector : IHardwareAccelerationDetector
 {
     private const string CoralPciePath = "/dev/apex_0";

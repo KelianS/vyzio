@@ -76,7 +76,7 @@ public sealed class SaveCameraDetectionConfigUseCase(
             await frigateConfigApplier.WriteConfigAsync(allCameras, changed, ct);
 
             // Writing the config alone would only take effect on the next Frigate restart; the
-            // runtime command makes a user-chosen level apply straight away (ADR-35).
+            // runtime command makes a user-chosen level apply straight away (ADR-08).
             if (sensitivityChanged && !string.IsNullOrWhiteSpace(camera.FrigateCameraName))
             {
                 await motionSettingsPublisher.TryPublishSensitivityAsync(

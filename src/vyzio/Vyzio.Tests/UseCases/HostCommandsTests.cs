@@ -4,7 +4,7 @@ namespace Vyzio.Tests.UseCases;
 
 /// <summary>
 /// The parsing matters more than it looks: a mistake here either starts the API as a command, or
-/// starts a command as the API (ADR-54).
+/// starts a command as the API (ADR-16).
 /// </summary>
 public class HostCommandsTests
 {

@@ -1,6 +1,6 @@
 namespace Vyzio.Core.Entities;
 
-// Why the tuning loop did or did not move a camera (ADR-35). Structured rather than a log string
+// Why the tuning loop did or did not move a camera (ADR-08). Structured rather than a log string
 // because the same reason has to reach the user in product wording — no opaque state (principle #4).
 public enum MotionTuningOutcome
 {

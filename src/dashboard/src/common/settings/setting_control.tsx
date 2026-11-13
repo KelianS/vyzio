@@ -15,7 +15,7 @@ import {
 } from './setting_declaration'
 import { SECRET_KEYBOARD, TEXT_KEYBOARD } from './text_keyboard'
 
-/** Nature -> control (ADR-43): the only place this choice is made. */
+/** Nature -> control (ADR-15): the only place this choice is made. */
 export function SettingControl({ setting }: { setting: SettingDeclaration }) {
   const { nature } = setting
 
@@ -44,7 +44,7 @@ export function SettingControl({ setting }: { setting: SettingDeclaration }) {
   }
 }
 
-/** Dims the value while it's inherited from the level above (ADR-39). */
+/** Dims the value while it's inherited from the level above (ADR-15). */
 function followingClass(setting: SettingDeclaration) {
   return setting.provenance?.following ? 'text-muted-foreground' : undefined
 }
@@ -140,7 +140,7 @@ function MultiChoiceControl({
         </Button>
       </PopoverTrigger>
 
-      {/* Aucune validation propre : chaque case va au brouillon, que la barre enregistre (ADR-43). */}
+      {/* Aucune validation propre : chaque case va au brouillon, que la barre enregistre (ADR-15). */}
       <PopoverContent
         align="start"
         className="flex w-[var(--radix-popover-trigger-width)] flex-col gap-2 p-2"
@@ -224,7 +224,7 @@ function NumberControl({
 
   return (
     // The field fills the column like every other control: a width of its own, fitted to
-    // the number, broke the vertical alignment the fixed anatomy is after (ADR-43).
+    // the number, broke the vertical alignment the fixed anatomy is after (ADR-15).
     <div className="flex w-full items-center gap-2">
       <Input
         id={setting.id}

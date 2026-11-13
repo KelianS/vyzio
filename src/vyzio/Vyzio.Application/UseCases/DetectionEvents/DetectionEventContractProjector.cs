@@ -7,7 +7,7 @@ namespace Vyzio.Application.UseCases.DetectionEvents;
 
 /// <summary>
 /// Turns Frigate detections into what the screens read, resolving profile and camera name at read
-/// time rather than freezing them at ingestion (ADR-49).
+/// time rather than freezing them at ingestion (ADR-12).
 /// Scoped: the camera list below is cached for one request, never longer.
 /// </summary>
 public sealed class DetectionEventContractProjector(
@@ -63,7 +63,7 @@ public sealed class DetectionEventContractProjector(
             detection.OccurredAt,
             detection.HasClip,
             detection.HasSnapshot,
-            // Past the retention Frigate has deleted the files: saying so beats a broken image (ADR-49).
+            // Past the retention Frigate has deleted the files: saying so beats a broken image (ADR-12).
             MediaExpired: detection.OccurredAt < DateTimeOffset.UtcNow.AddDays(-retention.EventClipDays));
     }
 }

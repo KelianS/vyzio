@@ -6,7 +6,7 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Application.Services;
 
-// Drains the detection queue outside the MQTT handler, which must never wait (ADR-49).
+// Drains the detection queue outside the MQTT handler, which must never wait (ADR-12).
 internal sealed class DetectionNotificationWorker(
     IDetectionNotificationQueue queue,
     IServiceScopeFactory scopeFactory,

@@ -3,7 +3,7 @@ using Vyzio.Core.Common;
 
 namespace Vyzio.Infrastructure.Persistence.Conversions;
 
-// Single generic EF Core converter for every "closed set" enum on Camera (ADR-22 point 0).
+// Single generic EF Core converter for every "closed set" enum on Camera (COMMON-04).
 // The column is TEXT holding the snake_case name of the member ("tplink_tapo", "rtsp", "manual").
 public sealed class SnakeCaseEnumConverter<TEnum> : ValueConverter<TEnum, string>
     where TEnum : struct, Enum

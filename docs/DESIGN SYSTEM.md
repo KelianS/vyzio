@@ -66,7 +66,7 @@ element (a status pill, a badge, a header navigation link); a rounded rectangle 
 
 ## Component foundation
 
-Two tiers, never confused ([ADR-42](adr/0042-interface-component-foundation-shadcn-ui-on-radix-and-tailwind.md)):
+Two tiers, never confused ([ADR-01](adr/0001-stack-and-runtime.md)):
 
 - **Primitives**: shadcn/ui code copied into the repository (accessibility, focus, keyboard), modified
   **only** for the theme, never with a business rule inside, outside the project's writing discipline.
@@ -121,14 +121,21 @@ otherwise jump, never decorates. One curve and three durations, never a value wr
 ### Settings screens
 
 A setting **is declared, it is not drawn**: its nature determines its control, alignment, provenance and
-undo ([ADR-43](adr/0043-settings-grammar-a-setting-is-declared-not-drawn.md), the home of the control
-table). A page **does not name itself**: whatever led there has named it
-([ADR-40](adr/0040-information-architecture-viewing-apart-from-configuring-two-level-settings-tree.md)).
+undo ([ADR-15](adr/0015-settings-model-schedules-and-edit-cycle.md); the table from a nature to its
+control is the settings renderer's, in code). A page **does not name itself**: whatever led there
+has named it.
 `SettingsPage` has no title; `SettingsSection` opens one only in a page covering several subjects, and a
 section title repeating the page's means one more page was needed. A section title is in the heading
 serif, a setting label in the body weight. A page opens on a lede only to say what its name leaves
 out, a scope, a default, a timing, a state or where to look instead; a lede that rephrases the name
 is dropped.
+
+A settings row is always, in this order: **name, help trigger, control, provenance, undo**. The
+control sits in one column of common width across the app; on a small screen the row folds into
+two lines, the name above, the control below, keeping that column. A followed value reads greyed,
+an own value reads normally, never with a caption; undo appears only where there is something to
+undo and names the value it restores. A page lists its most common setting first; a new setting
+is placed by its expected frequency, never at the end, and the rare ones go to `Avancé`.
 
 **An option that cannot be chosen yet stays in the list**, greyed and not selectable, with the reason
 and the way out on a quieter second line under its label (`text-xs text-muted-foreground`): what is
@@ -136,7 +143,7 @@ missing, and the screen where it is fixed. The saved value is the exception: whe
 act, it stays choosable, so the draft can come back to it, and its consequence line gives the reason.
 
 **A check, a choice that runs a test, adding or removing are actions**, never draft values
-([ADR-41](adr/0041-settings-edit-cycle-an-explicit-draft-and-saving-means-applying.md)): they act at
+([ADR-15](adr/0015-settings-model-schedules-and-edit-cycle.md)): they act at
 once and return a result. Only declared settings follow the page's draft.
 
 ### Cards
@@ -165,7 +172,7 @@ the user gave included). Each feature's words are its use case's.
 | Fold | Where | Holds |
 | --- | --- | --- |
 | `Options` | Inside a card, closed | That card's settings |
-| `Avancé` | The end of the page, closed | Rare settings: a position, not a mode (ADR-40) |
+| `Avancé` | The end of the page, closed | Rare settings: a position, not a mode (UI-09) |
 | `En savoir plus` panel | Next to what it explains | Task help (§ Help) |
 | `Détails techniques` | The end of a card, closed | Figures for support (§ Technical details) |
 
@@ -174,7 +181,7 @@ None stands in for another: no setting in help or technical details, no help in 
 ### Help: three levels, not a manual
 
 How to use a feature lives **in the screen that carries it**
-([ADR-53](adr/0053-user-documentation-lives-in-the-interface-three-levels-of-help.md)), at three depths:
+([ADR-17](adr/0017-help-lives-in-the-interface-three-levels.md)), at three depths:
 what is **visible** (a label and its cost), a setting's **tooltip**, a section's **`En savoir plus`**
 panel. **A tooltip fits in two sentences**: what overflows is about the task, not the field, and goes to
 the panel. A **cost** never moves down: it stays visible without a gesture.
@@ -245,11 +252,12 @@ the user learns the interface once.
 ### Navigation
 
 A label states the **nature** of a screen, viewing or configuring, never its audience
-([ADR-40](adr/0040-information-architecture-viewing-apart-from-configuring-two-level-settings-tree.md)).
+([SPECS](SPECS.md) UI-06, UI-24).
 
 - Viewing: `Accueil`, `Direct`, `Historique`.
 - Configuring: `Réglages`, then a section (`Caméras`, `Détection`, `Conservation`, `Notifications`,
   `Planification`, `Accès`, `Système`).
+- Known people (`Personnes`) sit under `Détection`, next to what names them.
 - Banned as entries: `Expert` (an audience, not a content), and `Alertes` for a settings screen (it
   promises a list of events, which lives under `Historique`).
 
@@ -268,17 +276,22 @@ A label states the **nature** of a screen, viewing or configuring, never its aud
 ### Editing cycle
 
 A setting is saved; surveillance is restarted separately
-([ADR-41](adr/0041-settings-edit-cycle-an-explicit-draft-and-saving-means-applying.md),
-[ADR-44](adr/0044-surveillance-restart-an-explicit-user-act-grouped-and-deferred.md)).
+([ADR-15](adr/0015-settings-model-schedules-and-edit-cycle.md)).
 
 - **`Enregistrer`** is the single verb of validation: it persists, nothing more. Never `Appliquer`
   (promises an effect that does not happen) nor `Mettre en service` (hides the interruption).
 - **`Annuler`** is the single verb of abandonment: back to the last saved state.
+- The draft is **per page**: it groups what that page changed, and leaving a modified page asks for
+  confirmation. Its bar sits in one fixed place, the same on every screen, never in the flow of the
+  content. Undoing an override is a draft change like any other.
+- A value's **provenance** (followed or its own) and its **edit state** (saved or in the draft)
+  read separately.
 - The draft announces **what has changed**, never an interruption: that belongs to the restart.
 - The restart's trigger, `Appliquer les changements`, names **the pending state**, still true when read
   two days later; its question, `Redémarrer la surveillance maintenant ?`, names **the act** and states
-  the interruption when deciding. The trigger appears only when something is pending, without naming
-  the section. A failed restart reads as a **breakdown**, persistent, with `Réessayer`.
+  the interruption when deciding. The trigger appears only when something is pending, and names the
+  settings that wait ([SPECS](SPECS.md) UI-14). A failed restart reads as a **breakdown**,
+  persistent, with `Réessayer`.
 
 The underlying rule: **never name the mechanism, always name the effect.** Principle 2 forbids naming
 the engine, not saying what is happening.
@@ -289,4 +302,4 @@ the engine, not saying what is happening.
   the nominal journey (product principle 2). The diagnostic line of an error is not the nominal journey.
 - Never an opaque state without a readable justification (principle 4).
 - Never instructions for use outside the product, nor help that paraphrases the screen: navigation, a
-  greyed-out button, a missing option already read on screen (ADR-53).
+  greyed-out button, a missing option already read on screen (ADR-17).

@@ -18,7 +18,7 @@ public sealed class AssistedCameraDiscoveryService : ICameraDiscoveryService
 
     // capabilityRegistry is optional so the discovery tests can construct the service without the
     // full DI graph; in production DI always injects it, and it's the single source for which
-    // protocol serves which capability (ADR-32). Null → the Capabilities interpretation is empty.
+    // protocol serves which capability (ADR-05). Null → the Capabilities interpretation is empty.
     public AssistedCameraDiscoveryService(
         VyzioRuntimeSettings settings,
         TimeProvider time,
@@ -34,7 +34,7 @@ public sealed class AssistedCameraDiscoveryService : ICameraDiscoveryService
 
     public async Task<IReadOnlyList<CameraDiscoveryCandidate>> DiscoverAsync(CameraDiscoveryTarget? target = null, string? dashboardHost = null, CancellationToken ct = default)
     {
-        // A single target is probed as is: no range is swept (ADR-71).
+        // A single target is probed as is: no range is swept (ADR-05).
         var ranges = target is null ? RangesToSweep(dashboardHost) : [];
         var rawSignals = await _probePipeline.DiscoverAsync(target, ranges, ct);
         var identifiedCandidates = _identifier.Identify(rawSignals);
@@ -126,7 +126,7 @@ public sealed class AssistedCameraDiscoveryService : ICameraDiscoveryService
 
     // The detected-ports table is sourced only from the port sweep ("port_scan" signals). Each
     // carries either a fingerprint-confirmed protocol or, for an open-but-unidentified port, a
-    // conventional service label (ADR-32) — the frontend just renders Label.
+    // conventional service label (ADR-05) — the frontend just renders Label.
     private static IReadOnlyList<DetectedPortSignal> GetDetectedPorts(
         IReadOnlyDictionary<string, List<RawCameraDiscoverySignal>> signalsByHost,
         string host)
@@ -149,7 +149,7 @@ public sealed class AssistedCameraDiscoveryService : ICameraDiscoveryService
             .ToList();
     }
 
-    // ADR-32: which capabilities the host supports, crossing the protocols actually detected on it
+    // ADR-05: which capabilities the host supports, crossing the protocols actually detected on it
     // with ICapabilityProviderRegistry.GetRegisteredProtocols(capability). Naturally many-to-many
     // — Stream is a first-class capability here (RTSP/DVRIP providers), so it needs no special case.
     private IReadOnlyList<DetectedCapability> GetDetectedCapabilities(
@@ -195,7 +195,7 @@ public sealed class AssistedCameraDiscoveryService : ICameraDiscoveryService
         return result;
     }
 
-    // Ready over the first registered stream protocol proven on the host with what its stream needs (ADR-61 b).
+    // Ready over the first registered stream protocol proven on the host with what its stream needs (ADR-05).
     private DiscoveredStream? GetReadyStream(
         IReadOnlyDictionary<string, List<RawCameraDiscoverySignal>> signalsByHost,
         string host)

@@ -48,13 +48,13 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IFrigateDetectorPlanner, FrigateDetectorPlanner>();
         services.AddSingleton<IFrigateModelAssetInstaller, FrigateModelAssetInstaller>();
         services.AddSingleton<IFrigateMotionSettingsPublisher, FrigateMotionSettingsPublisher>();
-        // Bound options rather than a second copy of the defaults (ADR-35).
+        // Bound options rather than a second copy of the defaults (ADR-08).
         services.AddSingleton(settings.Frigate.MotionTuning);
         services.AddScoped<IVendorAssistanceService, CameraVendorAssistanceService>();
 
         services.AddHttpClient("tapo");
         services.AddHttpClient("onvif");
-        // A long poll holds the request open on purpose: the client must not call that a timeout (ADR-50).
+        // A long poll holds the request open on purpose: the client must not call that a timeout (ADR-14).
         services.AddHttpClient(Notifications.TelegramCommandReceiver.HttpClientName,
             client => client.Timeout = TimeSpan.FromSeconds(60));
         services.AddHttpClient(Notifications.DiscordApi.HttpClientName);
@@ -63,10 +63,10 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<OnvifClient>();
         services.AddSingleton<DvripClient>();
         services.AddSingleton<V380Client>();
-        // Singleton: one move at a time per camera holds across requests, a held move included (ADR-60).
+        // Singleton: one move at a time per camera holds across requests, a held move included (ADR-09).
         services.AddSingleton<PtzMoveRunner>();
 
-        // Capability providers (ADR-22), resolved by (capability, protocol), never by vendor (ADR-71).
+        // Capability providers (ADR-04), resolved by (capability, protocol), never by vendor (ADR-04).
         // Scoped: TapoKlapProvider authenticates per-request and the registry follows the same
         // lifetime to avoid captive dependencies.
         services.AddScoped<ICameraCapabilityBindingRepository, CameraCapabilityBindingRepository>();
@@ -79,12 +79,12 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IPrivacyCapabilityProvider>(sp => sp.GetRequiredService<TapoKlapProvider>());
         services.AddScoped<IImageSettingsCapabilityProvider, OnvifImageSettingsProvider>();
         services.AddScoped<IImageSettingsCapabilityProvider, DvripImageSettingsProvider>();
-        // Stream is a first-class capability (ADR-32); its order is CapabilityProtocolPriority's.
+        // Stream is a first-class capability (ADR-05); its order is CapabilityProtocolPriority's.
         services.AddScoped<IStreamCapabilityProvider, RtspStreamProvider>();
         services.AddScoped<IStreamCapabilityProvider, DvripStreamProvider>();
         services.AddScoped<ICapabilityProviderRegistry, CapabilityProviderRegistry>();
 
-        // Singleton queue so the MQTT handler can hand a detection over and return (ADR-49).
+        // Singleton queue so the MQTT handler can hand a detection over and return (ADR-12).
         services.AddSingleton<IDetectionNotificationQueue, DetectionNotificationQueue>();
         // Shared by the erasure and the notification still on its way for the same detection (HIST-10).
         services.AddSingleton<IErasedDetections, ErasedDetections>();

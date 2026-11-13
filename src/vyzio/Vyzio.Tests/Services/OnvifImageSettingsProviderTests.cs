@@ -9,7 +9,7 @@ namespace Vyzio.Tests.Services;
 
 public class OnvifImageSettingsProviderTests
 {
-    // A resolved address, so these tests exercise the provider, not the sweep (ADR-56).
+    // A resolved address, so these tests exercise the provider, not the sweep (ADR-04).
     private static Camera MakeCamera()
     {
         var camera = new Camera

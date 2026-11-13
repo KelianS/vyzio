@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fixtures/fake_backend'
 
 /**
- * The two-step editing cycle (ADR-41), checked end to end: editing has no effect,
+ * The two-step editing cycle (ADR-15), checked end to end: editing has no effect,
  * confirming is a single gesture, and an edited page is not left silently.
  */
 test.describe('Settings editing cycle', () => {
@@ -26,7 +26,7 @@ test.describe('Settings editing cycle', () => {
     await expect(bar).toContainText('1 modification')
     await expect(bar).toContainText('Séquences de mouvement')
     // And it announces no interruption: saving does not touch surveillance, it is
-    // the restart that interrupts it (ADR-44).
+    // the restart that interrupts it (ADR-15).
     await expect(bar).not.toContainText('interrompt')
 
     // Nothing was lost: the reloaded page finds the saved value again.
@@ -53,7 +53,7 @@ test.describe('Settings editing cycle', () => {
     await page.getByRole('button', { name: 'Enregistrer' }).click()
 
     // A single gesture on the page: the draft is settled, with no second button to
-    // look for. The restart is decided elsewhere (ADR-44, redemarrage.e2e.ts).
+    // look for. The restart is decided elsewhere (ADR-15, redemarrage.e2e.ts).
     await expect(page.getByRole('region', { name: 'Modifications en attente' })).toBeHidden()
 
     await page.reload()

@@ -4,12 +4,12 @@ using Vyzio.Infrastructure.VendorAdapters;
 
 namespace Vyzio.Infrastructure.CapabilityProviders;
 
-// Image settings over ONVIF; failures propagate so the probe records the camera's real reason (ADR-27/28).
+// Image settings over ONVIF; failures propagate so the probe records the camera's real reason (ADR-04, ADR-11).
 internal sealed class OnvifImageSettingsProvider(OnvifClient onvif) : IImageSettingsCapabilityProvider
 {
     public SupportedProtocol Protocol => SupportedProtocol.Onvif;
 
-    // The settings read back are the proof (ADR-66).
+    // The settings read back are the proof (ADR-04).
     public async Task<CapabilityProof> ProveAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
     {
         var token = await onvif.GetVideoSourceTokenAsync(camera, ct);

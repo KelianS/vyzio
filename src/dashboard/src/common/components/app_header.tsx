@@ -4,7 +4,7 @@ import { cn } from '../ui/utils'
 import { PressableSurface } from './pressable_surface'
 
 /**
- * The main bar (ADR-40). It carries **viewing** only, plus a single way into the
+ * The main bar (UI-24). It carries **viewing** only, plus a single way into the
  * settings: a label must say what kind of screen it opens, viewing or setting, and
  * the two never mix.
  *

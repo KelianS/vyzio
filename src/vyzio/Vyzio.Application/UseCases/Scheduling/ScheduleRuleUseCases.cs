@@ -123,7 +123,7 @@ public sealed class DeleteScheduleRuleUseCase(IScheduleRuleRepository rules)
     }
 }
 
-/// <summary>Whether a target is under a rule type's effect at a moment: any covering rule of that type targeting it (ADR-63).</summary>
+/// <summary>Whether a target is under a rule type's effect at a moment: any covering rule of that type targeting it (ADR-15).</summary>
 public static class ScheduleRuleCoverage
 {
     public static bool Covers(IEnumerable<ScheduleRule> rules, string targetId, DateTimeOffset localMoment)
@@ -145,7 +145,7 @@ public static class ScheduleRuleCoverage
     }
 }
 
-/// <summary>The current moment in the house's clock, for the week to mark: the device consulting may sit elsewhere (ADR-63).</summary>
+/// <summary>The current moment in the house's clock, for the week to mark: the device consulting may sit elsewhere (ADR-15).</summary>
 public sealed class GetHouseClockUseCase(TimeZoneInfo timeZone, TimeProvider time)
 {
     public HouseClockDto Execute() => HouseClockDto.Of(TimeZoneInfo.ConvertTime(time.GetUtcNow(), timeZone));

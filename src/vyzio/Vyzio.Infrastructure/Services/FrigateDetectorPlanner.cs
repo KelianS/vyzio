@@ -4,7 +4,7 @@ using Vyzio.Infrastructure.Configuration;
 
 namespace Vyzio.Infrastructure.Services;
 
-// Single place that turns hardware detection into a (detector kind, target FPS) decision (ADR-34) —
+// Single place that turns hardware detection into a (detector kind, target FPS) decision (ADR-08) —
 // FrigateConfigApplier and GetSystemStatsUseCase both consume this instead of recomputing it.
 public sealed class FrigateDetectorPlanner(VyzioRuntimeSettings settings, IHardwareAccelerationDetector hardwareDetector) : IFrigateDetectorPlanner
 {

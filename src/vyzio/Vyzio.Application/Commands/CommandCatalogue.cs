@@ -5,7 +5,7 @@ namespace Vyzio.Application.Commands;
 
 /// <summary>
 /// What one may ask, said in the conversation itself. The registry is the source; nobody maintains a
-/// second list of commands anywhere (ADR-50).
+/// second list of commands anywhere (ADR-14).
 /// </summary>
 public static class CommandCatalogue
 {

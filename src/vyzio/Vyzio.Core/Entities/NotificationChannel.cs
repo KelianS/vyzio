@@ -1,6 +1,6 @@
 namespace Vyzio.Core.Entities;
 
-/// <summary>A messaging channel Vyzio can talk through. No channel has a special status (ADR-50).</summary>
+/// <summary>A messaging channel Vyzio can talk through. No channel has a special status (ADR-14).</summary>
 public enum NotificationChannel
 {
     Telegram,
@@ -12,7 +12,7 @@ public enum ChannelCredential
 {
     BotToken,
 
-    /// <summary>The conversation Vyzio writes into — a Telegram chat, a Discord room (ADR-52).</summary>
+    /// <summary>The conversation Vyzio writes into — a Telegram chat, a Discord room (ADR-14).</summary>
     ChatId
 }
 

@@ -74,22 +74,22 @@ try
     {
         client.BaseAddress = new Uri($"{runtimeSettings.Frigate.ApiBaseUrl}/");
     });
-    // One typed client per channel adapter, then the catalog over all of them (ADR-50).
+    // One typed client per channel adapter, then the catalog over all of them (ADR-14).
     builder.Services.AddHttpClient<TelegramNotificationSender>();
     builder.Services.AddHttpClient<DiscordNotificationSender>();
     builder.Services.AddTransient<INotificationChannelSender>(sp => sp.GetRequiredService<TelegramNotificationSender>());
     builder.Services.AddTransient<INotificationChannelSender>(sp => sp.GetRequiredService<DiscordNotificationSender>());
     builder.Services.AddScoped<INotificationChannelCatalog, NotificationChannelCatalog>();
-    // Singleton: a receiver carries what outlives a poll — an acknowledged position, an open connection (ADR-52).
+    // Singleton: a receiver carries what outlives a poll — an acknowledged position, an open connection (ADR-14).
     builder.Services.AddSingleton<IChannelCommandReceiver, TelegramCommandReceiver>();
     builder.Services.AddSingleton<IChannelCommandReceiver, DiscordCommandReceiver>();
     builder.Services.AddSingleton<IChannelCommandReceiverCatalog, ChannelCommandReceiverCatalog>();
-    // The barrier: one scheme, one cookie, sessions the server can revoke (ADR-54).
+    // The barrier: one scheme, one cookie, sessions the server can revoke (ADR-16).
     builder.Services
         .AddAuthentication(SessionAuthentication.Scheme)
         .AddScheme<AuthenticationSchemeOptions, SessionAuthenticationHandler>(SessionAuthentication.Scheme, null);
     // Guarded unless a route says otherwise: a barrier that must be remembered per route is one that gets
-    // forgotten, and the route we forget is the one that leaks (ADR-54).
+    // forgotten, and the route we forget is the one that leaks (ADR-16).
     builder.Services.AddAuthorization(options =>
         options.FallbackPolicy = new AuthorizationPolicyBuilder(SessionAuthentication.Scheme)
             .RequireAuthenticatedUser()
@@ -140,7 +140,7 @@ try
     app.UseRateLimiter();
     app.UseAuthentication();
     app.UseAuthorization();
-    // The live view's socket (ADR-72); pings keep an idle stream open through the dashboard's proxy.
+    // The live view's socket (ADR-07); pings keep an idle stream open through the dashboard's proxy.
     app.UseWebSockets(new WebSocketOptions { KeepAliveInterval = TimeSpan.FromSeconds(20) });
 
     // The container probes: they must answer before anyone has installed anything.

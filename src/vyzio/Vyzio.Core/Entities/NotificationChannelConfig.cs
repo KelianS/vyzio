@@ -5,7 +5,7 @@ namespace Vyzio.Core.Entities;
 
 /// <summary>
 /// Everything a channel is configured with: the part every channel shares, and — behind
-/// <see cref="Credentials"/> — the part that belongs to the channel alone (ADR-50).
+/// <see cref="Credentials"/> — the part that belongs to the channel alone (ADR-14).
 /// </summary>
 [Table("notification_channel_configs")]
 public class NotificationChannelConfig

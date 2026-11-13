@@ -5,7 +5,7 @@ using Vyzio.Core.Interfaces;
 namespace Vyzio.Application.UseCases.Notifications;
 
 /// <summary>
-/// Everything the MQTT handler must not do itself: read the identity back from Frigate, then send (ADR-49).
+/// Everything the MQTT handler must not do itself: read the identity back from Frigate, then send (ADR-12).
 /// </summary>
 public sealed class NotifyDetectionUseCase(
     IFrigateEventReader eventReader,

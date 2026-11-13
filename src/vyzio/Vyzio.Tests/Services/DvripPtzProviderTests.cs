@@ -228,7 +228,7 @@ public class DvripPtzProviderTests
         Assert.Contains("Ret=103", error.Message, StringComparison.Ordinal);
     }
 
-    // Pairs of raw MD5 bytes, as python-dvr does; the hex-nibble variant is refused by the camera (ADR-29).
+    // Pairs of raw MD5 bytes, as python-dvr does; the hex-nibble variant is refused by the camera (ADR-06).
     [Fact]
     public void SofiaHash_ShouldMatchThePythonDvrReference_WhenGivenAKnownPassword()
     {

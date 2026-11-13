@@ -36,7 +36,7 @@ test.describe('NotificationChannelView', () => {
   })
 
   // The bar for this step: a second channel is configured with the same screen, built
-  // on what it declares, and with a how-to of its own (ADR-50, ADR-52).
+  // on what it declares, and with a how-to of its own (ADR-14).
   test('NotificationChannelView_ShouldShowThatChannelInstructions_WhenTheUserAddsASecondOne', async ({
     page,
   }) => {
@@ -54,7 +54,7 @@ test.describe('NotificationChannelView', () => {
     await page.getByRole('alertdialog').getByRole('button', { name: 'Activer' }).click()
 
     // The how-to does not disappear once the channel is in place: it folds
-    // (ADR-53), to still be there the day a token has to be made again.
+    // (ADR-17), to still be there the day a token has to be made again.
     await expect(page.getByText('Où trouver ces informations dans Discord ?')).toBeVisible()
 
     await page.goto('/settings/notifications')
@@ -108,7 +108,7 @@ test.describe('NotificationChannelView', () => {
     await expect(page.getByText(/No such host is known/)).toBeVisible()
 
     // The trace of what was asked, including what was ignored: it is the only
-    // sign that another conversation is knocking at the door (ADR-50).
+    // sign that another conversation is knocking at the door (ADR-14).
     await page.locator('summary').filter({ hasText: 'Avancé' }).click()
     await expect(page.getByText('Ignoré : conversation non reliée')).toBeVisible()
   })

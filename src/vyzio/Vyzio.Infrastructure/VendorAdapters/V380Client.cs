@@ -48,7 +48,7 @@ internal sealed class V380Client(ILogger<V380Client> logger)
     internal uint? GetCachedDeviceId(string host)
         => _deviceIds.TryGetValue(host, out var id) ? id : null;
 
-    // The protocol level's login: the auth handshake (cmd 1167) with the V380 account and device number (ADR-61).
+    // The protocol level's login: the auth handshake (cmd 1167) with the V380 account and device number (ADR-05).
     public async Task<ProtocolAnswer> CheckLoginAsync(Camera camera, TimeProvider time, CancellationToken ct)
     {
         var port = camera.PortOf(SupportedProtocol.V380);
@@ -187,7 +187,7 @@ internal sealed class V380Client(ILogger<V380Client> logger)
         return ticket == 0 ? null : ticket;
     }
 
-    // UDP NVDEVSEARCH, unicast to the camera only: a broadcast may answer with another V380's number (ADR-71).
+    // UDP NVDEVSEARCH, unicast to the camera only: a broadcast may answer with another V380's number (ADR-05).
     private static async Task<uint?> DiscoverDeviceIdAsync(string host, CancellationToken ct)
     {
         try

@@ -4,7 +4,7 @@ import { Input } from '../../../common/ui/input'
 
 /**
  * The only screen seen without being in. It carries its help inline: there is no screen behind which
- * to fold it away, a case ADR-53 provides for explicitly.
+ * to fold it away, a case ADR-17 provides for explicitly.
  */
 export function PasswordScreen({
   title,

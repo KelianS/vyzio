@@ -4,7 +4,7 @@ namespace Vyzio.Core.Interfaces;
 
 /// <summary>
 /// One implementation per command. It executes through the same use cases as the HTTP API — a command
-/// is an inbound adapter, never a parallel business path (ADR-50).
+/// is an inbound adapter, never a parallel business path (ADR-14).
 /// </summary>
 public interface IRemoteCommandHandler
 {

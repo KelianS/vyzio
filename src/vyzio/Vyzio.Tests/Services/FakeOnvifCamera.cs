@@ -65,7 +65,7 @@ internal sealed class FakeOnvifCamera : HttpMessageHandler
         </s:Envelope>
         """;
 
-    // Carries an ONVIF marker, so a port sweep recognises the camera (ADR-56).
+    // Carries an ONVIF marker, so a port sweep recognises the camera (ADR-04).
     private const string EmptyAnswerXml = """
         <s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:tds="http://www.onvif.org/ver10/device/wsdl"><s:Body/></s:Envelope>
         """;

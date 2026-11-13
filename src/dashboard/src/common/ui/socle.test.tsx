@@ -6,7 +6,7 @@ import { cn } from './utils'
 
 /**
  * Checks that the foundation is wired, not that shadcn/ui works (that is not our
- * code, ADR-42). What is tested here is what we decided: the primitives really do
+ * code, ADR-01). What is tested here is what we decided: the primitives really do
  * consume the semantic token layer, they expose the ARIA roles every screen test
  * will lean on, and `cn` arbitrates class conflicts.
  */

@@ -5,7 +5,7 @@ namespace Vyzio.Core.Entities;
 
 /// <summary>
 /// One received command: origin, command, outcome, time. A fact Vyzio alone holds, and the only usable
-/// trace should a pairing leak (ADR-50).
+/// trace should a pairing leak (ADR-14).
 /// </summary>
 [Table("command_journal")]
 public class CommandJournal

@@ -135,7 +135,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
         Assert.False(applier.HasPendingChanges);
     }
 
-    // Every camera goes through go2rtc, which holds its one connection per stream (ADR-72 a).
+    // Every camera goes through go2rtc, which holds its one connection per stream (ADR-07).
 
     [Fact]
     public async Task ApplyAsync_ShouldDeclareTheStreamInGo2rtc_WhenACameraStreamsOverRtsp()
@@ -164,7 +164,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
         Assert.Contains("input_args: preset-rtsp-restream", yaml, StringComparison.Ordinal);
     }
 
-    // Nothing Frigate starts on its own may reach the internet (ADR-70).
+    // Nothing Frigate starts on its own may reach the internet (ADR-03).
 
     [Fact]
     public async Task ApplyAsync_ShouldTurnOffFrigatesVersionCheck_WhenTheConfigIsWritten()
@@ -209,7 +209,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
         Assert.Empty(SequenceAt(yaml, "go2rtc", "webrtc", "ice_servers"));
     }
 
-    // A camera that is off is reported once by Vyzio, not on every retry (ADR-23).
+    // A camera that is off is reported once by Vyzio, not on every retry (ADR-05).
 
     [Theory]
     [InlineData("frigate.video", "critical")]
@@ -460,7 +460,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
         Assert.Contains("hwaccel_args: preset-vaapi", yaml, StringComparison.OrdinalIgnoreCase);
     }
 
-    // ── Detect / record stream roles (ADR-38, ADR-65) ──
+    // ── Detect / record stream roles (ADR-07) ──
 
     private static CameraStream AddStream(
         Camera camera, string? path, StreamRole role, int? width = null, int? height = null, SupportedProtocol? protocol = null)
@@ -605,7 +605,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
         Assert.Equal(2, CountOccurrences(yaml, "rtsp://127.0.0.1:8554/garden"));
     }
 
-    // ── Retention (ADR-39) ──
+    // ── Retention (ADR-12) ──
 
     // The bug this fixes: only `record.enabled: true` was emitted, so Frigate's own defaults
     // (continuous.days: 0, motion.days: 0) applied and nothing was ever kept.
@@ -668,8 +668,7 @@ public sealed class FrigateConfigApplierTests : IDisposable
         Assert.Contains("default: 3", yaml[snapshotsIndex..], StringComparison.OrdinalIgnoreCase);
     }
 
-    // ADR-48: a camera that keeps nothing no longer exists — an enabled camera keeps at least a day
-    // of event clips, and not wanting its video is said by disabling the camera itself.
+    // An enabled camera keeps at least a day of event clips (ADR-12).
     [Fact]
     public async Task ApplyAsync_ShouldKeepADayAndStayRecorded_WhenACameraAsksForZeroEventClipDays()
     {

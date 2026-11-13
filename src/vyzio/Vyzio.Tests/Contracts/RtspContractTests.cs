@@ -6,7 +6,7 @@ using Vyzio.Tests.Services;
 
 namespace Vyzio.Tests.Contracts;
 
-// The real RTSP login check of ADR-61 against what every captured camera answered (#92).
+// The real RTSP login check of ADR-04 against what every captured camera answered (#92).
 public sealed class RtspContractTests
 {
     // What each captured variant yields, written once: a new firmware folder adds one row here.
@@ -98,7 +98,7 @@ public sealed class RtspContractTests
     private static CapturedTcpCamera Replay(string variant, params string[] scenarios)
         => CapturedTcpCamera.Replaying(FixtureProtocol.Rtsp, variant, scenarios);
 
-    // The login is asked on the recording stream, at the path the capture described (ADR-65 f).
+    // The login is asked on the recording stream, at the path the capture described (ADR-07).
     private static Camera OnStream(CapturedTcpCamera camera, string variant, string password)
         => camera.Camera(password).WithStream(SupportedProtocol.Rtsp, camera.Port, Expected[variant].StreamPath);
 

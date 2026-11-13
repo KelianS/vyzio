@@ -47,7 +47,7 @@ const GUIDE_HOURS = [6, 12, 18]
 
 const percentOf = (minutes: number) => `${(minutes / DAY_MINUTES) * 100}%`
 
-/** The house's calendar (ADR-63): the week as seven 24-hour bars, every rule type in one place. */
+/** The house's calendar (ADR-15): the week as seven 24-hour bars, every rule type in one place. */
 export function ScheduleWeekView() {
   const {
     schedules: container,

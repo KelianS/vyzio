@@ -33,7 +33,7 @@ export function streamLineState(stream: CameraStream): StreamLineState {
   return stream.verified ? StreamLineState.Working : StreamLineState.Failed
 }
 
-// Only an RTSP stream is addressed by a path; DVRIP derives it from the protocol (ADR-61).
+// Only an RTSP stream is addressed by a path; DVRIP derives it from the protocol (ADR-04).
 const ASKS_STREAM_PATH: Record<SupportedProtocol, boolean> = {
   rtsp: true,
   dvrip: false,
@@ -47,7 +47,7 @@ export function asksStreamPath(protocol: SupportedProtocol): boolean {
   return ASKS_STREAM_PATH[protocol]
 }
 
-/** After detection, a stream still unchosen while a path-addressed protocol answers: the camera listed no stream over it (ADR-65 e). */
+/** After detection, a stream still unchosen while a path-addressed protocol answers: the camera listed no stream over it (ADR-07). */
 export function streamNotListed(
   binding: CameraCapabilityBinding,
   protocols: CameraProtocol[],
@@ -73,7 +73,7 @@ export const ROLE_LABELS: Record<StreamRole, string> = {
   record_and_detect: 'Enregistrement et détection',
 }
 
-// What each role changes, the role's tooltip (ADR-53, two sentences at most); the analysed image also feeds the thumbnail and notifications.
+// What each role changes, the role's tooltip (ADR-17, two sentences at most); the analysed image also feeds the thumbnail and notifications.
 export const ROLE_CONSEQUENCES: Record<StreamRole, string> = {
   none: 'Ce flux reste prêt, sans servir.',
   record: 'Vos enregistrements sont faits sur ce flux : plus il est détaillé, plus ils sont nets.',
@@ -93,10 +93,10 @@ export function streamFailure(records: boolean): string {
     : 'Ce flux ne répond pas : relancez sa vérification, ou retirez-le.'
 }
 
-// Said in the confirmation that takes the detection stream away: the analysis falls back (ADR-65 c).
+// Said in the confirmation that takes the detection stream away: the analysis falls back (ADR-07).
 export const DETECTION_FALLS_BACK = 'La détection passera par le flux d’enregistrement.'
 
-/** How Vyzio reaches a stream, its quality's tooltip; the path never changes once added (ADR-65 e). */
+/** How Vyzio reaches a stream, its quality's tooltip; the path never changes once added (ADR-07). */
 export function streamReach(stream: CameraStream): string {
   const protocol = PROTOCOL_LABELS[stream.protocol]
   return ASKS_STREAM_PATH[stream.protocol] && stream.path
@@ -112,7 +112,7 @@ const ALL_ROLES: readonly StreamRole[] = [
 ]
 const RECORDING_ROLES: readonly StreamRole[] = [StreamRole.Record, StreamRole.RecordAndDetect]
 
-/** The recording stream is offered only the roles that record: one stream always records (ADR-65 b). */
+/** The recording stream is offered only the roles that record: one stream always records (ADR-07). */
 export function roleOptions(stream: CameraStream, lineup: CameraStreamLineup): SettingOption[] {
   const roles = stream.id === lineup.recordStreamId ? RECORDING_ROLES : ALL_ROLES
   return roles.map((role) => ({ value: role, label: ROLE_LABELS[role] }))
@@ -121,7 +121,7 @@ export function roleOptions(stream: CameraStream, lineup: CameraStreamLineup): S
 /** What names a stream: its measured size and rate, else its rank. */
 type StreamFacts = Pick<CameraStream, 'ordinal' | 'width' | 'height' | 'fps'>
 
-/** A stream is described by what the camera reports; its rank is only the fallback (ADR-38). */
+/** A stream is described by what the camera reports; its rank is only the fallback (ADR-07). */
 export function streamQuality(stream: StreamFacts): string {
   const size =
     stream.width !== null && stream.height !== null
@@ -132,7 +132,7 @@ export function streamQuality(stream: StreamFacts): string {
   return stream.fps !== null ? `${size} · ${stream.fps} img/s` : size
 }
 
-/** A detection stream of its own whose check failed: detection stopped, recording did not (ADR-65 c). */
+/** A detection stream of its own whose check failed: detection stopped, recording did not (ADR-07). */
 function detectionInterrupted(lineup: CameraStreamLineup | null): boolean {
   if (lineup === null) return false
   const detect = lineup.streams.find((stream) => stream.id === lineup.detectStreamId)
@@ -153,7 +153,7 @@ export function streamCardState(
     : check
 }
 
-/** The card's one extra sentence when detection is not covered as chosen; null when it is (ADR-65 c). */
+/** The card's one extra sentence when detection is not covered as chosen; null when it is (ADR-07). */
 export function streamCoverageLine(lineup: CameraStreamLineup | null): string | null {
   if (lineup === null) return null
   if (detectionInterrupted(lineup))
@@ -175,7 +175,7 @@ export function addedStream(lineup: CameraStreamLineup): CameraStream | undefine
 export interface StreamChoice {
   key: string
   label: string
-  /** The path, in the item's tooltip (ADR-53). */
+  /** The path, in the item's tooltip (ADR-17). */
   hint?: string
   path: string | null
   /** « Autre chemin… »: the path is typed. */
@@ -229,7 +229,7 @@ function tail(
   ]
 }
 
-/** « Ajouter un flux »: what the camera serves without the streams already listed (ADR-65 e). */
+/** « Ajouter un flux »: what the camera serves without the streams already listed (ADR-07). */
 export function addChoices(
   available: AvailableStream[] | undefined,
   lineup: CameraStreamLineup,

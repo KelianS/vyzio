@@ -1,13 +1,13 @@
 namespace Vyzio.Core.Entities;
 
-// The one order a capability's protocols are tried in, the same for every camera (ADR-71 b).
+// The one order a capability's protocols are tried in, the same for every camera (ADR-04).
 public static class CapabilityProtocolPriority
 {
-    // A proprietary protocol drives its own hardware, where a generic one may answer reads without acting (ADR-71 b).
+    // A proprietary protocol drives its own hardware, where a generic one may answer reads without acting (ADR-04).
     private static readonly SupportedProtocol[] ProprietaryFirst =
         [SupportedProtocol.V380, SupportedProtocol.Dvrip, SupportedProtocol.TapoKlap, SupportedProtocol.Onvif];
 
-    // The stream keeps its own order: the standard transport, then the proprietary one (ADR-61 b).
+    // The stream keeps its own order: the standard transport, then the proprietary one (ADR-04).
     private static readonly SupportedProtocol[] StreamOrder = [SupportedProtocol.Rtsp, SupportedProtocol.Dvrip];
 
     // The given protocols in the capability's priority order; one the order does not name comes last.

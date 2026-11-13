@@ -5,7 +5,7 @@ using System.Text.Json;
 
 namespace Vyzio.Core.Entities;
 
-/// <summary>What a scheduled rule does to its targets during its range (ADR-63).</summary>
+/// <summary>What a scheduled rule does to its targets during its range (ADR-15).</summary>
 public enum ScheduleRuleKind
 {
     /// <summary>The targeted cameras are in privacy mode (PRIV-01).</summary>
@@ -35,7 +35,7 @@ public enum ScheduleRuleRefusal
 
 public static class ScheduleRuleKinds
 {
-    /// <summary>The one place a type declares what it targets: a new type adds a line here (ADR-63).</summary>
+    /// <summary>The one place a type declares what it targets: a new type adds a line here (ADR-15).</summary>
     public static ScheduleTargetKind TargetOf(ScheduleRuleKind kind) => kind switch
     {
         ScheduleRuleKind.Privacy => ScheduleTargetKind.Camera,
@@ -129,7 +129,7 @@ public class ScheduleRuleTarget
     [Required]
     public string RuleId { get; set; } = "";
 
-    /// <summary>A camera id or a channel name, as the rule's kind declares; no foreign key (ADR-63).</summary>
+    /// <summary>A camera id or a channel name, as the rule's kind declares; no foreign key (ADR-15).</summary>
     [Required, MaxLength(64)]
     public required string TargetId { get; set; }
 }

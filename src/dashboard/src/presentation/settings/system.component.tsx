@@ -3,7 +3,7 @@ import { ChevronRight } from 'lucide-react'
 import { SettingsPage } from '../../common/settings/settings_page'
 import { AdvancedFold } from '../../common/settings/advanced_fold'
 
-/** System settings with the "Advanced" fold (ADR-40): the engine's technical UI stays a fallback, not a front-row path (principle #2). */
+/** System settings with the "Advanced" fold (UI-09): the engine's technical UI stays a fallback, not a front-row path (principle #2). */
 export function SystemView() {
   return (
     <SettingsPage lede="L’état du stockage et des ressources est visible depuis l’accueil.">

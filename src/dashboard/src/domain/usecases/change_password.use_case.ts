@@ -3,7 +3,7 @@ import type { AccessRepository } from '../ports/access.port'
 
 /**
  * Changing a password one still knows. The old one is asked for again: a device left unlocked is
- * not consent (ADR-54).
+ * not consent (ADR-16).
  */
 export class ChangePassword {
   constructor(private readonly repository: AccessRepository) {}

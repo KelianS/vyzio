@@ -1,6 +1,6 @@
 export type MediaMode = 'clip_or_photo' | 'photo' | 'text'
 
-/** Channels Vyzio knows how to talk through — the backend catalogue, mirrored (ADR-50). */
+/** Channels Vyzio knows how to talk through — the backend catalogue, mirrored (ADR-14). */
 export type NotificationChannelName = 'telegram' | 'discord'
 
 const CHANNEL_NAMES: readonly NotificationChannelName[] = ['telegram', 'discord']
@@ -37,7 +37,7 @@ export interface NotificationChannelSummary {
   displayName: string
   isConfigured: boolean
   isEnabled: boolean
-  /** A channel that cannot receive stays an alert channel; the screen says so before activation (ADR-52). */
+  /** A channel that cannot receive stays an alert channel; the screen says so before activation (ADR-14). */
   acceptsCommands: boolean
 }
 
@@ -56,7 +56,7 @@ export interface ChannelPairing {
 
 /**
  * Whether the channel is still listening for commands. Nothing saved says it: the loop lives in the
- * server's memory, and losing the network leaves the configuration intact (ADR-52).
+ * server's memory, and losing the network leaves the configuration intact (ADR-14).
  */
 export interface ChannelListening {
   channel: NotificationChannelName
@@ -69,7 +69,7 @@ export interface ChannelListening {
 
 export type CommandOutcome = 'succeeded' | 'failed' | 'rejected'
 
-/** One received command and how it ended; the conversation is never named (ADR-50). */
+/** One received command and how it ended; the conversation is never named (ADR-14). */
 export interface CommandJournalEntry {
   id: string
   verb: string

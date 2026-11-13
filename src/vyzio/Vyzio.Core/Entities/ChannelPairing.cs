@@ -20,7 +20,7 @@ public enum ChannelPairingState
 
 /// <summary>
 /// The single conversation allowed to command Vyzio on a channel. One row per channel: pairing another
-/// conversation replaces it, revoking deletes it, and every other origin is ignored (ADR-50).
+/// conversation replaces it, revoking deletes it, and every other origin is ignored (ADR-14).
 /// </summary>
 [Table("channel_pairings")]
 public class ChannelPairing

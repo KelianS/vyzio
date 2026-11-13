@@ -5,7 +5,7 @@ namespace Vyzio.Tests.Integration;
 
 /// <summary>
 /// Lets a test harness through the barrier the way a browser does — a real account, a real session,
-/// a real cookie. No exemption by environment: one would eventually ship (ADR-54).
+/// a real cookie. No exemption by environment: one would eventually ship (ADR-16).
 /// </summary>
 internal static class SignedInTestClient
 {

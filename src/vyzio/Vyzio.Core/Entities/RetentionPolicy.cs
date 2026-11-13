@@ -1,7 +1,7 @@
 namespace Vyzio.Core.Entities;
 
 // What a given camera actually keeps, once its overrides are laid over the installation values
-// (ADR-39). This is the single place where `override ?? global` is resolved: config generation and
+// (ADR-15). This is the single place where `override ?? global` is resolved: config generation and
 // the API boundary both go through it, so neither can drift from the other.
 public readonly record struct RetentionPolicy(int ContinuousDays, int MotionDays, int EventClipDays)
 {
@@ -19,7 +19,7 @@ public readonly record struct RetentionPolicy(int ContinuousDays, int MotionDays
     // the upper bound is Vyzio's, so a typo cannot silently commit the disk to years of footage.
     public const int MaxDays = 365;
 
-    // Event clips carry the history (ADR-48): zero there would not shorten it, it would abolish it.
+    // Event clips carry the history (ADR-12): zero there would not shorten it, it would abolish it.
     public const int MinEventClipDays = 1;
 
     public static int ClampDays(int days) => Math.Clamp(days, 0, MaxDays);

@@ -55,7 +55,7 @@ public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContex
             camera.HasIndex(c => c.Status)
                 .HasDatabaseName("idx_cameras_status");
 
-            // ADR-22 point 0 — enum in code, same TEXT column/values already in the database.
+            // COMMON-04: enum in code, same TEXT column/values already in the database.
             camera.Property(c => c.ValidationState).HasConversion<SnakeCaseEnumConverter<CameraValidationState>>().HasMaxLength(50);
             camera.Property(c => c.PrivacyModeSource).HasConversion<NullableSnakeCaseEnumConverter<PrivacyModeSource>>();
             camera.Property(c => c.PrivacyMiss).HasConversion<NullableSnakeCaseEnumConverter<PrivacyMiss>>();
@@ -74,7 +74,7 @@ public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContex
                     .HasForeignKey(p => p.CameraId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-            // One row per protocol a camera speaks (ADR-61).
+            // One row per protocol a camera speaks (ADR-04).
             protocol.HasIndex(p => new { p.CameraId, p.Protocol })
                     .IsUnique()
                     .HasDatabaseName("ux_camera_protocols_camera_protocol");
@@ -89,7 +89,7 @@ public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContex
 
         modelBuilder.Entity<CameraStream>(stream =>
         {
-            // The streams belong to the stream binding (ADR-65).
+            // The streams belong to the stream binding (ADR-07).
             stream.HasOne(s => s.Binding)
                   .WithMany(b => b.Streams)
                   .HasForeignKey(s => s.BindingId)
@@ -119,7 +119,7 @@ public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContex
 
             binding.Property(b => b.Capability).HasConversion<SnakeCaseEnumConverter<CameraCapability>>();
             binding.Property(b => b.Protocol).HasConversion<SnakeCaseEnumConverter<SupportedProtocol>>();
-            // A row from before ADR-66 reads as failed until its next check.
+            // A row from before ADR-04 reads as failed until its next check.
             binding.Property(b => b.Status).HasConversion<SnakeCaseEnumConverter<CapabilityStatus>>().HasDefaultValue(CapabilityStatus.Failed);
         });
 
@@ -188,7 +188,7 @@ public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContex
             notification.HasIndex(n => new { n.FrigateEventId, n.Channel })
                         .HasDatabaseName("idx_notifications_event");
 
-            // The cooldown looks up the last send for a camera/label pair, now held by the journal itself (ADR-49).
+            // The cooldown looks up the last send for a camera/label pair, now held by the journal itself (ADR-12).
             notification.HasIndex(n => new { n.Channel, n.Camera, n.Label, n.SentAt })
                         .HasDatabaseName("idx_notifications_cooldown");
         });
@@ -199,7 +199,7 @@ public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContex
             entry.Property(e => e.Command).HasConversion<SnakeCaseEnumConverter<RemoteCommandName>>();
             entry.Property(e => e.Outcome).HasConversion<SnakeCaseEnumConverter<CommandOutcome>>();
 
-            // The journal is read newest first, and by conversation when a pairing is under suspicion (ADR-50).
+            // The journal is read newest first, and by conversation when a pairing is under suspicion (ADR-14).
             entry.HasIndex(e => e.ReceivedAt)
                  .HasDatabaseName("idx_command_journal_received");
 
@@ -211,7 +211,7 @@ public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContex
         {
             pairing.Property(p => p.Channel).HasConversion<SnakeCaseEnumConverter<NotificationChannel>>();
 
-            // One paired conversation per channel, enforced by the database rather than by good intentions (ADR-50).
+            // One paired conversation per channel, enforced by the database rather than by good intentions (ADR-14).
             pairing.HasIndex(p => p.Channel)
                    .IsUnique()
                    .HasDatabaseName("idx_channel_pairings_channel");
@@ -229,7 +229,7 @@ public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContex
                    .HasForeignKey(s => s.AccountId)
                    .OnDelete(DeleteBehavior.Cascade);
 
-            // Every authenticated request looks a session up by this hash, and by nothing else (ADR-54).
+            // Every authenticated request looks a session up by this hash, and by nothing else (ADR-16).
             session.HasIndex(s => s.TokenHash)
                    .IsUnique()
                    .HasDatabaseName("ux_sessions_token");

@@ -6,7 +6,7 @@ namespace Vyzio.Application.DTOs.Notifications;
 
 /// <summary>
 /// One line of the command journal. The conversation is not handed back — a rejected command names no
-/// stranger, so the trace cannot become a directory of who tried (ADR-50).
+/// stranger, so the trace cannot become a directory of who tried (ADR-14).
 /// </summary>
 /// <param name="Verb">What the user actually typed, resolved through the registry so the screen never
 /// spells a command name of its own.</param>

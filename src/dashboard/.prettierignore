@@ -6,7 +6,7 @@ coverage/
 playwright-report/
 test-results/
 
-# Vendored shadcn/ui primitives (ADR-42) — kept byte-identical to upstream so that
+# Vendored shadcn/ui primitives (ADR-01) — kept byte-identical to upstream so that
 # re-running the shadcn CLI produces no formatting noise, and an update stays reviewable.
 src/common/ui/
 

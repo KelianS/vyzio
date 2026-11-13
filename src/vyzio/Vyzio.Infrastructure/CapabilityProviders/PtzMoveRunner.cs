@@ -4,18 +4,18 @@ using Vyzio.Core.Entities;
 
 namespace Vyzio.Infrastructure.CapabilityProviders;
 
-// Paces PTZ moves for every protocol, one at a time per camera, on the injected clock (ADR-60).
+// Paces PTZ moves for every protocol, one at a time per camera, on the injected clock (ADR-09).
 internal sealed class PtzMoveRunner(TimeProvider time, ILogger<PtzMoveRunner> logger)
 {
     // How long a move waits for the previous one of the same camera before it is skipped.
     public static readonly TimeSpan BusyWait = TimeSpan.FromMilliseconds(300);
 
-    // A held move lasts at least this long, so the shortest press still turns the motor; to tune on hardware (ADR-60).
+    // A held move lasts at least this long, so the shortest press still turns the motor; to tune on hardware (ADR-09).
     public static readonly TimeSpan MinimumHold = TimeSpan.FromMilliseconds(200);
 
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _running = new();
 
-    // One discrete move; false when skipped because another move of this camera was still running (ADR-59).
+    // One discrete move; false when skipped because another move of this camera was still running (ADR-09).
     public async Task<bool> RunAsync(Camera camera, Func<CancellationToken, Task> move, CancellationToken ct)
     {
         if (await AcquireAsync(camera, ct) is not { } running) return false;

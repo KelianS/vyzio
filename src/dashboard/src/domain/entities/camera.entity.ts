@@ -25,11 +25,11 @@ export const CameraState = {
   Offline: 'offline',
   Degraded: 'degraded',
   ConfigError: 'config_error',
-  /** Its stream never worked: the only status it has until then (ADR-68 d). */
+  /** Its stream never worked: the only status it has until then (ADR-04). */
   ToSetUp: 'to_set_up',
 } as const
 
-/** Where a camera stands towards surveillance; only a validated one is in it (ADR-23, ADR-68 d). */
+/** Where a camera stands towards surveillance; only a validated one is in it (ADR-04, ADR-05). */
 export const CameraValidation = {
   ToSetUp: 'to_set_up',
   Draft: 'draft',
@@ -37,7 +37,7 @@ export const CameraValidation = {
   PendingRemoval: 'pending_removal',
 } as const
 
-/** The live view's qualities (ADR-72 c): the low one first, the high one when recording runs on another stream. */
+/** The live view's qualities (ADR-07): the low one first, the high one when recording runs on another stream. */
 export const LiveQuality = {
   Low: 'low',
   High: 'high',
@@ -73,7 +73,7 @@ export interface Camera {
   verifiedCapabilities: string[]
   /** The qualities its live view offers; empty while it is not in surveillance. */
   liveQualities: LiveQuality[]
-  /** When detection last finished; null: never, so its page runs it on arrival (ADR-68 b). */
+  /** When detection last finished; null: never, so its page runs it on arrival (ADR-04). */
   detectedAt: string | null
 }
 

@@ -41,7 +41,7 @@ export function CameraLiveThumbnail({
   const [imageError, setImageError] = useState(false)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const deviceOffline = !camera.connected
-  // Not in surveillance yet: no image to try nor live view to open, the tile leads to its page (ADR-68 d).
+  // Not in surveillance yet: no image to try nor live view to open, the tile leads to its page (ADR-04).
   const unwatched = surveillanceEntryOf(camera) !== SurveillanceEntry.Watched
   const polling = !camera.privacyModeActive && camera.connected && !unwatched
   // An offline camera opens no live view: it would only wait for a stream that cannot come (CAM-08).

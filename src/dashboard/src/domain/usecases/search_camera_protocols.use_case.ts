@@ -1,7 +1,7 @@
 import type { CameraProtocol } from '../entities/camera_protocol.entity'
 import type { CameraRepository } from '../ports/camera.port'
 
-/** The protocol level alone: the usual protocols that answer are added, no capability is touched (ADR-61). */
+/** The protocol level alone: the usual protocols that answer are added, no capability is touched (ADR-04). */
 export class SearchCameraProtocols {
   constructor(private readonly repository: CameraRepository) {}
 

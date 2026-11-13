@@ -41,7 +41,7 @@ export function ProtocolBoxes({
   protocols: CameraProtocol[]
   loading: boolean
   readError: AppError | null
-  /** Each box as the page's draft holds it (ADR-41). */
+  /** Each box as the page's draft holds it (ADR-15). */
   values: (protocol: SupportedProtocol) => ProtocolValues
   checking: Partial<Record<SupportedProtocol, true>>
   removing: Partial<Record<SupportedProtocol, true>>

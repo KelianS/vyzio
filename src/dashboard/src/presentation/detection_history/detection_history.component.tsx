@@ -226,8 +226,9 @@ export function DetectionHistoryView() {
         <p>
           Raccourcir la durée fait sortir les détections plus anciennes, avec leur aperçu et leur
           vidéo ; comptez jusqu’à une heure avant que le ménage soit passé. Elle ne peut pas valoir
-          zéro : ce serait vider l’historique, pas le raccourcir — pour ne rien conserver d’une
-          caméra, désactivez-la.
+          zéro : ce serait vider l’historique, pas le raccourcir. Pour ne plus rien enregistrer
+          d’une caméra, activez sa vie privée&nbsp;: les vidéos déjà gardées restent jusqu’à la fin
+          de leur durée de conservation.
         </p>
         <p>
           Un aperçu qui met quelques secondes à venir juste après une détection est normal : l’image

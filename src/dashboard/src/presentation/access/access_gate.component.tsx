@@ -9,7 +9,7 @@ import { buildAccessGatePresenter } from './access_gate.presenter'
 import { accessGateReducer } from './access_gate.reducer'
 import { buildInitialAccessGateUido } from './access_gate.uido'
 
-/** Nothing shows before someone is in: first the password to choose, then sign-in (ADR-54). */
+/** Nothing shows before someone is in: first the password to choose, then sign-in (ADR-16). */
 export function AccessGate({ children }: { children: ReactNode }) {
   const { access: container } = useAppContainer()
   const { toast } = useToast()

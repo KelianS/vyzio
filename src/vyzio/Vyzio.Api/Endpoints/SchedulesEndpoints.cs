@@ -3,7 +3,7 @@ using Vyzio.Application.UseCases.Scheduling;
 
 namespace Vyzio.Api.Endpoints;
 
-/// <summary>The house's scheduled rules, one route set for every type (ADR-63).</summary>
+/// <summary>The house's scheduled rules, one route set for every type (ADR-15).</summary>
 public static class SchedulesEndpoints
 {
     public static IEndpointRouteBuilder MapSchedules(this IEndpointRouteBuilder app)

@@ -7,7 +7,7 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Application.UseCases.Cameras;
 
-// Evaluates the privacy rules every minute; a manual cut, or a manual resume until its range ends, is never overridden (ADR-20, ADR-63).
+// Evaluates the privacy rules every minute; a manual cut, or a manual resume until its range ends, is never overridden (ADR-10, ADR-15).
 public sealed class PrivacySchedulerService(
     IServiceScopeFactory scopeFactory,
     PrivacyResumes resumes,

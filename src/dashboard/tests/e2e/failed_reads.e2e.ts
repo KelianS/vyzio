@@ -97,7 +97,7 @@ test.describe('Failed reads', () => {
     await expect(page.getByText('Caméra introuvable')).toHaveCount(0)
   })
 
-  // Unread is not empty: no slot is offered until the camera says which positions it keeps (ADR-69).
+  // Unread is not empty: no slot is offered until the camera says which positions it keeps (ADR-09).
   test('LiveView_ShouldOfferNoSlotThenShowThem_WhenThePositionsAreReadOnRetry', async ({
     page,
   }) => {

@@ -17,7 +17,7 @@ public sealed class CameraRepository(VyzioDbContext db) : ICameraRepository
     public Task<Camera?> GetBySlugAsync(string slug, CancellationToken ct = default)
         => WithConnection().FirstOrDefaultAsync(camera => camera.Slug == slug, ct);
 
-    // A camera always comes with its protocols and bindings, the stream binding with its streams (ADR-61, ADR-65).
+    // A camera always comes with its protocols and bindings, the stream binding with its streams (ADR-04, ADR-07).
     private IQueryable<Camera> WithConnection()
         => db.Cameras
             .Include(camera => camera.Protocols)

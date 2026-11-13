@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fixtures/fake_backend'
 
-// Restarting is the user's act (ADR-44): saving interrupts nothing, and the question is only asked on the way out.
+// Restarting is the user's act (ADR-15): saving interrupts nothing, and the question is only asked on the way out.
 test.describe('Surveillance restart', () => {
   const trigger = (name = /Appliquer les changements/) => ({ name })
 

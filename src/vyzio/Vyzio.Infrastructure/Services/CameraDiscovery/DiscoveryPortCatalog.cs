@@ -2,7 +2,7 @@ using Vyzio.Core.Entities;
 
 namespace Vyzio.Infrastructure.Services.CameraDiscovery;
 
-// ADR-32 — THE single list of ports the "nmap" stage sweeps, plus which protocol fingerprint(s)
+// ADR-05 — THE single list of ports the "nmap" stage sweeps, plus which protocol fingerprint(s)
 // to attempt on each. Two independent facets, both extensible in one place:
 //   • ScannedPorts: every port we TCP-connect, with the conventional service name shown when no
 //     protocol fingerprint confirms — so an open port always surfaces, even unidentified.
@@ -53,7 +53,7 @@ internal static class DiscoveryPortCatalog
     public static IReadOnlyList<int> RtspProbePorts { get; } =
         Fingerprints.First(f => f.Protocol == SupportedProtocol.Rtsp).Ports;
 
-    // Shared with OnvifEndpointResolver: a camera recognised at discovery is one the client reaches (ADR-56).
+    // Shared with OnvifEndpointResolver: a camera recognised at discovery is one the client reaches (ADR-05).
     public static IReadOnlyList<int> OnvifPorts { get; } =
         Fingerprints.First(f => f.Protocol == SupportedProtocol.Onvif).Ports;
 

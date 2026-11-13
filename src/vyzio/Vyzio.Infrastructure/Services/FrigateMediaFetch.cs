@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 namespace Vyzio.Infrastructure.Services;
 
 /// <summary>
-/// Reads an event media from Frigate, retrying while the file is not written yet (ADR-49).
+/// Reads an event media from Frigate, retrying while the file is not written yet (ADR-12).
 /// </summary>
 internal static class FrigateMediaFetch
 {

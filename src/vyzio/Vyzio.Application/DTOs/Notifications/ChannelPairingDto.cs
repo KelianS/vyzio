@@ -9,7 +9,7 @@ namespace Vyzio.Application.DTOs.Notifications;
 /// that one is linked is all the screen needs, and it is one identifier less to leak.
 /// </summary>
 /// <param name="Instruction">Exactly what to type in the conversation — composed from the registry, so
-/// the screen never invents a command name of its own (ADR-50).</param>
+/// the screen never invents a command name of its own (ADR-14).</param>
 public sealed record ChannelPairingDto(
     string Channel,
     string Status,
