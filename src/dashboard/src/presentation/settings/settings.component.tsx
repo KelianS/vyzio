@@ -8,6 +8,7 @@ import {
   declaresOwnHeader,
   rubricPath,
 } from './settings.rubrics'
+import { ListRow } from '../../common/components/list_row'
 
 /**
  * The settings shell (UI-25): first level = the sections, second = the pages of
@@ -48,26 +49,23 @@ export function SettingsView() {
               const active = current?.slug === rubric.slug
               return (
                 <li key={rubric.slug}>
-                  <Link
-                    to={rubricPath(rubric.slug)}
-                    aria-current={active ? 'page' : undefined}
-                    className={cn(
-                      'flex items-center justify-between gap-3 rounded-lg px-3 py-2.5',
-                      'transition-colors hover:bg-muted',
-                      'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
-                      active && 'bg-muted font-semibold',
-                    )}
+                  <ListRow
+                    className={cn('rounded-lg px-3 py-2.5', active && 'bg-muted font-semibold')}
                   >
-                    {/* Size, weight and colour together: one signal alone left the two lines alike. */}
-                    <span className="min-w-0">
-                      <span className="block font-medium">{rubric.label}</span>
-                      <span className="block text-sm text-muted-foreground">{rubric.summary}</span>
-                    </span>
-                    <ChevronRight
-                      className="size-4 shrink-0 text-muted-foreground md:hidden"
-                      aria-hidden="true"
-                    />
-                  </Link>
+                    <Link to={rubricPath(rubric.slug)} aria-current={active ? 'page' : undefined}>
+                      {/* Size, weight and colour together: one signal alone left the two lines alike. */}
+                      <span className="min-w-0">
+                        <span className="block font-medium">{rubric.label}</span>
+                        <span className="block text-sm text-muted-foreground">
+                          {rubric.summary}
+                        </span>
+                      </span>
+                      <ChevronRight
+                        className="size-4 shrink-0 text-muted-foreground md:hidden"
+                        aria-hidden="true"
+                      />
+                    </Link>
+                  </ListRow>
                 </li>
               )
             })}

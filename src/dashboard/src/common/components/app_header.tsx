@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link, useLocation } from 'react-router'
 import { cn } from '../ui/utils'
+import { PressableSurface } from './pressable_surface'
 
 /**
  * The main bar (UI-24). It carries **viewing** only, plus a single way into the
@@ -30,7 +31,7 @@ export function AppHeader({ trailing }: { trailing?: ReactNode }) {
     cn(
       // Pill: this is a navigation link, not an action button
       // (shape rule of the DESIGN SYSTEM).
-      'inline-flex h-8 items-center rounded-full px-3 text-sm font-medium transition-colors',
+      'inline-flex h-8 items-center rounded-full px-3 text-sm font-medium',
       'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current',
       active
         ? 'bg-surface-inverse-foreground/16 font-bold text-surface-inverse-foreground'
@@ -58,26 +59,29 @@ export function AppHeader({ trailing }: { trailing?: ReactNode }) {
         {CONSULTATION_ITEMS.map((item) => {
           const active = isActive(pathname, item.path)
           return (
-            <Link
-              key={item.path}
-              to={item.path}
-              aria-current={active ? 'page' : undefined}
-              className={linkClass(active)}
-            >
-              {item.label}
-            </Link>
+            <PressableSurface key={item.path}>
+              <Link
+                to={item.path}
+                aria-current={active ? 'page' : undefined}
+                className={linkClass(active)}
+              >
+                {item.label}
+              </Link>
+            </PressableSurface>
           )
         })}
 
         <span className="mx-2 h-5 w-px shrink-0 bg-surface-inverse-foreground/20" aria-hidden />
 
-        <Link
-          to={SETTINGS_ITEM.path}
-          aria-current={isActive(pathname, SETTINGS_ITEM.path) ? 'page' : undefined}
-          className={linkClass(isActive(pathname, SETTINGS_ITEM.path))}
-        >
-          {SETTINGS_ITEM.label}
-        </Link>
+        <PressableSurface>
+          <Link
+            to={SETTINGS_ITEM.path}
+            aria-current={isActive(pathname, SETTINGS_ITEM.path) ? 'page' : undefined}
+            className={linkClass(isActive(pathname, SETTINGS_ITEM.path))}
+          >
+            {SETTINGS_ITEM.label}
+          </Link>
+        </PressableSurface>
       </nav>
 
       {trailing}

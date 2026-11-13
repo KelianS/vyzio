@@ -4,8 +4,8 @@ import { Link, useNavigate } from 'react-router'
 import { ChevronLeft, Keyboard, Radar } from 'lucide-react'
 import { DiagnosticLine, ErrorMessage } from '../../common/components/error_message'
 import { Badge } from '../../common/components/badge'
+import { ListRow } from '../../common/components/list_row'
 import { Button } from '../../common/ui/button'
-import { cn } from '../../common/ui/utils'
 import { ConfirmModal } from '../../common/components/confirm_modal'
 import { useToast } from '../../common/components/toast'
 import { usePresenter } from '../../common/presenter/use_presenter'
@@ -393,16 +393,11 @@ function Feedback({ message, error }: { message: string | null; error: AddCamera
 
 function SelectableRow({ onSelect, children }: { onSelect: () => void; children: ReactNode }) {
   return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={cn(
-        'w-full px-3 py-3 text-left transition-colors hover:bg-muted/60',
-        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
-      )}
-    >
-      {children}
-    </button>
+    <ListRow className="block w-full px-3 text-left">
+      <button type="button" onClick={onSelect}>
+        {children}
+      </button>
+    </ListRow>
   )
 }
 

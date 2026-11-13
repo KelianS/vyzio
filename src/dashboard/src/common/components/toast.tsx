@@ -34,18 +34,16 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const toast = useCallback((message: string, tone: ToastTone = 'info', diagnostic?: string) => {
     const id = nextId++
-    // The same failure raised twice in a row is one thing to read, not a pile to close one by one.
-    setItems((prev) =>
-      prev.some(
-        (item) =>
-          !item.leaving &&
-          item.message === message &&
-          item.tone === tone &&
-          item.diagnostic === diagnostic,
+    // The same failure raised twice in a row is one thing to read, not a pile to close one by one:
+    // raised again while it fades out, it comes back.
+    setItems((prev) => {
+      const same = prev.find(
+        (item) => item.message === message && item.tone === tone && item.diagnostic === diagnostic,
       )
-        ? prev
-        : [...prev, { id, message, tone, diagnostic }],
-    )
+      if (!same) return [...prev, { id, message, tone, diagnostic }]
+      if (!same.leaving) return prev
+      return prev.map((item) => (item === same ? { ...item, leaving: false } : item))
+    })
   }, [])
 
   const dismiss = useCallback((id: number) => {
@@ -99,10 +97,10 @@ function ToastChip({
   // A failure with a diagnostic stays until dismissed: it may have to be photographed (UI-03).
   const closesItself = item.diagnostic === undefined
   useEffect(() => {
-    if (!closesItself) return
+    if (!closesItself || item.leaving) return
     const timer = setTimeout(() => onDismiss(item.id), 4000)
     return () => clearTimeout(timer)
-  }, [item.id, onDismiss, closesItself])
+  }, [item.id, item.leaving, onDismiss, closesItself])
 
   // It leaves the page once its fade has played.
   useEffect(() => {

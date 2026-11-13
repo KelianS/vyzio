@@ -99,13 +99,20 @@ otherwise jump, never decorates. One curve and three durations, never a value wr
 
 - **Layers fade.** A dialog or a confirmation also grows slightly from the centre; a popover, a select
   or a tooltip grows from its trigger with a short slide. The viewer layer of a picture (§ Full-screen
-  viewing) only fades: a full-bleed surface has no edge to grow from.
-- **A toast** fades in with a short rise and fades out where it stands.
-- **Every press answers.** Whatever acts when pressed, a button or a control drawn without the button
-  primitive, shrinks slightly while pressed, so a tap never looks unheard while the answer is on its
-  way: the button primitive takes it by itself, any other pressable control takes the `press`
-  utility. Navigation, a tab bar or a list row, changes colour only: used tens of times a day, it
-  must not move. A screen change is instant.
+  viewing) only fades: a full-bleed surface has no edge to grow from. A layer leaves the same way
+  however it closes: cancelled, or once the action it asked for has settled.
+- **A toast** fades in with a short rise and fades out where it stands; raised again while it fades,
+  it comes back rather than showing twice.
+- **Every press answers**, so a tap never looks unheard while the answer is on its way.
+  - A **control** (a button, a control over the picture, a retry) shrinks slightly while pressed: the
+    button primitive takes it by itself, any other control takes the `press` utility. A link drawn
+    as a button is an action, and presses like one.
+  - A **surface that leads somewhere** (a header link, a list row, a camera's picture) dims while
+    pressed and never moves: used tens of times a day, it must not move. Every list row that leads
+    somewhere or picks something is the registry `item`, with its hover and focus; any other such
+    surface is wrapped in the shared pressable surface. Both take the dim by their slot, never by a
+    class on a screen.
+  - A tab bar keeps its colour change only. A screen change is instant.
 - **Reduce motion.** When the phone asks for less motion, only fades remain: no growing, no slide,
   no rise, and a press dims instead of shrinking. `src/index.css` carries it for the layers and the
   press; an entrance a component draws itself keeps its movement under `motion-safe:`. A spinner

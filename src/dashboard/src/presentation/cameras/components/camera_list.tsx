@@ -1,6 +1,7 @@
 import { Link } from 'react-router'
 import { ChevronRight, Plus } from 'lucide-react'
 import { Badge } from '../../../common/components/badge'
+import { ListRow } from '../../../common/components/list_row'
 import { Button } from '../../../common/ui/button'
 import { SettingsPage } from '../../../common/settings/settings_page'
 import { ReadFailure } from '../../../common/components/error_message'
@@ -29,20 +30,19 @@ export function CameraList({
         <ul className="divide-y divide-border">
           {cameras.map((camera) => (
             <li key={camera.id}>
-              <Link
-                to={`/settings/cameras/${camera.id}`}
-                className="flex items-center justify-between gap-3 py-3 transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-              >
-                <span className="min-w-0">
-                  <span className="block font-medium">{camera.displayName}</span>
-                  {/* Tells apart two cameras sharing a name, or the lenses of one device (CAM-02). */}
-                  <span className="block text-sm text-muted-foreground">{camera.host}</span>
-                </span>
-                <span className="flex shrink-0 items-center gap-3">
-                  <Badge tone={formatStatusTone(camera)}>{formatCameraStatusLabel(camera)}</Badge>
-                  <ChevronRight className="size-4 text-muted-foreground" aria-hidden="true" />
-                </span>
-              </Link>
+              <ListRow>
+                <Link to={`/settings/cameras/${camera.id}`}>
+                  <span className="min-w-0">
+                    <span className="block font-medium">{camera.displayName}</span>
+                    {/* Tells apart two cameras sharing a name, or the lenses of one device (CAM-02). */}
+                    <span className="block text-sm text-muted-foreground">{camera.host}</span>
+                  </span>
+                  <span className="flex shrink-0 items-center gap-3">
+                    <Badge tone={formatStatusTone(camera)}>{formatCameraStatusLabel(camera)}</Badge>
+                    <ChevronRight className="size-4 text-muted-foreground" aria-hidden="true" />
+                  </span>
+                </Link>
+              </ListRow>
             </li>
           ))}
         </ul>
