@@ -112,6 +112,46 @@ test.describe('Press feedback', () => {
   })
 })
 
+// Held with the pointer: headless Chromium sets no `:active` under an emulated finger.
+test.describe('Press feedback on links and rows', () => {
+  test.use({ viewport: { width: 390, height: 844 } })
+
+  test.beforeEach(async ({ page }) => {
+    const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
+    await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
+  })
+
+  test('CameraTile_ShouldDimWithoutMoving_WhenItIsPressed', async ({ page }) => {
+    await page.goto('/')
+
+    expect(await pressed(page.getByRole('link', { name: 'Salon' }))).toEqual({
+      scale: 'none',
+      opacity: '0.7',
+    })
+  })
+
+  test('HeaderLink_ShouldDimWithoutMoving_WhenItIsPressed', async ({ page }) => {
+    await page.goto('/')
+
+    expect(
+      await pressed(
+        page
+          .getByRole('navigation', { name: 'Navigation principale' })
+          .getByRole('link', { name: 'Historique', exact: true }),
+      ),
+    ).toEqual({ scale: 'none', opacity: '0.7' })
+  })
+
+  test('CameraRow_ShouldDimWithoutMoving_WhenItIsPressed', async ({ page }) => {
+    await page.goto('/settings/cameras')
+
+    expect(await pressed(page.getByRole('link', { name: /Salon/ }))).toEqual({
+      scale: 'none',
+      opacity: '0.7',
+    })
+  })
+})
+
 test.describe('Layers', () => {
   test('ConfirmModal_ShouldFadeInGrowingSlightly_WhenItOpens', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
@@ -137,6 +177,25 @@ test.describe('Layers', () => {
     await dialog.getByRole('button', { name: 'Annuler' }).click()
 
     expect(await frameOf(dialog, 'last')).toEqual({ opacity: 0, scale: 0.95 })
+  })
+
+  test('ConfirmModal_ShouldFadeOutShrinkingSlightly_WhenTheConfirmedActionSettles', async ({
+    page,
+  }) => {
+    const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
+    await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
+    await page.goto('/')
+    await page.getByRole('button', { name: 'Pause' }).click()
+    const dialog = page.getByRole('alertdialog')
+    await expect(dialog).toBeVisible()
+    await slowDownMotion(page)
+
+    await dialog.getByRole('button', { name: 'Mettre en pause' }).click()
+    await expect(page.getByRole('status')).toContainText('Salon est en pause.')
+
+    // Leaving after its action, it is a copy hidden from assistive technologies.
+    const leaving = page.locator('[data-slot="alert-dialog-content"][data-state="closed"]')
+    expect(await frameOf(leaving, 'last')).toEqual({ opacity: 0, scale: 0.95 })
   })
 
   test('HelpPopover_ShouldFadeInGrowingSlightly_WhenItOpens', async ({ page }) => {

@@ -95,6 +95,19 @@ describe('Toast', () => {
     expect(screen.queryByText('La caméra a refusé la commande')).not.toBeInTheDocument()
   })
 
+  it('toast_ShouldComeBackOnce_WhenTheSameFailureIsRaisedWhileItFadesOut', () => {
+    // Arrange
+    playFadesUntil(new Promise(() => undefined))
+    showToast('error', 'GET /api/hub · 500')
+    act(() => screen.getByRole('button', { name: 'Fermer' }).click())
+
+    // Act
+    act(() => screen.getByRole('button', { name: 'go' }).click())
+
+    // Assert
+    expect(screen.getAllByText('La caméra a refusé la commande')).toHaveLength(1)
+  })
+
   it('toast_ShouldShowItOnce_WhenTheSameFailureIsRaisedTwice', () => {
     // Arrange
     showToast('error', 'GET /api/hub · 500')

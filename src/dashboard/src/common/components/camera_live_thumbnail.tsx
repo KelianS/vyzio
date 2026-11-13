@@ -87,7 +87,7 @@ export function CameraLiveThumbnail({
         <Link
           to={`/settings/cameras/${camera.id}`}
           aria-label={`${formatCameraStatusLabel(camera)} : ${camera.displayName}`}
-          className="flex h-full items-center justify-center gap-1 text-sm font-medium text-surface-inverse-foreground underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring"
+          className="press-dim flex h-full items-center justify-center gap-1 text-sm font-medium text-surface-inverse-foreground underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring"
         >
           {formatCameraStatusLabel(camera)}
           <ChevronRight className="size-4" aria-hidden="true" />
@@ -124,7 +124,7 @@ export function CameraLiveThumbnail({
           aria-label={camera.displayName}
           className={cn(
             FRAME,
-            'block focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring',
+            'press-dim block focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring',
           )}
         >
           {picture}

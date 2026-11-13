@@ -30,7 +30,7 @@ export function AppHeader({ trailing }: { trailing?: ReactNode }) {
     cn(
       // Pill: this is a navigation link, not an action button
       // (shape rule of the DESIGN SYSTEM).
-      'inline-flex h-8 items-center rounded-full px-3 text-sm font-medium transition-colors',
+      'press-dim inline-flex h-8 items-center rounded-full px-3 text-sm font-medium',
       'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current',
       active
         ? 'bg-surface-inverse-foreground/16 font-bold text-surface-inverse-foreground'

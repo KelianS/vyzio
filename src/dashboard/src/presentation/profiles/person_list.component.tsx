@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 import { ChevronRight, Plus } from 'lucide-react'
 import { Button } from '../../common/ui/button'
 import { ReadFailure } from '../../common/components/error_message'
+import { ListRow } from '../../common/components/list_row'
 import { SettingsPage } from '../../common/settings/settings_page'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
@@ -35,10 +36,8 @@ export function PersonListView() {
         <ul className="divide-y divide-border">
           {uido.people.map((person) => (
             <li key={person.id}>
-              <Link
-                to={`/settings/detection/personnes/${person.id}`}
-                className="flex items-center justify-between gap-3 py-3 transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-              >
+              <ListRow>
+                <Link to={`/settings/detection/personnes/${person.id}`}>
                 <span className="min-w-0">
                   <span className="block font-medium">{person.name}</span>
                   <span className="block text-sm text-muted-foreground">
@@ -50,6 +49,7 @@ export function PersonListView() {
                   aria-hidden="true"
                 />
               </Link>
+              </ListRow>
             </li>
           ))}
         </ul>
