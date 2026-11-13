@@ -32,16 +32,16 @@ export function CameraList({
             <li key={camera.id}>
               <ListRow>
                 <Link to={`/settings/cameras/${camera.id}`}>
-                <span className="min-w-0">
-                  <span className="block font-medium">{camera.displayName}</span>
-                  {/* Tells apart two cameras sharing a name, or the lenses of one device (CAM-02). */}
-                  <span className="block text-sm text-muted-foreground">{camera.host}</span>
-                </span>
-                <span className="flex shrink-0 items-center gap-3">
-                  <Badge tone={formatStatusTone(camera)}>{formatCameraStatusLabel(camera)}</Badge>
-                  <ChevronRight className="size-4 text-muted-foreground" aria-hidden="true" />
-                </span>
-              </Link>
+                  <span className="min-w-0">
+                    <span className="block font-medium">{camera.displayName}</span>
+                    {/* Tells apart two cameras sharing a name, or the lenses of one device (CAM-02). */}
+                    <span className="block text-sm text-muted-foreground">{camera.host}</span>
+                  </span>
+                  <span className="flex shrink-0 items-center gap-3">
+                    <Badge tone={formatStatusTone(camera)}>{formatCameraStatusLabel(camera)}</Badge>
+                    <ChevronRight className="size-4 text-muted-foreground" aria-hidden="true" />
+                  </span>
+                </Link>
               </ListRow>
             </li>
           ))}

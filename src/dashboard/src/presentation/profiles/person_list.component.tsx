@@ -38,17 +38,17 @@ export function PersonListView() {
             <li key={person.id}>
               <ListRow>
                 <Link to={`/settings/detection/personnes/${person.id}`}>
-                <span className="min-w-0">
-                  <span className="block font-medium">{person.name}</span>
-                  <span className="block text-sm text-muted-foreground">
-                    {CATEGORY_LABELS[person.category]} · {ALERT_MODE_LABELS[person.alertMode]}
+                  <span className="min-w-0">
+                    <span className="block font-medium">{person.name}</span>
+                    <span className="block text-sm text-muted-foreground">
+                      {CATEGORY_LABELS[person.category]} · {ALERT_MODE_LABELS[person.alertMode]}
+                    </span>
                   </span>
-                </span>
-                <ChevronRight
-                  className="size-4 shrink-0 text-muted-foreground"
-                  aria-hidden="true"
-                />
-              </Link>
+                  <ChevronRight
+                    className="size-4 shrink-0 text-muted-foreground"
+                    aria-hidden="true"
+                  />
+                </Link>
               </ListRow>
             </li>
           ))}

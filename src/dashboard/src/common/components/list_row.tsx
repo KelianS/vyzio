@@ -7,7 +7,10 @@ export function ListRow({ className, ...props }: Omit<ComponentProps<typeof Item
   return (
     <Item
       asChild
-      className={cn('flex-nowrap justify-between gap-3 rounded-none px-0 py-3 text-base', className)}
+      className={cn(
+        'flex-nowrap justify-between gap-3 rounded-none px-0 py-3 text-base',
+        className,
+      )}
       {...props}
     />
   )
