@@ -11,6 +11,7 @@ import { sendingSentence } from './channel_status'
 import { buildNotificationChannelListPresenter } from './notification_channel_list.presenter'
 import { notificationChannelListReducer } from './notification_channel_list.reducer'
 import { buildInitialNotificationChannelListUido } from './notification_channel_list.uido'
+import { ListRow } from '../../common/components/list_row'
 
 /** First level of the Notifications rubric: the channels in place. Adding one is its own task/page. */
 export function NotificationChannelListView() {
@@ -42,23 +43,22 @@ export function NotificationChannelListView() {
         <ul className="divide-y divide-border">
           {configured.map((channel) => (
             <li key={channel.channel}>
-              <Link
-                to={`/settings/notifications/${channel.channel}`}
-                className="flex items-center justify-between gap-3 py-3 transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-              >
-                <span className="min-w-0">
-                  <span className="block font-medium">{channel.displayName}</span>
-                  <span className="block text-sm text-muted-foreground">
-                    {sendingSentence(channel.isEnabled)}
+              <ListRow>
+                <Link to={`/settings/notifications/${channel.channel}`}>
+                  <span className="min-w-0">
+                    <span className="block font-medium">{channel.displayName}</span>
+                    <span className="block text-sm text-muted-foreground">
+                      {sendingSentence(channel.isEnabled)}
+                    </span>
                   </span>
-                </span>
-                <span className="flex shrink-0 items-center gap-3">
-                  <Badge tone={channel.isEnabled ? 'ok' : 'neutral'}>
-                    {channel.isEnabled ? 'Actif' : 'En pause'}
-                  </Badge>
-                  <ChevronRight className="size-4 text-muted-foreground" aria-hidden="true" />
-                </span>
-              </Link>
+                  <span className="flex shrink-0 items-center gap-3">
+                    <Badge tone={channel.isEnabled ? 'ok' : 'neutral'}>
+                      {channel.isEnabled ? 'Actif' : 'En pause'}
+                    </Badge>
+                    <ChevronRight className="size-4 text-muted-foreground" aria-hidden="true" />
+                  </span>
+                </Link>
+              </ListRow>
             </li>
           ))}
         </ul>

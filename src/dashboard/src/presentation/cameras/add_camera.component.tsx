@@ -393,7 +393,7 @@ function Feedback({ message, error }: { message: string | null; error: AddCamera
 
 function SelectableRow({ onSelect, children }: { onSelect: () => void; children: ReactNode }) {
   return (
-    <ListRow className="block w-full px-3 text-left hover:bg-muted/60">
+    <ListRow className="block w-full px-3 text-left">
       <button type="button" onClick={onSelect}>
         {children}
       </button>

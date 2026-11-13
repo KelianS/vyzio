@@ -9,6 +9,7 @@ import { channelSetupLede } from './channel_setup'
 import { buildAddNotificationChannelPresenter } from './add_notification_channel.presenter'
 import { addNotificationChannelReducer } from './add_notification_channel.reducer'
 import { buildInitialAddNotificationChannelUido } from './add_notification_channel.uido'
+import { ListRow } from '../../common/components/list_row'
 
 /** Adding a channel is one task, one page (ADR-40): the list of what Vyzio can talk through. */
 export function AddNotificationChannelView() {
@@ -51,27 +52,26 @@ export function AddNotificationChannelView() {
           <ul className="divide-y divide-border">
             {available.map((channel) => (
               <li key={channel.channel}>
-                <Link
-                  to={`/settings/notifications/${channel.channel}`}
-                  className="flex items-center justify-between gap-3 py-3 transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                >
-                  <span className="min-w-0">
-                    <span className="block font-medium">{channel.displayName}</span>
-                    <span className="block text-sm text-muted-foreground">
-                      {channelSetupLede(channel.channel)}
+                <ListRow>
+                  <Link to={`/settings/notifications/${channel.channel}`}>
+                    <span className="min-w-0">
+                      <span className="block font-medium">{channel.displayName}</span>
+                      <span className="block text-sm text-muted-foreground">
+                        {channelSetupLede(channel.channel)}
+                      </span>
+                      {/* Dit avant l'activation, pour ne jamais laisser croire qu'on pourra lui parler (ADR-52). */}
+                      <span className="block text-sm text-muted-foreground">
+                        {channel.acceptsCommands
+                          ? 'Vous pourrez aussi lui demander ce qui se passe chez vous.'
+                          : 'Ce canal envoie des notifications, mais ne répond pas aux questions.'}
+                      </span>
                     </span>
-                    {/* Dit avant l'activation, pour ne jamais laisser croire qu'on pourra lui parler (ADR-52). */}
-                    <span className="block text-sm text-muted-foreground">
-                      {channel.acceptsCommands
-                        ? 'Vous pourrez aussi lui demander ce qui se passe chez vous.'
-                        : 'Ce canal envoie des notifications, mais ne répond pas aux questions.'}
-                    </span>
-                  </span>
-                  <ChevronRight
-                    className="size-4 shrink-0 text-muted-foreground"
-                    aria-hidden="true"
-                  />
-                </Link>
+                    <ChevronRight
+                      className="size-4 shrink-0 text-muted-foreground"
+                      aria-hidden="true"
+                    />
+                  </Link>
+                </ListRow>
               </li>
             ))}
           </ul>

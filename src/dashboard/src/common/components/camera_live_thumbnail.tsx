@@ -14,6 +14,7 @@ import {
 } from '../camera/camera_status'
 import type { Camera } from '../../domain/entities/camera.entity'
 import type { FrigateStatus } from '../../domain/entities/system_stats.entity'
+import { PressableSurface } from './pressable_surface'
 
 interface CameraLiveThumbnailProps {
   camera: Camera
@@ -84,14 +85,16 @@ export function CameraLiveThumbnail({
           <span className="text-sm font-medium">{privacy.text}</span>
         </div>
       ) : unwatched ? (
-        <Link
-          to={`/settings/cameras/${camera.id}`}
-          aria-label={`${formatCameraStatusLabel(camera)} : ${camera.displayName}`}
-          className="press-dim flex h-full items-center justify-center gap-1 text-sm font-medium text-surface-inverse-foreground underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring"
-        >
-          {formatCameraStatusLabel(camera)}
-          <ChevronRight className="size-4" aria-hidden="true" />
-        </Link>
+        <PressableSurface>
+          <Link
+            to={`/settings/cameras/${camera.id}`}
+            aria-label={`${formatCameraStatusLabel(camera)} : ${camera.displayName}`}
+            className="flex h-full items-center justify-center gap-1 text-sm font-medium text-surface-inverse-foreground underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring"
+          >
+            {formatCameraStatusLabel(camera)}
+            <ChevronRight className="size-4" aria-hidden="true" />
+          </Link>
+        </PressableSurface>
       ) : deviceOffline ? (
         <div className="flex h-full items-center justify-center gap-2 text-sm font-medium text-surface-inverse-foreground">
           <WifiOff className="size-4" aria-hidden="true" />
@@ -118,17 +121,19 @@ export function CameraLiveThumbnail({
     <article className="overflow-hidden rounded-card bg-card shadow-[var(--shadow-soft)]">
       {/* Only the frame is the link: the footer's privacy toggle is a button, and nesting is invalid. */}
       {expandable && liveTo ? (
-        <Link
-          to={liveTo}
-          // Names the frame itself: the image, hidden during an outage, took its name along.
-          aria-label={camera.displayName}
-          className={cn(
-            FRAME,
-            'press-dim block focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring',
-          )}
-        >
-          {picture}
-        </Link>
+        <PressableSurface>
+          <Link
+            to={liveTo}
+            // Names the frame itself: the image, hidden during an outage, took its name along.
+            aria-label={camera.displayName}
+            className={cn(
+              FRAME,
+              'block focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring',
+            )}
+          >
+            {picture}
+          </Link>
+        </PressableSurface>
       ) : (
         <div className={FRAME}>{picture}</div>
       )}
