@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link, useLocation } from 'react-router'
 import { cn } from '../ui/utils'
-import { PressableSurface } from './pressable_surface'
+import { PressableSurface } from './pressable'
 
 /**
  * The main bar (UI-24). It carries **viewing** only, plus a single way into the

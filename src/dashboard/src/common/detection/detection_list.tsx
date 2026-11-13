@@ -11,6 +11,7 @@ import {
   snapshotUrl,
   thumbnailUrl,
 } from './detection_formatters'
+import { PressableControl } from '../components/pressable'
 
 interface DetectionListProps {
   events: DetectionEvent[]
@@ -51,38 +52,42 @@ export function DetectionList({
           )}
 
           {openWithoutMedia && (event.mediaExpired || (!event.hasSnapshot && !event.hasClip)) && (
-            <button
-              type="button"
-              aria-label={`Ouvrir la détection : ${formatEventTitle(event, labels)}`}
-              className={`press ${BARE_TILE} focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring`}
-              onClick={() =>
-                onOpenMedia({ type: 'none', eventId: event.eventId, expired: event.mediaExpired })
-              }
-            >
-              {event.mediaExpired ? (
-                <CalendarOff aria-hidden="true" className="size-4" />
-              ) : (
-                <ImageOff aria-hidden="true" className="size-4" />
-              )}
-            </button>
+            <PressableControl>
+              <button
+                type="button"
+                aria-label={`Ouvrir la détection : ${formatEventTitle(event, labels)}`}
+                className={`${BARE_TILE} focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring`}
+                onClick={() =>
+                  onOpenMedia({ type: 'none', eventId: event.eventId, expired: event.mediaExpired })
+                }
+              >
+                {event.mediaExpired ? (
+                  <CalendarOff aria-hidden="true" className="size-4" />
+                ) : (
+                  <ImageOff aria-hidden="true" className="size-4" />
+                )}
+              </button>
+            </PressableControl>
           )}
 
           {event.hasSnapshot && !event.mediaExpired && (
-            <button
-              type="button"
-              aria-label={`Voir l’aperçu — ${formatEventTitle(event, labels)}`}
-              className="press shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-              // The tile shows the crop, opening shows the wide shot: two images, not two sizes.
-              onClick={() =>
-                onOpenMedia({
-                  type: 'image',
-                  url: snapshotUrl(apiBaseUrl, event.eventId),
-                  eventId: event.eventId,
-                })
-              }
-            >
-              <DetectionThumbnail src={thumbnailUrl(apiBaseUrl, event.eventId)} />
-            </button>
+            <PressableControl>
+              <button
+                type="button"
+                aria-label={`Voir l’aperçu — ${formatEventTitle(event, labels)}`}
+                className="shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                // The tile shows the crop, opening shows the wide shot: two images, not two sizes.
+                onClick={() =>
+                  onOpenMedia({
+                    type: 'image',
+                    url: snapshotUrl(apiBaseUrl, event.eventId),
+                    eventId: event.eventId,
+                  })
+                }
+              >
+                <DetectionThumbnail src={thumbnailUrl(apiBaseUrl, event.eventId)} />
+              </button>
+            </PressableControl>
           )}
 
           <span className="min-w-0 flex-1">

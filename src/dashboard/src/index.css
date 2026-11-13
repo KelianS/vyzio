@@ -309,7 +309,9 @@ h3 {
   }
 }
 
-@utility press {
+/* A control shrinks while pressed, a dim instead under reduced motion: the button primitive and every other control, by their slot. */
+[data-slot='button'],
+[data-slot='pressable-control'] {
   transition-property: color, background-color, border-color, box-shadow, opacity, scale;
   transition-duration: var(--duration-press);
   transition-timing-function: var(--ease-calm);
@@ -324,11 +326,6 @@ h3 {
       opacity: 0.8;
     }
   }
-}
-
-/* Unlayered, so it outranks the primitive's `transition-all` without editing it. */
-[data-slot='button'] {
-  @apply press;
 }
 
 /* A surface pressed dims and never moves: a row of the registry `item`, a link, a camera's picture. */

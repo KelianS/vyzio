@@ -14,7 +14,7 @@ import {
 } from '../camera/camera_status'
 import type { Camera } from '../../domain/entities/camera.entity'
 import type { FrigateStatus } from '../../domain/entities/system_stats.entity'
-import { PressableSurface } from './pressable_surface'
+import { PressableSurface } from './pressable'
 
 interface CameraLiveThumbnailProps {
   camera: Camera

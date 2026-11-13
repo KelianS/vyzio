@@ -16,6 +16,7 @@ import { CAMERA_REMOVED, PRIVACY_STOPS_LIVE } from '../live_view.formatters'
 import { BAR_ABOVE, type LiveLayout } from '../live_layout'
 import { LiveImage } from './live_image'
 import { LIVE_CONTROL } from './live_control'
+import { PressableControl } from '../../../common/components/pressable'
 
 const RECONNECT_MS = 2000
 // A camera that no longer answers is tried again less and less often, never further apart than this.
@@ -264,15 +265,17 @@ export function LiveVideo({
   }, [soundOn, playback])
 
   const qualitySwitch = qualities.length > 1 && (
-    <button
-      type="button"
-      className={cn(LIVE_CONTROL, IS_HIGH[quality] && 'bg-primary text-primary-foreground')}
-      aria-pressed={IS_HIGH[quality]}
-      aria-label="HD haute qualité"
-      onClick={() => onChooseQuality(OTHER_QUALITY[quality])}
-    >
-      HD
-    </button>
+    <PressableControl>
+      <button
+        type="button"
+        className={cn(LIVE_CONTROL, IS_HIGH[quality] && 'bg-primary text-primary-foreground')}
+        aria-pressed={IS_HIGH[quality]}
+        aria-label="HD haute qualité"
+        onClick={() => onChooseQuality(OTHER_QUALITY[quality])}
+      >
+        HD
+      </button>
+    </PressableControl>
   )
 
   const overlay = () => {
@@ -303,14 +306,16 @@ export function LiveVideo({
   const controls = playback.kind === 'playing' && (
     <>
       {playback.soundOffered && (
-        <button
-          type="button"
-          className={LIVE_CONTROL}
-          aria-label={soundOn ? 'Couper le son' : 'Activer le son'}
-          onClick={onToggleSound}
-        >
-          {soundOn ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
-        </button>
+        <PressableControl>
+          <button
+            type="button"
+            className={LIVE_CONTROL}
+            aria-label={soundOn ? 'Couper le son' : 'Activer le son'}
+            onClick={onToggleSound}
+          >
+            {soundOn ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
+          </button>
+        </PressableControl>
       )}
       {qualitySwitch}
     </>

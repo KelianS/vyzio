@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { cn } from '../ui/utils'
+import { PressableControl } from './pressable'
 
 // A thumbnail is missing mostly while surveillance restarts: the cause resolves itself,
 // so we retry, spacing the attempts. Past those, asking again is up to the user.
@@ -71,15 +72,17 @@ export function DetectionThumbnail({ src, alt = '', className }: DetectionThumbn
       )}
 
       {phase === 'failed' && (
-        <button
-          type="button"
-          aria-label="Réessayer de charger l’aperçu"
-          title="Aperçu indisponible — réessayer"
-          onClick={retryNow}
-          className="press absolute inset-0 flex items-center justify-center text-muted-foreground hover:text-foreground"
-        >
-          <RefreshCw className="size-4" aria-hidden="true" />
-        </button>
+        <PressableControl>
+          <button
+            type="button"
+            aria-label="Réessayer de charger l’aperçu"
+            title="Aperçu indisponible — réessayer"
+            onClick={retryNow}
+            className="absolute inset-0 flex items-center justify-center text-muted-foreground hover:text-foreground"
+          >
+            <RefreshCw className="size-4" aria-hidden="true" />
+          </button>
+        </PressableControl>
       )}
     </span>
   )

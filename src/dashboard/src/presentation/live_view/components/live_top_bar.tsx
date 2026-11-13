@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { ArrowLeft, Maximize, Minimize } from 'lucide-react'
 import { cn } from '../../../common/ui/utils'
 import { fading, LIVE_CONTROL } from './live_control'
+import { PressableControl } from '../../../common/components/pressable'
 
 /** The top bar: back, the camera's name, then the picture's own controls (DESIGN SYSTEM § Full-screen viewing). */
 export function LiveTopBar({
@@ -38,39 +39,45 @@ export function LiveTopBar({
         fade.className,
       )}
     >
-      <button
-        type="button"
-        className={LIVE_CONTROL}
-        aria-label="Retour"
-        // Leaving is not a gesture to go full screen: the screen would ask for it as it goes.
-        onClick={(event) => {
-          event.stopPropagation()
-          onBack()
-        }}
-      >
-        <ArrowLeft className="size-4" aria-hidden="true" />
-      </button>
+      <PressableControl>
+        <button
+          type="button"
+          className={LIVE_CONTROL}
+          aria-label="Retour"
+          // Leaving is not a gesture to go full screen: the screen would ask for it as it goes.
+          onClick={(event) => {
+            event.stopPropagation()
+            onBack()
+          }}
+        >
+          <ArrowLeft className="size-4" aria-hidden="true" />
+        </button>
+      </PressableControl>
       <p className="min-w-0 flex-1 truncate font-medium">{label}</p>
       {children}
       {onFullScreen && (
-        <button
-          type="button"
-          className={LIVE_CONTROL}
-          aria-label="Plein écran"
-          onClick={onFullScreen}
-        >
-          <Maximize className="size-4" aria-hidden="true" />
-        </button>
+        <PressableControl>
+          <button
+            type="button"
+            className={LIVE_CONTROL}
+            aria-label="Plein écran"
+            onClick={onFullScreen}
+          >
+            <Maximize className="size-4" aria-hidden="true" />
+          </button>
+        </PressableControl>
       )}
       {onLeaveFullScreen && (
-        <button
-          type="button"
-          className={LIVE_CONTROL}
-          aria-label="Quitter le plein écran"
-          onClick={onLeaveFullScreen}
-        >
-          <Minimize className="size-4" aria-hidden="true" />
-        </button>
+        <PressableControl>
+          <button
+            type="button"
+            className={LIVE_CONTROL}
+            aria-label="Quitter le plein écran"
+            onClick={onLeaveFullScreen}
+          >
+            <Minimize className="size-4" aria-hidden="true" />
+          </button>
+        </PressableControl>
       )}
     </div>
   )
