@@ -48,8 +48,8 @@ or closed, comes back only with evidence that is new since.
   goes under "Could not verify".
 - The cost is measured in the repository: the files, tests and rules the change touches, found with
   Grep, and the breaking changes the release notes list.
-- What touches an accepted ADR (ADR-02 for .NET, ADR-42 for the interface foundation, ADR-01 and
-  ADR-70 for Frigate) or a rule names it. A change that opens a flow leaving the home network, or
+- What touches an ADR (ADR-01 for .NET and the interface foundation, ADR-02 and ADR-03 for
+  Frigate) or a rule names it. A change that opens a flow leaving the home network, or
   adds telemetry, says so first: it goes against privacy first and needs its own decision (DOCS-07).
 
 ## What you return

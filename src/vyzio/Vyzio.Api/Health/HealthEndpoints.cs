@@ -83,7 +83,7 @@ internal sealed class MqttHealthCheck(FrigateMqttConnection connection) : IHealt
         });
 }
 
-// A restart Vyzio asked for is degraded, not down (ADR-33).
+// A restart Vyzio asked for is degraded, not down (ADR-02).
 internal sealed class FrigateHealthCheck(FrigateStatusReader frigate) : IHealthCheck
 {
     public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)

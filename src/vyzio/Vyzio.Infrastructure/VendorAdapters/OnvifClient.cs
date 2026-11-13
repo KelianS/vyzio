@@ -15,7 +15,7 @@ public sealed record OnvifDeviceInfo(
     string? SerialNumber);
 
 // One ONVIF media profile. SourceToken identifies the physical video source behind it: profiles
-// sharing it are quality tiers of one scene, differing ones are separate lenses (ADR-38).
+// sharing it are quality tiers of one scene, differing ones are separate lenses (ADR-07).
 public sealed record OnvifMediaProfile(
     string Token,
     string? SourceToken,
@@ -33,13 +33,13 @@ internal sealed class OnvifClient(
     TimeProvider time,
     ILogger<OnvifClient> logger)
 {
-    // Short: long enough to hear a refusal, short enough not to stall a held PTZ button (ADR-56).
+    // Short: long enough to hear a refusal, short enough not to stall a held PTZ button (ADR-04).
     private static readonly TimeSpan CommandTimeout = TimeSpan.FromMilliseconds(1500);
 
     // A continuous move is stopped after a short step: waiting longer than that would overshoot it.
     private static readonly TimeSpan MoveStartTimeout = TimeSpan.FromMilliseconds(300);
 
-    // The protocol level's login: one read the device service answers only to an accepted account (ADR-61).
+    // The protocol level's login: one read the device service answers only to an accepted account (ADR-04).
     public async Task<ProtocolAnswer> CheckLoginAsync(Camera camera, CancellationToken ct)
     {
         const string body = "<GetDeviceInformation xmlns=\"http://www.onvif.org/ver10/device/wsdl\"/>";
@@ -111,7 +111,7 @@ internal sealed class OnvifClient(
         return (profileToken, ptzConfigToken, string.IsNullOrWhiteSpace(ptzNodeToken) ? null : ptzNodeToken);
     }
 
-    // Returns every media profile with its video source and encoder settings (ADR-38). Tolerates a
+    // Returns every media profile with its video source and encoder settings (ADR-07). Tolerates a
     // silent camera by returning an empty list — a camera that cannot describe its streams keeps the
     // single one Vyzio already knows, it is not an error.
     public async Task<IReadOnlyList<OnvifMediaProfile>> GetMediaProfilesAsync(Camera camera, CancellationToken ct)
@@ -206,7 +206,7 @@ internal sealed class OnvifClient(
             ? (int)Math.Round(value)
             : null;
 
-    // Returns raw GetConfigurationOptions XML; throwOnFailure where the PTZ proof must tell silence from an answer (ADR-66).
+    // Returns raw GetConfigurationOptions XML; throwOnFailure where the PTZ proof must tell silence from an answer (ADR-04).
     public Task<string?> GetPtzConfigurationOptionsAsync(Camera camera, string configToken, CancellationToken ct, bool throwOnFailure = false)
     {
         var body = $"""
@@ -325,7 +325,7 @@ internal sealed class OnvifClient(
     }
 
     // Returns the VideoSourceConfiguration token of the first media profile — required by the
-    // Imaging service (ADR-27) to scope GetImagingSettings/SetImagingSettings to a video source.
+    // Imaging service (ADR-11) to scope GetImagingSettings/SetImagingSettings to a video source.
     public async Task<string> GetVideoSourceTokenAsync(Camera camera, CancellationToken ct)
     {
         const string body = "<GetProfiles xmlns=\"http://www.onvif.org/ver10/media/wsdl\"/>";
@@ -348,7 +348,7 @@ internal sealed class OnvifClient(
         return token;
     }
 
-    // Throws a CameraCommandException on failure: this capability's probe must say why (ADR-27).
+    // Throws a CameraCommandException on failure: this capability's probe must say why (ADR-11).
     public async Task<CameraImageSettings?> GetImagingSettingsAsync(Camera camera, string videoSourceToken, CancellationToken ct)
     {
         var body = $"""
@@ -414,7 +414,7 @@ internal sealed class OnvifClient(
             soapAction: "http://www.onvif.org/ver20/imaging/wsdl/SetImagingSettings");
     }
 
-    // The tokens of the presets the camera keeps; silence, a refusal or an unreadable answer is raised, never read as none (ADR-69 g).
+    // The tokens of the presets the camera keeps; silence, a refusal or an unreadable answer is raised, never read as none (ADR-09).
     public async Task<IReadOnlyList<string>> GetPresetTokensAsync(Camera camera, string profileToken, CancellationToken ct)
     {
         var body = $"""
@@ -436,7 +436,7 @@ internal sealed class OnvifClient(
         }
     }
 
-    // How many presets the PTZ node can keep, null when the camera does not describe it (ADR-69 f).
+    // How many presets the PTZ node can keep, null when the camera does not describe it (ADR-09).
     public async Task<int?> GetMaximumNumberOfPresetsAsync(Camera camera, string nodeToken, CancellationToken ct)
     {
         var body = $"""
@@ -475,7 +475,7 @@ internal sealed class OnvifClient(
             var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = BuildContent(envelope, soapAction) };
             response = await http.SendAsync(request, HttpCompletionOption.ResponseContentRead, linked.Token);
         }
-        // Only silence counts as done: a slow camera (V380) executes on receipt and answers seconds later (ADR-56).
+        // Only silence counts as done: a slow camera (V380) executes on receipt and answers seconds later (ADR-04).
         catch (OperationCanceledException) when (timeout.IsCancellationRequested && !ct.IsCancellationRequested)
         {
             logger.LogDebug("ONVIF {Service} command sent to {Host}, no answer within {Timeout}.", service, camera.Host, patience);
@@ -498,7 +498,7 @@ internal sealed class OnvifClient(
         }
     }
 
-    // A malformed answer is how a Tapo refuses PTZ in privacy mode (measured); a cut-off one reads as the network (ADR-56).
+    // A malformed answer is how a Tapo refuses PTZ in privacy mode (measured); a cut-off one reads as the network (ADR-04).
     private static CameraCommandException TransportFailure(OnvifService service, Uri url, HttpRequestException ex)
         => ex.HttpRequestError is HttpRequestError.InvalidResponse
             ? new CameraCommandRefusedException($"ONVIF {service} at {url}: malformed answer ({ex.HttpRequestError})", ex)
@@ -514,7 +514,7 @@ internal sealed class OnvifClient(
         return endpoint.UrlFor(service);
     }
 
-    // A camera without an account is asked without one: a guessed credential locks accounts out (ADR-56).
+    // A camera without an account is asked without one: a guessed credential locks accounts out (ADR-04).
     private static string EnvelopeFor(Camera camera, string soapBody)
         => camera.CredentialsFor(SupportedProtocol.Onvif) is not { Username: { Length: > 0 } username } account
             ? OnvifEnvelope.Anonymous(soapBody)
@@ -528,7 +528,7 @@ internal sealed class OnvifClient(
         return content;
     }
 
-    // A query; soapAction because some stacks refuse its absence, throwOnFailure where the caller must say why (ADR-27/28).
+    // A query; soapAction because some stacks refuse its absence, throwOnFailure where the caller must say why (ADR-04, ADR-11).
     internal async Task<string?> PostSoapAsync(Camera camera, OnvifService service, string soapBody, CancellationToken ct,
         string? soapAction = null, bool throwOnFailure = false)
     {

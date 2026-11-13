@@ -5,17 +5,17 @@ namespace Vyzio.Core.Entities;
 public enum StreamChange
 {
     Done,
-    // The stream records: another stream must take recording first (ADR-65 b).
+    // The stream records: another stream must take recording first (ADR-07).
     StreamRecords,
 }
 
-// A stream the camera serves, offered on demand by quality; StreamId names the line it already is, if any (ADR-65 e).
+// A stream the camera serves, offered on demand by quality; StreamId names the line it already is, if any (ADR-07).
 public sealed record StreamOffer(int Rank, string? Path, int? Width, int? Height, int? Fps, string? StreamId);
 
-// The one place that changes a stream binding's streams, and holds its guard: exactly one stream records (ADR-65).
+// The one place that changes a stream binding's streams, and holds its guard: exactly one stream records (ADR-07).
 public static class StreamLineup
 {
-    // One stream over the protocol, recording and detecting: DVRIP's main quality or a typed RTSP path (ADR-65 e).
+    // One stream over the protocol, recording and detecting: DVRIP's main quality or a typed RTSP path (ADR-07).
     public static CameraStream ResetTo(CameraCapabilityBinding binding, SupportedProtocol protocol, string? path)
     {
         binding.Streams.Clear();
@@ -32,7 +32,7 @@ public static class StreamLineup
         return stream;
     }
 
-    // The streams the camera reports over the protocol replace every stream, with the defaults (ADR-65 d, e).
+    // The streams the camera reports over the protocol replace every stream, with the defaults (ADR-07).
     public static void ResetToFound(CameraCapabilityBinding binding, SupportedProtocol protocol, IReadOnlyList<EnumeratedStream> found, DateTimeOffset at)
     {
         binding.Streams.Clear();
@@ -40,7 +40,7 @@ public static class StreamLineup
         AddFound(binding, protocol, found, at);
     }
 
-    // The streams the camera reports, most detailed first: added once, then only their size is refreshed (ADR-65 e).
+    // The streams the camera reports, most detailed first: added once, then only their size is refreshed (ADR-07).
     public static void ApplyFound(CameraCapabilityBinding binding, IReadOnlyList<EnumeratedStream> found, DateTimeOffset at)
     {
         if (found.Count == 0) return;
@@ -49,7 +49,7 @@ public static class StreamLineup
 
         foreach (var stream in binding.Streams)
         {
-            // A size is only adopted for the address it describes: vendors alias their streams (ADR-38).
+            // A size is only adopted for the address it describes: vendors alias their streams (ADR-07).
             var match = found.FirstOrDefault(entry => PathsMatch(stream.Path, entry.Path));
             if (match is null) continue;
 
@@ -78,7 +78,7 @@ public static class StreamLineup
         return StreamChange.Done;
     }
 
-    // What the camera serves over a protocol, ranked in the order found, each with the line it already is (ADR-65 e).
+    // What the camera serves over a protocol, ranked in the order found, each with the line it already is (ADR-07).
     public static IReadOnlyList<StreamOffer> Offer(CameraCapabilityBinding? binding, SupportedProtocol protocol, IReadOnlyList<EnumeratedStream> found)
         => [.. found.Select((entry, rank) => new StreamOffer(rank, entry.Path, entry.Width, entry.Height, entry.Fps,
             binding?.Streams.FirstOrDefault(stream => stream.Protocol == protocol && PathsMatch(stream.Path, entry.Path))?.Id))];
@@ -123,7 +123,7 @@ public static class StreamLineup
             });
         }
 
-        // The most detailed records, the lightest detects: analysis is downscaled anyway (ADR-38).
+        // The most detailed records, the lightest detects: analysis is downscaled anyway (ADR-07).
         var ranked = binding.Streams.OrderBy(stream => stream.Ordinal).ToList();
         if (untouched && ranked.Count > 1)
         {
@@ -134,7 +134,7 @@ public static class StreamLineup
         binding.StreamsFoundAt = at;
     }
 
-    // Giving a role takes it from every other stream: Frigate takes one input per role (ADR-65 b).
+    // Giving a role takes it from every other stream: Frigate takes one input per role (ADR-07).
     private static void TakeRoles(CameraCapabilityBinding binding, CameraStream stream, StreamRole role)
     {
         foreach (var other in binding.Streams.Where(entry => entry != stream))

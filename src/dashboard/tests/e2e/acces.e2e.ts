@@ -2,7 +2,7 @@ import { test, expect, type Locator, type Page } from '@playwright/test'
 import { installFakeBackend, createFakeBackendState, FAKE_PASSWORD } from './fixtures/fake_backend'
 
 /**
- * The product's front door (ADR-54). These screens are the only ones seen without being in, so what
+ * The product's front door (ADR-16). These screens are the only ones seen without being in, so what
  * they say is the only help available at that moment.
  */
 

@@ -16,7 +16,7 @@ public class OnvifPtzProviderTests
 {
     private static readonly TimeSpan ShortMove = TimeSpan.FromMilliseconds(100);
 
-    // A resolved address, so these tests exercise the provider, not the sweep (ADR-56).
+    // A resolved address, so these tests exercise the provider, not the sweep (ADR-04).
     private static Camera MakeCamera()
     {
         var camera = new Camera
@@ -71,7 +71,7 @@ public class OnvifPtzProviderTests
     [Fact]
     public async Task StopAsync_ShouldRaise_WhenTheCameraRefusesTheCommand()
     {
-        // A camera in privacy mode refuses PTZ; swallowing that reads as a camera without PTZ (ADR-56).
+        // A camera in privacy mode refuses PTZ; swallowing that reads as a camera without PTZ (ADR-04).
         var (provider, _) = MakeProvider(handler: request =>
         {
             var body = request.Content?.ReadAsStringAsync().GetAwaiter().GetResult() ?? string.Empty;

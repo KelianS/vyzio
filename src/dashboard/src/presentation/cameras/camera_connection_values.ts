@@ -5,7 +5,7 @@ import type {
   CameraProtocolInput,
 } from '../../domain/entities/camera_protocol.entity'
 
-/** One protocol box as the draft holds it (ADR-61). */
+/** One protocol box as the draft holds it (ADR-04). */
 export interface ProtocolValues {
   /** The port shown and edited: the one Vyzio dials. */
   port: number | null

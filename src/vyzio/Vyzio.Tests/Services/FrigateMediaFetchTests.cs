@@ -15,7 +15,7 @@ public class FrigateMediaFetchTests
     [Fact]
     public async Task TryReadAsync_ShouldReturnTheMedia_WhenFrigateWritesItWithinTheWindow()
     {
-        // Frigate finalizes the file a few seconds after the event ends (ADR-49).
+        // Frigate finalizes the file a few seconds after the event ends (ADR-12).
         var handler = new ScriptedHandler(_time, HttpStatusCode.NotFound, HttpStatusCode.NotFound, HttpStatusCode.OK);
 
         var read = ReadAsync(handler, TimeSpan.FromMinutes(10));

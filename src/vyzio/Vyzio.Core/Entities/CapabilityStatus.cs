@@ -1,6 +1,6 @@
 namespace Vyzio.Core.Entities;
 
-// Where a capability stands after its last check or the user's answer; only Verified makes it usable (ADR-66).
+// Where a capability stands after its last check or the user's answer; only Verified makes it usable (ADR-04).
 public enum CapabilityStatus
 {
     // The check could not talk to the camera, or never ran; LastError says why.

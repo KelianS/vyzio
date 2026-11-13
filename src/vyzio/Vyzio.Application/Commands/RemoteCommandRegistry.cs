@@ -3,7 +3,7 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Application.Commands;
 
-/// <summary>Adding a command is a registration, not an edit anywhere else (ADR-50).</summary>
+/// <summary>Adding a command is a registration, not an edit anywhere else (ADR-14).</summary>
 public sealed class RemoteCommandRegistry : IRemoteCommandRegistry
 {
     private readonly Dictionary<RemoteCommandName, IRemoteCommandHandler> _handlers;

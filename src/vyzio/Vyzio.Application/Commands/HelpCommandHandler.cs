@@ -5,7 +5,7 @@ namespace Vyzio.Application.Commands;
 
 /// <summary>
 /// « Qu'est-ce que je peux te demander » — the registry read out loud, so nobody has to go find a
-/// documentation to use their own installation (ADR-50).
+/// documentation to use their own installation (ADR-14).
 /// </summary>
 public sealed class HelpCommandHandler(Func<IRemoteCommandRegistry> registry) : IRemoteCommandHandler
 {

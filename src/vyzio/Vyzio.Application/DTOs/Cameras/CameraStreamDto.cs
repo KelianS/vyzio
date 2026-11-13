@@ -3,7 +3,7 @@ using Vyzio.Core.Entities;
 
 namespace Vyzio.Application.DTOs.Cameras;
 
-// One stream line (ADR-65): the camera's own facts (rank, measured size), its role and its last check.
+// One stream line (ADR-07): the camera's own facts (rank, measured size), its role and its last check.
 public sealed record CameraStreamDto(
     string Id,
     int Ordinal,
@@ -45,12 +45,12 @@ public sealed record CameraStreamsDto(
         camera.DetectsOnRecordingStream);
 }
 
-// Path: over RTSP any path; over DVRIP only one of the offered qualities, never a typed query (ADR-38).
+// Path: over RTSP any path; over DVRIP only one of the offered qualities, never a typed query (ADR-07).
 public sealed record AddCameraStreamRequest(string Protocol, string? Path, string Role);
 
 public sealed record SetCameraStreamRoleRequest(string Role);
 
-// A stream the camera serves, read by quality; StreamId is the line it already is, null when it is not listed (ADR-65 e).
+// A stream the camera serves, read by quality; StreamId is the line it already is, null when it is not listed (ADR-07).
 public sealed record AvailableStreamDto(int Rank, string? Path, int? Width, int? Height, int? Fps, string? StreamId)
 {
     public static AvailableStreamDto From(StreamOffer offer)

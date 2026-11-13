@@ -3,7 +3,7 @@ using Vyzio.Core.Entities;
 
 namespace Vyzio.Application.DTOs.Cameras;
 
-// One retention window as this camera sees it (ADR-39). All three values travel together on
+// One retention window as this camera sees it (ADR-15). All three values travel together on
 // purpose: `Override` is what the camera decided for itself (null = follow the installation),
 // `Installation` is what it falls back to — the interface needs it to name the value a revert
 // returns to — and `Effective` is what actually applies. Effective is sent rather than left to the
@@ -15,7 +15,7 @@ public sealed record CameraRetentionDto(
     RetentionWindowDto Motion,
     RetentionWindowDto EventClip,
     int MaxDays,
-    // Sent so the interface can refuse zero before the input rather than after (ADR-48).
+    // Sent so the interface can refuse zero before the input rather than after (ADR-12).
     int MinEventClipDays)
 {
     public static CameraRetentionDto From(RecordingSettings installation, Camera camera)
@@ -56,7 +56,7 @@ public sealed record CameraDetectionConfigDto(
 
 // MotionSensitivity is only honoured when MotionSensitivityPinned is true — while unpinned the
 // tuning loop owns the level and any value sent here would be overwritten on its next pass
-// (ADR-35).
+// (ADR-08).
 //
 // The three retention values are overrides: null clears them and puts the camera back on the
 // installation's values. They are replaced wholesale on every save, like Labels.

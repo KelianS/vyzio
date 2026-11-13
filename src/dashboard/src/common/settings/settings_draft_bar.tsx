@@ -3,7 +3,7 @@ import { cn } from '../ui/utils'
 import type { DraftChange } from './use_settings_draft'
 
 /**
- * The draft action bar (ADR-41).
+ * The draft action bar (ADR-15).
  *
  * It sits in a **fixed position, identical everywhere**, at the bottom of the
  * visible area rather than at a varying place in the content flow: that is what
@@ -11,7 +11,7 @@ import type { DraftChange } from './use_settings_draft'
  * off screen.
  *
  * It says **what changed**, and nothing more: saving does not interrupt
- * surveillance, the interruption belongs to the restart (ADR-44).
+ * surveillance, the interruption belongs to the restart (ADR-15).
  */
 export function SettingsDraftBar({
   changes,

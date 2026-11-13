@@ -4,7 +4,7 @@ namespace Vyzio.Application.UseCases.Notifications;
 
 /// <summary>
 /// Turns a detection into what Vyzio has to say, never into markup: emphasis, escaping and length
-/// belong to the channel that renders it (ADR-50).
+/// belong to the channel that renders it (ADR-14).
 /// </summary>
 public sealed class DetectionMessageFormatter(TimeZoneInfo timeZone)
 {

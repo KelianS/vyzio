@@ -8,7 +8,7 @@ namespace Vyzio.Infrastructure.Notifications;
 
 /// <summary>
 /// The Telegram bot, listening side: Vyzio holds a long poll open rather than being called, so the
-/// house needs no public address (ADR-50). The same bot token as the sending side (ADR-52).
+/// house needs no public address (ADR-14). The same bot token as the sending side (ADR-14).
 /// </summary>
 public sealed class TelegramCommandReceiver(IHttpClientFactory httpClientFactory) : IChannelCommandReceiver
 {
@@ -204,7 +204,7 @@ public sealed class TelegramCommandReceiver(IHttpClientFactory httpClientFactory
 
     /// <summary>
     /// Matches what arrived against the declarations. What was written stays here: only the fact that
-    /// this conversation said something Vyzio does not know goes further (ADR-52).
+    /// this conversation said something Vyzio does not know goes further (ADR-14).
     /// </summary>
     private static IncomingMessage? Parse(JsonElement update, IReadOnlyList<RemoteCommandDescriptor> commands)
     {

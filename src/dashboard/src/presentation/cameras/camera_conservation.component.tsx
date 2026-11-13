@@ -35,7 +35,7 @@ const DRAFT_LABELS: Record<keyof RetentionOverrides, string> = {
   eventClipDaysOverride: RETENTION_LABEL.eventClip,
 }
 
-/** Per-camera retention: same shape as the installation page, "following" means no override here (ADR-39). */
+/** Per-camera retention: same shape as the installation page, "following" means no override here (ADR-15). */
 export function CameraConservationView() {
   const { cameraId } = useParams()
   const { cameras: container, hub: hubContainer } = useAppContainer()

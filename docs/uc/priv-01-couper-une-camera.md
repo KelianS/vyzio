@@ -64,7 +64,8 @@
 
 ## Règles locales
 
-- **PRIV-14** · l'interface doit permettre d'activer ou de desactiver le mode vie privee sur plusieurs cameras simultanement (selection multiple ou action globale "tout couper / tout reactiver"), sans reload Frigate separe par camera — un seul rechargement pour l'ensemble de la selection.
+- **PRIV-14** · l'interface doit permettre d'activer ou de desactiver le mode vie privee sur plusieurs cameras simultanement (selection multiple ou action globale "tout couper / tout reactiver"), sans reload Frigate separe par camera — un seul rechargement pour l'ensemble de la selection ;
+- **PRIV-19** · des qu'un second compte existe, une coupure de vie privee dit qui l'a posee, comme une coupure venue d'une conversation.
 
 ## Points ouverts
 

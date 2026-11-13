@@ -5,7 +5,7 @@ namespace Vyzio.Application.DTOs.Access;
 
 /// <summary>
 /// What the interface asks before showing anything: is this installation locked yet, and if it is not,
-/// is it because it is brand new or because the host just removed the password (ADR-54).
+/// is it because it is brand new or because the host just removed the password (ADR-16).
 /// </summary>
 public sealed record AccessStateDto(bool Installed, bool AwaitingReset, int MinimumPasswordLength);
 
@@ -47,7 +47,7 @@ public enum AccessRefusal
 
     /// <summary>
     /// Told apart from <see cref="WrongPassword"/> because the caller is signed in: answering
-    /// "unauthenticated" would throw them out of a screen they legitimately hold (ADR-54).
+    /// "unauthenticated" would throw them out of a screen they legitimately hold (ADR-16).
     /// </summary>
     CurrentPasswordWrong
 }

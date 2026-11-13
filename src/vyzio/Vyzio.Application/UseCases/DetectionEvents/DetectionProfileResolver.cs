@@ -4,7 +4,7 @@ using Vyzio.Core.Interfaces;
 namespace Vyzio.Application.UseCases.DetectionEvents;
 
 /// <summary>
-/// Resolves the identity Frigate attributes to a detection into a Vyzio profile, on every camera (ADR-58).
+/// Resolves the identity Frigate attributes to a detection into a Vyzio profile, on every camera (ADR-13).
 /// Scoped: the cache below lives for one request or one ingested message, never longer.
 /// </summary>
 public sealed class DetectionProfileResolver(IProfileRepository profiles)

@@ -2,7 +2,7 @@ using Vyzio.Core.Entities;
 
 namespace Vyzio.Core.Interfaces;
 
-// The protocol level's own check, apart from the capability's: does the camera answer here with this account (ADR-61).
+// The protocol level's own check, apart from the capability's: does the camera answer here with this account (ADR-04).
 public interface ICameraProtocolProbe
 {
     Task<ProtocolAnswer> ProbeAsync(Camera camera, SupportedProtocol protocol, CancellationToken ct = default);

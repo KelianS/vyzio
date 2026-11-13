@@ -5,7 +5,7 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Tests.UseCases;
 
-// The capability level: what a proof outcome makes of a capability whose protocol answered (ADR-66).
+// The capability level: what a proof outcome makes of a capability whose protocol answered (ADR-04).
 public class CapabilityProofTests
 {
     private static readonly DateTimeOffset Confirmed = new(2026, 9, 1, 8, 0, 0, TimeSpan.Zero);
@@ -259,7 +259,7 @@ public class CapabilityProofTests
     }
 }
 
-// Detection over the capability level: the first candidate, in priority order, that proves it or leaves it to confirm (ADR-71 b, c).
+// Detection over the capability level: the first candidate, in priority order, that proves it or leaves it to confirm (ADR-04).
 public class CapabilityDetectionTests
 {
     private readonly ICameraRepository _cameras = Substitute.For<ICameraRepository>();

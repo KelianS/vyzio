@@ -2,7 +2,7 @@ using Vyzio.Core.Entities;
 
 namespace Vyzio.Infrastructure.Services.CameraDiscovery;
 
-// ADR-32 — maps a discoverySource to its merge priority (AssistedCameraDiscoveryFormatter) and,
+// ADR-05 — maps a discoverySource to its merge priority (AssistedCameraDiscoveryFormatter) and,
 // for probes that identify a real capability protocol, to that SupportedProtocol
 // (AssistedCameraDiscoveryService, to cross-reference the capability registry). The port sweep's
 // own protocol identity comes from DiscoveryPortCatalog (per open port), not from here — this

@@ -94,7 +94,7 @@ public sealed class RtspCameraVerifier(TimeProvider time) : ICameraVerifier
         }
     }
 
-    // A camera whose stream protocol was never chosen has nothing to verify yet (ADR-61).
+    // A camera whose stream protocol was never chosen has nothing to verify yet (ADR-04).
     private CameraVerificationResult NoStreamProtocol()
         => new(
             false,

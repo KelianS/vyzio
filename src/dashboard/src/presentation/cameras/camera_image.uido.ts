@@ -6,7 +6,7 @@ export interface CameraImageUido {
   settingsLoading: boolean
   settingsError: AppError | null
   cameraGone: boolean
-  /** Sharpness and night vision are offered only where writing them is confirmed (ADR-29). */
+  /** Sharpness and night vision are offered only where writing them is confirmed (ADR-11). */
   writableBeyondBasics: boolean
   /** Whether sharpness and night vision are writable could not be read. */
   bindingsError: AppError | null

@@ -67,7 +67,7 @@ failure is always something the branch introduced, never a pre-existing debt to 
 Two rules keep it honest. An export used only inside its own file loses its `export` keyword rather
 than being declared an exception, and the vendored shadcn/ui primitives under `src/common/ui` are
 out of scope, for the same reason `.prettierignore` excludes them: they are copied from the registry
-and are not ours to prune (ADR-42). Everything else is either used or deleted. Knip covers the
+and are not ours to prune (ADR-01). Everything else is either used or deleted. Knip covers the
 frontend only, the backend having no equivalent.
 
 ### Coverage
@@ -116,7 +116,7 @@ CI reports both rates on every pull request, in one comment kept up to date, and
 | Variable | Default | Description |
 |---|---|---|
 | `VYZIO_DISCOVERY_PROBE_HOSTS` | *(none)* | Comma-separated hosts to always probe, e.g. `192.168.1.10,192.168.1.20` |
-| `VYZIO_DISCOVERY_PROBE_CIDRS` | *(none)* | Comma-separated default CIDRs for the unicast scan, e.g. `192.168.1.0/24`; discovery adds the /24 of the private IPv4 address the dashboard is opened by (ADR-71) |
+| `VYZIO_DISCOVERY_PROBE_CIDRS` | *(none)* | Comma-separated default CIDRs for the unicast scan, e.g. `192.168.1.0/24`; discovery adds the /24 of the private IPv4 address the dashboard is opened by (ADR-05) |
 | `VYZIO_DISCOVERY_PROBE_TIMEOUT_MS` | `250` | Per-host connection timeout in ms (50–5000) |
 | `VYZIO_DISCOVERY_MAX_CONCURRENT_PROBES` | `32` | Max parallel probes (1–256) |
 

@@ -5,7 +5,7 @@ using Vyzio.Application.UseCases.Access;
 namespace Vyzio.Api.Endpoints;
 
 /// <summary>
-/// The only routes that answer without a session, and only until an owner exists (ADR-54).
+/// The only routes that answer without a session, and only until an owner exists (ADR-16).
 /// </summary>
 public static class AccessEndpoints
 {
@@ -61,7 +61,7 @@ public static class AccessEndpoints
         }).AllowAnonymous();
 
         // Guarded, and it re-opens a session in the same answer: changing the password closes every
-        // device, and the one that asked for it would otherwise lock itself out (ADR-54).
+        // device, and the one that asked for it would otherwise lock itself out (ADR-16).
         app.MapPut("/api/access/password", async (
             ChangePasswordRequest request,
             HttpContext context,

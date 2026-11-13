@@ -22,7 +22,7 @@ export function Overlay({
   }
 
   return (
-    // On the Radix Dialog like every other layer, so a layer opened from inside stacks above it (ADR-42).
+    // On the Radix Dialog like every other layer, so a layer opened from inside stacks above it (ADR-01).
     <Dialog open={open} onOpenChange={(next) => !next && close()}>
       <DialogContent
         ref={ref}

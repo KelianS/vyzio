@@ -1,12 +1,12 @@
 /**
- * Declaring a setting (ADR-43).
+ * Declaring a setting (ADR-15).
  *
  * A setting **is declared, it is not drawn**: one describes what it *is*, and the
  * rendering derives the control, the alignment, the provenance and the way back
  * from that. The author of a screen has no hold on the appearance - not because it
  * is forbidden, but because nothing here offers it to them.
  *
- * Adding a nature or a control amounts to changing the control table of ADR-43:
+ * Adding a nature or a control amounts to changing the control table of ADR-15:
  * that is a decision, and that friction is exactly the point.
  */
 
@@ -21,7 +21,7 @@ export interface SettingOption<T extends string = string> {
 export interface ChoiceOption<T extends string = string> extends SettingOption<T> {
   /** Why it cannot be chosen yet and where to fix that: the option stays listed, greyed. */
   readonly unavailable?: string
-  /** A technical detail behind the label, in the option's tooltip (ADR-53). */
+  /** A technical detail behind the label, in the option's tooltip (ADR-17). */
   readonly hint?: string
 }
 
@@ -58,7 +58,7 @@ export type SettingNature =
       readonly max: number
       readonly step?: number
     }
-  /** Time of day, "HH:mm" -> a time field (ADR-63). */
+  /** Time of day, "HH:mm" -> a time field (ADR-15). */
   | { readonly kind: 'time' }
   /** Free text. Rare: often a choice that was misidentified. Prose unless it says otherwise. */
   | { readonly kind: 'text'; readonly placeholder?: string; readonly keyboard?: TextKeyboard }
@@ -69,7 +69,7 @@ export type SettingNature =
 export const VISIBLE_CHOICES_MAX = 7
 
 /**
- * Where the shown value comes from, when the setting can be overridden (ADR-39).
+ * Where the shown value comes from, when the setting can be overridden (ADR-15).
  * Supplied by the declaration, never recomputed while rendering.
  */
 interface SettingProvenance {

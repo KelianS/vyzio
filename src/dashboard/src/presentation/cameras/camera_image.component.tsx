@@ -30,7 +30,7 @@ import { buildCameraImagePresenter } from './camera_image.presenter'
 import { cameraImageReducer } from './camera_image.reducer'
 import { buildInitialCameraImageUido } from './camera_image.uido'
 
-// Beyond the basics: offered only where writing it is confirmed (ADR-29).
+// Beyond the basics: offered only where writing it is confirmed (ADR-11).
 const ADJUSTMENTS = [
   { key: 'brightness', label: 'Luminosité', beyondBasics: false },
   { key: 'contrast', label: 'Contraste', beyondBasics: false },
@@ -186,7 +186,7 @@ function ImageForm({
   ).map((adjustment) => ({
     id: `image-${adjustment.key}`,
     label: adjustment.label,
-    // A bounded value with a continuous meaning: a slider and a number, to aim and to re-read (ADR-43).
+    // A bounded value with a continuous meaning: a slider and a number, to aim and to re-read (ADR-15).
     nature: { kind: 'range', unit: '%', min: 0, max: 100 },
     value: draft.values[adjustment.key],
     onChange: (value) => draft.set(adjustment.key, value as number),

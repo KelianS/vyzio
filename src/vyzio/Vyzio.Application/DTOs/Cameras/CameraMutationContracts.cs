@@ -3,7 +3,7 @@ using Vyzio.Core.Entities;
 
 namespace Vyzio.Application.DTOs.Cameras;
 
-// The camera's access alone: no port, protocol, stream or brand; detection finds the rest (ADR-68 a).
+// The camera's access alone: no port, protocol, stream or brand; detection finds the rest (ADR-04).
 public sealed record CreateCameraRequest(
     string DisplayName,
     string Host,
@@ -28,7 +28,7 @@ public sealed record DiscoverCamerasRequest(
             : new CameraDiscoveryTarget(Host.Trim(), Port is > 0 ? Port : null);
 }
 
-// A range a discovery sweeps, with its source, shown before the search starts (ADR-71).
+// A range a discovery sweeps, with its source, shown before the search starts (ADR-05).
 public sealed record DiscoveryRangeDto(string Cidr, string FirstAddress, string LastAddress, string Source)
 {
     public static DiscoveryRangeDto From(DiscoveryRange range)
@@ -68,7 +68,7 @@ public sealed record DiscoveredCameraDto(
         DiscoveredStreamDto.From(candidate.Stream));
 }
 
-// The stream the candidate is ready with (null: to prepare); the add screen hands over only the address (ADR-68 a).
+// The stream the candidate is ready with (null: to prepare); the add screen hands over only the address (ADR-04).
 public sealed record DiscoveredStreamDto(string Protocol, int Port, string? Path)
 {
     public static DiscoveredStreamDto? From(DiscoveredStream? stream)

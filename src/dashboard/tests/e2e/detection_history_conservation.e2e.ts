@@ -6,8 +6,8 @@ import {
 } from './fixtures/fake_backend'
 
 /**
- * What history becomes once it is only a read of the kept detections (ADR-49): past the retention
- * the media is gone (ADR-48), and the next page is asked for by cursor, never by number.
+ * What history becomes once it is only a read of the kept detections (ADR-12): past the retention
+ * the media is gone (ADR-12), and the next page is asked for by cursor, never by number.
  */
 
 const anHourBefore = (moment: Date, hours: number) =>

@@ -19,26 +19,26 @@ internal sealed class DvripPtzProvider(DvripClient dvrip, PtzMoveRunner runner, 
     private const string StopCommand = "DirectionUp";
     private const int StopStep = 5;
     private const string PresetList = "Uart.PTZPreset.[0]";
-    // The slots are Vyzio's; an ICSee keeps presets on ids up to 255 (docs/hardware/icsee.md, ADR-64).
+    // The slots are Vyzio's; an ICSee keeps presets on ids up to 255 (docs/hardware/icsee.md, ADR-09).
     private const int FirstSpareSlot = PtzPreset.LastSlot + 1;
     private const int LastSlot = 255;
 
     public SupportedProtocol Protocol => SupportedProtocol.Dvrip;
 
-    // Estimate, unmeasured on the hardware (ADR-60).
+    // Estimate, unmeasured on the hardware (ADR-09).
     public TimeSpan FullRange => TimeSpan.FromSeconds(15);
 
-    // A session that does not open fails the check with its reason; a preset stored then listed is the proof (ADR-66).
+    // A session that does not open fails the check with its reason; a preset stored then listed is the proof (ADR-04).
     public async Task<CapabilityProof> ProveAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
     {
         await using var session = await dvrip.OpenSessionAsync(camera, ct);
         var native = await DetectNativePresetsAsync(session, camera, ct);
         NativePresetsFlag.Record(binding, native);
-        // A camera that keeps no preset may still turn: never Missing (ADR-66 b).
+        // A camera that keeps no preset may still turn: never Missing (ADR-04).
         return native ? CapabilityProof.Proven() : CapabilityProof.Unprovable();
     }
 
-    // Stores a preset on a spare slot and looks for it in the camera's list, never moving it; Ability.PTZ answers 607 on an ICSee (ADR-64).
+    // Stores a preset on a spare slot and looks for it in the camera's list, never moving it; Ability.PTZ answers 607 on an ICSee (ADR-09).
     private async Task<bool> DetectNativePresetsAsync(DvripSession session, Camera camera, CancellationToken ct)
     {
         int slot;
@@ -131,14 +131,14 @@ internal sealed class DvripPtzProvider(DvripClient dvrip, PtzMoveRunner runner, 
         return await ReadStoredPresetsAsync(session, camera, ct);
     }
 
-    // The login happens here, before the move, and the session is held until the move ends (ADR-60).
+    // The login happens here, before the move, and the session is held until the move ends (ADR-09).
     public async Task<IPtzMotion> OpenMotionAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
         => new Motion(this, runner, camera, await OpenSessionAsync(camera, ct));
 
     public Task<(float Pan, float Tilt)?> GetPtzPositionAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
         => Task.FromResult<(float Pan, float Tilt)?>(null);
 
-    // A command the camera did not take is raised, named, never swallowed (ADR-56, ADR-59).
+    // A command the camera did not take is raised, named, never swallowed (ADR-04, ADR-09).
     private async Task ExecutePtzAsync(Camera camera, string command, int preset, int step, CancellationToken ct)
     {
         await using var session = await OpenSessionAsync(camera, ct);
@@ -180,7 +180,7 @@ internal sealed class DvripPtzProvider(DvripClient dvrip, PtzMoveRunner runner, 
 
     private static int SpeedToStep(int speed) => Math.Clamp(speed / 12, 1, 8);
 
-    // A move then a stop on one logged-in session (ADR-29, ADR-60).
+    // A move then a stop on one logged-in session (ADR-06, ADR-09).
     private sealed class Motion(DvripPtzProvider provider, PtzMoveRunner runner, Camera camera, DvripSession session)
         : PtzContinuousMotion(runner, camera)
     {

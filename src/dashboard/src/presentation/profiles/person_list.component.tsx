@@ -11,7 +11,7 @@ import { buildPersonListPresenter } from './person_list.presenter'
 import { personListReducer } from './person_list.reducer'
 import { buildInitialPersonListUido } from './person_list.uido'
 
-/** First level of the Persons rubric: the list (ADR-40). Adding is its own task/page. */
+/** First level of the Persons rubric: the list (UI-25). Adding is its own task/page. */
 export function PersonListView() {
   const { profiles: container } = useAppContainer()
   const [uido, dispatch] = useReducer(personListReducer, undefined, buildInitialPersonListUido)

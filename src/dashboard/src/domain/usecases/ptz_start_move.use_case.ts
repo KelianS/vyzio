@@ -1,6 +1,6 @@
 import type { CameraRepository } from '../ports/camera.port'
 
-/** A press of the joystick: one move until released (ADR-60). */
+/** A press of the joystick: one move until released (ADR-09). */
 export class PtzStartMove {
   constructor(private readonly repository: CameraRepository) {}
 

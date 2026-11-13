@@ -3,7 +3,7 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Infrastructure.CapabilityProviders;
 
-// A move the camera keeps up until a stop reaches it (DVRIP, ONVIF ContinuousMove, Tapo): its length is timed (ADR-60).
+// A move the camera keeps up until a stop reaches it (DVRIP, ONVIF ContinuousMove, Tapo): its length is timed (ADR-09).
 internal abstract class PtzContinuousMotion(PtzMoveRunner runner, Camera camera) : IPtzMotion
 {
     private Task<TimeSpan>? _stopped;
@@ -14,7 +14,7 @@ internal abstract class PtzContinuousMotion(PtzMoveRunner runner, Camera camera)
 
     protected abstract Task StopMoveAsync(CancellationToken ct);
 
-    // Reopens what the camera dropped since the last move, before the next one and never within it (ADR-60).
+    // Reopens what the camera dropped since the last move, before the next one and never within it (ADR-09).
     protected virtual Task PrepareAsync(CancellationToken ct) => Task.CompletedTask;
 
     public async Task<TimeSpan> MoveForAsync(PtzDirection direction, int speed, TimeSpan duration, CancellationToken ct = default)

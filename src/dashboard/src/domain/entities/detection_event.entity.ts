@@ -1,5 +1,5 @@
 export interface DetectionEvent {
-  /** The Frigate id: Vyzio holds no other one for a detection (ADR-49). */
+  /** The Frigate id: Vyzio holds no other one for a detection (ADR-12). */
   eventId: string
   camera: string
   /** The name the user gave the camera, resolved on read. */
@@ -11,6 +11,6 @@ export interface DetectionEvent {
   occurredAt: string
   hasClip: boolean
   hasSnapshot: boolean
-  /** Beyond what the camera keeps: the media no longer exists, and that is a setting (ADR-48). */
+  /** Beyond what the camera keeps: the media no longer exists, and that is a setting (ADR-12). */
   mediaExpired: boolean
 }

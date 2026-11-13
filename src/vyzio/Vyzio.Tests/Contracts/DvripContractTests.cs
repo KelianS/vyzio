@@ -120,7 +120,7 @@ public sealed class DvripContractTests
         Assert.Equal(FixtureLoader.Variant(FixtureProtocol.Dvrip, variant).Firmware, info["SoftWareVersion"]!.GetValue<string>());
     }
 
-    // The list comes first: the provider reads which slots are taken before storing on a spare one (ADR-64).
+    // The list comes first: the provider reads which slots are taken before storing on a spare one (ADR-09).
     [Theory]
     [MemberData(nameof(Variants))]
     public async Task ProveAsync_ShouldStoreThenClearTheProbeSlotAndRecordTheVerdict_WhenTheCameraListsItsPresets(string variant)

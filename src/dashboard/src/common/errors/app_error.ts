@@ -1,11 +1,11 @@
 export const AppErrorKind = {
   NotFound: 'not_found',
   Network: 'network',
-  /** Surveillance is not answering - distinct from a Vyzio server failure, which did answer (ADR-49). */
+  /** Surveillance is not answering - distinct from a Vyzio server failure, which did answer (ADR-12). */
   SurveillanceDown: 'surveillance_down',
-  /** The camera answered and said no (ADR-56); why is in the diagnostic line. */
+  /** The camera answered and said no (ADR-04); why is in the diagnostic line. */
   CameraRefused: 'camera_refused',
-  /** The camera could not be reached or understood; distinct from a refusal (ADR-56). */
+  /** The camera could not be reached or understood; distinct from a refusal (ADR-04). */
   CameraUnreachable: 'camera_unreachable',
   Server: 'server',
   Unknown: 'unknown',

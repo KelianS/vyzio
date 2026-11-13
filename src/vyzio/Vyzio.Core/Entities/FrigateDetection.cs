@@ -1,7 +1,7 @@
 namespace Vyzio.Core.Entities;
 
 /// <summary>
-/// A detection as Frigate holds it. Vyzio never persists one (ADR-49).
+/// A detection as Frigate holds it. Vyzio never persists one (ADR-12).
 /// </summary>
 public sealed record FrigateDetection(
     string EventId,
@@ -15,7 +15,7 @@ public sealed record FrigateDetection(
     DateTimeOffset? StartedAt = null);
 
 /// <summary>
-/// Frigate paginates by time, not by page number — its `page=` parameter is inert (ADR-49).
+/// Frigate paginates by time, not by page number — its `page=` parameter is inert (ADR-12).
 /// <paramref name="Before"/> is the cursor: the occurrence time of the last detection already read.
 /// </summary>
 public sealed record FrigateDetectionQuery(

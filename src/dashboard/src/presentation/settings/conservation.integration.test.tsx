@@ -50,6 +50,20 @@ describe('ConservationView', () => {
     expect(network.sent).toContainEqual(expect.objectContaining({ route: 'GET /api/system/stats' }))
   })
 
+  it('onOpenHelp_ShouldPointToPrivacyModeToRecordNothing_WhenTheUserAsksWhenSpaceIsFreed', async () => {
+    // Arrange
+    fakeNetwork({ [SETTINGS]: ok(settings) })
+    renderScreen(<ConservationView />, CONSERVATION)
+    await screen.findByLabelText('Séquences de mouvement')
+
+    // Act
+    await userEvent.click(screen.getByText('Quand la place est-elle vraiment libérée ?'))
+
+    // Assert
+    expect(screen.getByText(/activez sa vie privée/)).toBeVisible()
+    expect(screen.queryByText(/désactivez-la/)).not.toBeInTheDocument()
+  })
+
   it('onSave_ShouldKeepTheDraftAndSayWhy_WhenTheSaveFails', async () => {
     // Arrange
     fakeNetwork({ [SETTINGS]: ok(settings), [SAVE]: failure(500) })

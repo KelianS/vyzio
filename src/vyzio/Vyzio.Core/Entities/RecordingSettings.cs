@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Vyzio.Core.Entities;
 
-// Installation-wide recording retention (ADR-39). A single row: these are the values a camera
+// Installation-wide recording retention (ADR-15). A single row: these are the values a camera
 // follows unless it overrides them, which mirrors how Frigate itself is configured — `record:` at
 // the root, `cameras.<name>.record:` on top.
 //
@@ -21,7 +21,7 @@ public class RecordingSettings
 
     // Days of complete footage, recorded whether or not anything happens. Zero by default: this is
     // the only window whose disk cost grows with time passing rather than with what occurs, so it
-    // stays a deliberate choice (ADR-39, and the spirit of ADR-18).
+    // stays a deliberate choice (ADR-12).
     public int ContinuousDays { get; set; }
 
     // Days of footage kept only where the image moves.

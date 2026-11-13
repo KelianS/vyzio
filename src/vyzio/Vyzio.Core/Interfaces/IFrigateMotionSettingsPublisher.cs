@@ -2,7 +2,7 @@ using Vyzio.Core.Entities;
 
 namespace Vyzio.Core.Interfaces;
 
-// Applies a motion sensitivity level to a running Frigate instance without restarting it (ADR-35).
+// Applies a motion sensitivity level to a running Frigate instance without restarting it (ADR-08).
 // Frigate accepts this setting as a runtime command and forgets it on restart, which is why the
 // level is also persisted on the camera and written into the generated config.
 public interface IFrigateMotionSettingsPublisher

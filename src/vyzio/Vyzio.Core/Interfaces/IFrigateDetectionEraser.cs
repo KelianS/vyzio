@@ -3,7 +3,7 @@ using Vyzio.Core.Entities;
 namespace Vyzio.Core.Interfaces;
 
 /// <summary>
-/// Erases one detection from Frigate, which owns it (ADR-49), through its API only.
+/// Erases one detection from Frigate, which owns it (ADR-12), through its API only.
 /// </summary>
 public interface IFrigateDetectionEraser
 {

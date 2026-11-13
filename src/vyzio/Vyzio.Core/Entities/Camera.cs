@@ -22,21 +22,21 @@ public class Camera
     [Required, MaxLength(200)]
     public required string Host { get; set; }
 
-    // The camera's account; a protocol may carry its own, resolved by CredentialsFor (ADR-61).
+    // The camera's account; a protocol may carry its own, resolved by CredentialsFor (ADR-04).
     [MaxLength(200)]
     public string? Username { get; set; }
 
     [MaxLength(500)]
     public string? Password { get; set; }
 
-    // The protocols this camera speaks, how to reach each and whether it answers (ADR-61).
+    // The protocols this camera speaks, how to reach each and whether it answers (ADR-04).
     public ICollection<CameraProtocol> Protocols { get; set; } = [];
 
-    // What the camera does, the video stream included, each over one protocol (ADR-22, ADR-61).
+    // What the camera does, the video stream included, each over one protocol (ADR-04).
     public ICollection<CameraCapabilityBinding> Capabilities { get; set; } = [];
 
     // Groups the cameras that share one physical device — the lenses of a multi-sensor box are
-    // separate cameras (ADR-38), and this is what lets the UI say so. Null for a single-lens device.
+    // separate cameras (ADR-07), and this is what lets the UI say so. Null for a single-lens device.
     [MaxLength(200)]
     public string? DeviceId { get; set; }
 
@@ -44,7 +44,7 @@ public class Camera
     [MaxLength(500)]
     public string? DetectionLabelsJson { get; set; }
 
-    // Per-camera retention overrides (ADR-39). Null means "follow the installation" — never a
+    // Per-camera retention overrides (ADR-15). Null means "follow the installation" — never a
     // disguised value, which is why these are nullable rather than defaulted. Zero is a real
     // answer and means "keep nothing of this kind for this camera".
     //
@@ -57,7 +57,7 @@ public class Camera
 
     public int? EventClipDaysOverride { get; set; }
 
-    // Motion sensitivity auto-tuning (ADR-35). The level is owned by the tuning loop unless the
+    // Motion sensitivity auto-tuning (ADR-08). The level is owned by the tuning loop unless the
     // user pins it, in which case the loop skips this camera entirely.
     public MotionSensitivity MotionSensitivity { get; set; } = MotionSensitivity.High;
 
@@ -70,7 +70,7 @@ public class Camera
 
     public DateTimeOffset? LastSuccessfulFrameAt { get; set; }
 
-    // When detection last ran; null tells the page to run it on arrival (ADR-68 b).
+    // When detection last ran; null tells the page to run it on arrival (ADR-04).
     public DateTimeOffset? DetectedAt { get; set; }
 
     // The key this camera answers to in Frigate. Set at onboarding and on every rename, never null:
@@ -98,35 +98,35 @@ public class Camera
 
     public const int PrivacyMissDetailLength = 500;
 
-    // PTZ + privacy strategy (ADR-21)
+    // PTZ + privacy strategy (ADR-10)
     public bool PtzSupported { get; set; }
 
-    // App-level privacy configuration (ADR-24)
+    // App-level privacy configuration (ADR-10)
     public PrivacyStrategy PrivacyStrategy { get; set; } = PrivacyStrategy.SoftwareBlur;
 
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
 
-    // The qualities of ONE scene (ADR-38), rows under the stream binding (ADR-65); none without a binding.
+    // The qualities of ONE scene (ADR-07), rows under the stream binding (ADR-07); none without a binding.
     [NotMapped]
     public IReadOnlyCollection<CameraStream> Streams
         => StreamBinding?.Streams.OrderBy(stream => stream.Ordinal).ToList() ?? [];
 
-    // The stream holding the record role; StreamLineup keeps exactly one (ADR-65).
+    // The stream holding the record role; StreamLineup keeps exactly one (ADR-07).
     [NotMapped]
     public CameraStream? RecordStream => Streams.FirstOrDefault(stream => stream.Records);
 
-    // The stream holding the detect role, else the recording stream (ADR-65 c).
+    // The stream holding the detect role, else the recording stream (ADR-07).
     [NotMapped]
     public CameraStream? DetectStream => Streams.FirstOrDefault(stream => stream.Detects) ?? RecordStream;
 
-    // What Frigate is handed: an enabled camera in surveillance whose stream has a protocol (ADR-61, ADR-68 d).
+    // What Frigate is handed: an enabled camera in surveillance whose stream has a protocol (ADR-04).
     [NotMapped]
     public bool InSurveillance
         => IsEnabled && ValidationState == CameraValidationState.Validated && StreamBinding is not null;
 
-    // At most two streams, so watching never opens a third connection: the role streams, plus a verified one when the roles share a stream (ADR-72 c).
+    // At most two streams, so watching never opens a third connection: the role streams, plus a verified one when the roles share a stream (ADR-07).
     [NotMapped]
     public IReadOnlyList<CameraStream> LiveStreams
     {
@@ -156,12 +156,12 @@ public class Camera
     [NotMapped]
     public bool DetectsOnRecordingStream => RecordStream is not null && !Streams.Any(stream => stream.Detects);
 
-    // The video stream capability; null until its protocol is chosen, never a disguised default (ADR-61).
+    // The video stream capability; null until its protocol is chosen, never a disguised default (ADR-04).
     [NotMapped]
     public CameraCapabilityBinding? StreamBinding
         => Capabilities.FirstOrDefault(binding => binding.Capability == CameraCapability.Stream);
 
-    // A protocol a capability or a stream goes through is never removed (ADR-61 d, ADR-65 a).
+    // A protocol a capability or a stream goes through is never removed (ADR-04, ADR-07).
     public bool GoesThrough(SupportedProtocol protocol)
         => Capabilities.Any(binding => binding.Protocol == protocol) || Streams.Any(stream => stream.Protocol == protocol);
 
@@ -177,13 +177,13 @@ public class Camera
         return created;
     }
 
-    // The port a client dials for a protocol with a usual port; ONVIF asks the camera instead (ADR-56).
+    // The port a client dials for a protocol with a usual port; ONVIF asks the camera instead (ADR-04).
     public int PortOf(SupportedProtocol protocol)
         => Protocol(protocol)?.EffectivePort
            ?? ProtocolPorts.Usual(protocol)
            ?? throw new InvalidOperationException($"{protocol} has no usual port: its address is asked of the camera.");
 
-    // The protocol's specific account when it has one, the camera's otherwise; no client reads Username itself (ADR-61).
+    // The protocol's specific account when it has one, the camera's otherwise; no client reads Username itself (ADR-04).
     public CameraCredentials CredentialsFor(SupportedProtocol protocol)
         => Protocol(protocol) is { HasSpecificAccount: true } specific
             ? new CameraCredentials(specific.Username, specific.Password)
@@ -209,7 +209,7 @@ public class Camera
     public void SetProtocolEndpoint(SupportedProtocol protocol, string endpoint)
         => EnsureProtocol(protocol).Endpoint = endpoint;
 
-    // Only through CameraEndpointForgetting, which clears the in-memory cache in the same gesture (ADR-56).
+    // Only through CameraEndpointForgetting, which clears the in-memory cache in the same gesture (ADR-04).
     public void ClearProtocolEndpoints()
     {
         foreach (var entry in Protocols) entry.Endpoint = null;

@@ -158,7 +158,7 @@ docker compose exec vyzio-api dotnet Vyzio.Api.dll reset-password
 The command **removes** the password (a new one would sit in your shell history) and closes every
 session. Vyzio then offers the password choice for a limited time, cameras, settings and history
 untouched, then locks itself again
-([ADR-54](docs/adr/0054-interface-access-guarded-by-an-owner-account-server-session-in-a-cookie.md)).
+([ADR-16](docs/adr/0016-access-and-security.md)).
 
 > Meanwhile, anyone on the local network can claim the password: run the command when you are
 > ready to type one.
@@ -224,7 +224,7 @@ Everything else is English: code, comments, commits, pull requests, issue titles
 | [`docs/WORKFLOW.md`](docs/WORKFLOW.md)             | Process and documentation governance     |
 
 User documentation lives inside the interface, on the screen it belongs to
-([ADR-53](docs/adr/0053-user-documentation-lives-in-the-interface-three-levels-of-help.md)).
+([ADR-17](docs/adr/0017-help-lives-in-the-interface-three-levels.md)).
 
 ---
 

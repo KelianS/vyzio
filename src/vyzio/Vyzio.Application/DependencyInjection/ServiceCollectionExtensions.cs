@@ -32,7 +32,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<CameraDirectory>();
         services.AddSingleton(new DetectionMessageFormatter(tz));
 
-        // Access use cases (ADR-54)
+        // Access use cases (ADR-16)
         services.AddScoped<GetAccessStateUseCase>();
         services.AddScoped<CreateOwnerAccountUseCase>();
         services.AddScoped<SignInUseCase>();
@@ -68,7 +68,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<UpdateScheduleRuleUseCase>();
         services.AddScoped<DeleteScheduleRuleUseCase>();
         services.AddSingleton<GetHouseClockUseCase>();
-        // Singleton: a camera's position outlives the request that moved it (ADR-59).
+        // Singleton: a camera's position outlives the request that moved it (ADR-09).
         services.AddSingleton<PtzManagedPositions>();
         services.AddScoped<PtzStartMoveUseCase>();
         services.AddScoped<PtzSignalMoveUseCase>();
@@ -105,7 +105,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<GetCameraImageSettingsUseCase>();
         services.AddScoped<SetCameraImageSettingsUseCase>();
         services.AddHostedService<Services.CameraReachabilityPollerService>();
-        // Singleton: the tuner carries the per-camera sample counters across passes (ADR-35).
+        // Singleton: the tuner carries the per-camera sample counters across passes (ADR-08).
         services.AddSingleton<Services.MotionSensitivityTuner>();
         services.AddHostedService<Services.MotionSensitivityTunerService>();
 
@@ -132,7 +132,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<TestNotificationChannelUseCase>();
         services.AddScoped<GetNotificationLogUseCase>();
 
-        // Remote commands — one registration per command, nothing else to edit (ADR-50)
+        // Remote commands — one registration per command, nothing else to edit (ADR-14)
         services.AddScoped<IRemoteCommandHandler, Commands.SystemStateCommandHandler>();
         services.AddScoped<IRemoteCommandHandler, Commands.SnapshotCommandHandler>();
         services.AddScoped<IRemoteCommandHandler, Commands.RecentDetectionsCommandHandler>();

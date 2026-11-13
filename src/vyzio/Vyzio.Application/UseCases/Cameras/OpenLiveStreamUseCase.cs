@@ -3,7 +3,7 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Application.UseCases.Cameras;
 
-// Why a live stream is not opened, each closing the socket with its own code (ADR-72 b).
+// Why a live stream is not opened, each closing the socket with its own code (ADR-07).
 public enum LiveStreamRefusal
 {
     UnknownCamera,

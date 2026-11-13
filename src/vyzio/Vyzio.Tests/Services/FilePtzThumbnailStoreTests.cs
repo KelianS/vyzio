@@ -2,7 +2,7 @@ using Vyzio.Infrastructure.Services;
 
 namespace Vyzio.Tests.Services;
 
-// The thumbnails Vyzio keeps of each slot, as files beside the database (ADR-69 c).
+// The thumbnails Vyzio keeps of each slot, as files beside the database (ADR-09).
 public sealed class FilePtzThumbnailStoreTests : IDisposable
 {
     private readonly string _directory = Path.Combine(Path.GetTempPath(), $"vyzio-thumbnails-{Guid.NewGuid():N}");

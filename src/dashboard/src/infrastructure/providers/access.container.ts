@@ -16,7 +16,7 @@ export interface AccessContainer {
   changePassword: ChangePassword
   signOut: SignOut
   signOutEverywhere: SignOutEverywhere
-  /** Subscribes to a session ending while a screen is open (ADR-54); returns the unsubscribe. */
+  /** Subscribes to a session ending while a screen is open (ADR-16); returns the unsubscribe. */
   onSessionLost: (listener: () => void) => () => void
 }
 

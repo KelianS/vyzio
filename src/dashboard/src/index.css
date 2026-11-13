@@ -10,7 +10,7 @@
    Tokens Vyzio — realisation des valeurs definies par docs/DESIGN SYSTEM.md,
    qui en reste la source. Toute couleur, tout rayon employe dans un composant
    passe par un token : c'est ce qui rend un defaut de contraste corrigeable en
-   un point, et ce qui garantit le theme sombre par construction (ADR-42).
+   un point, et ce qui garantit le theme sombre par construction (ADR-01).
    --------------------------------------------------------------------------- */
 
 :root {
@@ -76,7 +76,7 @@
 /* ---------------------------------------------------------------------------
    Couche semantique consommee par les primitives shadcn/ui. Elle ne definit
    aucune couleur : elle nomme un role et pointe vers un token Vyzio. C'est ce
-   qui permet de rethematiser les primitives sans jamais les modifier (ADR-42).
+   qui permet de rethematiser les primitives sans jamais les modifier (ADR-01).
    --------------------------------------------------------------------------- */
 
 :root,

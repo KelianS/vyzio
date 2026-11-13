@@ -1,7 +1,7 @@
-// Mirrors the backend MotionSensitivity enum (ADR-35). Ordered from most to least sensitive.
+// Mirrors the backend MotionSensitivity enum (ADR-08). Ordered from most to least sensitive.
 export type MotionSensitivity = 'high' | 'medium' | 'low'
 
-// One retention window as this camera sees it (ADR-39). `override` is what the camera decided for
+// One retention window as this camera sees it (ADR-15). `override` is what the camera decided for
 // itself, null meaning "follow the installation"; `installation` is what it falls back to, which is
 // what lets a revert name the value it returns to; `effective` is what actually applies, resolved
 // server-side so the view never re-derives it.
@@ -16,7 +16,7 @@ export interface CameraRetention {
   motion: RetentionWindowValue
   eventClip: RetentionWindowValue
   maxDays: number
-  /** Floor of the duration carrying the history: zero is not an answer there (ADR-48). */
+  /** Floor of the duration carrying the history: zero is not an answer there (ADR-12). */
   minEventClipDays: number
 }
 

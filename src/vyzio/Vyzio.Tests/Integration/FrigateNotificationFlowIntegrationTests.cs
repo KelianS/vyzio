@@ -91,7 +91,7 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
     // The payloads below start at 1778408400 (Unix seconds).
     private static readonly DateTimeOffset MinuteAfterThePayloadsStart = DateTimeOffset.FromUnixTimeSeconds(1778408460);
 
-    // The handler only enqueues (ADR-49): the flow is complete once the queue is drained.
+    // The handler only enqueues (ADR-12): the flow is complete once the queue is drained.
     private async Task<bool> IngestAndNotifyAsync(string payload)
     {
         var ingested = await _sut.ExecuteAsync("frigate/events", payload);
@@ -117,7 +117,7 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
 
         var processed = await IngestAndNotifyAsync(Payload("frigate-ti-001", lifecycle: "new", topScore: 0.97f));
 
-        // Nothing to keep, nothing to send: only the end of an event matters (ADR-49).
+        // Nothing to keep, nothing to send: only the end of an event matters (ADR-12).
         Assert.False(processed);
         Assert.Equal(0, await _db.Notifications.CountAsync());
         Assert.Empty(_telegram.Sent);

@@ -1,4 +1,4 @@
-// Wording of the restart (ADR-44, DESIGN SYSTEM vocabulary).
+// Wording of the restart (ADR-15, DESIGN SYSTEM vocabulary).
 // Names the waiting state, not the act: the trigger may be read days after the save.
 const RESTART_ACTION = 'Appliquer les changements'
 export const RESTART_QUESTION = 'Redémarrer la surveillance maintenant ?'
@@ -13,7 +13,7 @@ export interface RestartWording {
 }
 
 /**
- * A failed restart is persistent (ADR-44): everywhere the question is asked again, it is asked
+ * A failed restart is persistent (ADR-15): everywhere the question is asked again, it is asked
  * saying so. A single home - the header and the navigation guard ask the same question, and the
  * guard used to ask it with the original wording, as if nothing had failed.
  */

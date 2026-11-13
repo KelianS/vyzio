@@ -2,7 +2,7 @@ import { HelpCircle } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
 
-/** Second level of help (ADR-53): behind an explicit trigger, never hover-only, which touch cannot reach. */
+/** Second level of help (ADR-17): behind an explicit trigger, never hover-only, which touch cannot reach. */
 export function HelpTrigger({ question, help }: { question: string; help: string }) {
   return (
     <Popover>

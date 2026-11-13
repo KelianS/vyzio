@@ -1,4 +1,4 @@
-/** What an account is allowed to do (ADR-54). */
+/** What an account is allowed to do (ADR-16). */
 type AccountRole = 'owner' | 'resident'
 
 /** Where the installation stands before anyone signs in: does it have an owner yet. */

@@ -98,7 +98,7 @@ test.describe('Settings screens coherence', () => {
 
   test('SettingRow_ShouldFillItsControlColumn_WhenRenderedOnAnyScreen', async ({ page }) => {
     // A field that does not fill its column breaks the vertical alignment of the values,
-    // and the page stops being scannable - which is what the fixed anatomy aimed at (ADR-43).
+    // and the page stops being scannable - which is what the fixed anatomy aimed at (ADR-15).
     for (const path of SETTINGS_ROUTES) {
       await page.goto(path)
       await page.waitForLoadState('networkidle')
@@ -152,7 +152,7 @@ test.describe('Settings screens coherence', () => {
       await page.goto(path)
       await page.waitForLoadState('networkidle')
 
-      // "Avance" is a position, not a mode (ADR-40): hence a fold, closed on load.
+      // "Avance" is a position, not a mode (UI-09): hence a fold, closed on load.
       const fold = page.locator('details', { has: page.getByText('Avancé', { exact: true }) })
       await expect(fold).toHaveCount(1)
       await expect(fold).not.toHaveAttribute('open', /.*/)

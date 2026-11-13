@@ -8,7 +8,7 @@ using Vyzio.Infrastructure.Configuration;
 
 namespace Vyzio.Infrastructure.Services;
 
-// Applies a sensitivity level to a running Frigate over MQTT (ADR-35). Frigate exposes
+// Applies a sensitivity level to a running Frigate over MQTT (ADR-08). Frigate exposes
 // motion_contour_area as a runtime command, so a level change costs no config rewrite and no
 // restart — which is what makes an auto-tuning loop viable at all.
 //

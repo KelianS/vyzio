@@ -6,8 +6,8 @@ namespace Vyzio.Infrastructure.Notifications;
 
 /// <summary>
 /// The Discord gateway, reduced to what a command loop needs: Vyzio dials out and stays connected, so
-/// the house needs no public address (ADR-50), and asks for no intent — only what is addressed to the
-/// bot arrives (ADR-52).
+/// the house needs no public address (ADR-14), and asks for no intent — only what is addressed to the
+/// bot arrives (ADR-14).
 /// </summary>
 internal sealed class DiscordGateway(IDiscordGatewaySocketFactory sockets, ILogger logger)
 {
@@ -128,7 +128,7 @@ internal sealed class DiscordGateway(IDiscordGatewaySocketFactory sockets, ILogg
         d = new
         {
             token = botToken,
-            // No intent at all: Vyzio reads its own commands, never the conversation around them (ADR-52).
+            // No intent at all: Vyzio reads its own commands, never the conversation around them (ADR-14).
             intents = 0,
             properties = new { os = "linux", browser = "vyzio", device = "vyzio" }
         }

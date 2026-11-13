@@ -18,7 +18,7 @@ const PERSON_PAGES = [
   { slug: 'cameras', label: 'Caméras' },
 ]
 
-/** Third level: pages of one person (ADR-40), mirroring the camera shell. */
+/** The pages of one person, mirroring the camera shell. */
 export function PersonView() {
   const { profileId } = useParams()
   const { profiles: container } = useAppContainer()

@@ -11,7 +11,7 @@ using Vyzio.Infrastructure.Configuration;
 
 namespace Vyzio.Api.Endpoints;
 
-// Request types for capability and protocol endpoints (ADR-61)
+// Request types for capability and protocol endpoints (ADR-04)
 file sealed record ConfigureCameraCapabilityRequest(string Protocol, string? StreamPath = null);
 
 // Request types for privacy endpoints
@@ -121,7 +121,7 @@ public static class CamerasEndpoints
             return dto is null ? Results.NotFound() : Results.Ok(dto);
         });
 
-        // Live feed — latest frame proxy (ADR-16)
+        // Live feed — latest frame proxy (ADR-07)
         group.MapGet("/{id}/live/latest.jpg", async (string id, GetCamerasUseCase getCameras, IFrigateLiveFrameProvider frames, CancellationToken ct) =>
         {
             var cameras = await getCameras.ExecuteAsync(ct);
@@ -135,7 +135,7 @@ public static class CamerasEndpoints
             return Results.File(frame, "image/jpeg");
         });
 
-        // Live video: a socket relayed to go2rtc, refused with a close code the interface names (ADR-72 b).
+        // Live video: a socket relayed to go2rtc, refused with a close code the interface names (ADR-07).
         group.MapGet("/{id}/live/ws", async (
             string id,
             string? quality,
@@ -179,7 +179,7 @@ public static class CamerasEndpoints
         group.MapPost("/privacy/batch-toggle", async (BatchTogglePrivacyRequest request, BatchToggleCameraPrivacyModeUseCase useCase, CancellationToken ct) =>
             Results.Ok(await useCase.ExecuteAsync(request.CameraIds, request.Active, ct)));
 
-        // Every press is a start, a signal while it lasts and a stop (ADR-60); an unknown direction is named for the interface.
+        // Every press is a start, a signal while it lasts and a stop (ADR-09); an unknown direction is named for the interface.
         group.MapPost("/{id}/ptz/move/start", async (string id, PtzMoveApiRequest request, PtzStartMoveUseCase useCase, CancellationToken ct) =>
         {
             try
@@ -227,7 +227,7 @@ public static class CamerasEndpoints
             return ok ? Results.NoContent() : Results.NotFound();
         });
 
-        // The slots that hold a position, read from the camera when it keeps them, plus calibration state and current position (ADR-69).
+        // The slots that hold a position, read from the camera when it keeps them, plus calibration state and current position (ADR-09).
         group.MapGet("/{id}/ptz/presets", async (string id, GetPtzPresetsUseCase useCase, CancellationToken ct) =>
         {
             var (held, calibrated, pos) = await useCase.ExecuteAsync(id, ct);
@@ -272,7 +272,7 @@ public static class CamerasEndpoints
             }
         });
 
-        // Capability bindings (ADR-22) — lists, configures and probes camera capabilities
+        // Capability bindings (ADR-04) — lists, configures and probes camera capabilities
         group.MapGet("/{id}/capabilities", async (string id, GetCameraCapabilitiesUseCase useCase, CancellationToken ct) =>
         {
             var list = await useCase.ExecuteAsync(id, ct);
@@ -340,12 +340,12 @@ public static class CamerasEndpoints
             if (!SnakeCaseEnum.TryFromSnakeCase<CameraCapability>(capability, out var cap))
                 return ApiProblem.BadRequest("unknown_capability", $"Unknown capability: {capability}");
 
-            // The gesture after changing something on the camera: re-resolve, never trust the cache (ADR-56).
+            // The gesture after changing something on the camera: re-resolve, never trust the cache (ADR-04).
             var result = await useCase.ExecuteAsync(id, cap, rediscoverEndpoints: true, ct: ct);
             return result is null ? Results.NotFound() : Results.Ok(result);
         });
 
-        // The user's try of a capability to confirm, then their answer (ADR-66 d).
+        // The user's try of a capability to confirm, then their answer (ADR-04).
         group.MapPost("/{id}/capabilities/{capability}/try", async (
             string id,
             string capability,
@@ -397,7 +397,7 @@ public static class CamerasEndpoints
             return Results.NoContent();
         });
 
-        // Protocols (ADR-61): how each one is reached, and whether it answers.
+        // Protocols (ADR-04): how each one is reached, and whether it answers.
         group.MapGet("/{id}/protocols", async (string id, GetCameraProtocolsUseCase useCase, CancellationToken ct) =>
         {
             var list = await useCase.ExecuteAsync(id, ct);
@@ -417,7 +417,7 @@ public static class CamerasEndpoints
             };
         });
 
-        // Level 2 alone: the candidate protocols that answer are added, no capability is touched (ADR-61 d).
+        // Level 2 alone: the candidate protocols that answer are added, no capability is touched (ADR-04).
         group.MapPost("/{id}/protocols/search", async (string id, SearchCameraProtocolsUseCase useCase, CancellationToken ct) =>
         {
             var list = await useCase.ExecuteAsync(id, ct);
@@ -465,7 +465,7 @@ public static class CamerasEndpoints
             return result is null ? Results.NotFound() : Results.Ok(result);
         });
 
-        // Image settings (ADR-27) — read/write live on the camera, nothing persisted on Vyzio's side.
+        // Image settings (ADR-11) — read/write live on the camera, nothing persisted on Vyzio's side.
         group.MapGet("/{id}/image-settings", async (string id, GetCameraImageSettingsUseCase useCase, CancellationToken ct) =>
         {
             var settings = await useCase.ExecuteAsync(id, ct);
@@ -529,7 +529,7 @@ public static class CamerasEndpoints
         return app;
     }
 
-    // The Host the dashboard was opened by, as nginx forwards it; never X-Forwarded-Host (ADR-71).
+    // The Host the dashboard was opened by, as nginx forwards it; never X-Forwarded-Host (ADR-04).
     private static string DashboardHost(HttpContext http) => http.Request.Host.Host;
 
     private static IResult GetVendorAsset(string assetPath, VyzioRuntimeSettings settings)

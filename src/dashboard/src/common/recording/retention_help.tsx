@@ -1,7 +1,7 @@
 import { HelpPanel } from '../components/help_panel'
 
 /**
- * The same two questions on both retention screens (ADR-53) -- installation-wide and per camera --
+ * The same two questions on both retention screens (ADR-17) -- installation-wide and per camera --
  * because the answers are the same and would drift if written twice.
  */
 export function RetentionHelp() {
@@ -28,8 +28,8 @@ export function RetentionHelp() {
         </p>
         <p>
           Raccourcir l’historique en sort aussi les détections plus anciennes, aperçu et vidéo
-          compris. Si vous ne voulez rien conserver d’une caméra, désactivez-la : c’est le seul
-          geste qui arrête aussi sa détection.
+          compris. Pour ne plus rien enregistrer d’une caméra, activez sa vie privée&nbsp;: les
+          vidéos déjà gardées restent jusqu’à la fin de leur durée de conservation.
         </p>
       </HelpPanel>
     </>

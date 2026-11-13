@@ -7,7 +7,7 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Tests.UseCases;
 
-// A person's alert mode and cameras rule whether they are signalled at all (ADR-58).
+// A person's alert mode and cameras rule whether they are signalled at all (ADR-13).
 public class PersonAlertPolicyTests
 {
     private readonly IProfileRepository _profiles = Substitute.For<IProfileRepository>();

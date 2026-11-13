@@ -1,6 +1,6 @@
 import { Link } from 'react-router'
 
-/** In place of a control the camera would refuse: the Connexion card says why and the way out (ADR-53). */
+/** In place of a control the camera would refuse: the Connexion card says why and the way out (ADR-17). */
 export function OrientationUnavailable({ cameraId }: { cameraId: string }) {
   return (
     <p className="text-sm text-muted-foreground">

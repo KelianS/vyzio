@@ -20,7 +20,7 @@ export function buildAppShellPresenter({
       reloadCameraList(camerasContainer)
     },
 
-    /** Polls the system status so every screen reads it self-healing (ADR-33); returns the stop. */
+    /** Polls the system status so every screen reads it self-healing (ADR-02); returns the stop. */
     onWatchSystem() {
       const poll = () => void useRootStore.getState().loadSystemStats(hubContainer.getSystemStats)
       poll()

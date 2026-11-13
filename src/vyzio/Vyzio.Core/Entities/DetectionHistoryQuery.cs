@@ -2,7 +2,7 @@ namespace Vyzio.Core.Entities;
 
 /// <summary>
 /// <paramref name="Cursor"/> is the occurrence time of the last detection already read, as unix
-/// milliseconds. Frigate paginates by time — its `page=` parameter is inert (ADR-49).
+/// milliseconds. Frigate paginates by time — its `page=` parameter is inert (ADR-12).
 /// </summary>
 public sealed record DetectionHistoryQuery(
     string? Camera = null,

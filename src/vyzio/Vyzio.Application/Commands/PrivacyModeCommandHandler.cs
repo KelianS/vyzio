@@ -7,7 +7,7 @@ namespace Vyzio.Application.Commands;
 
 /// <summary>
 /// Blinding a camera, or giving it its eyes back. Consequential either way, so nothing happens on the
-/// first ask: the answer proposes, the tap decides (NOTIF-28, ADR-50).
+/// first ask: the answer proposes, the tap decides (NOTIF-28, ADR-14).
 /// </summary>
 public sealed class PrivacyModeCommandHandler(
     GetCamerasUseCase cameras,

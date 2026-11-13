@@ -3,7 +3,7 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Api;
 
-// The camera's own failure, named by a code the interface branches on rather than by the status (ADR-56).
+// The camera's own failure, named by a code the interface branches on rather than by the status (ADR-04).
 internal sealed class CameraCommandExceptionHandler : IExceptionHandler
 {
     public async ValueTask<bool> TryHandleAsync(

@@ -1,7 +1,7 @@
 # Investigation — YOLOv9 sur détecteur OpenVINO Frigate (juillet 2026)
 
 > Test manuel sur l'instance de dev (CPU only), suite à un constat de reconnaissance médiocre avec le
-> modèle par défaut `ssdlite_mobilenet_v2` (ADR-34) : un chat clairement visible détecté comme
+> modèle par défaut `ssdlite_mobilenet_v2` (ADR-08) : un chat clairement visible détecté comme
 > `bird` / `person`.
 
 ## Contexte et contrainte de licence
@@ -90,7 +90,7 @@ via `/api/stats` :
 ```
 
 Détecteur actif, ~8.5 ms/inférence, `detection_fps` non nul sur les deux caméras. `/dev/shm` utilisé
-normalement (fix ADR-34 tmpfs tient).
+normalement (fix ADR-08 tmpfs tient).
 
 ## ⚠️ Constat : qualité de détection erratique, confiance mal calibrée
 

@@ -7,7 +7,7 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Tests.UseCases;
 
-// A DVRIP camera's positions go through its native presets once the probe confirms them, through the ones Vyzio keeps otherwise (ADR-59).
+// A DVRIP camera's positions go through its native presets once the probe confirms them, through the ones Vyzio keeps otherwise (ADR-09).
 public class PtzPositionsOverDvripTests
 {
     private static readonly TimeSpan FullRange = TimeSpan.FromSeconds(6);

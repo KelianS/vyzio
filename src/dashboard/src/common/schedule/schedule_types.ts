@@ -5,7 +5,7 @@ import {
   type ScheduleRule,
 } from '../../domain/entities/schedule_rule.entity'
 
-/** Where the house's calendar lives (ADR-63). */
+/** Where the house's calendar lives (ADR-15). */
 export const SCHEDULES_PATH = '/settings/planification'
 
 /** A rule type in the interface's words: the same name, icon and effect everywhere (DESIGN SYSTEM § Shared words). */

@@ -9,7 +9,7 @@ using Vyzio.Infrastructure.VendorAdapters;
 
 namespace Vyzio.Tests.Services;
 
-// Pins the two shapes met on hardware: one endpoint per service (V380) and one for all (Tapo) (ADR-56).
+// Pins the two shapes met on hardware: one endpoint per service (V380) and one for all (Tapo) (ADR-04).
 public sealed class OnvifEndpointResolverTests
 {
     private const string DateAndTimeAnswer = """

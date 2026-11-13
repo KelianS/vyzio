@@ -14,15 +14,15 @@ internal record PtzCapabilities(bool SupportsRelativeMove)
     public static readonly PtzCapabilities Default = new(false);
 }
 
-// PTZ over ONVIF for any compliant camera (ADR-22): SOAP through OnvifClient, pacing through PtzMoveRunner.
+// PTZ over ONVIF for any compliant camera (ADR-04): SOAP through OnvifClient, pacing through PtzMoveRunner.
 internal sealed class OnvifPtzProvider(OnvifClient onvif, PtzMoveRunner runner, ILogger<OnvifPtzProvider> logger) : IPtzCapabilityProvider
 {
     public SupportedProtocol Protocol => SupportedProtocol.Onvif;
 
-    // 80 relative moves at replay speed cover the normalized [-1, 1] range, the rest is margin; an estimate for a continuous move (ADR-60).
+    // 80 relative moves at replay speed cover the normalized [-1, 1] range, the rest is margin; an estimate for a continuous move (ADR-09).
     public TimeSpan FullRange => 90 * RelativeMoveLength;
 
-    // The motion time a relative move counts, so that both kinds of move share one unit (ADR-60).
+    // The motion time a relative move counts, so that both kinds of move share one unit (ADR-09).
     private static readonly TimeSpan RelativeMoveLength = TimeSpan.FromMilliseconds(100);
 
     // Profile tokens are stable for the lifetime of a camera — cache per camera ID to avoid
@@ -31,14 +31,14 @@ internal sealed class OnvifPtzProvider(OnvifClient onvif, PtzMoveRunner runner, 
     private readonly ConcurrentDictionary<string, string?> _ptzConfigCache = new();
     private readonly ConcurrentDictionary<string, PtzCapabilities> _capabilitiesCache = new();
 
-    // A described PTZ configuration is the proof; silence or a refusal fails the check, never reads as missing (ADR-66 a).
+    // A described PTZ configuration is the proof; silence or a refusal fails the check, never reads as missing (ADR-04).
     public async Task<CapabilityProof> ProveAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
     {
         var (token, configToken, nodeToken) = await onvif.GetFirstProfileAsync(camera, ct, throwOnFailure: true);
         _profileCache[camera.Id] = token;
         _ptzConfigCache[camera.Id] = configToken;
 
-        // Answering ONVIF is not doing PTZ over it: without a PTZ description, the cascade moves on (ADR-28).
+        // Answering ONVIF is not doing PTZ over it: without a PTZ description, the cascade moves on (ADR-04).
         if (configToken is null)
             return CapabilityProof.Missing($"ONVIF: {camera.Host} carries no PTZ configuration on its first media profile.");
 
@@ -47,7 +47,7 @@ internal sealed class OnvifPtzProvider(OnvifClient onvif, PtzMoveRunner runner, 
             return CapabilityProof.Missing($"ONVIF: {camera.Host} answered GetConfigurationOptions without PTZ configuration options.");
         _capabilitiesCache[camera.Id] = caps;
 
-        // Room for one preset on the profile's node is the native tier, even with none saved; it never weighs on the proof (ADR-69 f).
+        // Room for one preset on the profile's node is the native tier, even with none saved; it never weighs on the proof (ADR-09).
         var maximum = nodeToken is null ? null : await onvif.GetMaximumNumberOfPresetsAsync(camera, nodeToken, ct);
         var supportsNativePresets = maximum > 0;
         NativePresetsFlag.Record(binding, supportsNativePresets);
@@ -63,7 +63,7 @@ internal sealed class OnvifPtzProvider(OnvifClient onvif, PtzMoveRunner runner, 
         await onvif.GotoPresetAsync(camera, token, presetId, ct);
     }
 
-    // A camera that files the preset under another token refused the slot's number (ADR-69 b).
+    // A camera that files the preset under another token refused the slot's number (ADR-09).
     public async Task PtzSavePresetAsync(Camera camera, CameraCapabilityBinding binding, int presetId, CancellationToken ct = default)
     {
         var token = await GetProfileTokenAsync(camera, ct);
@@ -73,7 +73,7 @@ internal sealed class OnvifPtzProvider(OnvifClient onvif, PtzMoveRunner runner, 
             throw new CameraCommandRefusedException($"ONVIF SetPreset on {camera.Host}: asked for preset token {asked}, the camera stored it under {stored}.");
     }
 
-    // Tokens that are not a number name no slot (ADR-69 b).
+    // Tokens that are not a number name no slot (ADR-09).
     public async Task<IReadOnlySet<int>> ReadPresetsAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
     {
         var token = await GetProfileTokenAsync(camera, ct);
@@ -84,7 +84,7 @@ internal sealed class OnvifPtzProvider(OnvifClient onvif, PtzMoveRunner runner, 
             .ToHashSet();
     }
 
-    // The profile and its PTZ options are read here, before the move, so that no move waits on them (ADR-60).
+    // The profile and its PTZ options are read here, before the move, so that no move waits on them (ADR-09).
     public async Task<IPtzMotion> OpenMotionAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
     {
         var token = await GetProfileTokenAsync(camera, ct);
@@ -104,7 +104,7 @@ internal sealed class OnvifPtzProvider(OnvifClient onvif, PtzMoveRunner runner, 
         }
     }
 
-    // A continuous move at full speed whatever the requested one, so that a replay covers what a hold did (ADR-60).
+    // A continuous move at full speed whatever the requested one, so that a replay covers what a hold did (ADR-09).
     private sealed class ContinuousMotion(OnvifClient onvif, PtzMoveRunner runner, Camera camera, string token)
         : PtzContinuousMotion(runner, camera)
     {
@@ -134,7 +134,7 @@ internal sealed class OnvifPtzProvider(OnvifClient onvif, PtzMoveRunner runner, 
         return profileToken;
     }
 
-    // A camera the user bound by hand still gets its commands tried, with the move-plus-stop fallback (ADR-28).
+    // A camera the user bound by hand still gets its commands tried, with the move-plus-stop fallback (ADR-04).
     private async Task<PtzCapabilities> GetPtzCapabilitiesAsync(Camera camera, CancellationToken ct)
         => await ReadPtzCapabilitiesAsync(camera, ct) ?? PtzCapabilities.Default;
 

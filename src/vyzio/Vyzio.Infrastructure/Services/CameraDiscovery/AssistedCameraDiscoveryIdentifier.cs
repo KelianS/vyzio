@@ -3,9 +3,9 @@ using Vyzio.Core.Entities;
 
 namespace Vyzio.Infrastructure.Services.CameraDiscovery;
 
-// ADR-32 — Stage 3 (interpretation): turns the raw, structured facts produced by
+// ADR-05 — Stage 3 (interpretation): turns the raw, structured facts produced by
 // AssistedCameraDiscoveryProbePipeline (Stages 1-2) into product-facing conclusions: the
-// qualification tier and, on a very strong signal only, the vendor (ADR-71).
+// qualification tier and, on a very strong signal only, the vendor (ADR-05).
 internal sealed class AssistedCameraDiscoveryIdentifier
 {
     private readonly AssistedCameraDiscoveryVendorDocumentationCatalog _documentationCatalog;
@@ -51,7 +51,7 @@ internal sealed class AssistedCameraDiscoveryIdentifier
 
     private static string DetermineQualification(IReadOnlyList<string> qualificationReasons)
     {
-        // ADR-32: "camera_port_open" is emitted by the port sweep for any camera-signal port
+        // ADR-05: "camera_port_open" is emitted by the port sweep for any camera-signal port
         // (DiscoveryPortCatalog) — so adding a new protocol with a dedicated port confirms the
         // host automatically, without editing this method.
         if (qualificationReasons.Contains("camera_port_open", StringComparer.Ordinal)

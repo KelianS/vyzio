@@ -136,7 +136,7 @@ public class SaveCameraDetectionConfigUseCaseTests
         Assert.Contains("person", dto.Labels);
     }
 
-    // ── Retention overrides (ADR-39) ──
+    // ── Retention overrides (ADR-15) ──
 
     [Fact]
     public async Task ExecuteAsync_ShouldFollowTheInstallationRetention_WhenTheCameraHasNoOverride()

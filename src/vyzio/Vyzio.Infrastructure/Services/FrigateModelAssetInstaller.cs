@@ -4,18 +4,18 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Infrastructure.Services;
 
-// Copies the models bundled in the image into Frigate's model cache, once, so Frigate never downloads them (ADR-34, ADR-70).
+// Copies the models bundled in the image into Frigate's model cache, once, so Frigate never downloads them (ADR-03, ADR-08).
 public sealed class FrigateModelAssetInstaller : IFrigateModelAssetInstaller
 {
     private const string DefaultBundledModelsDirectory = "/app/models";
 
-    // Only the Intel GPU tier needs a model Frigate does not carry: YOLOX overloads the CPU-only tier (ADR-34).
+    // Only the Intel GPU tier needs a model Frigate does not carry: YOLOX overloads the CPU-only tier (ADR-08).
     private static readonly IReadOnlyDictionary<FrigateDetectorKind, string> DetectorModelFiles = new Dictionary<FrigateDetectorKind, string>
     {
         [FrigateDetectorKind.Openvino] = "yolox_s.onnx",
     };
 
-    // Where Frigate's small face model looks for its files, relative to its model cache (ADR-70).
+    // Where Frigate's small face model looks for its files, relative to its model cache (ADR-03).
     internal static readonly IReadOnlyList<string> FaceRecognitionModelFiles =
     [
         Path.Combine("facedet", "facedet.onnx"),

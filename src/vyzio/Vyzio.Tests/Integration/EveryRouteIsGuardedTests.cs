@@ -7,7 +7,7 @@ namespace Vyzio.Tests.Integration;
 
 /// <summary>
 /// Walks what the API actually exposes and fails if anything answers without a session. This is the
-/// test that catches the next route somebody adds without thinking about it (ADR-54).
+/// test that catches the next route somebody adds without thinking about it (ADR-16).
 /// </summary>
 public class EveryRouteIsGuardedTests : IClassFixture<AccessApiFactory>
 {

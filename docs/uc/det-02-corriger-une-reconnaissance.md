@@ -35,7 +35,8 @@
 
 ## Règles locales
 
-- **DET-06** · l'utilisateur doit pouvoir corriger une reconnaissance depuis un parcours simple.
+- **DET-06** · l'utilisateur doit pouvoir corriger une reconnaissance depuis un parcours simple ;
+- **DET-13** · l'evenement corrige affiche aussitot l'identite choisie, sans attendre que la surveillance l'ait reprise.
 
 ## Points ouverts
 

@@ -5,7 +5,7 @@ namespace Vyzio.Core.Entities;
 
 /// <summary>
 /// The credentials of one channel, keyed by declared field rather than by column: a channel needing
-/// a webhook and one needing a token/recipient pair share the same storage without sharing a shape (ADR-50).
+/// a webhook and one needing a token/recipient pair share the same storage without sharing a shape (ADR-14).
 /// </summary>
 public sealed class ChannelCredentials
 {

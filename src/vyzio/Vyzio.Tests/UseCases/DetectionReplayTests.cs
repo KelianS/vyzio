@@ -12,7 +12,7 @@ using Vyzio.Tests.Services;
 
 namespace Vyzio.Tests.UseCases;
 
-// One detection for every camera family, the real providers and registry over captured exchanges (ADR-71 b, c).
+// One detection for every camera family, the real providers and registry over captured exchanges (ADR-04).
 public sealed class DetectionReplayTests
 {
     private readonly ICameraRepository _cameras = Substitute.For<ICameraRepository>();
@@ -131,7 +131,7 @@ public sealed class DetectionReplayTests
         Password = FixtureLoader.Neutral.Account.Password,
     };
 
-    // The protocol level stands in: the given protocols answer with the account, the others are silent (ADR-61).
+    // The protocol level stands in: the given protocols answer with the account, the others are silent (ADR-04).
     private static ICameraProtocolProbe Answering(params SupportedProtocol[] protocols)
     {
         var probe = Substitute.For<ICameraProtocolProbe>();

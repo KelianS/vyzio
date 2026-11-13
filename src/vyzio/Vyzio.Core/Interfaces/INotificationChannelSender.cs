@@ -3,7 +3,7 @@ using Vyzio.Core.Entities;
 namespace Vyzio.Core.Interfaces;
 
 /// <summary>
-/// One implementation per channel, and nothing above it knows which one it holds (ADR-50).
+/// One implementation per channel, and nothing above it knows which one it holds (ADR-14).
 /// </summary>
 public interface INotificationChannelSender
 {

@@ -6,7 +6,7 @@ using Vyzio.Core.Interfaces;
 namespace Vyzio.Application.Commands;
 
 /// <summary>
-/// « Qu'est-ce qui s'est passe » — the same recent events the home screen lists, read out loud (ADR-50).
+/// « Qu'est-ce qui s'est passe » — the same recent events the home screen lists, read out loud (ADR-14).
 /// </summary>
 public sealed class RecentDetectionsCommandHandler(
     GetRecentDetectionEventsUseCase detections,

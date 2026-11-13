@@ -47,7 +47,7 @@ public sealed class PtzPositionCommandHandler(
         {
             (known, _, _) = await presets.ExecuteAsync(camera.Id, ct);
         }
-        // Unread is not missing: the camera did not say which positions it keeps (ADR-69 g).
+        // Unread is not missing: the camera did not say which positions it keeps (ADR-09).
         catch (CameraCommandException)
         {
             return CommandResult.Text($"Je n'ai pas pu lire les positions de {camera.DisplayName}", ["Reessayez dans un instant."]);

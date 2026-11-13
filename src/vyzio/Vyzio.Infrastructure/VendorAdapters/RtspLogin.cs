@@ -8,13 +8,13 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Infrastructure.VendorAdapters;
 
-// Logs in to a camera's RTSP service with the RTSP account: DESCRIBE, then again with Basic or Digest when challenged (ADR-61).
+// Logs in to a camera's RTSP service with the RTSP account: DESCRIBE, then again with Basic or Digest when challenged (ADR-04).
 internal static partial class RtspLogin
 {
     public static async Task<ProtocolAnswer> CheckAsync(Camera camera, TimeProvider time, CancellationToken ct)
     {
         var port = camera.PortOf(SupportedProtocol.Rtsp);
-        // The login is asked on the recording stream's address, the one the camera status follows (ADR-65 f).
+        // The login is asked on the recording stream's address, the one the camera status follows (ADR-07).
         var path = camera.RecordStream is { Protocol: SupportedProtocol.Rtsp } recording ? recording.Path : null;
         var uri = new UriBuilder("rtsp", camera.Host, port) { Path = path?.TrimStart('/') ?? string.Empty }.Uri.ToString();
         var account = camera.CredentialsFor(SupportedProtocol.Rtsp);

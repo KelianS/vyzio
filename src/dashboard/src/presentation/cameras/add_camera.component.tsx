@@ -30,7 +30,7 @@ import { buildInitialAddCameraUido, type AddCameraUido } from './add_camera.uido
 const OTHER_BRAND_HELP =
   'Ouvrez l’application de la caméra et créez-y un compte pour Vyzio. Si elle propose la vidéo locale (RTSP), activez-la.'
 
-/** Adding a camera is one task, one page (ADR-40): find it, give its access, add it; its page sets the rest (ADR-68). */
+/** Adding a camera is one task, one page (CAM-39): find it, give its access, add it; its page sets the rest (ADR-04). */
 export function AddCameraView() {
   const { cameras: container } = useAppContainer()
   const { toast } = useToast()
@@ -346,7 +346,7 @@ const RANGE_SOURCE_LABELS: Record<DiscoveryRangeSource, string> = {
   [DiscoveryRangeSource.DashboardAddress]: 'autour de l’adresse utilisée pour ouvrir Vyzio',
 }
 
-/** What the search confirmation names: every range it will sweep, with where each comes from (ADR-71). */
+/** What the search confirmation names: every range it will sweep, with where each comes from (ADR-05). */
 function RangesToSweep({ rangesToSweep }: { rangesToSweep: AddCameraUido['rangesToSweep'] }) {
   if (rangesToSweep.loading)
     return <p className="text-sm text-muted-foreground">Lecture des adresses à parcourir…</p>

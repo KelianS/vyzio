@@ -4,7 +4,7 @@ using Vyzio.Core.Entities;
 
 namespace Vyzio.Infrastructure.CapabilityProviders;
 
-// Where a PTZ probe records whether the camera keeps presets of its own, which routes its positions (ADR-25, ADR-59).
+// Where a PTZ probe records whether the camera keeps presets of its own, which routes its positions (ADR-09).
 internal static class NativePresetsFlag
 {
     public static void Record(CameraCapabilityBinding binding, bool supported)
@@ -15,7 +15,7 @@ internal static class NativePresetsFlag
         }
         catch (JsonException)
         {
-            // An unreadable config holds nothing worth keeping; the probe writes a fresh one (ADR-25).
+            // An unreadable config holds nothing worth keeping; the probe writes a fresh one (ADR-09).
             binding.ConfigJson = BindingConfig.With(null, BindingConfig.SupportsNativePresets, supported);
         }
     }

@@ -9,7 +9,7 @@ namespace Vyzio.Application.Services;
 
 /// <summary>
 /// One retrieval loop per configured inbound channel, started and stopped with its configuration
-/// (ADR-52). Nothing here knows how a channel listens — only that it does.
+/// (ADR-14). Nothing here knows how a channel listens — only that it does.
 /// </summary>
 internal sealed class RemoteCommandListenerService(
     IChannelCommandReceiverCatalog receivers,

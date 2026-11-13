@@ -41,7 +41,8 @@
 ## Règles locales
 
 - **HIST-03** · l'utilisateur doit pouvoir consulter un historique filtre par camera, personne ou type d'evenement ;
-- **HIST-04** · les clips associes a un evenement doivent etre consultables quand ils existent.
+- **HIST-04** · les clips associes a un evenement doivent etre consultables quand ils existent ;
+- **HIST-17** · la video d'une detection dont la duree de conservation est echue ne s'affiche pas en panne : son lecteur dit qu'elle n'est plus conservee, en raison de la duree choisie (UC-HIST-02).
 
 ## Points ouverts
 

@@ -8,10 +8,10 @@ import type { CamerasContainer } from '../../infrastructure/providers/cameras.co
 import type { LiveViewAction } from './live_view.actions'
 import type { PtzDirection } from './live_view.uido'
 
-// Well within the few seconds after which the server stops a hold it no longer hears about (ADR-60).
+// Well within the few seconds after which the server stops a hold it no longer hears about (ADR-09).
 const HOLD_SIGNAL_MS = 1000
 const MOVE_SPEED = 50
-// A native preset move goes on after the camera acknowledges it: capture once a full move has had time to end (ADR-26).
+// A native preset move goes on after the camera acknowledges it: capture once a full move has had time to end (ADR-09).
 const CAPTURE_DELAY_MS = 6000
 
 export interface LiveViewPresenterContext {
@@ -62,7 +62,7 @@ export function buildLiveViewPresenter({ container, dispatch, toast }: LiveViewP
       })
   }
 
-  // Every press is one move, started at once so the camera opens its session while the finger is down (ADR-60).
+  // Every press is one move, started at once so the camera opens its session while the finger is down (ADR-09).
   function startHold(cameraId: string, direction: PtzDirection) {
     const current: Hold = { cameraId, signal: null }
     current.signal = setInterval(() => signal(current), HOLD_SIGNAL_MS)
@@ -73,7 +73,7 @@ export function buildLiveViewPresenter({ container, dispatch, toast }: LiveViewP
     })
   }
 
-  // The stop does not wait for the start: the server keeps the camera moving for its minimum time, then stops it (ADR-60).
+  // The stop does not wait for the start: the server keeps the camera moving for its minimum time, then stops it (ADR-09).
   function endHold() {
     const current = hold
     hold = null

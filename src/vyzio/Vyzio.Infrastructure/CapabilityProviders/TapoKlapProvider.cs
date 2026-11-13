@@ -8,7 +8,7 @@ using Vyzio.Core.Interfaces;
 namespace Vyzio.Infrastructure.CapabilityProviders;
 
 // Tapo KLAP local API — implements BOTH IPrivacyCapabilityProvider (set_lens_mask, proven in
-// production via TapoCameraAdapter) AND IPtzCapabilityProvider (motorMove, NEW — see ADR-22).
+// production via TapoCameraAdapter) AND IPtzCapabilityProvider (motorMove, NEW — see ADR-04).
 //
 // This is the concrete example that motivated the capability/protocol split: Tapo pan-tilt
 // cameras (C200, C210, C225...) support PTZ over the exact same KLAP transport already used
@@ -21,14 +21,14 @@ internal sealed class TapoKlapProvider(IHttpClientFactory httpClientFactory, Ptz
     SupportedProtocol IPrivacyCapabilityProvider.Protocol => SupportedProtocol.TapoKlap;
     SupportedProtocol IPtzCapabilityProvider.Protocol => SupportedProtocol.TapoKlap;
 
-    // Estimate, unmeasured on Tapo pan-tilt hardware like the move itself (ADR-60).
+    // Estimate, unmeasured on Tapo pan-tilt hardware like the move itself (ADR-09).
     public TimeSpan FullRange => TimeSpan.FromSeconds(15);
 
-    // No read of the lens cut is validated on hardware: the handshake is the protocol's, so the user confirms (ADR-66).
+    // No read of the lens cut is validated on hardware: the handshake is the protocol's, so the user confirms (ADR-04).
     Task<CapabilityProof> IPrivacyCapabilityProvider.ProveAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct)
         => Task.FromResult(CapabilityProof.Unprovable());
 
-    // No read of the motor is validated on hardware either (ADR-66).
+    // No read of the motor is validated on hardware either (ADR-04).
     Task<CapabilityProof> IPtzCapabilityProvider.ProveAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct)
         => Task.FromResult(CapabilityProof.Unprovable());
 
@@ -48,7 +48,7 @@ internal sealed class TapoKlapProvider(IHttpClientFactory httpClientFactory, Ptz
             active, camera.Host, active ? "off" : "on");
     }
 
-    // The KLAP handshake happens here, before the move, and its session carries every command of it (ADR-60).
+    // The KLAP handshake happens here, before the move, and its session carries every command of it (ADR-09).
     public async Task<IPtzMotion> OpenMotionAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
         => new Motion(this, runner, camera, await AuthenticatePtzAsync(camera, ct));
 
@@ -74,18 +74,18 @@ internal sealed class TapoKlapProvider(IHttpClientFactory httpClientFactory, Ptz
     public Task<(float Pan, float Tilt)?> GetPtzPositionAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
         => Task.FromResult<(float Pan, float Tilt)?>(null);
 
-    // No presets over KLAP; a Tapo reaches its saved positions over ONVIF instead (ADR-56, ADR-57).
+    // No presets over KLAP; a Tapo reaches its saved positions over ONVIF instead (ADR-04, ADR-10).
     public Task PtzGoToPresetAsync(Camera camera, CameraCapabilityBinding binding, int presetId, CancellationToken ct = default)
         => Task.CompletedTask;
 
     public Task PtzSavePresetAsync(Camera camera, CameraCapabilityBinding binding, int presetId, CancellationToken ct = default)
         => Task.CompletedTask;
 
-    // Its probe never puts the camera on the native tier: a call is a wiring mistake, never an empty list (ADR-69 g).
+    // Its probe never puts the camera on the native tier: a call is a wiring mistake, never an empty list (ADR-09).
     public Task<IReadOnlySet<int>> ReadPresetsAsync(Camera camera, CameraCapabilityBinding binding, CancellationToken ct = default)
         => throw new NotSupportedException($"{SupportedProtocol.TapoKlap} keeps no native presets to read.");
 
-    // The direction mapping comes from community KLAP documentation, unconfirmed on Tapo pan-tilt hardware: probe-gated, never seeded (ADR-22).
+    // The direction mapping comes from community KLAP documentation, unconfirmed on Tapo pan-tilt hardware: probe-gated, never seeded (ADR-04).
     internal static (int x, int y) DirectionToVelocity(PtzDirection direction, int speed)
     {
         var s = Math.Clamp(speed, 1, 100);
@@ -105,7 +105,7 @@ internal sealed class TapoKlapProvider(IHttpClientFactory httpClientFactory, Ptz
 #pragma warning restore format
     }
 
-    // The protocol level's login: the KLAP handshake with the protocol's account, nothing sent to the camera beyond it (ADR-61).
+    // The protocol level's login: the KLAP handshake with the protocol's account, nothing sent to the camera beyond it (ADR-04).
     public async Task<ProtocolAnswer> CheckLoginAsync(Camera camera, TimeProvider time, CancellationToken ct)
     {
         using var expiry = new CancellationTokenSource(TimeSpan.FromSeconds(5), time);
@@ -130,7 +130,7 @@ internal sealed class TapoKlapProvider(IHttpClientFactory httpClientFactory, Ptz
     {
         var http = httpClientFactory.CreateClient("tapo");
         var baseUrl = $"http://{camera.Host}:{camera.PortOf(SupportedProtocol.TapoKlap)}";
-        // KLAP may want the Tapo cloud account while RTSP and ONVIF take the local one (ADR-61).
+        // KLAP may want the Tapo cloud account while RTSP and ONVIF take the local one (ADR-04).
         var account = camera.CredentialsFor(SupportedProtocol.TapoKlap);
         var username = account.Username ?? "admin";
         var password = account.Password ?? string.Empty;
@@ -242,7 +242,7 @@ internal sealed class TapoKlapProvider(IHttpClientFactory httpClientFactory, Ptz
         return ([.. seqBytes, .. ciphertext, .. tag], seq);
     }
 
-    // Each command of a session takes the next sequence number, so a held session can carry many (ADR-60).
+    // Each command of a session takes the next sequence number, so a held session can carry many (ADR-09).
     private sealed class KlapSession(byte[] key, byte[] iv, string cookie)
     {
         private int _seq;

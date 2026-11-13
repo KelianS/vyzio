@@ -5,7 +5,7 @@ import { cn } from '../ui/utils'
 import { SettingControl } from './setting_control'
 import type { SettingDeclaration } from './setting_declaration'
 
-/** Fixed row anatomy (ADR-43): label · help · control · provenance · revert, control column shared app-wide. */
+/** Fixed row anatomy (ADR-15): label · help · control · provenance · revert, control column shared app-wide. */
 export function SettingRow({ setting }: { setting: SettingDeclaration }) {
   const { provenance } = setting
   const revertLabel = provenance && `${provenance.revertLabel} : ${provenance.fallbackLabel}`
@@ -31,7 +31,7 @@ export function SettingRow({ setting }: { setting: SettingDeclaration }) {
         )}
       </div>
 
-      {/* Repere de la colonne de controle : son alignement est verifie d'un ecran a l'autre (ADR-43). */}
+      {/* Repere de la colonne de controle : son alignement est verifie d'un ecran a l'autre (ADR-15). */}
       <div
         data-setting-control
         className="flex min-w-0 items-center gap-1.5 sm:justify-self-stretch"

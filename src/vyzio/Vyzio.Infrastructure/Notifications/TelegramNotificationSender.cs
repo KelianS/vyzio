@@ -14,7 +14,7 @@ public sealed class TelegramNotificationSender(HttpClient httpClient) : INotific
         new ChannelTransport(
             [new ChannelCredentialSpec(ChannelCredential.BotToken, Secret: true),
              new ChannelCredentialSpec(ChannelCredential.ChatId, Secret: false)]),
-        // Listening costs nothing more than sending here: the same bot token opens both directions (ADR-52).
+        // Listening costs nothing more than sending here: the same bot token opens both directions (ADR-14).
         new ChannelTransport([new ChannelCredentialSpec(ChannelCredential.BotToken, Secret: true)]));
 
     public async Task SendAsync(OutgoingNotification notification, ChannelCredentials credentials, CancellationToken ct = default)

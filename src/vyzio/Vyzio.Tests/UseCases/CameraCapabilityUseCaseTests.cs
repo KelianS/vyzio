@@ -265,7 +265,7 @@ public class ProbeCameraCapabilityUseCaseTests
         await _imageSettingsProvider.Received(1).ProveAsync(camera, binding, Arg.Any<CancellationToken>());
     }
 
-    // ADR-28 follow-up: OnvifImageSettingsProvider now lets CameraCommandException propagate instead
+    // ADR-04 follow-up: OnvifImageSettingsProvider now lets CameraCommandException propagate instead
     // of swallowing it — this locks in that the real reason ends up in LastError, not a generic message.
     [Fact]
     public async Task ExecuteAsync_ShouldSurfaceTheRealErrorMessage_WhenTheImageSettingsProofThrows()

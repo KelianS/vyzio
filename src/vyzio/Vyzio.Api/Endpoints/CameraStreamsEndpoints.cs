@@ -3,7 +3,7 @@ using Vyzio.Application.UseCases.Cameras;
 
 namespace Vyzio.Api.Endpoints;
 
-// The stream lines under a camera's stream binding (ADR-65); every change answers with the whole lineup.
+// The stream lines under a camera's stream binding (ADR-07); every change answers with the whole lineup.
 public static class CameraStreamsEndpoints
 {
     public static IEndpointRouteBuilder MapCameraStreams(this IEndpointRouteBuilder app)

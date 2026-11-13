@@ -4,7 +4,7 @@ using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Application.UseCases.Access;
 
-/// <summary>Tells a fresh install from a locked one — the first thing the interface asks (ADR-54).</summary>
+/// <summary>Tells a fresh install from a locked one — the first thing the interface asks (ADR-16).</summary>
 public sealed class GetAccessStateUseCase(IAccountRepository accounts)
 {
     public async Task<AccessStateDto> ExecuteAsync(CancellationToken ct = default)
@@ -20,7 +20,7 @@ public sealed class GetAccessStateUseCase(IAccountRepository accounts)
 
 /// <summary>
 /// Creates the owner and signs them in at once: the password is chosen at the very moment the product
-/// is installed, and asking for it again on the next screen would be ceremony (ADR-54).
+/// is installed, and asking for it again on the next screen would be ceremony (ADR-16).
 /// </summary>
 public sealed class CreateOwnerAccountUseCase(
     IAccountRepository accounts,
@@ -82,7 +82,7 @@ public sealed class SignOutUseCase(ISessionRepository sessions)
         => sessions.RevokeAsync(SessionTokens.Fingerprint(token), DateTimeOffset.UtcNow, ct);
 }
 
-/// <summary>The gesture for a lost phone: every device of the account stops opening at once (ADR-54).</summary>
+/// <summary>The gesture for a lost phone: every device of the account stops opening at once (ADR-16).</summary>
 public sealed class SignOutEverywhereUseCase(ISessionRepository sessions)
 {
     public Task<int> ExecuteAsync(string accountId, CancellationToken ct = default)
@@ -116,7 +116,7 @@ public sealed class AuthenticateSessionUseCase(
 
 /// <summary>
 /// Changing a known password, from the interface. Every device leaves with the old one — otherwise the
-/// gesture takes the access back from nobody — and the caller gets a fresh session on the spot (ADR-54).
+/// gesture takes the access back from nobody — and the caller gets a fresh session on the spot (ADR-16).
 /// </summary>
 public sealed class ChangePasswordUseCase(
     IAccountRepository accounts,
@@ -151,7 +151,7 @@ public sealed class ChangePasswordUseCase(
 /// <summary>
 /// The only way back in after a forgotten password, and it runs on the host machine. It removes the
 /// password instead of setting one: the new one is chosen on the screen that already knows the rules,
-/// and never typed into a shell where it would outlive the command (ADR-54).
+/// and never typed into a shell where it would outlive the command (ADR-16).
 /// </summary>
 public sealed class ResetOwnerPasswordUseCase(IAccountRepository accounts, ISessionRepository sessions)
 {

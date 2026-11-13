@@ -47,7 +47,8 @@
 ## Règles locales
 
 - **UI-22** · l'accueil doit rendre visible l'etat global du systeme et les notifications recentes ;
-- **UI-23** · tant qu'aucune camera n'est ajoutee, l'accueil, ouvert apres la creation du mot de passe (UC-ACCESS-01), annonce la mise en service en trois etapes, ajouter une camera, choisir ce qui merite une notification, recevoir les notifications, et mene directement a l'ajout d'une camera et au reglage des notifications ; aucune etape ne demande de fichier a ecrire.
+- **UI-23** · tant qu'aucune camera n'est ajoutee, l'accueil, ouvert apres la creation du mot de passe (UC-ACCESS-01), annonce la mise en service en trois etapes, ajouter une camera, choisir ce qui merite une notification, recevoir les notifications, et mene directement a l'ajout d'une camera et au reglage des notifications ; aucune etape ne demande de fichier a ecrire ;
+- **UI-27** · l'accueil montre, a titre informatif, le materiel sur lequel tourne la detection (accelerateur dedie, carte graphique ou processeur) et la frequence d'analyse retenue, sans nommer le composant technique ; ce n'est pas un etat a traiter, rien n'y est a toucher.
 
 ## Points ouverts
 

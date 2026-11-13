@@ -18,14 +18,14 @@ internal enum OnvifService
     Imaging,
 }
 
-// A service the device did not announce is addressed at DeviceServiceUrl: single-endpoint firmwares (ADR-56).
+// A service the device did not announce is addressed at DeviceServiceUrl: single-endpoint firmwares (ADR-04).
 internal sealed record OnvifEndpoint(Uri DeviceServiceUrl, IReadOnlyDictionary<OnvifService, Uri> ServiceUrls)
 {
     public Uri UrlFor(OnvifService service)
         => ServiceUrls.GetValueOrDefault(service, DeviceServiceUrl);
 }
 
-// Asks the camera where it serves ONVIF instead of assuming it (ADR-56).
+// Asks the camera where it serves ONVIF instead of assuming it (ADR-04).
 internal sealed class OnvifEndpointResolver(
     IHttpClientFactory httpClientFactory,
     TimeProvider time,
@@ -85,7 +85,7 @@ internal sealed class OnvifEndpointResolver(
             if (announced is not null) _cache[camera.Id] = endpoint;
             _failedAt.TryRemove(camera.Id, out _);
 
-            // Written on the entity; the use case owning the transaction saves it (ADR-56).
+            // Written on the entity; the use case owning the transaction saves it (ADR-04).
             camera.SetProtocolEndpoint(SupportedProtocol.Onvif, deviceUrl.ToString());
             logger.LogInformation("ONVIF resolved for {Host}: {Url} ({Count} service address(es) announced).",
                 camera.Host, deviceUrl, services.Count);
@@ -106,7 +106,7 @@ internal sealed class OnvifEndpointResolver(
 
     private async Task<Uri?> FindDeviceServiceAsync(Camera camera, CancellationToken ct)
     {
-        // Taken as-is: only a real resolution writes it, and a stale one surfaces as a failed call (ADR-56).
+        // Taken as-is: only a real resolution writes it, and a stale one surfaces as a failed call (ADR-04).
         if (camera.GetProtocolEndpoint(SupportedProtocol.Onvif) is { } persisted
             && Uri.TryCreate(persisted, UriKind.Absolute, out var persistedUrl))
         {
@@ -128,7 +128,7 @@ internal sealed class OnvifEndpointResolver(
         return null;
     }
 
-    // A port set on the ONVIF row narrows the search to it; otherwise every port ONVIF is known on (ADR-61).
+    // A port set on the ONVIF row narrows the search to it; otherwise every port ONVIF is known on (ADR-04).
     private static IReadOnlyList<int> OnvifPortsOf(Camera camera)
         => camera.Protocol(SupportedProtocol.Onvif)?.Port is { } port ? [port] : DiscoveryPortCatalog.OnvifPorts;
 

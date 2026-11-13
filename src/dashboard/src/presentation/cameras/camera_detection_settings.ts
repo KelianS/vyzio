@@ -12,7 +12,7 @@ export type DetectionUpdate = Omit<
   'continuousDaysOverride' | 'motionDaysOverride' | 'eventClipDaysOverride'
 >
 
-/** "Auto" is a value of the same setting, not a side switch (ADR-35): auto-tune and a pinned level are exclusive answers to one question. */
+/** "Auto" is a value of the same setting, not a side switch (ADR-08): auto-tune and a pinned level are exclusive answers to one question. */
 const AUTO = 'auto'
 
 const SENSITIVITY_OPTIONS: SettingOption<MotionSensitivity | typeof AUTO>[] = [
@@ -22,7 +22,7 @@ const SENSITIVITY_OPTIONS: SettingOption<MotionSensitivity | typeof AUTO>[] = [
   { value: 'low', label: 'Réduite' },
 ]
 
-// Two sentences (ADR-53): the detail of the levels is already said by the label and the consequence.
+// Two sentences (ADR-17): the detail of the levels is already said by the label and the consequence.
 const SENSITIVITY_HELP =
   'Automatique : Vyzio ajuste le niveau tout seul selon l’agitation réelle de la caméra, et c’est le cas courant. Un niveau choisi s’applique aussitôt et cesse tout ajustement sur cette caméra.'
 

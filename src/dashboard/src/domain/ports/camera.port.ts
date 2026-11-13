@@ -29,7 +29,7 @@ export interface DiscoveryRequest {
 export interface CameraRepository {
   getAll(): Promise<Camera[]>
   discover(input?: DiscoveryRequest): Promise<DiscoveredCamera[]>
-  /** The ranges a search would sweep, computed without probing anything (ADR-71). */
+  /** The ranges a search would sweep, computed without probing anything (ADR-05). */
   getDiscoveryRanges(): Promise<DiscoveryRange[]>
   getVendorAssistance(input: VendorAssistanceRequest): Promise<VendorAssistance | null>
   create(input: NewCameraInput): Promise<Camera>
@@ -53,9 +53,9 @@ export interface CameraRepository {
   ptzSaveCurrentAsPreset(cameraId: string, presetId: number): Promise<void>
   ptzCalibrate(cameraId: string): Promise<void>
   capturePtzPresetThumbnail(cameraId: string, presetId: number): Promise<void>
-  // Capability bindings (ADR-22)
+  // Capability bindings (ADR-04)
   getCapabilities(cameraId: string): Promise<CameraCapabilityBinding[]>
-  /** streamPath: the first stream's path over RTSP, when the camera lists no stream (ADR-65 e). */
+  /** streamPath: the first stream's path over RTSP, when the camera lists no stream (ADR-07). */
   configureCapability(
     cameraId: string,
     capability: Capability,
@@ -63,7 +63,7 @@ export interface CameraRepository {
     streamPath: string | null,
   ): Promise<CameraCapabilityBinding>
   probeCapability(cameraId: string, capability: Capability): Promise<CameraCapabilityBinding>
-  /** A real use of a capability to confirm, started by the user; records nothing (ADR-66). */
+  /** A real use of a capability to confirm, started by the user; records nothing (ADR-04). */
   tryCapability(cameraId: string, capability: Capability): Promise<void>
   /** The user's answer after a try: whether the camera did what was asked. */
   confirmCapability(
@@ -74,7 +74,7 @@ export interface CameraRepository {
   removeCapability(cameraId: string, capability: Capability): Promise<void>
   setPtzPanInverted(cameraId: string, inverted: boolean): Promise<CameraCapabilityBinding>
   detectCapabilities(cameraId: string): Promise<void>
-  // Protocols (ADR-61): how each one is reached, and whether it answers.
+  // Protocols (ADR-04): how each one is reached, and whether it answers.
   getProtocols(cameraId: string): Promise<CameraProtocol[]>
   updateProtocol(
     cameraId: string,
@@ -85,7 +85,7 @@ export interface CameraRepository {
   searchProtocols(cameraId: string): Promise<CameraProtocol[]>
   addProtocol(cameraId: string, addition: CameraProtocolAddition): Promise<CameraProtocol>
   removeProtocol(cameraId: string, protocol: SupportedProtocol): Promise<void>
-  // Image settings (ADR-27) — read/written live on the camera, nothing persisted by Vyzio.
+  // Image settings (ADR-11) — read/written live on the camera, nothing persisted by Vyzio.
   getImageSettings(cameraId: string): Promise<CameraImageSettings>
   setImageSettings(cameraId: string, settings: CameraImageSettings): Promise<CameraImageSettings>
 }

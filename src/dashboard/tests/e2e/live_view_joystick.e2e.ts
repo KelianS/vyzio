@@ -11,7 +11,7 @@ async function openTheLiveView(page: Page) {
   return state
 }
 
-// Every press is one move, started on the press, signalled while held and stopped on release (ADR-60).
+// Every press is one move, started on the press, signalled while held and stopped on release (ADR-09).
 test.describe('Live view joystick', () => {
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })

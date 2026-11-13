@@ -9,7 +9,7 @@ import { useAppContainer } from '../../infrastructure/providers/app_container.co
 import { buildRestartSurveillancePresenter } from './restart_surveillance.presenter'
 import { useRestartState } from './use_restart_state'
 
-// Shown only when something is actually waiting, so its absence is a positive statement (ADR-44).
+// Shown only when something is actually waiting, so its absence is a positive statement (ADR-15).
 export function RestartSurveillanceTrigger() {
   const { cameras: camerasContainer, hub: hubContainer } = useAppContainer()
   const presenter = usePresenter(buildRestartSurveillancePresenter, {

@@ -1,7 +1,7 @@
 import type { StateCreator } from 'zustand'
 
 export interface NavigationGuardSlice {
-  // The open page has edits worth confirming before leaving (ADR-41).
+  // The open page has edits worth confirming before leaving (ADR-15).
   unsavedChanges: boolean
   setUnsavedChanges: (unsaved: boolean) => void
 }

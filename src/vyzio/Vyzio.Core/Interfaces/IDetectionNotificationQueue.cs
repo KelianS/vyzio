@@ -3,7 +3,7 @@ using Vyzio.Core.Entities;
 namespace Vyzio.Core.Interfaces;
 
 /// <summary>
-/// Hands a finished detection over to the notification path without waiting for it (ADR-49).
+/// Hands a finished detection over to the notification path without waiting for it (ADR-12).
 /// </summary>
 public interface IDetectionNotificationQueue
 {

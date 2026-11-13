@@ -1,6 +1,6 @@
 namespace Vyzio.Core.Entities;
 
-// Where a protocol stands after its check: reach, then login with the protocol's account (ADR-61).
+// Where a protocol stands after its check: reach, then login with the protocol's account (ADR-04).
 public enum ProtocolStatus
 {
     // Reached, and the account was accepted (or none was asked for).

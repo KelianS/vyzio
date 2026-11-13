@@ -8,7 +8,7 @@ namespace Vyzio.Infrastructure.Notifications;
 
 /// <summary>
 /// The Discord bot, listening side. Commands are published as application commands, so the user picks
-/// them from Discord's own autocompletion and Vyzio never has to watch the room (ADR-52).
+/// them from Discord's own autocompletion and Vyzio never has to watch the room (ADR-14).
 /// </summary>
 public sealed class DiscordCommandReceiver : IChannelCommandReceiver
 {

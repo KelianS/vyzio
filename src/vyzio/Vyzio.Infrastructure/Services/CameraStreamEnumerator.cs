@@ -6,7 +6,7 @@ using Vyzio.Infrastructure.VendorAdapters;
 
 namespace Vyzio.Infrastructure.Services;
 
-// Asks a camera what it actually serves (ADR-38), over whichever protocol can answer. Never throws:
+// Asks a camera what it actually serves (ADR-07), over whichever protocol can answer. Never throws:
 // every failure path returns an empty list, which callers read as "keep the stream we already have".
 internal sealed class CameraStreamEnumerator(
     OnvifClient onvifClient,
@@ -70,7 +70,7 @@ internal sealed class CameraStreamEnumerator(
     // DVRIP reports its encoder setup as MainFormat/ExtraFormat. ExtraFormat.VideoEnable is what
     // proves the sub-stream exists and is active — the sub is never offered on convention alone.
     // Resolutions are deliberately dropped: the camera reports nominal labels ("3M", "D1") that do
-    // not match the real pixel dimensions, and a wrong size would reintroduce upscaling (ADR-38).
+    // not match the real pixel dimensions, and a wrong size would reintroduce upscaling (ADR-07).
     private async Task<IReadOnlyList<EnumeratedScene>> EnumerateOverDvripAsync(Camera camera, CancellationToken ct)
     {
         JsonNode? encode;

@@ -5,7 +5,7 @@ namespace Vyzio.Core.Entities;
 
 /// <summary>
 /// One open access from one device, referenced by an opaque cookie. It lives on the server so it can
-/// be revoked: a lost phone must stop opening, which no self-contained token allows (ADR-54).
+/// be revoked: a lost phone must stop opening, which no self-contained token allows (ADR-16).
 /// </summary>
 [Table("sessions")]
 public class Session

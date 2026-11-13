@@ -6,7 +6,7 @@ namespace Vyzio.Application.Services;
 
 /// <summary>
 /// In memory, and deliberately: this state dies with the process, exactly like the loops it describes.
-/// Persisting it would let Vyzio claim after a restart that it is listening when nothing is (ADR-52).
+/// Persisting it would let Vyzio claim after a restart that it is listening when nothing is (ADR-14).
 /// </summary>
 internal sealed class ChannelListenerHealth(TimeProvider time) : IChannelListenerHealth
 {

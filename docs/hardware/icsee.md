@@ -5,6 +5,7 @@ architecture.
 
 | Recorded | Measurement |
 |---|---|
+| 2026-11-12 | Over DVRIP, `VideoEnable` set to false is refused with `Ret` 606 and `OPSleep` is answered `Ret` 103 (not implemented); `PrivacyMask` has no effect on the vendor's cloud P2P stream; PTZ over `OPPTZControl` works (measured before 2026-06-30) |
 | 2026-10-05 | Through go2rtc 1.9.10 over DVRIP, the main stream is H.265 Main 2304 x 1296 (level 5.1) and the sub-stream H.265 Main 640 x 360 (level 2.1), both with G.711 A-law audio at 8 kHz; go2rtc's MSE names either H.265 stream `hvc1.1.6.L153.B0` whatever its level |
 | 2026-10-04 | A DVRIP login with no valid account is answered (message 1001) `{"Name": "", "Ret": 205, "SessionID": "0x00000000"}`: nothing in it names the vendor or the model |
 | 2026-10-04 | A battery unit (firmware `V5.04.C02.000959TC.10000.140835.0000000`), woken through the vendor app, answers on DVRIP only: the ONVIF and RTSP ports stay closed while it is awake |
@@ -14,3 +15,7 @@ architecture.
 | 2026-09-27 | `Ability.PTZ` and `SystemFunction` answer `Ret` 607 (not supported) |
 | 2026-09-27 | The vendor app offers no preset feature |
 | 2026-09-27 | Some units serve media profiles over ONVIF with no PTZ configuration on them, while their head turns over DVRIP |
+| 2026-08-02 | Over DVRIP, the encoder configuration names the sub-stream by a nominal resolution label that does not match its real size: announced D1, served 640 x 360 |
+| 2026-07-15 | Over DVRIP, brightness, contrast and saturation are read and written in the video colour configuration; sharpness and day and night mode are not in it |
+| 2026-07-15 | Over DVRIP, the tested unit turns left on the command named right and right on the one named left; up and down match their names |
+| 2026-07-14 | The unit tested for image settings refuses connections on the ONVIF port |

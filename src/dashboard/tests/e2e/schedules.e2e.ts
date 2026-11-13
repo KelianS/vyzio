@@ -9,7 +9,7 @@ import {
 const salon = makeFakeCamera({ id: 'camera-1', slug: 'salon', displayName: 'Salon' })
 const cuisine = makeFakeCamera({ id: 'camera-2', slug: 'cuisine', displayName: 'Cuisine' })
 
-// One calendar for every scheduled rule of the house (SCHED-01, ADR-63).
+// One calendar for every scheduled rule of the house (SCHED-01, ADR-15).
 test.describe('House calendar', () => {
   test('ScheduleWeekView_ShouldShowTheNightForBothCameras_WhenOnePrivacyRangeTargetsThem', async ({
     page,

@@ -25,7 +25,7 @@ public class VyzioRuntimeSettings
         public string DatabasePath { get; init; } = "/media/frigate/frigate.db";
         public MqttSettings Mqtt { get; init; } = new();
 
-        // Hard bounds for the CPU-only detector's FPS auto-adjustment (ADR-34) — enforced via
+        // Hard bounds for the CPU-only detector's FPS auto-adjustment (ADR-08) — enforced via
         // Math.Clamp regardless of configured values, so no configuration can push FPS out of range.
         public int CpuDetectFpsMin { get; init; } = 1;
         public int CpuDetectFpsMax { get; init; } = 5;
@@ -34,7 +34,7 @@ public class VyzioRuntimeSettings
         // (CpuCoreCount * CpuDetectFpsPerCore) is split across active cameras, then clamped.
         public double CpuDetectFpsPerCore { get; init; } = 1.0;
 
-        // Motion sensitivity auto-tuning loop (ADR-35) — defined in Core so the Application layer,
+        // Motion sensitivity auto-tuning loop (ADR-08) — defined in Core so the Application layer,
         // which runs the loop and never references Infrastructure, can consume it directly.
         public MotionTuningOptions MotionTuning { get; init; } = new();
     }
@@ -48,7 +48,7 @@ public class VyzioRuntimeSettings
     }
 
     // Discovery is configured by network scope only — which subnets/hosts to scan and how hard.
-    // The ports to probe and their protocols are internal constants (DiscoveryPortCatalog, ADR-32),
+    // The ports to probe and their protocols are internal constants (DiscoveryPortCatalog, ADR-05),
     // not user configuration: the user shouldn't have to know a camera speaks V380 on 8800.
     public sealed class DiscoverySettings
     {

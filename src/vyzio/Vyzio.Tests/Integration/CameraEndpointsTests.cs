@@ -500,7 +500,7 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
         return (await response.Content.ReadFromJsonAsync<CameraResponse>())!;
     }
 
-    // The user's choice on the stream card, the other way a stream gets bound besides detection (ADR-68 b).
+    // The user's choice on the stream card, the other way a stream gets bound besides detection (ADR-04).
     private static async Task<CameraStatusResponse> BindStreamOverDvripAsync(HttpClient client, string cameraId)
     {
         (await client.PostAsJsonAsync($"/api/cameras/{cameraId}/protocols", new { protocol = "dvrip", port = (int?)null, username = (string?)null, password = (string?)null })).EnsureSuccessStatusCode();
@@ -541,7 +541,7 @@ public class CameraEndpointsTests : IClassFixture<CamerasApiFactory>
 
     public sealed record RetentionResponse(RetentionWindowResponse EventClip);
 
-    // The live socket (ADR-72 b): refused with a close code, relayed otherwise.
+    // The live socket (ADR-07): refused with a close code, relayed otherwise.
 
     private async Task<WebSocket> OpenLiveAsync(string path)
     {

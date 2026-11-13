@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fixtures/fake_backend'
 
-// A capability no read can prove is never assumed: the user tries it once and answers (ADR-66).
+// A capability no read can prove is never assumed: the user tries it once and answers (ADR-04).
 test.describe('Capability to confirm', () => {
   test('CameraConnectionView_ShouldMakeOrientationWork_WhenTheUserTriesItAndAnswersYes', async ({
     page,

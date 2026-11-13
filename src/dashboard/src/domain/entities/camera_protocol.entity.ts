@@ -1,6 +1,6 @@
 import type { SupportedProtocol } from './camera_capability_binding.entity'
 
-/** Where a protocol stands after its check: reached, then logged in with its account (ADR-61). */
+/** Where a protocol stands after its check: reached, then logged in with its account (ADR-04). */
 export const ProtocolStatus = {
   Answers: 'answers',
   /** Reached, but the account or the device number was turned down. */
@@ -10,7 +10,7 @@ export const ProtocolStatus = {
 
 export type ProtocolStatus = (typeof ProtocolStatus)[keyof typeof ProtocolStatus]
 
-/** A protocol the camera speaks: how it is reached, and whether it answers with its account (ADR-61). */
+/** A protocol the camera speaks: how it is reached, and whether it answers with its account (ADR-04). */
 export interface CameraProtocol {
   protocol: SupportedProtocol
   /** The port set by hand; null means the protocol's usual one. */

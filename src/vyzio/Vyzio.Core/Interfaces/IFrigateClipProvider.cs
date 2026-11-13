@@ -7,7 +7,7 @@ public interface IFrigateClipProvider
     /// Returns null when the clip is not available or the request fails.
     /// </summary>
     /// <param name="finalizationWindow">
-    /// How long the read keeps retrying while Frigate has not written the file yet (ADR-49).
+    /// How long the read keeps retrying while Frigate has not written the file yet (ADR-12).
     /// Zero — the default — reads once, which is what a screen asking for an old event wants.
     /// </param>
     Task<Stream?> TryGetClipAsync(

@@ -3,7 +3,7 @@ namespace Vyzio.Core.Entities;
 /// <summary>
 /// Whether a channel is still listening for commands, and since when. No persisted value can say it:
 /// the retrieval loop lives in memory, and losing the network leaves the saved configuration intact
-/// (ADR-52).
+/// (ADR-14).
 /// </summary>
 /// <param name="Reason">What broke the loop, in the words of whoever broke it — kept even once it is
 /// listening again, because that is the only trace of a channel that comes and goes.</param>

@@ -2,7 +2,7 @@ using Vyzio.Core.Entities;
 
 namespace Vyzio.Application.Services;
 
-// Decision half of the motion sensitivity loop (ADR-35), kept free of I/O so the rules are testable
+// Decision half of the motion sensitivity loop (ADR-08), kept free of I/O so the rules are testable
 // without a Frigate, a broker or a clock.
 //
 // Decisions are taken on an aggregate over a long window, never on a single reading: the
@@ -73,7 +73,7 @@ public sealed class MotionSensitivityTuner(MotionTuningOptions options)
     }
 
     // One level at a time, never past the bounds. Low is a hard floor: the loop chases load, never
-    // detection quality, so it must not be able to blind a camera (ADR-35).
+    // detection quality, so it must not be able to blind a camera (ADR-08).
     private static MotionSensitivity? Step(MotionSensitivity current, StepDirection direction) =>
         (current, direction) switch
         {

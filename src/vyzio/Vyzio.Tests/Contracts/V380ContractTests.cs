@@ -47,7 +47,7 @@ public sealed class V380ContractTests
         Assert.Equal(camera.Port, port.Port);
     }
 
-    // The V380 answer is the one signal strong enough to name the vendor (ADR-71).
+    // The V380 answer is the one signal strong enough to name the vendor (ADR-04).
     [Theory]
     [MemberData(nameof(Variants))]
     public async Task DiscoverAsync_ShouldNameTheV380Vendor_WhenTheSweptPortAnswersTheCapturedFingerprint(string variant)
@@ -96,7 +96,7 @@ public sealed class V380ContractTests
     private static CapturedTcpCamera Replay(string variant, params string[] scenarios)
         => CapturedTcpCamera.Replaying(FixtureProtocol.V380, variant, scenarios);
 
-    // The device number the capture addressed, typed on the protocol line as the user would (ADR-61).
+    // The device number the capture addressed, typed on the protocol line as the user would (ADR-04).
     private static (V380Client Client, Camera Camera) ClientFor(Camera camera)
     {
         camera.Protocol(SupportedProtocol.V380)!.DeviceId = FixtureLoader.Neutral.V380DeviceId;
