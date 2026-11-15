@@ -26,6 +26,7 @@ import { formatVendorFamily, helpVendorOptions, NO_HELP_VENDOR } from './vendor_
 import { buildAddCameraPresenter } from './add_camera.presenter'
 import { addCameraReducer } from './add_camera.reducer'
 import { buildInitialAddCameraUido, type AddCameraUido } from './add_camera.uido'
+import { Loading } from '../../common/components/loading'
 
 /** What to prepare in a camera app whatever its brand: the help when no vendor sheet is chosen. */
 const OTHER_BRAND_HELP =
@@ -274,7 +275,7 @@ export function AddCameraView() {
               {vendorFamily === null ? (
                 <p className="text-sm">{OTHER_BRAND_HELP}</p>
               ) : vendorAssistance.loading ? (
-                <p className="text-muted-foreground">Chargement…</p>
+                <Loading />
               ) : vendorAssistance.error ? (
                 <ErrorMessage error={vendorAssistance.error} className="text-base" />
               ) : vendorAssistance.markdown ? (

@@ -7,6 +7,8 @@ import { AdvancedFold } from '../../common/settings/advanced_fold'
 import { useToast } from '../../common/components/toast'
 import { ConfirmModal } from '../../common/components/confirm_modal'
 import { ReadFailure } from '../../common/components/error_message'
+import { EmptyState } from '../../common/components/empty_state'
+import { Loading } from '../../common/components/loading'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import { usePerson } from './person_context'
@@ -27,6 +29,8 @@ export function PersonPhotosView() {
 
   const personId = person.id
   const count = uido.photos.length
+  // A reread under photos already shown keeps them: only a first read has nothing to show yet.
+  const reading = uido.loading && count === 0
 
   useEffect(() => {
     presenter.onLoad(personId)
@@ -46,7 +50,16 @@ export function PersonPhotosView() {
 
   return (
     <>
-      <SettingsPage lede={describeCoverage(count, uido.loading)}>
+      <SettingsPage lede={reading ? undefined : describeCoverage(count)}>
+        {reading && <Loading lines={2} className="mb-3" />}
+        {/* Under the state it explains, never above it in size (DESIGN SYSTEM § Typography). */}
+        {count === 0 && !reading && (
+          <EmptyState className="-mt-4 mb-3">
+            Des photos nettes, de face, sous plusieurs angles : c’est ce qui permet de la
+            reconnaître.
+          </EmptyState>
+        )}
+
         <div className="flex flex-wrap gap-2">
           <Button
             type="button"
@@ -98,13 +111,6 @@ export function PersonPhotosView() {
           </ul>
         )}
 
-        {count === 0 && !uido.loading && (
-          <p className="mt-5 text-muted-foreground">
-            Des photos nettes, de face, sous plusieurs angles : c’est ce qui permet de la
-            reconnaître.
-          </p>
-        )}
-
         <AdvancedFold lede="Si une photo reste « en attente », renvoyez toute la bibliothèque au moteur de reconnaissance.">
           <Button
             type="button"
@@ -149,8 +155,7 @@ export function PersonPhotosView() {
 }
 
 /** States where the count stands relative to the threshold, instead of a bare number. */
-function describeCoverage(count: number, loading: boolean): string {
-  if (loading) return 'Chargement…'
+function describeCoverage(count: number): string {
   if (count === 0) return 'Aucune photo : la reconnaissance est inactive pour cette personne.'
   if (count < ADVISED_PHOTOS) {
     return `${count} photo${count > 1 ? 's' : ''} : au moins ${ADVISED_PHOTOS} pour une reconnaissance fiable.`

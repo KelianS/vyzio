@@ -1267,8 +1267,8 @@ export async function installFakeBackend(
     // --- Detection labels ---
     if (path === '/api/detection-labels/camera' || path === '/api/detection-labels/notifications') {
       return json(route, [
-        { value: 'person', displayName: 'Personne', emoji: '🧑' },
-        { value: 'car', displayName: 'Voiture', emoji: '🚗' },
+        { value: 'person', displayName: 'Personne' },
+        { value: 'car', displayName: 'Voiture' },
       ])
     }
 

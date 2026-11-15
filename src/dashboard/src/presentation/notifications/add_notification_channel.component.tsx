@@ -11,6 +11,8 @@ import { buildAddNotificationChannelPresenter } from './add_notification_channel
 import { addNotificationChannelReducer } from './add_notification_channel.reducer'
 import { buildInitialAddNotificationChannelUido } from './add_notification_channel.uido'
 import { ListRow } from '../../common/components/list_row'
+import { Loading } from '../../common/components/loading'
+import { EmptyState } from '../../common/components/empty_state'
 
 /** Adding a channel is one task, one page: the list of what Vyzio can talk through. */
 export function AddNotificationChannelView() {
@@ -70,10 +72,10 @@ export function AddNotificationChannelView() {
               </li>
             ))}
           </ul>
+        ) : uido.loading ? (
+          <Loading />
         ) : (
-          <p className="py-3 text-muted-foreground">
-            {uido.loading ? 'Chargement…' : 'Tous les canaux disponibles sont déjà en place.'}
-          </p>
+          <EmptyState>Tous les canaux disponibles sont déjà en place.</EmptyState>
         )}
       </SettingsPage>
     </div>

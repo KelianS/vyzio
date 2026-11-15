@@ -12,6 +12,8 @@ import { buildNotificationChannelListPresenter } from './notification_channel_li
 import { notificationChannelListReducer } from './notification_channel_list.reducer'
 import { buildInitialNotificationChannelListUido } from './notification_channel_list.uido'
 import { ListRow } from '../../common/components/list_row'
+import { Loading } from '../../common/components/loading'
+import { EmptyState } from '../../common/components/empty_state'
 
 /** First level of the Notifications rubric: the channels in place. Adding one is its own task/page. */
 export function NotificationChannelListView() {
@@ -63,12 +65,13 @@ export function NotificationChannelListView() {
             )
           })}
         </ul>
+      ) : uido.loading ? (
+        <Loading />
       ) : (
-        <p className="py-3 text-muted-foreground">
-          {uido.loading
-            ? 'Chargement…'
-            : 'Aucun canal pour l’instant : aucune notification n’est envoyée, les détections restent dans l’historique.'}
-        </p>
+        <EmptyState>
+          Aucun canal pour l’instant : aucune notification n’est envoyée, les détections restent
+          dans l’historique.
+        </EmptyState>
       )}
 
       {remaining > 0 && (

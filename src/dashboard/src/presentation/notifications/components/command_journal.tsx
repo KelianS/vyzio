@@ -5,6 +5,8 @@ import type {
   CommandJournalEntry,
   CommandOutcome,
 } from '../../../domain/entities/notification_channel_config.entity'
+import { Loading } from '../../../common/components/loading'
+import { EmptyState } from '../../../common/components/empty_state'
 
 const formatReceivedAt = new Intl.DateTimeFormat('fr-FR', {
   dateStyle: 'short',
@@ -59,10 +61,10 @@ export function CommandJournal({
             )
           })}
         </ul>
+      ) : loading ? (
+        <Loading />
       ) : (
-        <p className="text-sm text-muted-foreground">
-          {loading ? 'Chargement…' : 'Aucune commande reçue pour l’instant.'}
-        </p>
+        <EmptyState>Aucune commande reçue pour l’instant.</EmptyState>
       )}
     </div>
   )

@@ -29,6 +29,7 @@ import { CameraNotFound } from './components/camera_not_found'
 import { buildCameraImagePresenter } from './camera_image.presenter'
 import { cameraImageReducer } from './camera_image.reducer'
 import { buildInitialCameraImageUido } from './camera_image.uido'
+import { Loading } from '../../common/components/loading'
 
 // Beyond the basics: offered only where writing it is confirmed (ADR-11).
 const ADJUSTMENTS = [
@@ -126,7 +127,13 @@ export function CameraImageView() {
       </SettingsPage>
     )
   // Control does not depend on these settings: it stays on screen while they load, failure included.
-  if (uido.settingsLoading) return <SettingsPage>Chargement…{pilotage}</SettingsPage>
+  if (uido.settingsLoading)
+    return (
+      <SettingsPage>
+        <Loading />
+        {pilotage}
+      </SettingsPage>
+    )
   if (uido.settingsError)
     return (
       <SettingsPage>

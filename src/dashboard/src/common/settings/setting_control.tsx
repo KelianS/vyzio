@@ -14,6 +14,7 @@ import {
   type SettingNature,
 } from './setting_declaration'
 import { SECRET_KEYBOARD, TEXT_KEYBOARD } from './text_keyboard'
+import { EmptyState } from '../components/empty_state'
 
 /** Nature -> control (ADR-15): the only place this choice is made. */
 export function SettingControl({ setting }: { setting: SettingDeclaration }) {
@@ -175,7 +176,7 @@ function MultiChoiceControl({
               {option.label}
             </label>
           ))}
-          {visible.length === 0 && <p className="text-sm text-muted-foreground">Aucun résultat.</p>}
+          {visible.length === 0 && <EmptyState>Aucun résultat.</EmptyState>}
         </div>
       </PopoverContent>
     </Popover>

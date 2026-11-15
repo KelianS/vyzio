@@ -21,6 +21,7 @@ import {
 import { buildCameraDetectionPresenter } from './camera_detection.presenter'
 import { cameraDetectionReducer } from './camera_detection.reducer'
 import { buildInitialCameraDetectionUido } from './camera_detection.uido'
+import { Loading } from '../../common/components/loading'
 
 export function CameraDetectionView() {
   const { cameraId } = useParams()
@@ -42,7 +43,12 @@ export function CameraDetectionView() {
     presenter.onLoad(cameraId!)
   }, [presenter, cameraId])
 
-  if (uido.loading) return <SettingsPage>Chargement…</SettingsPage>
+  if (uido.loading)
+    return (
+      <SettingsPage>
+        <Loading />
+      </SettingsPage>
+    )
   if (uido.error)
     return (
       <SettingsPage>

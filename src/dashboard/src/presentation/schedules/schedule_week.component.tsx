@@ -34,6 +34,7 @@ import {
   type BarBlock,
   type WeekDay,
 } from './schedule_week.formatters'
+import { Loading } from '../../common/components/loading'
 
 const NO_TARGET: Record<ScheduleTargetKind, string> = {
   [ScheduleTargetKind.Camera]: 'Plus aucune caméra visée',
@@ -89,7 +90,11 @@ export function ScheduleWeekView() {
       </SettingsPage>
     )
   if (uido.loading || (camerasLoading && cameras.length === 0))
-    return <SettingsPage>Chargement…</SettingsPage>
+    return (
+      <SettingsPage>
+        <Loading />
+      </SettingsPage>
+    )
 
   const cameraNames = new Map(cameras.map((camera) => [camera.id, camera.displayName]))
   const channelNames = new Map<string, string>(

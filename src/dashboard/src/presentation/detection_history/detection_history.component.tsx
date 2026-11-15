@@ -21,6 +21,8 @@ import { DiagnosticLine } from '../../common/components/error_message'
 import { Field } from '../../common/components/field'
 import { PageHeader } from '../../common/components/page_header'
 import { Surface } from '../../common/components/surface'
+import { EmptyState } from '../../common/components/empty_state'
+import { Loading } from '../../common/components/loading'
 
 /** A detection without an identity isn't anonymous by mistake — it's unknown. */
 const UNIDENTIFIED = 'Inconnu'
@@ -69,6 +71,8 @@ export function DetectionHistoryView() {
     uido.filterFrom ||
     uido.filterTo,
   )
+  // Filtering an empty history finds nothing: the filter is offered once there is something to sift, or to take back.
+  const offersFilter = filtered || uido.filtersOpen || uido.items.length > 0
 
   return (
     <main className="flex flex-col gap-4 py-4">
@@ -81,17 +85,19 @@ export function DetectionHistoryView() {
         </div>
 
         {/* Filtering is an option one opens, not the top of the screen: one comes to read detections. */}
-        <Button
-          type="button"
-          variant={uido.filtersOpen || filtered ? 'default' : 'outline'}
-          size="sm"
-          aria-expanded={uido.filtersOpen}
-          aria-controls="history-filters"
-          onClick={presenter.onFiltersToggle}
-        >
-          <SlidersHorizontal aria-hidden="true" />
-          Filtrer
-        </Button>
+        {offersFilter && (
+          <Button
+            type="button"
+            variant={uido.filtersOpen || filtered ? 'default' : 'outline'}
+            size="sm"
+            aria-expanded={uido.filtersOpen}
+            aria-controls="history-filters"
+            onClick={presenter.onFiltersToggle}
+          >
+            <SlidersHorizontal aria-hidden="true" />
+            Filtrer
+          </Button>
+        )}
       </div>
 
       {uido.filtersOpen && (
@@ -112,7 +118,7 @@ export function DetectionHistoryView() {
                   anyLabel="Tous"
                   options={uido.detectionLabels.map((label) => ({
                     value: label.value,
-                    label: `${label.emoji} ${label.displayName}`,
+                    label: label.displayName,
                   }))}
                   onChange={presenter.onFilterLabelChange}
                 />
@@ -174,13 +180,17 @@ export function DetectionHistoryView() {
         </div>
       )}
 
-      {uido.loading && <p className="text-muted-foreground">Chargement…</p>}
+      {uido.loading && (
+        <Surface>
+          <Loading />
+        </Surface>
+      )}
 
       {!uido.loading && uido.loaded && uido.items.length === 0 && (
-        <Surface asChild className="text-center text-muted-foreground">
-          <p>
+        <Surface>
+          <EmptyState>
             {filtered ? 'Aucune détection avec ces filtres.' : 'Aucune détection pour l’instant.'}
-          </p>
+          </EmptyState>
         </Surface>
       )}
 

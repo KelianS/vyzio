@@ -9,6 +9,7 @@ import type {
   ChannelListening,
   ChannelPairing,
 } from '../../../domain/entities/notification_channel_config.entity'
+import { Loading } from '../../../common/components/loading'
 
 const formatDate = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long' })
 const formatTime = new Intl.DateTimeFormat('fr-FR', { timeStyle: 'short' })
@@ -59,7 +60,7 @@ export function ChannelPairingSection({
   onRefresh: () => void
 }) {
   if (pairingLoading && !pairing) {
-    return <p className="text-sm text-muted-foreground">Chargement…</p>
+    return <Loading />
   }
 
   const status = pairing?.status ?? 'not_paired'

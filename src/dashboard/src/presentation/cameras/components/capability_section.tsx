@@ -55,6 +55,7 @@ import {
   streamCoverageLine,
   streamNotListed,
 } from '../stream_lines'
+import { Loading } from '../../../common/components/loading'
 
 /** A stream found reads as success; anything else is what the user has to act on. */
 const DETECTION_TONE: Record<DetectionOutcome, string> = {
@@ -184,7 +185,7 @@ export function CapabilitySection({
             ))}
       </ul>
 
-      {loading && <p className="text-muted-foreground">Chargement…</p>}
+      {loading && <Loading />}
       {readError && (
         <ReadFailure
           error={readError}

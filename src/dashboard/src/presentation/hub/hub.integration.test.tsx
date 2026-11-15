@@ -70,9 +70,7 @@ describe('HubView', () => {
       ...reference,
       'GET /api/hub/overview': ok(overview),
       'GET /api/cameras': ok([makeCamera()]),
-      'GET /api/detection-labels/camera': ok([
-        { value: 'person', displayName: 'Personne', emoji: '🚶' },
-      ]),
+      'GET /api/detection-labels/camera': ok([{ value: 'person', displayName: 'Personne' }]),
     })
 
     // Act

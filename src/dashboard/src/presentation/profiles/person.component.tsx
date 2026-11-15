@@ -10,6 +10,7 @@ import { PageHeader } from '../../common/components/page_header'
 import { buildPersonPresenter } from './person.presenter'
 import { personReducer } from './person.reducer'
 import { buildInitialPersonUido } from './person.uido'
+import { Loading } from '../../common/components/loading'
 
 const PERSON_PAGES = [
   { slug: 'identite', label: 'Identité' },
@@ -30,7 +31,12 @@ export function PersonView() {
 
   const found = uido.person
 
-  if (uido.loading) return <SettingsPage>Chargement…</SettingsPage>
+  if (uido.loading)
+    return (
+      <SettingsPage>
+        <Loading />
+      </SettingsPage>
+    )
 
   // An unread list says nothing about this person: "not found" would be a false answer.
   if (uido.error) {

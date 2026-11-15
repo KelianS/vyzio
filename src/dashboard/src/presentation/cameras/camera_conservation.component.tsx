@@ -28,6 +28,7 @@ import {
 } from './camera_conservation.presenter'
 import { cameraConservationReducer } from './camera_conservation.reducer'
 import { buildInitialCameraConservationUido } from './camera_conservation.uido'
+import { Loading } from '../../common/components/loading'
 
 const DRAFT_LABELS: Record<keyof RetentionOverrides, string> = {
   continuousDaysOverride: RETENTION_LABEL.continuous,
@@ -56,7 +57,12 @@ export function CameraConservationView() {
     presenter.onLoad(cameraId!)
   }, [presenter, cameraId])
 
-  if (uido.loading) return <SettingsPage>Chargement…</SettingsPage>
+  if (uido.loading)
+    return (
+      <SettingsPage>
+        <Loading />
+      </SettingsPage>
+    )
   if (uido.error)
     return (
       <SettingsPage>

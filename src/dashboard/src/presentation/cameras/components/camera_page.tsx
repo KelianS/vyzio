@@ -7,6 +7,7 @@ import type { Camera } from '../../../domain/entities/camera.entity'
 import { formatCameraStatusLabel, formatStatusTone } from '../../../common/camera/camera_status'
 import { PageHeader } from '../../../common/components/page_header'
 import { CameraNotFound } from './camera_not_found'
+import { Loading } from '../../../common/components/loading'
 
 // The pages of one camera, each the twin of an installation page one notch lower (UI-08).
 const CAMERA_PAGES = [
@@ -28,7 +29,12 @@ export function CameraPage({
   error: AppError | null
   onRetry: () => void
 }) {
-  if (!camera && loading) return <SettingsPage>Chargement…</SettingsPage>
+  if (!camera && loading)
+    return (
+      <SettingsPage>
+        <Loading />
+      </SettingsPage>
+    )
 
   // An unread list says nothing about this camera: "not found" would be a false answer.
   if (!camera && error) {
