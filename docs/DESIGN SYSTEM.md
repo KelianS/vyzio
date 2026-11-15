@@ -32,7 +32,7 @@ of both themes. Usage rules:
 - Critical surfaces use `--bg-elevated` to keep a soft contrast.
 - `--brand-moss` carries the calls to action and the product indicators.
 - `--alert-high` is reserved for important events, attention states and destructive actions.
-- `--brand-sand` never marks a hover: a quiet action (outlined, text) hovers to a tint of the product colour.
+- `--brand-sand` never marks a hover: a quiet action (tonal, text) hovers to a deeper tint of the product colour.
 - Colour never carries a meaning alone: a kind of thing is told apart by its icon and its name, and a
   fill that must be told apart differs by its pattern too.
 
@@ -179,17 +179,17 @@ one short line takes its place, naming as a link the page where it is fixed.
 
 ### Action weight
 
-Four weights of button, after Material Design 3, each the same wherever it sits; a page has one
-filled button at most. Every button stays visibly distinct from the surface under it, canvas or card.
+Three weights of button, after Material Design 3, each the same wherever it sits; a page has one
+filled button at most. Every button stays visibly distinct from the surface under it, canvas or card:
+none is drawn as a bare line on a light surface.
 
 - **Filled**: the main action of a view, in the product colour.
-- **Tonal**: a second action that still matters, on a tint of the product colour, never the
-  surface's own colour.
-- **Outlined**: a quiet action, a faint line of the product colour around its label, no fill.
-- **Text**: the lightest, a label in the product colour; a list whose rows each offer one action
-  uses it, never a bordered box repeated on every row.
-- **A destructive action is quiet until confirmed**: outlined in the destructive colour
-  (`--alert-high`) on its page, solid only on its confirmation's button. Removing what the page
+- **Tonal**: every other action that matters, its label in the product colour on a light tint of it,
+  never the surface's own colour.
+- **Text**: the lightest, a label in the product colour with no fill: a list whose rows each offer
+  one action, and the way out of a dialog (`Annuler`).
+- **A destructive action is quiet until confirmed**: a light tint of the destructive colour
+  (`--alert-high`) with its line, on its page; solid only on its confirmation's button. Removing what the page
   names closes the page: always last, after `Avancé`, under a separator, never beside another
   action. One shared component draws it, so no page can drift.
 
