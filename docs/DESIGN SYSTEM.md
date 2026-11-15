@@ -19,7 +19,7 @@ engine underneath (product principle 2).
   `--bg-elevated: #fffaf2` primary surfaces; `--bg-strong: #1f3a33` structural dark panels;
   `--bg-sunken: #f2ebdf` an inset inside a surface (a track, a chip, a step number, a fold, a quiet
   hover, a secondary button), opaque so it shows on a card as on the canvas; `--bg-muted`,
-  translucent, only for a control laid over the picture.
+  translucent, only for a control laid over the picture, through the `--glass` role (`bg-glass`).
 - Ink: `--ink-strong: #18201d` primary text; `--ink-soft: #606d67` secondary text;
   `--line-soft: #d8cfbf` discreet borders, the colour of every border that names no other, never
   the text colour.
