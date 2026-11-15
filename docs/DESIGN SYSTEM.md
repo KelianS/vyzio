@@ -97,6 +97,9 @@ plus tokens: no global class, no literal colour, radius or shadow in a component
 supported everywhere**: a screen without it is a screen writing a colour by hand. Responsive design
 follows the library's scale from the small screen upwards; another breakpoint must be justified.
 
+**Icons are line icons**, from the one icon set, never an emoji: its glyph and colours change with
+the phone, and it reads as another product beside the line icons.
+
 **A press never selects.** What the user acts on, a button, a link, a tab, a field's label or a strip
 of controls marked `data-press-only`, never selects its text nor opens the phone's callout on a long
 press; text to read stays selectable, and so does a field, even inside its label. One base rule in
@@ -273,6 +276,18 @@ An error reads at two levels ([SPECS](SPECS.md) UI-01).
   names, a plain sentence in a page the shell already names, which never gains a title for it.
 - **An answer that the thing no longer exists is not a failed read**: it is said as such, with the way
   back, never `Réessayer`, which cannot succeed.
+
+### Empty and loading
+
+- **A list with nothing in it says so in one quiet sentence** (`text-sm text-muted-foreground`),
+  left-aligned where its items would be, inside the list's own surface, followed by the action that
+  fills it when there is one. One shared component draws it. Nothing that needs an item is offered:
+  a filter stays offered on an empty list only while one is set, to take it back. An unread list is
+  never shown empty (§ Errors).
+- **A read in progress shows nothing during a short delay**, so an answer that comes fast never
+  flashes. Past it, one shared component shows the shape of what it replaces, pulsing quietly on an
+  inset: lines for a list or a settings page, a title and picture frames for the home. Never a bare
+  `Chargement…` sentence, which jumps to the content when it lands.
 
 ### Full-screen viewing
 
