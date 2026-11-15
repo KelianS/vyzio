@@ -33,7 +33,7 @@ import { Loading } from '../../common/components/loading'
 const OTHER_BRAND_HELP =
   'Ouvrez l’application de la caméra et créez-y un compte pour Vyzio. Si elle propose la vidéo locale (RTSP), activez-la.'
 
-/** Adding a camera is one task, one page (CAM-39): find it, give its access, add it; its page sets the rest (ADR-04). */
+/** Adding a camera is one task, one page (CAM-62): find it, give its access, add it; its page sets the rest (ADR-04). */
 export function AddCameraView() {
   const { cameras: container } = useAppContainer()
   const { toast } = useToast()

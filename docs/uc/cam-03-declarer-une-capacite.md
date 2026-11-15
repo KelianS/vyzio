@@ -9,7 +9,7 @@
 
 **Préalables** :
 
-- la caméra existe (UC-CAM-01) et sa page est ouverte sur « Connexion » (CAM-03) ;
+- la caméra existe (UC-CAM-01) et sa page est ouverte sur « Connexion » (CAM-61) ;
 - la détection automatique n'a pas trouvé la capacité voulue (CAM-12).
 
 **Résultat en succès** : la capacité a sa carte, sur le protocole choisi, vérifiée aussitôt (CAM-13) ; ou le protocole ajouté apparaît avec son état (CAM-22).

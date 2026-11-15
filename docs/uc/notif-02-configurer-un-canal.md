@@ -20,26 +20,27 @@
 | ID | Libellé | Type | Déclencheur |
 | --- | --- | --- | --- |
 | N1 | Configurer et tester un canal | Nominal | Le propriétaire choisit un canal à configurer |
-| A1 | Activer un canal qui dépend d'un service externe | Alternative | Le canal a besoin d'une dépendance réseau externe |
-| A2 | Activer un canal qui ne sait pas recevoir | Alternative | Le canal ne reçoit pas de commandes |
+| A1 | Configurer un canal qui dépend d'un service externe | Alternative | Le canal a besoin d'une dépendance réseau externe |
+| A2 | Configurer un canal qui ne sait pas recevoir | Alternative | Le canal ne reçoit pas de commandes |
 | E1 | La vérification du canal échoue | Échec | Ce que le canal demande est refusé ou injoignable |
 
 ## Détail des chemins
 
 ### N1 · Configurer et tester un canal
 
-1. Le propriétaire choisit un canal ; l'écran est le même pour tous les canaux (NOTIF-05), et dit ses capacités et ses limites avant l'activation (NOTIF-18).
+1. Le propriétaire choisit un canal ; l'écran est le même pour tous les canaux (NOTIF-05), et dit ses capacités et ses limites avant le premier enregistrement (NOTIF-18).
 2. Il saisit ce que le canal demande ; Vyzio le vérifie et dit s'il est configuré (NOTIF-17).
-3. Il envoie un test, puis active le canal (NOTIF-16).
+3. Il enregistre : dès que ce que le canal demande est complet, il notifie, sans interrupteur à activer ; il envoie un test (NOTIF-16, NOTIF-35).
+4. Pour faire taire le canal, il lance un Silence (UC-NOTIF-06) ; pour l'arrêter pour de bon, il le retire (NOTIF-35).
 
-### A1 · Activer un canal qui dépend d'un service externe
+### A1 · Configurer un canal qui dépend d'un service externe
 
-1. Le canal a besoin d'une dépendance réseau externe : l'interface le dit, et le propriétaire l'accepte explicitement (NOTIF-04, SEC-01).
+1. Le canal a besoin d'une dépendance réseau externe : l'interface le dit, et le propriétaire l'accepte explicitement au premier enregistrement du canal (NOTIF-04, SEC-01, NOTIF-35).
 2. Le chemin reprend à N1, pas 2.
 
-### A2 · Activer un canal qui ne sait pas recevoir
+### A2 · Configurer un canal qui ne sait pas recevoir
 
-1. L'interface dit, avant l'activation, que ce canal ne recevra pas de commandes (NOTIF-19).
+1. L'interface dit, avant l'enregistrement, que ce canal ne recevra pas de commandes (NOTIF-19).
 2. Le chemin reprend à N1, pas 2.
 
 ### E1 · La vérification du canal échoue
@@ -51,8 +52,8 @@
 
 - **NOTIF-16** · la configuration des canaux retenus doit etre lisible, modifiable et testable depuis l'interface Vyzio ;
 - **NOTIF-17** · chaque canal propose doit etre couvert de bout en bout : saisie de ce qu'il demande, verification, etat configure / non configure, test d'envoi ;
-- **NOTIF-18** · les capacites et limites d'un canal doivent etre explicites dans l'interface avant activation ;
-- **NOTIF-19** · un canal qui ne sait pas recevoir reste un canal de notification a part entiere ; l'interface doit le dire avant l'activation, et ne jamais laisser croire qu'on pourra lui parler.
+- **NOTIF-18** · les capacités et limites d'un canal doivent être explicites dans l'interface avant son premier enregistrement ;
+- **NOTIF-19** · un canal qui ne sait pas recevoir reste un canal de notification a part entiere ; l'interface doit le dire avant son premier enregistrement, et ne jamais laisser croire qu'on pourra lui parler.
 
 ## Points ouverts
 

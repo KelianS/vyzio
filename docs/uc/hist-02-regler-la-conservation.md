@@ -33,7 +33,7 @@
 
 ### A1 · Surcharger une durée pour une caméra
 
-1. Le propriétaire surcharge une durée sur l'onglet « Conservation » de la caméra (CAM-03) ; l'écran dit laquelle des deux portées s'applique (HIST-06, UI-08).
+1. Le propriétaire surcharge une durée sur l'onglet « Conservation » de la caméra (CAM-61) ; l'écran dit laquelle des deux portées s'applique (HIST-06, UI-08).
 2. Le chemin reprend à N1, pas 2.
 
 ### A2 · Activer l'enregistrement de la vidéo complète

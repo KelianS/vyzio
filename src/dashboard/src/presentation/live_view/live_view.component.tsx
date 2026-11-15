@@ -62,7 +62,7 @@ const UNAVAILABLE: Record<LiveLayout, string> = {
 
 const AUTO_HIDE: Record<LiveLayout, boolean> = { portrait: false, landscape: true, wide: false }
 
-/** Back where the user came from; home when the address was opened directly (LIVE-07). */
+/** Back where the user came from; home when the address was opened directly (LIVE-19). */
 function useBack() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -71,7 +71,7 @@ function useBack() {
   return () => void (reachedDirectly ? navigate('/') : navigate(-1))
 }
 
-// Where what keeps the camera from showing is said and fixed (LIVE-11).
+// Where what keeps the camera from showing is said and fixed (LIVE-23).
 function CameraPageLink({ cameraId }: { cameraId: string }) {
   return (
     <Link

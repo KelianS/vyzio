@@ -16,7 +16,7 @@ const ALL_PRESET_IDS = [1, 2, 3, 4]
 
 const BUSY: Record<PresetActivity, boolean> = { idle: false, saving: true, going: true }
 
-/** Where each part sits: below or beside the picture, or laid over it in landscape (LIVE-09, LIVE-10). */
+/** Where each part sits: below or beside the picture, or laid over it in landscape (LIVE-19, LIVE-10). */
 const PLACE: Record<
   LiveLayout,
   {

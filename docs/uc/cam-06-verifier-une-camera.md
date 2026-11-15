@@ -9,7 +9,7 @@
 
 **Préalables** :
 
-- la caméra existe et sa page est ouverte sur « Connexion » (CAM-03).
+- la caméra existe et sa page est ouverte sur « Connexion » (CAM-61).
 
 **Résultat en succès** : la carte vérifiée dit « Fonctionne » (CAM-21), et le protocole vérifié « Accessible » (CAM-22).
 

@@ -22,9 +22,9 @@
 
 | ID | Libellé | Type | Déclencheur |
 | --- | --- | --- | --- |
-| N1 | Couper une caméra | Nominal | L'utilisateur coupe une caméra |
-| A1 | Couper plusieurs caméras d'un coup | Alternative | L'utilisateur coupe une sélection, ou toutes les caméras |
-| A2 | Reprendre la surveillance | Alternative | L'utilisateur reprend la surveillance d'une caméra coupée |
+| N1 | Couper une caméra | Nominal | L'utilisateur touche l'œil d'une caméra à l'accueil, ou « Couper la caméra » dans sa vue |
+| A1 | Couper plusieurs caméras d'un coup | Alternative | L'utilisateur touche « Couper les caméras » à l'accueil |
+| A2 | Reprendre la surveillance | Alternative | L'utilisateur touche l'œil d'une caméra coupée, ou « Réactiver » dans sa vue |
 | A3 | Reprendre la surveillance pendant une plage | Alternative | La caméra est coupée par une plage Vie privée |
 | E1 | La caméra ne suit pas | Échec | La caméra refuse, ne répond pas, ou ne peut pas suivre sa stratégie |
 | E2 | La demande est interrompue | Échec | La demande s'arrête avant la réponse de la caméra |
@@ -33,18 +33,18 @@
 
 ### N1 · Couper une caméra
 
-1. L'utilisateur coupe la caméra ; c'est une action, qui prend effet tout de suite (UI-16, PRIV-03).
+1. L'utilisateur touche l'œil à côté du nom de la caméra, à l'accueil, ou « Couper la caméra » dans sa vue ; c'est une action, qui prend effet tout de suite, sans confirmation (UI-16, PRIV-03, PRIV-21).
 2. Vyzio arrête l'enregistrement, la détection et les notifications de la caméra (PRIV-01, PRIV-02), et lui demande ce que sa stratégie ajoute (PRIV-10, PRIV-12).
-3. Le badge dit ce que la caméra a répondu (PRIV-04) ; sa vignette l'affiche avec les mêmes mots, et la vue en direct ne s'ouvre plus (PRIV-06).
+3. Sa marque passe à « coupée » partout (UI-31) ; sa carte et sa vue disent qu'elle est coupée à la place de l'image (PRIV-20) ; son écran vie privée dit ce que la caméra a répondu (PRIV-04).
 
 ### A1 · Couper plusieurs caméras d'un coup
 
-1. L'utilisateur coupe une sélection de caméras, ou toutes (PRIV-14).
+1. L'utilisateur touche « Couper les caméras » : toutes les caméras sont coupées, sans confirmation (PRIV-14, PRIV-21, UC-UI-01).
 2. Le chemin reprend à N1, pas 2, pour chaque caméra.
 
 ### A2 · Reprendre la surveillance
 
-1. L'utilisateur reprend la surveillance de la caméra.
+1. L'utilisateur touche l'œil de la caméra coupée, ou « Réactiver » dans sa vue, sans confirmation (PRIV-21).
 2. Vyzio restaure son flux sans autre intervention (PRIV-09) ; une caméra parquée revient sur sa position Surveillance (PRIV-12).
 
 ### A3 · Reprendre la surveillance pendant une plage
@@ -55,7 +55,7 @@
 ### E1 · La caméra ne suit pas
 
 1. La caméra refuse, ne répond pas, ou ne peut pas suivre sa stratégie.
-2. L'enregistrement reste coupé ; le badge, la vignette et l'écran vie privée disent ce qui n'a pas eu lieu et quoi faire (PRIV-05).
+2. L'enregistrement reste coupé ; la carte de la caméra le signale, et son écran vie privée dit ce qui n'a pas eu lieu et quoi faire (PRIV-05).
 
 ### E2 · La demande est interrompue
 

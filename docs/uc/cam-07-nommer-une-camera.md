@@ -19,14 +19,14 @@
 
 | ID | Libellé | Type | Déclencheur |
 | --- | --- | --- | --- |
-| N1 | Renommer une caméra | Nominal | L'utilisateur change le nom dans Avancé |
+| N1 | Renommer une caméra | Nominal | L'utilisateur change le nom en tête de « Connexion » |
 | A1 | Nommer chaque objectif d'un boîtier | Alternative | Le boîtier expose plusieurs objectifs |
 
 ## Détail des chemins
 
 ### N1 · Renommer une caméra
 
-1. L'utilisateur ouvre Avancé sur « Connexion » et change le nom de la caméra (CAM-03, CAM-01).
+1. L'utilisateur change le nom de la caméra, en tête de « Connexion » (CAM-61, CAM-01).
 2. Il voit ce qu'il a modifié, puis enregistre (UI-11, UI-12).
 
 ### A1 · Nommer chaque objectif d'un boîtier

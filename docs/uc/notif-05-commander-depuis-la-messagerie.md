@@ -33,7 +33,7 @@
 ### N1 · Demander l'état ou un aperçu
 
 1. L'utilisateur envoie une commande de l'usage courant (NOTIF-26, NOTIF-27).
-2. Vyzio répond, en images fixes ou en clips, jamais en flux continu (NOTIF-10), même pendant une plage sans notification (NOTIF-07).
+2. Vyzio répond, en images fixes ou en clips, jamais en flux continu (NOTIF-10), même pendant un Silence (NOTIF-33).
 
 ### A1 · Commander une action aux conséquences visibles
 

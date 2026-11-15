@@ -11,7 +11,7 @@
 
 - le propriétaire a ouvert la Planification, dans les réglages (SCHED-01).
 
-**Résultat en succès** : la plage est enregistrée, visible dans la semaine (SCHED-05), et s'applique à ses cibles (SCHED-09).
+**Résultat en succès** : la plage est enregistrée, visible dans la semaine (SCHED-05) et dans la liste de son type (SCHED-10), et s'applique à ses cibles (SCHED-09).
 
 **Résultats en échec** :
 
@@ -24,7 +24,7 @@
 | --- | --- | --- | --- |
 | N1 | Créer une plage | Nominal | Le propriétaire ajoute une plage |
 | A1 | Créer une plage qui passe minuit | Alternative | La fin de la plage précède son début |
-| A2 | Modifier une plage | Alternative | Le propriétaire touche une plage de la semaine |
+| A2 | Modifier une plage | Alternative | Le propriétaire touche une plage de la semaine ou de la liste |
 | A3 | Supprimer une plage | Alternative | Le propriétaire supprime une plage |
 | A4 | Renoncer | Alternative | Le propriétaire quitte sans enregistrer |
 | E1 | La plage est refusée | Échec | La plage est vide, sans jour, sans cible ou mal formée |
@@ -34,9 +34,9 @@
 
 ### N1 · Créer une plage
 
-1. Le propriétaire lit la semaine, à l'heure de la maison (SCHED-05, SCHED-03), et ajoute une plage.
-2. Il choisit son type, dont l'effet reste visible (SCHED-02), ses cibles (SCHED-07), ses jours et ses heures.
-3. Il enregistre (SCHED-09) ; la plage s'applique (SCHED-09) et apparaît dans la semaine.
+1. Le propriétaire lit la semaine, à l'heure de la maison (SCHED-05, SCHED-03), puis les plages listées par type (SCHED-10), et touche « Ajouter une plage ».
+2. Il choisit son type, dont l'effet reste visible (SCHED-02), ses heures, ses jours et ses cibles sur l'écran de la plage (SCHED-07, SCHED-10).
+3. Il enregistre (SCHED-09) ; la plage s'applique (SCHED-09) et apparaît dans la semaine et dans sa liste.
 
 ### A1 · Créer une plage qui passe minuit
 
@@ -45,13 +45,13 @@
 
 ### A2 · Modifier une plage
 
-1. Le propriétaire touche une plage de la semaine, qui s'ouvre (SCHED-05).
+1. Le propriétaire touche une plage de la semaine ou une ligne de la liste, qui s'ouvre (SCHED-05, SCHED-10).
 2. Il change ses cibles, ses jours ou ses heures ; son type ne change plus (SCHED-09).
 3. Le chemin reprend à N1, pas 3.
 
 ### A3 · Supprimer une plage
 
-1. Le propriétaire supprime la plage ; la confirmation nomme son type et ses cibles (SCHED-09).
+1. Le propriétaire touche « Supprimer la plage » sur l'écran de la plage ; la confirmation nomme son type et ses cibles (SCHED-09).
 
 ### A4 · Renoncer
 
@@ -73,7 +73,8 @@
 - **SCHED-06** · une plage vide (debut = fin), sans jour, sans cible ou mal formee est refusee avec une phrase qui dit quoi changer, jamais comme une erreur du serveur ;
 - **SCHED-07** · une plage vise plusieurs choses a la fois, plusieurs cameras ou plusieurs canaux, qu'elle nomme ; viser toutes les cameras revient a cocher celles qui existent, une camera ajoutee ensuite n'est pas visee d'office ; une plage dont toutes les cibles ont disparu reste visible, sans effet, et le dit ;
 - **SCHED-08** · une camera ou un canal dit combien de plages s'appliquent a lui, avec le chemin vers la Planification ; la bascule manuelle (couper une camera ou reprendre sa surveillance maintenant) reste sur la camera et garde sa priorite (PRIV-07) : la planification ne fait que programmer ;
-- **SCHED-09** · une plage se modifie avec le meme cycle qu'un reglage (UI-11) : rien ne change avant d'avoir enregistre, et l'on peut renoncer ; son type se choisit a sa creation et ne change plus ; une plage enregistree, meme deja commencee, s'applique sans attendre son prochain debut ; supprimer une plage demande une confirmation qui nomme son type et ses cibles.
+- **SCHED-09** · une plage se modifie avec le meme cycle qu'un reglage (UI-11) : rien ne change avant d'avoir enregistre, et l'on peut renoncer ; son type se choisit a sa creation et ne change plus ; une plage enregistree, meme deja commencee, s'applique sans attendre son prochain debut ; supprimer une plage demande une confirmation qui nomme son type et ses cibles ;
+- **SCHED-10** · sous la semaine, les plages se listent par type, « Caméras coupées » puis « Silence », chacune sur une ligne qui dit ses heures (« 22 h – 7 h ») puis ses cibles et ses jours (« Garage · lundi au vendredi »), et chaque liste finit par « Ajouter une plage » ; toucher une plage de la semaine, une ligne ou « Ajouter une plage » ouvre l'écran de la plage, le même pour la créer et la modifier : « De » et « À », avec une ligne qui dit quand elle se termine le lendemain (SCHED-05), les sept jours en bascules, les cibles en lignes à cocher, « Enregistrer », et « Supprimer la plage » pour une plage existante ; après l'enregistrement, la semaine et la liste montrent le résultat.
 
 ## Points ouverts
 

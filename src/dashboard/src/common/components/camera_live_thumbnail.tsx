@@ -80,7 +80,7 @@ export function CameraLiveThumbnail({
   const picture = (
     <>
       {camera.privacyModeActive && privacy ? (
-        // The same words as the privacy screen's badge: what the camera answered (PRIV-06).
+        // The same words as the privacy screen's badge: what the camera answered (PRIV-20).
         <div className="flex h-full flex-col items-center justify-center gap-2 px-3 text-center text-surface-inverse-foreground">
           <PrivacyStateIcon kind={privacy.kind} className="size-5" />
           <span className="text-sm font-medium">{privacy.text}</span>

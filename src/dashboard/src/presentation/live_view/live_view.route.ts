@@ -1,4 +1,4 @@
-/** The live view's own address: a screen, never a layer over a page (LIVE-07). */
+/** The live view's own address: a screen, never a layer over a page (LIVE-19). */
 export const LIVE_VIEW_ROUTE = '/cameras/:cameraId/direct'
 
 const LIVE_VIEW_PATH = /^\/cameras\/[^/]+\/direct$/

@@ -5,7 +5,7 @@ import type {
   DiscoveryRange,
 } from '../../domain/entities/discovered_camera.entity'
 
-/** What's being added: a discovered camera, or a manually typed address (CAM-39). */
+/** What's being added: a discovered camera, or a manually typed address (CAM-62). */
 type AddCameraSelection =
   /** Nothing chosen yet. */
   { kind: 'none' } | { kind: 'manual' } | { kind: 'candidate'; index: number }

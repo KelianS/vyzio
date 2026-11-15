@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react'
 
-/** How the live view lays out its picture and controls (LIVE-09, LIVE-10). */
+/** How the live view lays out its picture and controls (LIVE-19, LIVE-10). */
 export const LiveLayout = {
   Portrait: 'portrait',
   Landscape: 'landscape',
@@ -30,7 +30,7 @@ function subscribe(onChange: () => void) {
   return () => queries.forEach((query) => query.removeEventListener('change', onChange))
 }
 
-/** Held upright, the bar sits above the picture and never covers it (LIVE-09). */
+/** Held upright, the bar sits above the picture and never covers it (LIVE-19). */
 export const BAR_ABOVE: Record<LiveLayout, boolean> = {
   portrait: true,
   landscape: false,

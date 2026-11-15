@@ -26,7 +26,7 @@
 ### N1 · Créer le mot de passe à la mise en service
 
 1. Le propriétaire ouvre l'interface : elle s'ouvre sur la création du mot de passe (ACCESS-06).
-2. Il choisit son mot de passe ; il est connecté (UC-ACCESS-02), et l'accueil annonce la mise en service (UC-UI-01 A1).
+2. Il choisit son mot de passe ; il est connecté (UC-ACCESS-02), et, sans caméra encore ajoutée, l'interface s'ouvre sur « Ajouter une caméra » (UC-UI-01 A1).
 
 ## Règles locales
 

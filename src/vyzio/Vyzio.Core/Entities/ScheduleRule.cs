@@ -11,7 +11,7 @@ public enum ScheduleRuleKind
     /// <summary>The targeted cameras are in privacy mode (PRIV-01).</summary>
     Privacy,
 
-    /// <summary>The targeted channels send no detection notification; recording goes on (NOTIF-07).</summary>
+    /// <summary>The targeted channels send no detection notification; recording goes on (NOTIF-33).</summary>
     MuteNotifications,
 }
 

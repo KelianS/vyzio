@@ -14,7 +14,7 @@ shape them.
   each kind of target: a range that may target several things, without repeating a table, its
   validation, a scheduler and a form for each kind (SCHED-01).
 - The detection engine reads its generated configuration (ADR-02) only when it restarts, and a
-  restart interrupts surveillance. When it happens is the user's choice (UI-12, UI-13), and a
+  restart interrupts surveillance. When it happens is the user's choice (UI-12, UI-28), and a
   restart that fails must not pass for a success (UI-17).
 
 ## Decision

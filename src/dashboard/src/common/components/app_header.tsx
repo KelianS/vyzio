@@ -4,7 +4,7 @@ import { cn } from '../ui/utils'
 import { PressableSurface } from './pressable'
 
 /**
- * The main bar (UI-24). It carries **viewing** only, plus a single way into the
+ * The main bar (UI-29). It carries **viewing** only, plus a single way into the
  * settings: a label must say what kind of screen it opens, viewing or setting, and
  * the two never mix.
  *

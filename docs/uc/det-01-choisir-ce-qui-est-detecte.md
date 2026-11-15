@@ -28,7 +28,7 @@
 
 1. Le propriétaire ouvre le réglage de la détection, à son emplacement prévisible (UI-07).
 2. Il active ou désactive des catégories (DET-04, DET-05), voit ce qu'il a modifié et enregistre (UI-11).
-3. Il applique les changements en quittant les réglages (UI-13, UC-UI-02).
+3. Il applique les changements en quittant les réglages (UI-28, UC-UI-02).
 
 ### E1 · La surveillance ne reprend pas le réglage
 
