@@ -11,6 +11,8 @@ import { ALERT_MODE_LABELS, CATEGORY_LABELS } from './person_labels'
 import { buildPersonListPresenter } from './person_list.presenter'
 import { personListReducer } from './person_list.reducer'
 import { buildInitialPersonListUido } from './person_list.uido'
+import { Loading } from '../../common/components/loading'
+import { EmptyState } from '../../common/components/empty_state'
 
 /** First level of the Persons rubric: the list (UI-25). Adding is its own task/page. */
 export function PersonListView() {
@@ -53,10 +55,10 @@ export function PersonListView() {
             </li>
           ))}
         </ul>
+      ) : uido.loading ? (
+        <Loading />
       ) : (
-        <p className="py-3 text-muted-foreground">
-          {uido.loading ? 'Chargement…' : 'Personne d’enregistrée pour l’instant.'}
-        </p>
+        <EmptyState>Personne d’enregistrée pour l’instant.</EmptyState>
       )}
 
       <div className="mt-5">

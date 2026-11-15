@@ -44,6 +44,38 @@ describe('DetectionHistoryView', () => {
     expect(await screen.findByText('Aucune détection pour l’instant.')).toBeInTheDocument()
   })
 
+  it('onLoadHistory_ShouldOfferNoFilter_WhenNothingWasDetected', async () => {
+    // Arrange
+    fakeNetwork({
+      ...reference,
+      'GET /api/detection-events/history': ok({ items: [], nextCursor: null }),
+    })
+
+    // Act
+    renderScreen(<DetectionHistoryView />)
+
+    // Assert
+    expect(await screen.findByText('Aucune détection pour l’instant.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Filtrer' })).not.toBeInTheDocument()
+  })
+
+  it('onLoadHistory_ShouldOfferTheFilter_WhenTheHistoryListsDetections', async () => {
+    // Arrange
+    fakeNetwork({
+      ...reference,
+      'GET /api/detection-events/history': ok({
+        items: [makeDetectionEvent({ label: 'cat' })],
+        nextCursor: null,
+      }),
+    })
+
+    // Act
+    renderScreen(<DetectionHistoryView />)
+
+    // Assert
+    expect(await screen.findByRole('button', { name: 'Filtrer' })).toBeInTheDocument()
+  })
+
   it('onLoadHistory_ShouldSayWhyAndForSupport_WhenTheHistoryFails', async () => {
     // Arrange
     fakeNetwork({ ...reference, 'GET /api/detection-events/history': failure(500) })

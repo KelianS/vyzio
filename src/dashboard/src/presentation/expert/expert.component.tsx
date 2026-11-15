@@ -3,6 +3,7 @@ import { ExternalLink, TriangleAlert } from 'lucide-react'
 import { SettingsPage } from '../../common/settings/settings_page'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import { SecondaryButton } from '../../common/components/secondary_button'
+import { Skeleton } from '../../common/ui/skeleton'
 
 // One file: a local timeout is its only state, and it calls no use case.
 export function ExpertView() {
@@ -60,9 +61,9 @@ export function ExpertView() {
   return (
     <div className="relative h-[calc(100vh-6rem)] min-h-100">
       {!loaded && (
-        <div
+        <Skeleton
           role="status"
-          className="absolute inset-0 animate-pulse rounded-card bg-card"
+          className="absolute inset-0 rounded-card bg-card"
           aria-label="Chargement de Frigate…"
         />
       )}

@@ -2,6 +2,8 @@ import { RotateCw } from 'lucide-react'
 import { cn } from '../../../common/ui/utils'
 import type { NotificationLogEntry } from '../../../domain/entities/notification_channel_config.entity'
 import { SecondaryButton } from '../../../common/components/secondary_button'
+import { Loading } from '../../../common/components/loading'
+import { EmptyState } from '../../../common/components/empty_state'
 
 const formatSentAt = new Intl.DateTimeFormat('fr-FR', {
   dateStyle: 'short',
@@ -52,10 +54,10 @@ export function NotificationLog({
             </li>
           ))}
         </ul>
+      ) : loading ? (
+        <Loading />
       ) : (
-        <p className="text-sm text-muted-foreground">
-          {loading ? 'Chargement…' : 'Aucun envoi pour l’instant.'}
-        </p>
+        <EmptyState>Aucun envoi pour l’instant.</EmptyState>
       )}
     </div>
   )

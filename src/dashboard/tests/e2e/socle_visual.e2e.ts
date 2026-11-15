@@ -168,6 +168,49 @@ test.describe('Style foundations', () => {
     )
   })
 
+  test('WelcomeStep_ShouldShowItsNumberBesideItsTitle_WhenTheHubHasNoCamera', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await installFakeBackend(page, createFakeBackendState({ cameras: [] }))
+    await page.goto('/')
+
+    const step = page.getByRole('listitem').first()
+    const number = (await step.getByText('1', { exact: true }).boundingBox())!
+    const title = (await step.getByText('Ajouter une caméra').boundingBox())!
+
+    expect(number.x + number.width).toBeLessThanOrEqual(title.x)
+    expect(number.y).toBeLessThanOrEqual(title.y + title.height)
+    expect(number.y + number.height).toBeGreaterThanOrEqual(title.y)
+  })
+
+  test('PhotoAdvice_ShouldReadNoLargerThanTheStateAboveTheButton_WhenThePersonHasNoPhoto', async ({
+    page,
+  }) => {
+    await installFakeBackend(
+      page,
+      createFakeBackendState({
+        profiles: [
+          {
+            id: 'profile-1',
+            name: 'Alice',
+            category: 'family',
+            alertMode: 'always',
+            lastSeenAt: null,
+            createdAt: '2026-01-01T00:00:00Z',
+          },
+        ],
+      }),
+    )
+    await page.goto('/settings/detection/personnes/profile-1/photos')
+
+    const state = page.getByText(/^Aucune photo/)
+    const advice = page.getByText(/^Des photos nettes/)
+    await expect(state).toHaveCSS('font-size', '14px')
+    await expect(advice).toHaveCSS('font-size', '14px')
+    const adviceBox = (await advice.boundingBox())!
+    const addBox = (await page.getByRole('button', { name: 'Ajouter une photo' }).boundingBox())!
+    expect(adviceBox.y).toBeLessThan(addBox.y)
+  })
+
   test('SecondaryAction_ShouldDarken_WhenHovered', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
     await page.goto('/')

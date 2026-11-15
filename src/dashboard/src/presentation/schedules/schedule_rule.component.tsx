@@ -30,6 +30,7 @@ import { useUnsavedChanges } from '../navigation/use_unsaved_changes'
 import { buildScheduleRulePresenter } from './schedule_rule.presenter'
 import { scheduleRuleReducer } from './schedule_rule.reducer'
 import { buildInitialScheduleRuleUido, type ScheduleRuleUido } from './schedule_rule.uido'
+import { Loading } from '../../common/components/loading'
 
 interface RuleValues {
   kind: ScheduleRuleKind
@@ -137,7 +138,7 @@ export function ScheduleRuleView() {
   if (uido.loading || (camerasLoading && cameras.length === 0))
     return (
       <Page title={title}>
-        <p className="text-muted-foreground">Chargement…</p>
+        <Loading />
       </Page>
     )
 

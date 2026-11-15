@@ -15,6 +15,7 @@ import { formatCheckedAt } from '../cameras.formatters'
 import type { ProtocolValues } from '../camera_connection_values'
 import { protocolFailureLine, protocolPill } from '../capability_state'
 import { PROTOCOL_LABELS, SPECIFIC_ACCOUNT_HELP } from '../protocol_labels'
+import { Loading } from '../../../common/components/loading'
 
 // V380 addresses the camera by a number the user types when discovery misses it.
 const ASKS_DEVICE_ID: Record<SupportedProtocol, boolean> = {
@@ -56,7 +57,7 @@ export function ProtocolBoxes({
   onRemove: (protocol: SupportedProtocol) => Promise<void>
   onRetryRead: () => void
 }) {
-  if (loading) return <p className="text-muted-foreground">Chargement…</p>
+  if (loading) return <Loading />
   if (readError)
     return (
       <ReadFailure

@@ -3,6 +3,7 @@ import type { AppError } from '../errors/app_error'
 import type { ScheduleRule, ScheduleRuleKind } from '../../domain/entities/schedule_rule.entity'
 import { ReadFailure } from '../components/error_message'
 import { appliesSentence, rulesTargeting, SCHEDULES_PATH } from './schedule_types'
+import { Loading } from '../components/loading'
 
 export const SCHEDULES_UNREAD = 'La planification n’a pas pu être lue.'
 
@@ -26,7 +27,7 @@ export function ScheduleCountLine({
 }: ScheduleCountLineProps) {
   // Unread rules are not "no range": saying so would be a false answer.
   if (error) return <ReadFailure error={error} onRetry={onRetry} subject={SCHEDULES_UNREAD} />
-  if (rules === null) return <p className="py-3 text-sm text-muted-foreground">Chargement…</p>
+  if (rules === null) return <Loading lines={1} className="py-3" />
 
   return (
     <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-3">

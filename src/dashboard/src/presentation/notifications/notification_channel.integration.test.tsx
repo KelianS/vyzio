@@ -20,7 +20,7 @@ const LISTENING = 'GET /api/notifications/settings/telegram/listening'
 const COMMANDS = 'GET /api/notifications/settings/telegram/commands'
 const RULES = 'GET /api/schedules'
 
-const PERSON = { value: 'person', displayName: 'Personne', emoji: '🧍' }
+const PERSON = { value: 'person', displayName: 'Personne' }
 const FAILED_SEND = {
   status: 'failed',
   sentAt: '2026-09-01T08:00:00Z',

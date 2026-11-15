@@ -6,6 +6,8 @@ import { ErrorMessage, ReadFailure } from '../../common/components/error_message
 import { Button } from '../../common/ui/button'
 import { SecondaryButton } from '../../common/components/secondary_button'
 import { Surface } from '../../common/components/surface'
+import { Loading } from '../../common/components/loading'
+import { Skeleton } from '../../common/ui/skeleton'
 import { ConfirmModal } from '../../common/components/confirm_modal'
 import { Overlay } from '../../common/components/overlay'
 import { SurveillanceEntry, surveillanceEntryOf } from '../../common/camera/camera_status'
@@ -27,6 +29,7 @@ import { hubReducer } from './hub.reducer'
 import { buildInitialHubUido } from './hub.uido'
 import { privacyWording, type PrivacyRequest } from './privacy_request'
 import { alertsSummary } from './alerts_summary'
+import { EmptyState } from '../../common/components/empty_state'
 
 /** Home shows only the latest ones; the history shows the same ones, all of them. */
 const RECENT_EVENTS_MAX = 5
@@ -91,15 +94,18 @@ export function HubView() {
   )
 }
 
+/** The home's shape while it is read: its title, then the cameras' pictures. */
 function HubLoading() {
   return (
-    <main className="flex flex-col gap-4 py-4" aria-label="Chargement">
-      <div className="h-24 animate-pulse rounded-card bg-card" />
-      <div className="grid gap-4 sm:grid-cols-3">
-        <div className="h-40 animate-pulse rounded-card bg-card" />
-        <div className="h-40 animate-pulse rounded-card bg-card" />
-        <div className="h-40 animate-pulse rounded-card bg-card" />
-      </div>
+    <main className="py-4">
+      <Loading className="gap-6 py-0">
+        <Skeleton className="h-9 w-2/3 rounded-full bg-card" />
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <Skeleton className="aspect-video rounded-card bg-card" />
+          <Skeleton className="aspect-video rounded-card bg-card" />
+          <Skeleton className="aspect-video rounded-card bg-card" />
+        </div>
+      </Loading>
     </main>
   )
 }
@@ -165,17 +171,20 @@ function HubWelcome() {
     <main className="py-4">
       <Surface>
         <h1 className="font-serif text-3xl">Bienvenue</h1>
-        <p className="mt-1 text-muted-foreground">
+        <p className="mt-1 text-sm text-muted-foreground">
           Trois étapes, et vos caméras sont sous surveillance.
         </p>
 
         <ol className="mt-6 grid gap-5 sm:grid-cols-3">
           {WELCOME_STEPS.map((step, index) => (
-            <li key={step.title}>
-              <span className="flex size-8 items-center justify-center rounded-full bg-muted font-medium">
+            <li key={step.title} className="grid grid-cols-[2rem_1fr] gap-x-3">
+              <span
+                aria-hidden="true"
+                className="row-span-2 flex size-8 items-center justify-center rounded-full bg-muted text-sm font-semibold text-primary"
+              >
                 {index + 1}
               </span>
-              <p className="mt-2 font-medium">{step.title}</p>
+              <p className="font-medium">{step.title}</p>
               <p className="text-sm text-muted-foreground">{step.body}</p>
             </li>
           ))}
@@ -313,9 +322,9 @@ function HubOperational({
               />
             </div>
           ) : (
-            <p className="mt-3 text-muted-foreground">
+            <EmptyState className="mt-3">
               Rien à signaler. Les détections apparaîtront ici.
-            </p>
+            </EmptyState>
           )}
 
           <div className="mt-4">

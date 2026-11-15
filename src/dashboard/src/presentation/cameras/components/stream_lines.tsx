@@ -40,6 +40,8 @@ import {
 } from '../stream_lines'
 import { Picker } from './protocol_choice'
 import { Field } from '../../../common/components/field'
+import { Loading } from '../../../common/components/loading'
+import { EmptyState } from '../../../common/components/empty_state'
 
 /** What the stream lines ask of their screen. */
 export interface StreamLineIntents {
@@ -83,7 +85,7 @@ export function StreamLines({
   return (
     <div className="flex flex-col gap-3">
       <h4 className="font-medium">Flux</h4>
-      {loading && <p className="text-muted-foreground">Chargement…</p>}
+      {loading && <Loading />}
       {readError && (
         <ReadFailure
           error={readError}
@@ -423,7 +425,7 @@ export function StreamPicker({
           />
         </Field>
       ) : (
-        !error && <p className="text-sm text-muted-foreground">Aucun autre flux à ajouter.</p>
+        !error && <EmptyState>Aucun autre flux à ajouter.</EmptyState>
       )}
       {error && onRetry && <ListFailure error={error} onRetry={onRetry} />}
       {selected?.other && (

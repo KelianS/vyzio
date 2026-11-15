@@ -28,7 +28,7 @@ describe('formatEventTitle', () => {
 
   it('formatEventTitle_ShouldNameTheDetectionInFrench_WhenTheCatalogueKnowsItsLabel', () => {
     // Arrange
-    const labels = [{ value: 'car', displayName: 'Voiture', emoji: '🚗' }]
+    const labels = [{ value: 'car', displayName: 'Voiture' }]
 
     // Act
     const title = formatEventTitle(event({ identity: null, label: 'car' }), labels)

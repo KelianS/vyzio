@@ -8,6 +8,8 @@ import { ReadFailure } from '../../../common/components/error_message'
 import type { AppError } from '../../../common/errors/app_error'
 import type { Camera } from '../../../domain/entities/camera.entity'
 import { formatCameraStatusLabel, formatStatusTone } from '../../../common/camera/camera_status'
+import { Loading } from '../../../common/components/loading'
+import { EmptyState } from '../../../common/components/empty_state'
 
 /** The rubric with no camera chosen: the list. Adding a camera is its own task/page. */
 export function CameraList({
@@ -53,10 +55,10 @@ export function CameraList({
           subject="La liste de vos caméras n’a pas pu être lue."
           className="py-3"
         />
+      ) : loading ? (
+        <Loading />
       ) : (
-        <p className="py-3 text-muted-foreground">
-          {loading ? 'Chargement…' : 'Aucune caméra pour l’instant.'}
-        </p>
+        <EmptyState>Aucune caméra pour l’instant.</EmptyState>
       )}
 
       {!unread && (

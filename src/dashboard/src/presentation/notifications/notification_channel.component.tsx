@@ -42,6 +42,7 @@ import {
   toNotificationValues,
   type NotificationValues,
 } from './notification_settings'
+import { Loading } from '../../common/components/loading'
 
 const MEDIA_MODE_OPTIONS: readonly { value: MediaMode; label: string }[] = [
   { value: 'clip_or_photo', label: 'Photo et vidéo' },
@@ -118,7 +119,11 @@ export function NotificationChannelView() {
   }
 
   if (uido.configLoading || !uido.config) {
-    return <SettingsPage>Chargement…</SettingsPage>
+    return (
+      <SettingsPage>
+        <Loading />
+      </SettingsPage>
+    )
   }
 
   return <ChannelForm key={channel} config={uido.config} uido={uido} presenter={presenter} />
@@ -189,7 +194,7 @@ function ChannelForm({
             kind: 'multiChoice',
             options: uido.labels.map((label) => ({
               value: label.value,
-              label: `${label.emoji} ${label.displayName}`,
+              label: label.displayName,
             })),
           },
           help: 'Seules les catégories cochées vous sont notifiées. Les autres restent détectées et consultables dans l’historique.',
@@ -351,7 +356,7 @@ function ChannelForm({
                     className="mt-2"
                   />
                 ) : (
-                  <p className="mt-1 text-sm text-muted-foreground">Chargement…</p>
+                  <Loading lines={1} />
                 )}
               </div>
             )}

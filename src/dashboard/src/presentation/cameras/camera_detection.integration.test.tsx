@@ -12,13 +12,13 @@ const DETECTION_TAB = {
 }
 
 const labels = [
-  { value: 'person', displayName: 'Personne', emoji: '🧍' },
-  { value: 'car', displayName: 'Voiture', emoji: '🚗' },
+  { value: 'person', displayName: 'Personne' },
+  { value: 'car', displayName: 'Voiture' },
 ]
 
 async function addCarsToWhatIsDetected() {
   await userEvent.click(await screen.findByRole('combobox', { name: 'Ce qui est détecté' }))
-  await userEvent.click(screen.getByRole('checkbox', { name: '🚗 Voiture' }))
+  await userEvent.click(screen.getByRole('checkbox', { name: 'Voiture' }))
 }
 
 describe('CameraDetectionView', () => {
@@ -84,7 +84,7 @@ describe('CameraDetectionView', () => {
 
     // Assert
     expect(await screen.findByRole('combobox', { name: 'Ce qui est détecté' })).toHaveTextContent(
-      '🧍 Personne',
+      'Personne',
     )
   })
 
@@ -103,7 +103,7 @@ describe('CameraDetectionView', () => {
 
     // Assert
     expect(await screen.findByRole('combobox', { name: 'Ce qui est détecté' })).toHaveTextContent(
-      '🧍 Personne',
+      'Personne',
     )
   })
 
