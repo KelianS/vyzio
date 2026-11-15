@@ -25,7 +25,7 @@
 | N1 | Couper une caméra | Nominal | L'utilisateur touche l'œil d'une caméra à l'accueil, ou « Couper la caméra » dans sa vue |
 | A1 | Couper plusieurs caméras d'un coup | Alternative | L'utilisateur touche « Couper les caméras » à l'accueil |
 | A2 | Reprendre la surveillance | Alternative | L'utilisateur touche l'œil d'une caméra coupée, ou « Réactiver » dans sa vue |
-| A3 | Reprendre la surveillance pendant une plage | Alternative | La caméra est coupée par une plage Vie privée |
+| A3 | Reprendre la surveillance pendant une plage | Alternative | La caméra est coupée par une plage Caméras coupées |
 | E1 | La caméra ne suit pas | Échec | La caméra refuse, ne répond pas, ou ne peut pas suivre sa stratégie |
 | E2 | La demande est interrompue | Échec | La demande s'arrête avant la réponse de la caméra |
 
@@ -49,7 +49,7 @@
 
 ### A3 · Reprendre la surveillance pendant une plage
 
-1. La caméra est coupée par une plage Vie privée (UC-SCHED-01) ; l'utilisateur reprend sa surveillance.
+1. La caméra est coupée par une plage Caméras coupées (UC-SCHED-01) ; l'utilisateur reprend sa surveillance.
 2. La plage ne la recoupe pas jusqu'à sa fin, et l'écran vie privée dit jusqu'à quand (PRIV-07).
 
 ### E1 · La caméra ne suit pas

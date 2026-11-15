@@ -46,7 +46,7 @@
 ### A1 · Saisir l'adresse à la main
 
 1. La caméra n'est pas dans la liste, par exemple hors des plages balayées (CAM-29, CAM-41).
-2. L'utilisateur saisit son adresse, son nom et son compte, puis confirme.
+2. L'utilisateur touche « Saisir son adresse » et la saisit ; l'écran suivant demande son nom et son compte, et il touche « Ajouter » (CAM-62).
 3. Le chemin reprend à N1, pas 4.
 
 ### A2 · Préparer la caméra dans l'application de sa marque
@@ -88,7 +88,7 @@
 - **CAM-36** · pour les cameras dont le protocole natif n'est pas RTSP, le systeme doit proposer un mode d'integration alternatif transparent pour l'utilisateur, sans exiger de manipulation technique manuelle ;
 - **CAM-37** · un candidat de la decouverte est presente comme pret des que son flux video est joignable par l'un des protocoles qui savent le porter (RTSP ou un protocole proprietaire), et son ajout ne reprend que son adresse, la detection de sa page retrouvant le reste ; il reste a preparer seulement quand aucun ne le permet, et l'ajout garde alors l'etape qui dit quoi preparer (notice du constructeur, « Réessayer ») ;
 - **CAM-38** · l'ecran d'ajout propose la liste des marques dont Vyzio a une notice, pour un candidat a preparer comme pour une adresse saisie a la main, parce que ce que demande la marque (ex. creer le compte de la camera dans son application) vient avant l'ajout ; choisir une marque affiche sa notice, et rien d'autre : ce choix n'est pas enregistre et ne change ni la detection ni les capacites ; quand un signal tres sur designe la marque, sa notice est choisie d'office ; sinon la liste reste sur « Autre marque », qui affiche une aide generale courte (ouvrir l'application de la camera, y creer un compte pour Vyzio, activer la video locale si elle le propose) ; la marque n'est jamais un choix a faire pour ajouter la camera ;
-- **CAM-62** · l'ajout d'une caméra tient en deux écrans simples : d'abord la trouver (« Sur votre réseau », chaque candidat avec ce qui l'identifie et son adresse ; « Saisir son adresse » ; « Que vérifier » quand elle n'apparaît pas), puis son accès (nom et compte de la caméra, avec où trouver ce compte) et « Ajouter » ; cela crée la caméra de ce seul accès, sans port, protocole, chemin, flux ni marque a choisir, et sans verification prealable (voir [ADR-04](../adr/0004-the-camera-model.md)) ;
+- **CAM-62** · l'ajout d'une caméra tient en deux écrans simples : d'abord la trouver (« Sur votre réseau », chaque candidat avec ce qui l'identifie et son adresse ; « Saisir son adresse » ; « Que vérifier » quand elle n'apparaît pas), puis son accès (nom et compte de la caméra, avec où trouver ce compte) et « Ajouter » ; cela crée la caméra de ce seul accès, sans port, protocole, chemin, flux ni marque à choisir, et sans vérification préalable (voir [ADR-04](../adr/0004-the-camera-model.md)) ;
 - **CAM-40** · l'ajout mene aussitot sur la page de la camera, ouverte sur sa connexion : c'est la que se regle une nouvelle camera, avec les memes ecrans que pour toute camera, sans assistant a part ; a l'arrivee, la page lance « Détecter automatiquement » si la camera n'a jamais ete detectee, et dit ce qui repond ;
 - **CAM-41** · la detection automatique est souhaitee quand elle est possible, avec une saisie manuelle en secours ;
 - **CAM-60** · le detail technique d'un candidat liste chaque port ouvert trouve ; un port ne porte le nom d'un protocole que si la camera l'a confirme sans compte, sinon il se lit « non identifie » : un port ouvert ne nomme jamais un protocole a lui seul.

@@ -27,7 +27,7 @@
 
 ### N1 · Choisir les catégories et la certitude minimale
 
-1. Le propriétaire choisit les destinations actives, les catégories notifiées et la certitude minimale (NOTIF-20, NOTIF-21).
+1. Le propriétaire choisit, pour chaque canal configuré (NOTIF-35), les catégories notifiées et la certitude minimale (NOTIF-20, NOTIF-21).
 2. Il voit ce qu'il a modifié et enregistre (UI-11).
 
 ### A1 · Planifier des plages Silence
@@ -41,7 +41,7 @@
 ## Règles locales
 
 - **NOTIF-20** · l'utilisateur doit pouvoir regler une certitude minimale de notification, et planifier des plages **Silence** dans la planification de la maison (SCHED-01), qui suivent NOTIF-33 ;
-- **NOTIF-21** · le produit doit permettre de regler au minimum les destinations actives, les categories d'evenements notifiees, la certitude minimale et les plages Silence ;
+- **NOTIF-21** · le produit doit permettre de regler au minimum, pour chaque canal configure, les categories d'evenements notifiees, la certitude minimale et les plages Silence ;
 - **NOTIF-22** · le produit doit permettre de choisir un format de message simple, avec au minimum camera, heure, type d'evenement, identite si connue et apercu si autorise.
 
 ## Points ouverts

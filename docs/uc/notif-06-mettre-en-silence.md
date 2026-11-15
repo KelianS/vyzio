@@ -54,7 +54,7 @@
 
 ## Règles locales
 
-- **NOTIF-34** · le Silence se lance depuis l'accueil, par une feuille qui dit son effet (plus de notifications, les caméras continuent de filmer et de détecter) et propose, dans cet ordre : « Jusqu'à HH h », le prochain changement des plages Silence, avec « Ensuite, la planification reprend », seulement quand une plage Silence existe ; puis 30 minutes, 1 heure, 2 heures, 4 heures ; un Silence dure jusqu'à une heure donnée, jamais plus de 7 jours ; un toucher le lance et ferme la feuille ; tant qu'il dure, le bouton de l'accueil dit « Silence jusqu'à HH h », à l'heure de la maison (SCHED-03), et la tuile Notifications dit « En silence jusqu'à HH h » ; un toucher sur ce bouton y met fin ; le Silence survit à un redémarrage de Vyzio jusqu'à son heure ; le relancer pendant qu'il dure remplace son heure de fin.
+- **NOTIF-34** · le Silence se lance depuis l'accueil, par une feuille qui dit son effet (plus de notifications, les caméras continuent de filmer et de détecter) et propose, dans cet ordre : « Jusqu'à HH h », le prochain changement des plages Silence, avec « Ensuite, la planification reprend », seulement quand une plage Silence existe ; puis 30 minutes, 1 heure, 2 heures, 4 heures ; un Silence dure jusqu'à une heure donnée, jamais plus de 7 jours ; un toucher le lance et ferme la feuille ; tant qu'il dure, le bouton de l'accueil dit « Silence jusqu'à HH h », à l'heure de la maison (SCHED-03), et la tuile Notifications le redit (« En silence jusqu'à HH h ») ; un toucher sur ce bouton y met fin ; le Silence survit à un redémarrage de Vyzio jusqu'à son heure ; le relancer pendant qu'il dure remplace son heure de fin.
 
 ## Points ouverts
 

@@ -35,7 +35,7 @@
 ### N1 · Créer une plage
 
 1. Le propriétaire lit la semaine, à l'heure de la maison (SCHED-05, SCHED-03), puis les plages listées par type (SCHED-10), et touche « Ajouter une plage ».
-2. Il choisit son type, dont l'effet reste visible (SCHED-02), ses heures, ses jours et ses cibles sur l'écran de la plage (SCHED-07, SCHED-10).
+2. La plage prend le type de la liste où il l'ajoute, et son effet reste visible (SCHED-02) ; il choisit ses heures, ses jours et ses cibles sur l'écran de la plage (SCHED-07, SCHED-10).
 3. Il enregistre (SCHED-09) ; la plage s'applique (SCHED-09) et apparaît dans la semaine et dans sa liste.
 
 ### A1 · Créer une plage qui passe minuit

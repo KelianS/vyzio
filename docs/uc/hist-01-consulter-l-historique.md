@@ -21,7 +21,7 @@
 | --- | --- | --- | --- |
 | N1 | Regarder les détections | Nominal | L'utilisateur touche la tuile « Détections » à l'accueil |
 | A1 | Filtrer les détections | Alternative | L'utilisateur touche le filtre de la barre |
-| A2 | Ouvrir les détections d'une caméra | Alternative | L'utilisateur touche « Tout l'historique de cette caméra » dans sa vue |
+| A2 | Ouvrir les détections d'une caméra | Alternative | L'utilisateur touche « Toutes ses détections » dans la vue d'une caméra |
 | A3 | Agir sur un clip | Alternative | L'utilisateur ouvre le menu « ⋯ » d'un clip |
 | E1 | Les détections ne peuvent pas être lues | Échec | La lecture des détections échoue |
 
@@ -40,7 +40,7 @@
 
 ### A2 · Ouvrir les détections d'une caméra
 
-1. Depuis la vue d'une caméra, l'utilisateur touche « Tout l'historique de cette caméra » (UC-LIVE-01 A3) : la page s'ouvre filtrée sur cette caméra (HIST-03).
+1. Depuis la vue d'une caméra, l'utilisateur touche « Toutes ses détections » (UC-LIVE-01 A3) : la page s'ouvre filtrée sur cette caméra (HIST-03).
 2. Le retour ramène à la vue de la caméra (UI-29).
 
 ### A3 · Agir sur un clip

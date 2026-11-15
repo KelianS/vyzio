@@ -16,7 +16,7 @@ subtitle or a frame is added only when it carries something the user acts on.
 
 ## Palette
 
-**Dark only.** One theme; a light theme can come back later from the same roles, never from colours
+**Dark only.** One theme, its colours held by roles, never by colours
 written in a screen. Each role is a token; the Tailwind theme realises them, and no component writes
 a colour.
 
@@ -141,14 +141,14 @@ otherwise jump, never decorates. One curve and three durations, never a value wr
 The shell is **one top bar, anchored at the top, its bottom corners rounded, on the bar colour; there
 is no navigation bar** ([SPECS](SPECS.md) UI-29).
 
-- On the home: the product name on the left, a gear on the right that opens `Réglages`.
-- On an inner page: a round back button, then the page title at the page title size. A page about
+- What it carries on the home and on an inner page is UI-29: on the home the name sits left and the
+  gear right; on an inner page the round back button comes first, then the title at the page title
+  size. A page about
   one thing (a camera) adds the thing's status mark beside its title, and may carry one icon button
   on the right for that thing (a camera's gear, the filter of `Détections`).
-- **The alert slot**: the bar grows downwards to carry an alert, a line in ink with a quieter second
-  line, on every page while it holds (UI-30). Several alerts stack, the most recent first.
-- **The settings apply**: inside the settings only, the bar carries `Appliquer les changements` as
-  its main action while a saved setting waits for the restart (§ Editing cycle).
+- **The alert slot** (UI-30): the bar grows downwards, each alert a line in ink with a quieter
+  second line.
+- **The settings apply** (UI-28) is the bar's main action, drawn as one (§ Editing cycle).
 
 ### Page header
 
@@ -157,17 +157,16 @@ appears only to say what the title leaves out (a scope, a timing, a state).
 
 ### Status mark
 
-**One mark, the same everywhere, beside a name**, `8px`, never a word for a nominal state:
+**One mark beside a name** ([SPECS](SPECS.md) UI-31, which says which state takes which mark), `8px`:
 
 | Mark | Camera | Capability |
 | --- | --- | --- |
 | Filled green dot | Running | Works |
-| Filled grey dot | Cut | Not verified, to confirm |
+| Filled grey dot | Cut, to set up | Any state that is neither working nor failing |
 | Hollow coral ring | Offline | Fails |
 
-A row or a card carries a subtitle **only for an exception or a state to act on** (`Coupée jusqu'à
-7 h`, `À configurer`, `Hors ligne depuis 4 min`); the nominal state is the mark alone. The mark carries
-its state as its accessible name.
+The subtitle UI-31 allows sits under the title in ink soft, `15px`. The mark carries its state as its
+accessible name.
 
 ### Grouped lists
 
@@ -199,7 +198,7 @@ end, the confirmation last; on a phone they stack full width, the confirmation o
 ### Tabs
 
 Two or three tabs under a picture or a page head, as pills in one track: the selected one raised, the
-others in ink soft. A tab may carry a dot when something new waits behind it.
+others in ink soft. A tab may carry a dot when something recent waits behind it.
 
 ### Sheets
 
@@ -238,7 +237,8 @@ the reason.
 
 ### Cards
 
-A thing the user checks or sets (a capability, a channel) reads as **a card sharing one anatomy**:
+A thing the user checks or sets, opened from its row (a capability) or its page (a channel), reads as
+**a card sharing one anatomy**:
 **title** with its mark · *state line* · *settings* · **actions**.
 
 - **The title** is the plain name of the thing, never a protocol or a technical acronym.
@@ -336,9 +336,7 @@ A label states the **nature** of a screen, viewing or configuring, never its aud
 ([SPECS](SPECS.md) UI-06).
 
 - Viewing: `Accueil` (the product name in the bar), a camera's view, `Détections`.
-- Configuring: `Réglages`, in two sections:
-  - **Surveillance**: `Caméras`, `Détection`, `Planification`, `Notifications`;
-  - **Système**: `Conservation`, `Accès`, `Matériel`.
+- Configuring: `Réglages`, its rubrics in the two sections of UI-36, each section a grouped list.
 - Known people (`Personnes`) sit under `Détection`, next to what names them.
 - Banned as entries: `Expert` (an audience, not a content), `Alertes` for a settings screen, and
   `Historique` (the list of what was seen is `Détections`).
@@ -372,8 +370,8 @@ A setting is saved; surveillance is restarted separately
 - **`Annuler`** is the single verb of abandonment: back to the last saved state.
 - The draft is **per page**: leaving a modified page asks for confirmation. A value's **provenance**
   (followed or its own) and its **edit state** (saved or in the draft) read separately.
-- **`Appliquer les changements` is the exception**: the restart's trigger, in the settings bar only,
-  and only while a saved setting waits for it ([SPECS](SPECS.md) UI-28, UI-14). It names **the pending
+- **`Appliquer les changements` is the exception**: the restart's trigger, where UI-28 and UI-14 put
+  it. It names **the pending
   state**, with the count when it helps (`Appliquer 3 changements`); its question,
   `Redémarrer la surveillance maintenant ?`, names **the act** and states the interruption. A failed
   restart reads as a **breakdown**, persistent, with `Réessayer`.
@@ -386,5 +384,4 @@ the engine, not saying what is happening.
 - Never `MQTT`, `broker`, `frigate events`, `sub_label`, `NVR`, nor the name of the detection engine, in
   the nominal journey (product principle 2). The diagnostic line of an error is not the nominal journey.
 - Never an opaque state without a readable justification (principle 4).
-- Never a word for a nominal state: the mark says it.
 - Never instructions for use outside the product, nor help that paraphrases the screen (ADR-17).
