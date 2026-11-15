@@ -50,7 +50,7 @@ export function SettingsView() {
               return (
                 <li key={rubric.slug}>
                   <ListRow
-                    className={cn('rounded-lg px-3 py-2.5', active && 'bg-muted font-semibold')}
+                    className={cn('rounded-full px-4 py-2.5', active && 'bg-muted font-semibold')}
                   >
                     <Link to={rubricPath(rubric.slug)} aria-current={active ? 'page' : undefined}>
                       {/* Size, weight and colour together: one signal alone left the two lines alike. */}

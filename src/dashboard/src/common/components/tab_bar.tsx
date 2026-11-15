@@ -62,9 +62,9 @@ export function TabBar({ label, tabs }: { label: string; tabs: readonly Tab[] })
           to={tab.to}
           className={({ isActive }) =>
             cn(
-              'shrink-0 rounded-lg px-3 py-2 text-sm transition-colors',
+              'inline-flex h-8 shrink-0 items-center rounded-full px-3 text-sm font-medium transition-colors',
               'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
-              isActive ? 'bg-card font-medium shadow-xs' : 'text-muted-foreground hover:bg-card/60',
+              isActive ? 'bg-card shadow-xs' : 'text-muted-foreground hover:bg-card/60',
             )
           }
         >

@@ -10,11 +10,11 @@ export function HelpTrigger({ question, help }: { question: string; help: string
         <Button
           type="button"
           variant="ghost"
-          size="icon"
-          className="size-6 shrink-0 text-muted-foreground hover:text-foreground"
+          size="icon-xs"
+          className="text-muted-foreground hover:text-foreground"
           aria-label={question}
         >
-          <HelpCircle aria-hidden="true" />
+          <HelpCircle className="size-4" aria-hidden="true" />
         </Button>
       </PopoverTrigger>
       <PopoverContent side="top" className="max-w-80 text-sm">
