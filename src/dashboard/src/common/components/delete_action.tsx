@@ -4,7 +4,7 @@ import { ConfirmModal } from './confirm_modal'
 interface DeleteActionProps {
   /** The button's words, naming what goes: `Supprimer cette caméra`. */
   label: string
-  /** The confirmation's question and what the removal costs (UI-16). */
+  /** The confirmation's question and what the removal costs (UI-19). */
   question: string
   consequence: string
   confirming: boolean

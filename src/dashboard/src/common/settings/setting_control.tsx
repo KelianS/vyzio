@@ -223,7 +223,7 @@ function NumberControl({
   }
 
   return (
-    // Sized to its value and starting at the column's edge, so the anatomy stays aligned (ADR-15).
+    // Narrow and starting at the column's edge, so the anatomy stays aligned (ADR-15).
     <div className="relative w-36">
       <Input
         id={setting.id}
