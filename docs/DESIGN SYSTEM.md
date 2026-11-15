@@ -285,9 +285,10 @@ An error reads at two levels ([SPECS](SPECS.md) UI-01).
   a filter stays offered on an empty list only while one is set, to take it back. An unread list is
   never shown empty (§ Errors).
 - **A read in progress shows nothing during a short delay**, so an answer that comes fast never
-  flashes. Past it, one shared component shows the shape of what it replaces, pulsing quietly on an
-  inset: lines for a list or a settings page, a title and picture frames for the home. Never a bare
-  `Chargement…` sentence, which jumps to the content when it lands.
+  flashes. Past it, one shared component shows the shape of what it replaces, pulsing quietly: lines
+  on an inset for a list or a settings page, a title and picture frames for the home, in the colour
+  of the cards they stand for. Never a bare `Chargement…` sentence, which jumps to the content when
+  it lands.
 
 ### Full-screen viewing
 
