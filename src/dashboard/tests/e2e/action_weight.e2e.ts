@@ -7,16 +7,26 @@ import {
   makeFakeDetectionEvent,
 } from './fixtures/fake_backend'
 
-// The token values these read: `--alert-high`, `--bg-elevated` and `--brand-moss` of `src/index.css`.
+// The token values these read: `--alert-high` and `--brand-moss` of `src/index.css`.
 const DESTRUCTIVE = 'rgb(176, 76, 48)'
-const ELEVATED = 'rgb(255, 250, 242)'
 const MOSS = 'rgb(47, 107, 89)'
+const TRANSPARENT = 'rgba(0, 0, 0, 0)'
 
 const PHONE = { width: 390, height: 844 }
 const DESKTOP = { width: 1280, height: 900 }
 
 async function heightOf(locator: Locator): Promise<number> {
   return (await locator.boundingBox())?.height ?? 0
+}
+
+/** Whether a finger landing 22 px above or below the control's middle still reaches it. */
+async function reachesAFinger(control: Locator): Promise<boolean> {
+  return control.evaluate((target) => {
+    const box = target.getBoundingClientRect()
+    const x = box.x + box.width / 2
+    const y = box.y + box.height / 2
+    return [y - 21.5, y + 21.5].every((at) => target.contains(document.elementFromPoint(x, at)))
+  })
 }
 
 function channelState() {
@@ -30,8 +40,8 @@ test.describe('Action weight', () => {
 
     const remove = page.getByRole('button', { name: 'Supprimer le canal' })
     await expect(remove).toHaveCSS('color', DESTRUCTIVE)
-    await expect(remove).toHaveCSS('border-top-color', DESTRUCTIVE)
-    await expect(remove).toHaveCSS('background-color', ELEVATED)
+    await expect(remove).toHaveCSS('border-top-width', '1px')
+    await expect(remove).toHaveCSS('background-color', TRANSPARENT)
 
     const removeTop = (await remove.boundingBox())?.y ?? 0
     const advancedTop = (await page.locator('summary', { hasText: 'Avancé' }).boundingBox())?.y ?? 0
@@ -46,14 +56,39 @@ test.describe('Action weight', () => {
     ).toHaveCSS('background-color', DESTRUCTIVE)
   })
 
-  test('OutlineButton_ShouldRestOnTheCardFill_WhenItSitsOnACard', async ({ page }) => {
-    await installFakeBackend(page, channelState())
-    await page.goto('/settings/notifications/telegram')
-
-    await expect(page.getByRole('button', { name: 'Envoyer un message de test' })).toHaveCSS(
-      'background-color',
-      ELEVATED,
+  test('OutlineButton_ShouldReadAsAnActionInTheProductColour_WhenItSitsOnACardOrThePage', async ({
+    page,
+  }) => {
+    await installFakeBackend(
+      page,
+      createFakeBackendState({
+        cameras: [makeFakeCamera()],
+        notificationChannels: { telegram: makeFakeChannel('telegram') },
+      }),
     )
+
+    await page.goto('/settings/notifications/telegram')
+    const onCard = page.getByRole('button', { name: 'Envoyer un message de test' })
+    await expect(onCard).toHaveCSS('color', MOSS)
+    await expect(onCard).toHaveCSS('border-top-width', '1px')
+
+    await page.goto('/')
+    const onPage = page.getByRole('button', { name: 'Tout couper' })
+    await expect(onPage).toHaveCSS('color', MOSS)
+    await expect(onPage).toHaveCSS('border-top-width', '1px')
+  })
+
+  test('Button_ShouldShareTheNavigationPill_WhenItSitsInTheHeader', async ({ page }) => {
+    await installFakeBackend(
+      page,
+      createFakeBackendState({ cameras: [makeFakeCamera()], pendingChanges: true }),
+    )
+    await page.goto('/')
+
+    const apply = page.getByRole('button', { name: 'Appliquer les changements' })
+    const home = page.getByRole('link', { name: 'Accueil' })
+    expect(await heightOf(apply)).toBe(await heightOf(home))
+    await expect(apply).toHaveCSS('border-top-left-radius', /e\+|\d{3,}px/)
   })
 
   test('DetectionHistory_ShouldOfferItsRowActionAsAGhostButton_WhenADetectionCanBeIdentified', async ({
@@ -102,7 +137,7 @@ test.describe('Action weight', () => {
 })
 
 test.describe('Touch size', () => {
-  test('Controls_ShouldBeAFingerTall_WhenTheScreenIsAPhone', async ({ page }) => {
+  test('Controls_ShouldReachAFinger_WhenTheScreenIsAPhone', async ({ page }) => {
     await page.setViewportSize(PHONE)
     await installFakeBackend(
       page,
@@ -123,9 +158,13 @@ test.describe('Touch size', () => {
     )
 
     await page.goto('/settings/notifications/telegram')
+    const sendTest = page.getByRole('button', { name: 'Envoyer un message de test' })
+    expect(await heightOf(sendTest)).toBe(40)
+    expect(await reachesAFinger(sendTest)).toBe(true)
     expect(
-      await heightOf(page.getByRole('button', { name: 'Envoyer un message de test' })),
-    ).toBeGreaterThanOrEqual(44)
+      await reachesAFinger(page.getByRole('button', { name: /À quoi sert « Token du bot »/ })),
+    ).toBe(true)
+    expect(await reachesAFinger(page.getByRole('button', { name: 'Afficher' }))).toBe(true)
     expect(
       await heightOf(page.getByRole('textbox', { name: 'Identifiant de conversation' })),
     ).toBeGreaterThanOrEqual(44)
@@ -139,7 +178,9 @@ test.describe('Touch size', () => {
     ).toBeGreaterThanOrEqual(44)
 
     await page.goto('/')
-    expect(await heightOf(page.getByRole('button', { name: 'Pause' }))).toBeGreaterThanOrEqual(44)
+    const pause = page.getByRole('button', { name: 'Pause' })
+    expect(await heightOf(pause)).toBe(32)
+    expect(await reachesAFinger(pause)).toBe(true)
 
     await page.goto('/settings/cameras')
     expect(
@@ -147,16 +188,16 @@ test.describe('Touch size', () => {
     ).toBeGreaterThanOrEqual(44)
   })
 
-  test('Controls_ShouldKeepTheirCompactHeight_WhenTheScreenIsWide', async ({ page }) => {
+  test('Controls_ShouldKeepTheirSize_WhenTheScreenIsWide', async ({ page }) => {
     await page.setViewportSize(DESKTOP)
     await installFakeBackend(page, channelState())
     await page.goto('/settings/notifications/telegram')
 
     expect(await heightOf(page.getByRole('button', { name: 'Envoyer un message de test' }))).toBe(
-      36,
+      40,
     )
     expect(await heightOf(page.getByRole('textbox', { name: 'Identifiant de conversation' }))).toBe(
-      36,
+      40,
     )
   })
 })

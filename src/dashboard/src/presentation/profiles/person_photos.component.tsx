@@ -88,7 +88,7 @@ export function PersonPhotosView() {
                   variant="ghost"
                   size="icon"
                   aria-label={`Supprimer la photo ${photo.filename}`}
-                  className="absolute top-1 right-1 bg-card/80"
+                  className="absolute top-1 right-1 bg-card/80 text-muted-foreground hover:text-foreground"
                   onClick={() => presenter.onAskRemove(photo.id)}
                 >
                   <Trash2 aria-hidden="true" />

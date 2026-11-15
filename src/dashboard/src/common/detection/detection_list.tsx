@@ -25,9 +25,6 @@ interface DetectionListProps {
   openWithoutMedia?: boolean
 }
 
-/** A row's action reads quiet, in the product colour, never as a box repeated on every row. */
-export const ROW_ACTION = 'text-primary hover:text-primary'
-
 const BARE_TILE =
   'flex size-14 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground'
 
@@ -107,7 +104,6 @@ export function DetectionList({
               type="button"
               variant="ghost"
               size="sm"
-              className={ROW_ACTION}
               onClick={() =>
                 onOpenMedia({
                   type: 'video',

@@ -2,12 +2,11 @@ import { useEffect, useReducer, useState } from 'react'
 import { SlidersHorizontal, Trash2, UserRoundPen } from 'lucide-react'
 import { Button } from '../../common/ui/button'
 import { Input } from '../../common/ui/input'
-import { cn } from '../../common/ui/utils'
 import { useToast } from '../../common/components/toast'
 import { HelpPanel } from '../../common/components/help_panel'
 import { Overlay } from '../../common/components/overlay'
 import { ConfirmModal } from '../../common/components/confirm_modal'
-import { DetectionList, ROW_ACTION } from '../../common/detection/detection_list'
+import { DetectionList } from '../../common/detection/detection_list'
 import { carriesIdentity } from '../../common/detection/detection_formatters'
 import { DetectionPreview } from '../../common/detection/detection_preview'
 import { usePresenter } from '../../common/presenter/use_presenter'
@@ -296,7 +295,7 @@ function IdentityCorrection({
         type="button"
         variant="ghost"
         size="sm"
-        className={cn(ROW_ACTION, 'mt-0.5 -ml-2.5')}
+        className="mt-0.5 -ml-3"
         onClick={() => setFixing(true)}
       >
         <UserRoundPen aria-hidden="true" />

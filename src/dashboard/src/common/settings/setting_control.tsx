@@ -100,6 +100,10 @@ function DropdownControl({
   )
 }
 
+/** The multiple choice opens like a select, so it is drawn as a field, never as a button. */
+const FIELD_TRIGGER =
+  'h-11 w-full justify-between rounded-md border-input bg-transparent px-3 font-normal text-foreground hover:bg-transparent md:h-10'
+
 function MultiChoiceControl({
   setting,
   nature,
@@ -130,7 +134,7 @@ function MultiChoiceControl({
           variant="outline"
           role="combobox"
           disabled={setting.disabled}
-          className={cn('w-full justify-between font-normal', followingClass(setting))}
+          className={cn(FIELD_TRIGGER, followingClass(setting))}
         >
           {/* Un reglage se lit au repos : le controle dit son etat, pas la liste des options. */}
           <span className="truncate">
@@ -332,6 +336,7 @@ function SecretControl({
         type="button"
         variant="ghost"
         size="icon"
+        className="text-muted-foreground hover:text-foreground"
         aria-label={revealed ? 'Masquer' : 'Afficher'}
         onClick={() => setRevealed((previous) => !previous)}
       >

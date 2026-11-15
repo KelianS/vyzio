@@ -5,7 +5,7 @@ import { Slot } from "radix-ui"
 import { cn } from "@/common/ui/utils"
 
 const buttonVariants = cva(
-  "inline-flex shrink-0 items-center justify-center gap-2 rounded-md text-sm font-medium whitespace-nowrap transition-all outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "relative inline-flex shrink-0 items-center justify-center gap-2 rounded-full text-sm font-medium whitespace-nowrap transition-all outline-none after:absolute focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
@@ -13,24 +13,23 @@ const buttonVariants = cva(
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive/90 focus-visible:ring-destructive/20",
         outline:
-          "border bg-card shadow-xs hover:bg-muted hover:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
+          "border border-primary/35 bg-transparent text-primary hover:bg-primary/8",
         "destructive-outline":
-          "border border-destructive bg-card text-destructive shadow-xs hover:bg-destructive/10 focus-visible:ring-destructive/20",
+          "border border-destructive/60 bg-transparent text-destructive hover:bg-destructive/8 focus-visible:ring-destructive/20",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost:
-          "hover:bg-muted hover:text-foreground dark:hover:bg-muted/50",
+          "bg-secondary text-secondary-foreground hover:bg-primary/18",
+        ghost: "text-primary hover:bg-primary/8",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
-        default: "h-11 px-4 py-2 has-[>svg]:px-3 md:h-9",
-        xs: "h-6 gap-1 rounded-md px-2 text-xs has-[>svg]:px-1.5 [&_svg:not([class*='size-'])]:size-3",
-        sm: "h-11 gap-1.5 rounded-md px-3 has-[>svg]:px-2.5 md:h-8",
-        lg: "h-11 rounded-md px-6 has-[>svg]:px-4 md:h-10",
-        icon: "size-9",
-        "icon-xs": "size-6 rounded-md [&_svg:not([class*='size-'])]:size-3",
-        "icon-sm": "size-8",
-        "icon-lg": "size-10",
+        default: "h-10 px-6 after:inset-x-0 after:-inset-y-1 has-[>svg]:pr-6 has-[>svg]:pl-4",
+        xs: "h-6 gap-1 px-2.5 text-xs after:inset-x-0 after:-inset-y-2.5 [&_svg:not([class*='size-'])]:size-3",
+        sm: "h-8 gap-1.5 px-4 after:inset-x-0 after:-inset-y-2 has-[>svg]:pr-4 has-[>svg]:pl-3",
+        lg: "h-12 px-8 after:inset-0 has-[>svg]:pr-8 has-[>svg]:pl-6",
+        icon: "size-10 after:-inset-1",
+        "icon-xs": "size-6 after:-inset-2.5 [&_svg:not([class*='size-'])]:size-3",
+        "icon-sm": "size-8 after:-inset-2",
+        "icon-lg": "size-12 after:inset-0",
       },
     },
     defaultVariants: {

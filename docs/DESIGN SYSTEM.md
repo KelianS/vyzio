@@ -17,8 +17,8 @@ engine underneath (product principle 2).
 
 - Surfaces: `--bg-canvas: #f4efe6` the main background, warm rather than clinical;
   `--bg-elevated: #fffaf2` primary surfaces; `--bg-strong: #1f3a33` structural dark panels;
-  `--bg-sunken: #f2ebdf` an inset inside a surface (a track, a chip, a step number, a fold, a quiet
-  hover, a secondary button), opaque so it shows on a card as on the canvas; `--bg-muted`,
+  `--bg-sunken: #f2ebdf` an inset inside a surface (a track, a chip, a step number, a fold, a list
+  hover), opaque so it shows on a card as on the canvas; `--bg-muted`,
   translucent, only for a control laid over the picture, through the `--glass` role (`bg-glass`).
 - Ink: `--ink-strong: #18201d` primary text; `--ink-soft: #606d67` secondary text;
   `--line-soft: #d8cfbf` discreet borders, the colour of every border that names no other, never
@@ -32,7 +32,7 @@ of both themes. Usage rules:
 - Critical surfaces use `--bg-elevated` to keep a soft contrast.
 - `--brand-moss` carries the calls to action and the product indicators.
 - `--alert-high` is reserved for important events, attention states and destructive actions.
-- `--brand-sand` never marks a hover: a quiet action (outline, ghost) hovers to `--bg-sunken`.
+- `--brand-sand` never marks a hover: a quiet action (outlined, text) hovers to a tint of the product colour.
 - Colour never carries a meaning alone: a kind of thing is told apart by its icon and its name, and a
   fill that must be told apart differs by its pattern too.
 
@@ -58,9 +58,9 @@ Radii, two scales never confused (exact values in `src/index.css`, the single ho
 
 | Token | Use |
 | --- | --- |
-| `--radius`, `--radius-sm/md/lg/xl` | **Clickable** elements (buttons, inputs, small pills), Tailwind's `rounded-*` scale |
+| `999px` | The pill: every **button**, every **navigation** link or tab, and the status pills |
+| `--radius`, `--radius-sm/md/lg/xl` | What **holds** a value or content and opens on a press: a field, a select, a fold |
 | `--radius-inset`, `--radius-card`, `--radius-panel` | **Non-clickable** surfaces (cards, panels, modals) |
-| `999px` | The pill, **reserved**: navigation links (the header's, a tab bar's) and status pills |
 
 Two shadows, both tokens: `--shadow-soft` lifts the elevated surfaces, a modal included, which is
 drawn as a panel (`--radius-panel`, `--bg-elevated`, no border); `--shadow-strong` floats the
@@ -71,13 +71,16 @@ rewritten in a screen: `--bg-elevated`, `--radius-card`, `--shadow-soft`, and on
 content inset (`20px`, `24px` from `sm`), the list inset (`8px`, its rows carrying their own) or none,
 for a picture that fills it. A thing shown on two screens sits at the same indent on both.
 
-**A control is a finger's size on a phone**: a button, a field or a list row is at least `44px`
-tall there, and takes back its compact height from `md` up, where a pointer aims.
+**A control is a finger's size**: a button is drawn `40px` tall (`32px` compact, beside navigation or
+in a dense row), an icon button at its own size, and each reaches at least `44px` to the touch through
+an invisible margin, never by being drawn taller. A field and a list row are drawn at least `44px` tall
+on a phone, `40px` from `md` up.
 
-**Shape rule: a pill is a state, a rounded rectangle is an action.** A pill means a **non-clickable**
-element (a status pill, a badge, a header navigation link); a rounded rectangle (`--radius-sm` /
-`--radius`) means a **clickable** one, any action button. That contrast tells a `Connectée` pill from an
-`Enregistrer` button at a glance: never give a status pill a raised `box-shadow` or a pronounced border.
+**Shape rule: an action or a way somewhere is a pill, what holds a value is a rounded rectangle.**
+Buttons, the header navigation and tabs share one shape and one compact size, so the page reads as
+one language. A **status pill** is a pill too, and stays told apart from a button at a glance: smaller
+(`text-xs`), tinted by its state, no border, no shadow, never pressed. A field, a select and a fold
+take the clickable radius (`--radius`); a surface takes its own.
 
 ## Component foundation
 
@@ -190,16 +193,23 @@ one short line takes its place, naming as a link the page where it is fixed.
 
 ### Action weight
 
-A page has one loud action at most; the others read quieter, each the same wherever it sits.
+Four weights of button, after Material Design 3, each the same wherever it sits; a page has one
+filled button at most. Every button stays visibly distinct from the surface under it, canvas or card.
 
-- **A quiet action** is outlined and rests on the card's fill, so it looks the same on the canvas
-  as on a card, and its hover shows on both.
-- **A row's action** in a list whose rows each offer one is a ghost button in the product colour,
-  never a bordered box repeated on every row.
+- **Filled**: the main action of a view, in the product colour.
+- **Tonal**: a second action that still matters, on a tint of the product colour, never the
+  surface's own colour.
+- **Outlined**: a quiet action, a faint line of the product colour around its label, no fill.
+- **Text**: the lightest, a label in the product colour; a list whose rows each offer one action
+  uses it, never a bordered box repeated on every row.
 - **A destructive action is quiet until confirmed**: outlined in the destructive colour
   (`--alert-high`) on its page, solid only on its confirmation's button. Removing what the page
   names closes the page: always last, after `Avancé`, under a separator, never beside another
   action. One shared component draws it, so no page can drift.
+
+Buttons in a row stand `8px` apart and wrap. In a page or a card, actions start under what they act
+on, the main one first. A footer that settles a layer (a dialog) aligns its actions to the end, the
+confirmation last; on a phone they stack full width, the confirmation on top.
 
 ### State pills
 
@@ -219,7 +229,7 @@ the user gave included). Each feature's words are its use case's.
 
 None stands in for another: no setting in help or technical details, no help in `Avancé`.
 
-A fold opens on a press, so it is an action: it takes the clickable radius (`--radius`), never a
+A fold opens on a press and holds content: it takes the clickable radius (`--radius`), never a
 surface's or the pill's (§ Interface tokens).
 
 ### Help: three levels, not a manual
