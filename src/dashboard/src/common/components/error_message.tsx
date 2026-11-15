@@ -1,6 +1,7 @@
+import { RotateCw } from 'lucide-react'
 import { appErrorDiagnostic, appErrorMessage, type AppError } from '../errors/app_error'
-import { Button } from '../ui/button'
 import { cn } from '../ui/utils'
+import { SecondaryButton } from './secondary_button'
 
 /** The line support reads under an error: quiet, monospace, selectable to be copied (UI-01). */
 export function DiagnosticLine({ text }: { text: string }) {
@@ -37,9 +38,9 @@ export function ReadFailure({
     <div className={cn('flex flex-col items-start gap-3', className)}>
       {subject && <p>{subject}</p>}
       <ErrorMessage error={error} />
-      <Button type="button" variant="secondary" size="sm" onClick={onRetry}>
+      <SecondaryButton icon={RotateCw} type="button" size="sm" onClick={onRetry}>
         Réessayer
-      </Button>
+      </SecondaryButton>
     </div>
   )
 }

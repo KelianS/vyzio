@@ -124,12 +124,11 @@ test.describe('Base styles', () => {
   })
 })
 
-// The token values these read: `--line-soft`, `--bg-sunken`, `--bg-elevated`, `--ink-strong` and `--shadow-soft` of `src/index.css`.
+// The token values these read: `--line-soft`, `--bg-sunken`, `--bg-elevated`, `--brand-moss` and `--shadow-soft` of `src/index.css`.
 const LINE_SOFT = 'rgb(216, 207, 191)'
 const SUNKEN = 'rgb(242, 235, 223)'
 const ELEVATED = 'rgb(255, 250, 242)'
-const INK = 'rgb(24, 32, 29)'
-const TRANSPARENT = 'rgba(0, 0, 0, 0)'
+const MOSS = 'rgb(47, 107, 89)'
 
 test.describe('Style foundations', () => {
   test('Border_ShouldTakeTheLineColour_WhenItNamesNoBorderColour', async ({ page }) => {
@@ -169,7 +168,7 @@ test.describe('Style foundations', () => {
     )
   })
 
-  test('TonalButton_ShouldDeepenItsTint_WhenHovered', async ({ page }) => {
+  test('SecondaryAction_ShouldDarken_WhenHovered', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
     await page.goto('/')
 
@@ -193,17 +192,14 @@ test.describe('Style foundations', () => {
     await expect(dialog).toHaveCSS('box-shadow', /, rgba\(24, 32, 29, 0\.08\) 0px 18px 50px 0px$/)
   })
 
-  test('ConfirmDialog_ShouldDrawItsPlainActionAsATonalButton_WhenItAsksPlainly', async ({
-    page,
-  }) => {
+  test('ConfirmDialog_ShouldConfirmWithTheFilledButton_WhenItAsksPlainly', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
     await page.goto('/settings/acces')
     await page.getByRole('button', { name: 'Déconnecter tous les appareils' }).click()
 
-    const disconnect = page.getByRole('alertdialog').getByRole('button', { name: 'Déconnecter' })
-    await expect(disconnect).toHaveCSS('color', INK)
-    await expect(disconnect).not.toHaveCSS('background-color', ELEVATED)
-    await expect(disconnect).not.toHaveCSS('background-color', TRANSPARENT)
+    await expect(
+      page.getByRole('alertdialog').getByRole('button', { name: 'Déconnecter' }),
+    ).toHaveCSS('background-color', MOSS)
   })
 
   test('ClosedFold_ShouldTakeTheClickableRadius_WhenItSitsInACard', async ({ page }) => {

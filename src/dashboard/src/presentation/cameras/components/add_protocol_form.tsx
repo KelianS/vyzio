@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { Plus } from 'lucide-react'
+import { Check, Plus } from 'lucide-react'
 import type { SupportedProtocol } from '../../../domain/entities/camera_capability_binding.entity'
 import type {
   CameraProtocol,
   CameraProtocolAddition,
 } from '../../../domain/entities/camera_protocol.entity'
 import { Button } from '../../../common/ui/button'
+import { SecondaryButton } from '../../../common/components/secondary_button'
 import { Input } from '../../../common/ui/input'
 import { Switch } from '../../../common/ui/switch'
 import { SECRET_KEYBOARD, TEXT_KEYBOARD } from '../../../common/settings/text_keyboard'
@@ -35,10 +36,9 @@ export function AddProtocol({
   return open ? (
     <AddProtocolForm available={available} adding={adding} onAdd={onAdd} onCancel={onClose} />
   ) : (
-    <Button type="button" variant="secondary" size="sm" className="self-start" onClick={onOpen}>
-      <Plus aria-hidden="true" />
+    <SecondaryButton icon={Plus} type="button" size="sm" className="self-start" onClick={onOpen}>
       Ajouter un protocole
-    </Button>
+    </SecondaryButton>
   )
 }
 
@@ -125,9 +125,9 @@ function AddProtocolForm({
           </>
         )}
         <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="secondary" size="sm" disabled={adding} onClick={add}>
+          <SecondaryButton icon={Check} type="button" size="sm" disabled={adding} onClick={add}>
             {adding ? 'Vérification…' : 'Ajouter et vérifier'}
-          </Button>
+          </SecondaryButton>
           <Button type="button" variant="ghost" size="sm" disabled={adding} onClick={onCancel}>
             Annuler
           </Button>

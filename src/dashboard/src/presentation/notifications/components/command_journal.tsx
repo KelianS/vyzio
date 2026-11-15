@@ -1,6 +1,6 @@
 import { RotateCw } from 'lucide-react'
-import { Button } from '../../../common/ui/button'
 import { cn } from '../../../common/ui/utils'
+import { SecondaryButton } from '../../../common/components/secondary_button'
 import type {
   CommandJournalEntry,
   CommandOutcome,
@@ -31,10 +31,16 @@ export function CommandJournal({
   return (
     <div>
       <div className="mb-3">
-        <Button type="button" variant="secondary" size="sm" disabled={loading} onClick={onRefresh}>
-          <RotateCw className={cn(loading && 'animate-spin')} aria-hidden="true" />
+        <SecondaryButton
+          icon={RotateCw}
+          iconClassName={cn(loading && 'animate-spin')}
+          type="button"
+          size="sm"
+          disabled={loading}
+          onClick={onRefresh}
+        >
           Actualiser
-        </Button>
+        </SecondaryButton>
       </div>
 
       {entries.length > 0 ? (

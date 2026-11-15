@@ -1,3 +1,4 @@
+import { Play, Power, RefreshCw, ScanSearch, Settings2, X } from 'lucide-react'
 import { useState } from 'react'
 import { DiagnosticLine, ReadFailure } from '../../../common/components/error_message'
 import type { AppError } from '../../../common/errors/app_error'
@@ -16,6 +17,7 @@ import type {
 } from '../../../domain/entities/camera_stream.entity'
 import { ConfirmModal } from '../../../common/components/confirm_modal'
 import { Button } from '../../../common/ui/button'
+import { SecondaryButton } from '../../../common/components/secondary_button'
 import { SettingRow } from '../../../common/settings/setting_row'
 import { cn } from '../../../common/ui/utils'
 import type { SettingDeclaration } from '../../../common/settings/setting_declaration'
@@ -207,15 +209,15 @@ export function CapabilitySection({
           onConfigure={intents.onConfigureManually}
         />
         {/* A stream not chosen yet is detection's to choose, so it does not wait for the stream (ADR-04). */}
-        <Button
+        <SecondaryButton
+          icon={ScanSearch}
           type="button"
-          variant="secondary"
           size="sm"
           disabled={detecting || (testsSuspended && stream?.isConfigured !== false)}
           onClick={intents.onDetect}
         >
           {detecting ? 'Détection…' : 'Détecter automatiquement'}
-        </Button>
+        </SecondaryButton>
       </div>
 
       {detection && (
@@ -379,15 +381,15 @@ function StreamCard({
         )
       }
       actions={
-        <Button
+        <SecondaryButton
+          icon={RefreshCw}
           type="button"
-          variant="secondary"
           size="sm"
           disabled={verifying || unconfigured}
           onClick={onVerify}
         >
           {verifying ? 'Vérification…' : 'Vérifier'}
-        </Button>
+        </SecondaryButton>
       }
     >
       {state && stateLine(state)}
@@ -559,30 +561,30 @@ function BindingCard({
         >
           Oui
         </Button>
-        <Button
+        <SecondaryButton
+          icon={X}
           type="button"
-          variant="secondary"
           size="sm"
           disabled={answering}
           onClick={() => intents.onAnswer(binding.capability, false)}
         >
           Non
-        </Button>
+        </SecondaryButton>
       </>
     )
   }
 
   function tryButton(label: string) {
     return (
-      <Button
+      <SecondaryButton
+        icon={Play}
         type="button"
-        variant="secondary"
         size="sm"
         disabled={trying || testsSuspended || camera.privacyModeActive}
         onClick={() => intents.onTry(binding.capability)}
       >
         {trying ? 'Essai…' : label}
-      </Button>
+      </SecondaryButton>
     )
   }
 
@@ -619,28 +621,28 @@ function BindingCard({
       case CapabilityState.Unconfigured:
         return (
           suggested && (
-            <Button
+            <SecondaryButton
+              icon={Settings2}
               type="button"
-              variant="secondary"
               size="sm"
               disabled={configuring || testsSuspended}
               onClick={() => void intents.onConfigure(binding.capability, suggested)}
             >
               {configuring ? 'Configuration…' : 'Configurer'}
-            </Button>
+            </SecondaryButton>
           )
         )
       case CapabilityState.SwitchedOff:
         return (
-          <Button
+          <SecondaryButton
+            icon={Power}
             type="button"
-            variant="secondary"
             size="sm"
             disabled={toggling}
             onClick={() => void intents.onTogglePtz()}
           >
             {toggling ? 'Activation…' : 'Activer'}
-          </Button>
+          </SecondaryButton>
         )
       case CapabilityState.ToConfirm:
         return asking ? (
@@ -665,15 +667,15 @@ function BindingCard({
       case CapabilityState.Failed:
         return (
           <>
-            <Button
+            <SecondaryButton
+              icon={RefreshCw}
               type="button"
-              variant="secondary"
               size="sm"
               disabled={verifying || testsSuspended}
               onClick={() => intents.onVerify(binding.capability)}
             >
               {verifying ? 'Vérification…' : 'Vérifier'}
-            </Button>
+            </SecondaryButton>
             {wayOutButton()}
           </>
         )

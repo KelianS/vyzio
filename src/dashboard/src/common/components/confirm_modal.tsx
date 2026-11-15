@@ -25,7 +25,7 @@ interface ConfirmModalProps {
   diagnostic?: string
   confirmLabel: string
   cancelLabel?: string
-  tone?: 'warn' | 'danger' | 'default' | 'confirm'
+  tone?: 'warn' | 'danger' | 'default'
   onConfirm: () => void | Promise<void>
   onCancel: () => void
   loading?: boolean
@@ -34,8 +34,7 @@ interface ConfirmModalProps {
 const CONFIRM_VARIANT: Record<Required<ConfirmModalProps>['tone'], ButtonVariant> = {
   danger: 'destructive',
   warn: 'destructive-outline',
-  confirm: 'default',
-  default: 'secondary',
+  default: 'default',
 }
 
 /** Confirmation dialog on the shadcn AlertDialog primitive (ADR-01): focus trap and Escape come from Radix. */

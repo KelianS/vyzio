@@ -1,7 +1,6 @@
 import { useRef, useState, type PointerEvent, type ReactNode } from 'react'
-import { ArrowDown, ArrowUp, ArrowLeft, ArrowRight, MapPin, Plus } from 'lucide-react'
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Crosshair, MapPin, Plus } from 'lucide-react'
 import { cn } from '../../../common/ui/utils'
-import { Button } from '../../../common/ui/button'
 import { ConfirmModal } from '../../../common/components/confirm_modal'
 import { ReadFailure } from '../../../common/components/error_message'
 import { isReservedPreset, type PtzPreset } from '../../../domain/entities/ptz_preset.entity'
@@ -11,6 +10,7 @@ import type { LiveViewUido, PresetActivity, PtzDirection } from '../live_view.ui
 import type { LiveLayout } from '../live_layout'
 import { fading } from './live_control'
 import { PressableControl } from '../../../common/components/pressable'
+import { SecondaryButton } from '../../../common/components/secondary_button'
 
 const ALL_PRESET_IDS = [1, 2, 3, 4]
 
@@ -334,15 +334,15 @@ export function PtzControlPanel({
                   Cette caméra n’a pas de position de référence : les positions enregistrées ne sont
                   pas utilisables tant qu’elle n’est pas calibrée.
                 </p>
-                <Button
+                <SecondaryButton
+                  icon={Crosshair}
                   type="button"
-                  variant="secondary"
                   size="sm"
                   disabled={uido.calibrating}
                   onClick={onCalibrate}
                 >
                   {uido.calibrating ? 'Calibration en cours…' : 'Calibrer maintenant'}
-                </Button>
+                </SecondaryButton>
               </div>
             )}
           </div>

@@ -73,7 +73,6 @@ export function NavigationGuard() {
       diagnostic={wording.diagnostic}
       confirmLabel={wording.confirmLabel}
       cancelLabel="Plus tard"
-      tone="confirm"
       loading={restarting}
       onConfirm={() => {
         // Not held during the restart: progress reads on the surveillance status (ADR-02).

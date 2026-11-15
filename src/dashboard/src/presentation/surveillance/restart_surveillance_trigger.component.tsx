@@ -48,7 +48,6 @@ export function RestartSurveillanceTrigger() {
           diagnostic={wording.diagnostic}
           confirmLabel={wording.confirmLabel}
           cancelLabel="Plus tard"
-          tone="confirm"
           loading={restarting}
           onConfirm={async () => {
             await presenter.onRestart()

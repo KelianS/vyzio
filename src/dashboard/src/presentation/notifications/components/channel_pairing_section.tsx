@@ -1,5 +1,6 @@
-import { RotateCw } from 'lucide-react'
+import { Link2, RotateCw } from 'lucide-react'
 import { Button } from '../../../common/ui/button'
+import { SecondaryButton } from '../../../common/components/secondary_button'
 import { cn } from '../../../common/ui/utils'
 import { ConfirmModal } from '../../../common/components/confirm_modal'
 import { Badge } from '../../../common/components/badge'
@@ -90,27 +91,24 @@ export function ChannelPairingSection({
               Couper le lien
             </Button>
           ) : (
-            <Button type="button" variant="secondary" disabled={starting} onClick={onStart}>
+            <SecondaryButton icon={Link2} type="button" disabled={starting} onClick={onStart}>
               {status === 'awaiting_conversation'
                 ? 'Générer un autre code'
                 : 'Relier une conversation'}
-            </Button>
+            </SecondaryButton>
           )}
 
           {inUse && (
-            <Button
+            <SecondaryButton
+              icon={RotateCw}
+              iconClassName={cn((pairingLoading || listeningLoading) && 'animate-spin')}
               type="button"
-              variant="secondary"
               size="sm"
               disabled={pairingLoading || listeningLoading}
               onClick={onRefresh}
             >
-              <RotateCw
-                className={cn((pairingLoading || listeningLoading) && 'animate-spin')}
-                aria-hidden="true"
-              />
               Actualiser
-            </Button>
+            </SecondaryButton>
           )}
         </div>
       </div>

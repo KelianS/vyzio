@@ -1,3 +1,4 @@
+import { Search } from 'lucide-react'
 import { useEffect, useMemo, useReducer } from 'react'
 import { useNavigate, useOutletContext } from 'react-router'
 import { SettingsList } from '../../common/settings/settings_list'
@@ -7,7 +8,6 @@ import { useSettingsDraft } from '../../common/settings/use_settings_draft'
 import type { SettingDeclaration } from '../../common/settings/setting_declaration'
 import { useToast } from '../../common/components/toast'
 import { DeleteAction } from '../../common/components/delete_action'
-import { Button } from '../../common/ui/button'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import type { Camera } from '../../domain/entities/camera.entity'
@@ -24,6 +24,7 @@ import { cameraConnectionReducer } from './camera_connection.reducer'
 import { buildInitialCameraConnectionUido } from './camera_connection.uido'
 import { CAPABILITY_LABELS } from './cameras.formatters'
 import { otherTestsSuspended, streamBindingOf } from './capability_state'
+import { SecondaryButton } from '../../common/components/secondary_button'
 import {
   ALL_PROTOCOLS,
   connectionValuesOf,
@@ -264,15 +265,15 @@ export function CameraConnectionView() {
             />
             {!uido.protocolsLoading && !uido.protocolsError && (
               <div className="flex flex-wrap items-center gap-2">
-                <Button
+                <SecondaryButton
+                  icon={Search}
                   type="button"
-                  variant="secondary"
                   size="sm"
                   disabled={uido.searchingProtocols}
                   onClick={() => void presenter.onSearchProtocols(cameraId)}
                 >
                   {uido.searchingProtocols ? 'Recherche…' : 'Rechercher les protocoles'}
-                </Button>
+                </SecondaryButton>
                 {/* Adding by hand is the way out when the search finds nothing (CAM-48). */}
                 <AddProtocol
                   protocols={uido.protocols}

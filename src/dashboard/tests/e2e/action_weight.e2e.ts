@@ -57,7 +57,9 @@ test.describe('Action weight', () => {
     ).toHaveCSS('background-color', DESTRUCTIVE)
   })
 
-  test('TonalButton_ShouldStandOnTheNeutralTint_WhenItSitsOnACardOrThePage', async ({ page }) => {
+  test('SecondaryAction_ShouldCarryItsIconOnTheNeutralTint_WhenItSitsOnACardOrThePage', async ({
+    page,
+  }) => {
     await installFakeBackend(
       page,
       createFakeBackendState({
@@ -70,11 +72,13 @@ test.describe('Action weight', () => {
     const onCard = page.getByRole('button', { name: 'Envoyer un message de test' })
     await expect(onCard).toHaveCSS('color', INK)
     await expect(onCard).not.toHaveCSS('background-color', TRANSPARENT)
+    await expect(onCard.locator('svg')).toBeVisible()
 
     await page.goto('/')
     const onPage = page.getByRole('button', { name: 'Tout couper' })
     await expect(onPage).toHaveCSS('color', INK)
     await expect(onPage).not.toHaveCSS('background-color', TRANSPARENT)
+    await expect(onPage.locator('svg')).toBeVisible()
   })
 
   test('SettingsPage_ShouldShowOneGreenButtonAtMost_WhenItOffersSeveralActions', async ({
@@ -95,7 +99,9 @@ test.describe('Action weight', () => {
     expect(green).toBeLessThanOrEqual(1)
   })
 
-  test('FoldAndTonalButton_ShouldShareTheNeutralTint_WhenTheySitOnOneCard', async ({ page }) => {
+  test('FoldAndSecondaryAction_ShouldShareTheNeutralTint_WhenTheySitOnOneCard', async ({
+    page,
+  }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
     await page.goto('/settings/cameras/camera-1/connexion')
 

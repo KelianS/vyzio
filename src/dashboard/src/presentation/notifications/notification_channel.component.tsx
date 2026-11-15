@@ -1,6 +1,6 @@
 import { useEffect, useReducer } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, Send } from 'lucide-react'
 import { SettingsPage, SettingsSection } from '../../common/settings/settings_page'
 import { SettingsList } from '../../common/settings/settings_list'
 import { AdvancedFold } from '../../common/settings/advanced_fold'
@@ -15,7 +15,6 @@ import { DeleteAction } from '../../common/components/delete_action'
 import { ReadFailure } from '../../common/components/error_message'
 import { ScheduleCountLine } from '../../common/schedule/schedule_count_line'
 import { ScheduleRuleKind } from '../../domain/entities/schedule_rule.entity'
-import { Button } from '../../common/ui/button'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import {
@@ -30,6 +29,7 @@ import { ChannelPairingSection } from './components/channel_pairing_section'
 import { ChannelSetupSteps } from './components/channel_setup_steps'
 import { buildNotificationChannelPresenter } from './notification_channel.presenter'
 import { notificationChannelReducer } from './notification_channel.reducer'
+import { SecondaryButton } from '../../common/components/secondary_button'
 import {
   buildInitialNotificationChannelUido,
   type NotificationChannelUido,
@@ -281,15 +281,15 @@ function ChannelForm({
 
             {/* Tester agit tout de suite : il n'a rien a faire dans le brouillon. */}
             <div className="mt-5">
-              <Button
+              <SecondaryButton
+                icon={Send}
                 type="button"
-                variant="secondary"
                 disabled={uido.testing || !testable}
                 title={testable ? undefined : 'Enregistrez la configuration avant de tester'}
                 onClick={() => void presenter.onTest(channel)}
               >
                 {uido.testing ? 'Envoi…' : 'Envoyer un message de test'}
-              </Button>
+              </SecondaryButton>
             </div>
 
             {/* Unfolded while nothing is configured: the walkthrough is then the task, not a fallback. */}

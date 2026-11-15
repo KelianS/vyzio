@@ -1,8 +1,8 @@
+import { Move } from 'lucide-react'
 import type { AppError } from '../../../common/errors/app_error'
 import { ReadFailure } from '../../../common/components/error_message'
-import { Link } from 'react-router'
-import { Button } from '../../../common/ui/button'
 import { POSITIONS_UNREAD } from '../cameras.formatters'
+import { SecondaryButton } from '../../../common/components/secondary_button'
 
 /** Says where the camera stands and opens the live view, where all control happens (PTZ-17). */
 export function PtzCalibrationSection({
@@ -32,9 +32,9 @@ export function PtzCalibrationSection({
               : 'Cette caméra n’a pas encore de position de référence. Ouvrez la vue en direct pour la calibrer, puis définir ses positions.'}
           </span>
 
-          <Button asChild variant="secondary" size="sm" className="self-start">
-            <Link to={liveTo}>Piloter la caméra</Link>
-          </Button>
+          <SecondaryButton icon={Move} to={liveTo} size="sm" className="self-start">
+            Piloter la caméra
+          </SecondaryButton>
         </>
       )}
     </div>

@@ -1,3 +1,4 @@
+import { RefreshCw } from 'lucide-react'
 import { useState } from 'react'
 import { DiagnosticLine, ReadFailure } from '../../../common/components/error_message'
 import { ConfirmModal } from '../../../common/components/confirm_modal'
@@ -5,6 +6,7 @@ import { Badge } from '../../../common/components/badge'
 import type { AppError } from '../../../common/errors/app_error'
 import { scrubSecrets } from '../../../common/errors/scrub_secrets'
 import { Button } from '../../../common/ui/button'
+import { SecondaryButton } from '../../../common/components/secondary_button'
 import { SettingsList } from '../../../common/settings/settings_list'
 import type { SettingDeclaration } from '../../../common/settings/setting_declaration'
 import type { SupportedProtocol } from '../../../domain/entities/camera_capability_binding.entity'
@@ -192,9 +194,15 @@ function ProtocolBox({
         <SettingsList settings={settings} />
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <Button type="button" variant="secondary" size="sm" disabled={checking} onClick={onCheck}>
+        <SecondaryButton
+          icon={RefreshCw}
+          type="button"
+          size="sm"
+          disabled={checking}
+          onClick={onCheck}
+        >
           {checking ? 'Vérification…' : 'Vérifier'}
-        </Button>
+        </SecondaryButton>
         <Button
           type="button"
           variant="destructive-outline"

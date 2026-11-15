@@ -131,7 +131,7 @@ function MultiChoiceControl({
         <Button
           id={setting.id}
           type="button"
-          variant="secondary"
+          variant="ghost"
           role="combobox"
           disabled={setting.disabled}
           className={cn(FIELD_TRIGGER, followingClass(setting))}
