@@ -18,9 +18,8 @@ engine underneath (product principle 2).
 - Surfaces: `--bg-canvas: #f4efe6` the main background, warm rather than clinical;
   `--bg-elevated: #fffaf2` primary surfaces; `--bg-strong: #1f3a33` structural dark panels;
   `--bg-sunken: #f2ebdf` an inset inside a surface (a track, a chip, a step number), opaque so it
-  shows on a card as on the canvas; the **neutral tint**, `--ink-strong` at 7 %, translucent, the
-  one fill of what the user presses without it being the main action (a tonal button, a fold) and
-  of a hover or a selected row, tab or option, darker by half again under the finger; `--bg-muted`,
+  shows on a card as on the canvas; the **neutral tint**, a light translucent ink, the fill
+  of a secondary action and a fold, and of a hovered or selected row, tab or option; `--bg-muted`,
   translucent, only for a control laid over the picture, through the `--glass` role (`bg-glass`).
 - Ink: `--ink-strong: #18201d` primary text; `--ink-soft: #606d67` secondary text;
   `--line-soft: #d8cfbf` discreet borders, the colour of every border that names no other, never
@@ -35,7 +34,7 @@ of both themes. Usage rules:
 - `--brand-moss` is reserved for the one main action of a view, a selected or active state (a
   switch on, a box ticked) and the product indicators: never a second action.
 - `--alert-high` is reserved for important events, attention states and destructive actions.
-- `--brand-sand` never marks a hover: a quiet action (tonal, text) hovers to the neutral tint.
+- A hovered or pressed control darkens; `--brand-sand` never marks a hover.
 - Colour never carries a meaning alone: a kind of thing is told apart by its icon and its name, and a
   fill that must be told apart differs by its pattern too.
 
@@ -182,16 +181,19 @@ one short line takes its place, naming as a link the page where it is fixed.
 
 ### Action weight
 
-Three weights of button, after Material Design 3, each the same wherever it sits; a page has one
+Three weights of button, each calm and plain, each the same wherever it sits; a page has one
 filled button at most. Every button stays visibly distinct from the surface under it, canvas or card:
 none is drawn as a bare line on a light surface.
 
 - **Filled**: the one main action of a view, the only green button on screen; a second action that
-  matters is tonal, never a second filled button.
-- **Tonal**: every other action that matters, its label in ink on the neutral tint, never the
-  surface's own colour.
+  matters is secondary, never a second filled button. A toggle drawn filled while it is on (a camera
+  cut, a filter open) shows a state, not an action, and does not count.
+- **Secondary**: every other action that matters, a pill on the neutral tint holding an icon that
+  names the action, then its ink label. The icon is part of how a secondary action is declared,
+  never left out: it is what tells the action from a fold, which shares the tint.
 - **Text**: the lightest, a label in ink with no fill: a list whose rows each offer one action, and
-  the way out of a dialog (`Annuler`).
+  the way out of a form or a dialog (`Annuler`); a dialog confirms with a filled
+  button, or a destructive one when it warns or removes.
 - **A destructive action is quiet until confirmed**: a light tint of the destructive colour
   (`--alert-high`) with its line, on its page; solid only on its confirmation's button. Removing what the page
   names closes the page: always last, after `Avancé`, under a separator, never beside another
