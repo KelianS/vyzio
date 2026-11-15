@@ -185,4 +185,26 @@ test.describe('Style foundations', () => {
     // Tailwind composes its empty ring layers before the shadow token: the token is the last layer.
     await expect(dialog).toHaveCSS('box-shadow', /, rgba\(24, 32, 29, 0\.08\) 0px 18px 50px 0px$/)
   })
+
+  test('ConfirmDialog_ShouldDrawItsSecondaryActionOnTheSunkenSurface_WhenItAsksPlainly', async ({
+    page,
+  }) => {
+    await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
+    await page.goto('/settings/acces')
+    await page.getByRole('button', { name: 'Déconnecter tous les appareils' }).click()
+
+    await expect(
+      page.getByRole('alertdialog').getByRole('button', { name: 'Déconnecter' }),
+    ).toHaveCSS('background-color', SUNKEN)
+  })
+
+  test('ClosedFold_ShouldTakeTheClickableRadius_WhenItSitsInACard', async ({ page }) => {
+    await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
+    await page.goto('/settings/cameras/camera-1/connexion')
+
+    await expect(page.locator('summary', { hasText: 'Options' }).first()).toHaveCSS(
+      'border-top-left-radius',
+      '12px',
+    )
+  })
 })

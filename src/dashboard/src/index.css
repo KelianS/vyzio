@@ -94,9 +94,11 @@
   --popover-foreground: var(--ink-strong);
   --primary: var(--brand-moss);
   --primary-foreground: var(--ink-inverse);
-  --secondary: var(--bg-muted);
+  --secondary: var(--bg-sunken);
   --secondary-foreground: var(--ink-strong);
   --muted: var(--bg-sunken);
+  /* A control laid over the picture: translucent, so the picture stays in view behind it. */
+  --glass: var(--bg-muted);
   --muted-foreground: var(--ink-soft);
   --accent: var(--brand-sand);
   --accent-foreground: var(--ink-strong);
@@ -124,6 +126,7 @@
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+  --color-glass: var(--glass);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
