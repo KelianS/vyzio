@@ -15,7 +15,7 @@ test.describe('NotificationChannelView', () => {
     await page.getByRole('link', { name: 'Ajouter un canal' }).click()
     await page.getByRole('link', { name: 'Telegram' }).click()
 
-    await expect(page.getByText('Pas encore configuré.')).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: 'Telegram' })).toBeVisible()
 
     await page.getByRole('textbox', { name: 'Token du bot' }).fill('123456:ABCDEF')
     await page.getByRole('textbox', { name: 'Identifiant de conversation' }).fill('987654321')
@@ -29,7 +29,7 @@ test.describe('NotificationChannelView', () => {
     await expect(dialog).toContainText('serveurs de Telegram')
     await dialog.getByRole('button', { name: 'Activer' }).click()
 
-    await expect(page.getByText('Les notifications sont envoyées.')).toBeVisible()
+    await expect(page.getByText('Actif', { exact: true })).toBeVisible()
 
     await page.getByRole('button', { name: 'Envoyer un message de test' }).click()
     await expect(page.getByText('Message envoyé : le canal fonctionne.')).toBeVisible()
