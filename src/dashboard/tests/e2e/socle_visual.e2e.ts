@@ -123,3 +123,66 @@ test.describe('Base styles', () => {
     expect(field).toBe('text')
   })
 })
+
+// The token values these read: `--line-soft`, `--bg-sunken`, `--bg-elevated` and `--shadow-soft` of `src/index.css`.
+const LINE_SOFT = 'rgb(216, 207, 191)'
+const SUNKEN = 'rgb(242, 235, 223)'
+const ELEVATED = 'rgb(255, 250, 242)'
+
+test.describe('Style foundations', () => {
+  test('OutlineButton_ShouldDrawItsBorderInTheLineColour_WhenItNamesNoBorderColour', async ({
+    page,
+  }) => {
+    await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
+    await page.goto('/')
+
+    await expect(page.getByRole('button', { name: 'Tout couper' })).toHaveCSS(
+      'border-top-color',
+      LINE_SOFT,
+    )
+  })
+
+  test('Button_ShouldTakeItsOwnTextSizeAndWeight_WhenItIsAButtonElement', async ({ page }) => {
+    await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
+    await page.goto('/')
+
+    const pause = page.getByRole('button', { name: 'Pause' })
+    await expect(pause).toHaveCSS('font-size', '14px')
+    await expect(pause).toHaveCSS('font-weight', '500')
+  })
+
+  test('WelcomeStepNumber_ShouldSitOnAnOpaqueSunkenSurface_WhenTheHubHasNoCamera', async ({
+    page,
+  }) => {
+    await installFakeBackend(page, createFakeBackendState({ cameras: [] }))
+    await page.goto('/')
+
+    await expect(page.getByRole('listitem').first().getByText('1', { exact: true })).toHaveCSS(
+      'background-color',
+      SUNKEN,
+    )
+  })
+
+  test('OutlineButton_ShouldTakeTheSunkenSurface_WhenHovered', async ({ page }) => {
+    await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
+    await page.goto('/')
+
+    const cutAll = page.getByRole('button', { name: 'Tout couper' })
+    await cutAll.hover()
+
+    await expect(cutAll).toHaveCSS('background-color', SUNKEN)
+  })
+
+  test('ConfirmDialog_ShouldBeDrawnAsAPanel_WhenItOpens', async ({ page }) => {
+    await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
+    await page.goto('/')
+    await page.getByRole('button', { name: 'Pause' }).click()
+
+    const dialog = page.getByRole('alertdialog')
+    await expect(dialog).toHaveCSS('border-top-left-radius', '28px')
+    await expect(dialog).toHaveCSS('border-top-width', '0px')
+    await expect(dialog).toHaveCSS('background-color', ELEVATED)
+    // Tailwind composes its empty ring layers before the shadow token: the token is the last layer.
+    await expect(dialog).toHaveCSS('box-shadow', /, rgba\(24, 32, 29, 0\.08\) 0px 18px 50px 0px$/)
+  })
+})

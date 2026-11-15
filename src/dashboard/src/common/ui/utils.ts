@@ -1,5 +1,10 @@
 import { clsx, type ClassValue } from 'clsx'
-import { twMerge } from 'tailwind-merge'
+import { extendTailwindMerge } from 'tailwind-merge'
+
+// The theme's own radii and shadows, so `rounded-none` or `shadow-none` replaces them like any stock value.
+const twMerge = extendTailwindMerge({
+  extend: { theme: { radius: ['inset', 'card', 'panel'], shadow: ['elevated', 'header'] } },
+})
 
 /**
  * Merges Tailwind classes, letting the last one win on a given aspect

@@ -167,7 +167,7 @@ function Notice({
   return (
     <div
       className={cn(
-        'absolute flex items-start justify-between gap-3 rounded-card bg-card p-3 text-sm text-card-foreground shadow-[var(--shadow-soft)]',
+        'absolute flex items-start justify-between gap-3 rounded-card bg-card p-3 text-sm text-card-foreground shadow-elevated',
         NOTICE_PLACE[layout],
       )}
     >

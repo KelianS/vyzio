@@ -32,7 +32,7 @@ export function Overlay({
         // The backdrop is the content itself; the only thing outside is a toast, read without closing.
         onInteractOutside={(event) => event.preventDefault()}
         // A full-bleed layer has no edge to grow from: it only fades (DESIGN SYSTEM § Motion).
-        className="[--tw-enter-scale:1]! [--tw-exit-scale:1]! inset-0 flex h-full max-w-none translate-x-0 translate-y-0 items-center justify-center gap-0 rounded-none border-0 bg-surface-inverse/70 p-4 shadow-none backdrop-blur-sm sm:max-w-none"
+        className="[--tw-enter-scale:1]! [--tw-exit-scale:1]! inset-0 flex h-full max-w-none translate-x-0 translate-y-0 items-center justify-center gap-0 rounded-none bg-surface-inverse/70 p-4 shadow-none backdrop-blur-sm sm:max-w-none"
       >
         <DialogTitle className="sr-only">{label}</DialogTitle>
         {/* `z-10`: the content, rendered after it, would otherwise cover the cross. */}

@@ -35,7 +35,7 @@ export function SettingsDraftBar({
       aria-label="Modifications en attente"
       className={cn(
         'sticky bottom-4 z-50 mt-4 flex flex-wrap items-center gap-x-4 gap-y-3',
-        'rounded-card border border-border bg-card p-3 shadow-[var(--shadow-soft)] sm:px-4',
+        'rounded-card border border-border bg-card p-3 shadow-elevated sm:px-4',
       )}
     >
       <div className="min-w-0 flex-1">

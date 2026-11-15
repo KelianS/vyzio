@@ -13,7 +13,7 @@ import type { ReactNode } from 'react'
  */
 export function SettingsPage({ lede, children }: { lede?: string; children: ReactNode }) {
   return (
-    <section className="rounded-card bg-card p-5 text-card-foreground shadow-[var(--shadow-soft)] sm:p-6">
+    <section className="rounded-card bg-card p-5 text-card-foreground shadow-elevated sm:p-6">
       {lede && <p className="mb-5 text-sm text-muted-foreground">{lede}</p>}
       {children}
     </section>

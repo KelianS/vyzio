@@ -39,6 +39,14 @@ describe('UI foundation', () => {
     expect(classes).toBe('rounded-lg')
   })
 
+  it('cn_ShouldKeepTheStockValue_WhenItFollowsAThemeRadiusOrShadow', () => {
+    // Arrange & Act
+    const classes = cn('rounded-panel shadow-elevated', 'rounded-none shadow-none')
+
+    // Assert
+    expect(classes).toBe('rounded-none shadow-none')
+  })
+
   it('cn_ShouldDropTheClass_WhenItsConditionIsFalse', () => {
     // Arrange
     const invalid = false

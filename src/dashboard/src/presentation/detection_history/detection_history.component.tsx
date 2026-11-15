@@ -96,7 +96,7 @@ export function DetectionHistoryView() {
         <section
           id="history-filters"
           aria-label="Filtres"
-          className="rounded-card bg-card p-4 text-card-foreground shadow-[var(--shadow-soft)]"
+          className="rounded-card bg-card p-4 text-card-foreground shadow-elevated"
         >
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <Field label="Caméra">
@@ -175,13 +175,13 @@ export function DetectionHistoryView() {
       {uido.loading && <p className="text-muted-foreground">Chargement…</p>}
 
       {!uido.loading && uido.loaded && uido.items.length === 0 && (
-        <p className="rounded-card bg-card p-6 text-center text-muted-foreground shadow-[var(--shadow-soft)]">
+        <p className="rounded-card bg-card p-6 text-center text-muted-foreground shadow-elevated">
           {filtered ? 'Aucune détection avec ces filtres.' : 'Aucune détection pour l’instant.'}
         </p>
       )}
 
       {!uido.loading && uido.items.length > 0 && (
-        <div className="rounded-card bg-card px-4 py-2 text-card-foreground shadow-[var(--shadow-soft)]">
+        <div className="rounded-card bg-card px-4 py-2 text-card-foreground shadow-elevated">
           <DetectionList
             events={uido.items}
             labels={uido.detectionLabels}
