@@ -1,9 +1,11 @@
+import { LogOut } from 'lucide-react'
 import { useEffect, useReducer, useState } from 'react'
 import { HelpPanel } from '../../common/components/help_panel'
 import { ConfirmModal } from '../../common/components/confirm_modal'
 import { useToast } from '../../common/components/toast'
 import { SettingsPage, SettingsSection } from '../../common/settings/settings_page'
 import { Button } from '../../common/ui/button'
+import { SecondaryButton } from '../../common/components/secondary_button'
 import { Input } from '../../common/ui/input'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
@@ -42,24 +44,24 @@ export function AccessView() {
       </SettingsSection>
 
       <SettingsSection title="Cet appareil">
-        <Button
-          variant="outline"
+        <SecondaryButton
+          icon={LogOut}
           disabled={uido.leaving}
           onClick={() => void leave(presenter.onSignOut)}
         >
           Se déconnecter
-        </Button>
+        </SecondaryButton>
       </SettingsSection>
 
       {/* The cost is said by the confirmation, not above the button (DESIGN SYSTEM § Help). */}
       <SettingsSection title="Tous les appareils">
-        <Button
-          variant="outline"
+        <SecondaryButton
+          icon={LogOut}
           disabled={uido.leavingEverywhere}
           onClick={presenter.onAskSignOutEverywhere}
         >
           Déconnecter tous les appareils
-        </Button>
+        </SecondaryButton>
 
         <HelpPanel title="Quand faut-il déconnecter tous les appareils ?">
           <p>

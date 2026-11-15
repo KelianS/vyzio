@@ -77,8 +77,8 @@ function RevertButton({
     <Button
       type="button"
       variant="ghost"
-      size="icon"
-      className={cn('size-8 shrink-0 text-accent-foreground/70 hover:text-foreground', className)}
+      size="icon-sm"
+      className={cn('text-accent-foreground/70 hover:text-foreground', className)}
       title={label}
       aria-label={label}
       onClick={onClick}

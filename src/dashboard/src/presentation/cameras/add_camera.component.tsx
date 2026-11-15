@@ -1,11 +1,12 @@
 import { useEffect, useReducer, type ComponentPropsWithoutRef, type ReactNode } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { Link, useNavigate } from 'react-router'
-import { ChevronLeft, Keyboard, Radar } from 'lucide-react'
+import { ChevronLeft, Keyboard, Pencil, Radar, RotateCw } from 'lucide-react'
 import { DiagnosticLine, ErrorMessage } from '../../common/components/error_message'
 import { Badge } from '../../common/components/badge'
 import { ListRow } from '../../common/components/list_row'
 import { Button } from '../../common/ui/button'
+import { SecondaryButton } from '../../common/components/secondary_button'
 import { ConfirmModal } from '../../common/components/confirm_modal'
 import { useToast } from '../../common/components/toast'
 import { usePresenter } from '../../common/presenter/use_presenter'
@@ -163,14 +164,14 @@ export function AddCameraView() {
                 <span className="block font-medium">{chosen.title}</span>
                 <span className="block text-sm text-muted-foreground">{chosen.detail}</span>
               </span>
-              <Button
+              <SecondaryButton
+                icon={Pencil}
                 type="button"
-                variant="outline"
                 size="sm"
                 onClick={presenter.onClearSelection}
               >
                 Changer
-              </Button>
+              </SecondaryButton>
             </div>
           ) : (
             <div className="flex flex-col gap-4">
@@ -186,15 +187,14 @@ export function AddCameraView() {
                   <Radar aria-hidden="true" />
                   {uido.discovering ? 'Recherche…' : 'Rechercher sur le réseau'}
                 </Button>
-                <Button
+                <SecondaryButton
+                  icon={Keyboard}
                   type="button"
-                  variant="outline"
                   disabled={busy}
                   onClick={() => presenter.onSelectManualEntry()}
                 >
-                  <Keyboard aria-hidden="true" />
                   Saisir l’adresse moi-même
-                </Button>
+                </SecondaryButton>
               </div>
 
               <Feedback message={uido.message} error={uido.error} />
@@ -237,9 +237,9 @@ export function AddCameraView() {
             title="Cette caméra n’est pas encore joignable"
             lede="Ouvrez-la depuis son application, puis revenez ici. Le formulaire apparaîtra dès qu’elle répondra."
           >
-            <Button
+            <SecondaryButton
+              icon={RotateCw}
               type="button"
-              variant="outline"
               disabled={busy}
               onClick={() =>
                 candidate &&
@@ -248,7 +248,7 @@ export function AddCameraView() {
               }
             >
               {uido.refreshing ? 'Vérification…' : 'Réessayer maintenant'}
-            </Button>
+            </SecondaryButton>
           </SettingsSection>
         )}
 
@@ -300,7 +300,6 @@ export function AddCameraView() {
           body={searchWarning(uido.rangesToSweep)}
           details={<RangesToSweep rangesToSweep={uido.rangesToSweep} />}
           confirmLabel="Rechercher"
-          tone="confirm"
           onConfirm={async () => {
             presenter.onConfirmScanSet(false)
             await presenter.onDiscover()

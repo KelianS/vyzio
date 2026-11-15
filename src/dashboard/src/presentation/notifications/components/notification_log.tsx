@@ -1,7 +1,7 @@
 import { RotateCw } from 'lucide-react'
-import { Button } from '../../../common/ui/button'
 import { cn } from '../../../common/ui/utils'
 import type { NotificationLogEntry } from '../../../domain/entities/notification_channel_config.entity'
+import { SecondaryButton } from '../../../common/components/secondary_button'
 
 const formatSentAt = new Intl.DateTimeFormat('fr-FR', {
   dateStyle: 'short',
@@ -21,10 +21,16 @@ export function NotificationLog({
   return (
     <div>
       <div className="mb-3">
-        <Button type="button" variant="outline" size="sm" disabled={loading} onClick={onRefresh}>
-          <RotateCw className={cn(loading && 'animate-spin')} aria-hidden="true" />
+        <SecondaryButton
+          icon={RotateCw}
+          iconClassName={cn(loading && 'animate-spin')}
+          type="button"
+          size="sm"
+          disabled={loading}
+          onClick={onRefresh}
+        >
           Actualiser
-        </Button>
+        </SecondaryButton>
       </div>
 
       {entries.length > 0 ? (

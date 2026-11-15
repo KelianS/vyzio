@@ -1,3 +1,4 @@
+import { Search } from 'lucide-react'
 import { useEffect, useMemo, useReducer } from 'react'
 import { useNavigate, useOutletContext } from 'react-router'
 import { SettingsList } from '../../common/settings/settings_list'
@@ -6,8 +7,7 @@ import { useUnsavedChanges } from '../navigation/use_unsaved_changes'
 import { useSettingsDraft } from '../../common/settings/use_settings_draft'
 import type { SettingDeclaration } from '../../common/settings/setting_declaration'
 import { useToast } from '../../common/components/toast'
-import { ConfirmModal } from '../../common/components/confirm_modal'
-import { Button } from '../../common/ui/button'
+import { DeleteAction } from '../../common/components/delete_action'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import type { Camera } from '../../domain/entities/camera.entity'
@@ -24,6 +24,7 @@ import { cameraConnectionReducer } from './camera_connection.reducer'
 import { buildInitialCameraConnectionUido } from './camera_connection.uido'
 import { CAPABILITY_LABELS } from './cameras.formatters'
 import { otherTestsSuspended, streamBindingOf } from './capability_state'
+import { SecondaryButton } from '../../common/components/secondary_button'
 import {
   ALL_PROTOCOLS,
   connectionValuesOf,
@@ -237,12 +238,6 @@ export function CameraConnectionView() {
           </HelpPanel>
         </SettingsSection>
 
-        <div className="mt-8 border-t border-border pt-6">
-          <Button type="button" variant="destructive" onClick={presenter.onAskDelete}>
-            Supprimer cette caméra
-          </Button>
-        </div>
-
         <AdvancedFold lede="Comment Vyzio joint cette caméra.">
           <SettingsList settings={access} />
 
@@ -270,15 +265,15 @@ export function CameraConnectionView() {
             />
             {!uido.protocolsLoading && !uido.protocolsError && (
               <div className="flex flex-wrap items-center gap-2">
-                <Button
+                <SecondaryButton
+                  icon={Search}
                   type="button"
-                  variant="outline"
                   size="sm"
                   disabled={uido.searchingProtocols}
                   onClick={() => void presenter.onSearchProtocols(cameraId)}
                 >
                   {uido.searchingProtocols ? 'Recherche…' : 'Rechercher les protocoles'}
-                </Button>
+                </SecondaryButton>
                 {/* Adding by hand is the way out when the search finds nothing (CAM-48). */}
                 <AddProtocol
                   protocols={uido.protocols}
@@ -312,6 +307,19 @@ export function CameraConnectionView() {
             </p>
           </HelpPanel>
         </AdvancedFold>
+
+        <DeleteAction
+          label="Supprimer cette caméra"
+          question={`Supprimer « ${camera.displayName} » ?`}
+          consequence="Vyzio cesse de surveiller cette caméra. Les enregistrements déjà faits ne sont pas effacés."
+          confirming={uido.confirmDelete}
+          deleting={uido.deleting}
+          onAsk={presenter.onAskDelete}
+          onConfirm={async () => {
+            if (await presenter.onDelete(cameraId)) void navigate('/settings/cameras')
+          }}
+          onCancel={presenter.onCancelDelete}
+        />
       </SettingsPage>
 
       <SettingsDraftBar
@@ -322,20 +330,6 @@ export function CameraConnectionView() {
         }}
         onDiscard={draft.discard}
       />
-
-      {uido.confirmDelete && (
-        <ConfirmModal
-          title={`Supprimer « ${camera.displayName} » ?`}
-          body="Vyzio cesse de surveiller cette caméra. Les enregistrements déjà faits ne sont pas effacés."
-          confirmLabel="Supprimer"
-          tone="danger"
-          loading={uido.deleting}
-          onConfirm={async () => {
-            if (await presenter.onDelete(cameraId)) void navigate('/settings/cameras')
-          }}
-          onCancel={presenter.onCancelDelete}
-        />
-      )}
     </>
   )
 }

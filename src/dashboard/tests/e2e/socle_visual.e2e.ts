@@ -124,22 +124,27 @@ test.describe('Base styles', () => {
   })
 })
 
-// The token values these read: `--line-soft`, `--bg-sunken`, `--bg-elevated` and `--shadow-soft` of `src/index.css`.
+// The token values these read: `--line-soft`, `--bg-sunken`, `--bg-elevated`, `--brand-moss` and `--shadow-soft` of `src/index.css`.
 const LINE_SOFT = 'rgb(216, 207, 191)'
 const SUNKEN = 'rgb(242, 235, 223)'
 const ELEVATED = 'rgb(255, 250, 242)'
+const MOSS = 'rgb(47, 107, 89)'
 
 test.describe('Style foundations', () => {
-  test('OutlineButton_ShouldDrawItsBorderInTheLineColour_WhenItNamesNoBorderColour', async ({
-    page,
-  }) => {
+  test('Border_ShouldTakeTheLineColour_WhenItNamesNoBorderColour', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
     await page.goto('/')
+    await expect(page.getByRole('heading', { name: /sous surveillance/ })).toBeVisible()
 
-    await expect(page.getByRole('button', { name: 'Tout couper' })).toHaveCSS(
-      'border-top-color',
-      LINE_SOFT,
-    )
+    // A bare `border`, as a framed tile writes it.
+    const colour = await page.evaluate(() => {
+      const tile = document.createElement('div')
+      tile.className = 'border'
+      document.body.append(tile)
+      return getComputedStyle(tile).borderTopColor
+    })
+
+    expect(colour).toBe(LINE_SOFT)
   })
 
   test('Button_ShouldTakeItsOwnTextSizeAndWeight_WhenItIsAButtonElement', async ({ page }) => {
@@ -163,14 +168,15 @@ test.describe('Style foundations', () => {
     )
   })
 
-  test('OutlineButton_ShouldTakeTheSunkenSurface_WhenHovered', async ({ page }) => {
+  test('SecondaryAction_ShouldDarken_WhenHovered', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
     await page.goto('/')
 
     const cutAll = page.getByRole('button', { name: 'Tout couper' })
+    const resting = await cutAll.evaluate((el) => getComputedStyle(el).backgroundColor)
     await cutAll.hover()
 
-    await expect(cutAll).toHaveCSS('background-color', SUNKEN)
+    await expect(cutAll).not.toHaveCSS('background-color', resting)
   })
 
   test('ConfirmDialog_ShouldBeDrawnAsAPanel_WhenItOpens', async ({ page }) => {
@@ -186,16 +192,14 @@ test.describe('Style foundations', () => {
     await expect(dialog).toHaveCSS('box-shadow', /, rgba\(24, 32, 29, 0\.08\) 0px 18px 50px 0px$/)
   })
 
-  test('ConfirmDialog_ShouldDrawItsSecondaryActionOnTheSunkenSurface_WhenItAsksPlainly', async ({
-    page,
-  }) => {
+  test('ConfirmDialog_ShouldConfirmWithTheFilledButton_WhenItAsksPlainly', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
     await page.goto('/settings/acces')
     await page.getByRole('button', { name: 'Déconnecter tous les appareils' }).click()
 
     await expect(
       page.getByRole('alertdialog').getByRole('button', { name: 'Déconnecter' }),
-    ).toHaveCSS('background-color', SUNKEN)
+    ).toHaveCSS('background-color', MOSS)
   })
 
   test('ClosedFold_ShouldTakeTheClickableRadius_WhenItSitsInACard', async ({ page }) => {

@@ -11,7 +11,6 @@ import {
   AlertDialogTitle,
 } from '../ui/alert-dialog'
 import type { buttonVariants } from '../ui/button'
-import { cn } from '../ui/utils'
 import { DiagnosticLine } from './error_message'
 import { useLayerExit } from './layer_exit'
 
@@ -26,7 +25,7 @@ interface ConfirmModalProps {
   diagnostic?: string
   confirmLabel: string
   cancelLabel?: string
-  tone?: 'warn' | 'danger' | 'default' | 'confirm'
+  tone?: 'warn' | 'danger' | 'default'
   onConfirm: () => void | Promise<void>
   onCancel: () => void
   loading?: boolean
@@ -34,9 +33,8 @@ interface ConfirmModalProps {
 
 const CONFIRM_VARIANT: Record<Required<ConfirmModalProps>['tone'], ButtonVariant> = {
   danger: 'destructive',
-  warn: 'outline',
-  confirm: 'default',
-  default: 'secondary',
+  warn: 'destructive-outline',
+  default: 'default',
 }
 
 /** Confirmation dialog on the shadcn AlertDialog primitive (ADR-01): focus trap and Escape come from Radix. */
@@ -87,9 +85,6 @@ export function ConfirmModal({
           </AlertDialogCancel>
           <AlertDialogAction
             variant={CONFIRM_VARIANT[tone]}
-            className={cn(
-              tone === 'warn' && 'border-destructive text-destructive hover:bg-destructive/10',
-            )}
             disabled={isLoading}
             onClick={handleConfirm}
           >

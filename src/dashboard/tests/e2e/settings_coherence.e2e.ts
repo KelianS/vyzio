@@ -37,7 +37,8 @@ interface FieldMeasure {
  * The cell is not what is measured: the grid stretches it, it would be aligned even
  * with a tiny field floating inside - which is exactly the defect being looked for.
  *
- * Excluded, because its width is that of the object and not of the column: the switch.
+ * Excluded, because its width is that of the object and not of the column: the switch, and the
+ * number field, sized to its value (DESIGN SYSTEM § Settings screens), whose row still counts.
  */
 async function fieldMeasures(page: Page): Promise<FieldMeasure[]> {
   return page.$$eval('[data-setting-control]', (cells) =>
@@ -47,13 +48,18 @@ async function fieldMeasures(page: Page): Promise<FieldMeasure[]> {
         if (!root) return null
         if (root.matches('[role="switch"]') || root.querySelector('[role="switch"]')) return null
 
+        const labelled = cell.parentElement?.querySelector('label')
+        if (root.querySelector('input[type="number"]')) {
+          const right = Math.round(cell.getBoundingClientRect().right)
+          return { id: labelled?.getAttribute('for') ?? '?', column: right, filled: right }
+        }
+
         // When the control is itself the interactive element, it fills the column by
         // construction; its children are its inner lining, never empty space.
         const isWrapper = !root.matches('input, button, [role="combobox"]')
         const parts = isWrapper ? [...root.children] : [root]
         const filled = Math.max(...parts.map((node) => node.getBoundingClientRect().right))
 
-        const labelled = cell.parentElement?.querySelector('label')
         return {
           id: labelled?.getAttribute('for') ?? '?',
           column: Math.round(cell.getBoundingClientRect().right),

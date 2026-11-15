@@ -1,7 +1,7 @@
+import { Activity, Wrench } from 'lucide-react'
 import { useId, type ReactNode } from 'react'
-import { Link } from 'react-router'
 import { Badge, type BadgeTone } from '../../common/components/badge'
-import { Button } from '../../common/ui/button'
+import { SecondaryButton } from '../../common/components/secondary_button'
 import { cn } from '../../common/ui/utils'
 import { TechnicalDetails } from '../../common/components/technical_details'
 import type { Camera } from '../../domain/entities/camera.entity'
@@ -53,9 +53,9 @@ export function SystemMonitorPanel({ stats, cameras }: { stats: SystemStats; cam
           <p className="mt-3 text-sm text-muted-foreground">{DEGRADED_MESSAGE[stats.status]}</p>
           {DEGRADED_SHOWS_DIAGNOSIS[stats.status] && (
             <div className="mt-4">
-              <Button asChild variant="outline" size="sm">
-                <Link to={ADVANCED_PATH}>Diagnostiquer</Link>
-              </Button>
+              <SecondaryButton icon={Activity} to={ADVANCED_PATH} size="sm">
+                Diagnostiquer
+              </SecondaryButton>
             </div>
           )}
         </Panel>
@@ -121,9 +121,9 @@ export function SystemMonitorPanel({ stats, cameras }: { stats: SystemStats; cam
       </TechnicalDetails>
 
       <div className="mt-4">
-        <Button asChild variant="ghost" size="sm">
-          <Link to={ADVANCED_PATH}>Ouvrir l’interface technique</Link>
-        </Button>
+        <SecondaryButton icon={Wrench} to={ADVANCED_PATH} size="sm">
+          Ouvrir l’interface technique
+        </SecondaryButton>
       </div>
     </Panel>
   )

@@ -259,6 +259,20 @@ export default defineConfig([
     },
   },
   {
+    // A secondary action names itself with an icon, so it is declared through SecondaryButton (DESIGN SYSTEM § Action weight).
+    files: ['src/**/*.tsx'],
+    ignores: ['src/common/ui/**', 'src/common/components/secondary_button.tsx'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "JSXAttribute[name.name='variant'] Literal[value='secondary']",
+          message: 'Declare a secondary action with SecondaryButton and the icon that names it.',
+        },
+      ],
+    },
+  },
+  {
     // Vendored primitives export variants beside the component, as upstream does (ADR-01).
     files: ['src/common/ui/**/*.{ts,tsx}'],
     rules: {

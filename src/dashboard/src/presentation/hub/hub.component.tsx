@@ -1,9 +1,10 @@
 import { useEffect, useReducer, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
-import { TriangleAlert } from 'lucide-react'
+import { Bell, Eye, EyeOff, History, Settings2, TriangleAlert } from 'lucide-react'
 import type { AppError } from '../../common/errors/app_error'
 import { ErrorMessage, ReadFailure } from '../../common/components/error_message'
 import { Button } from '../../common/ui/button'
+import { SecondaryButton } from '../../common/components/secondary_button'
 import { cn } from '../../common/ui/utils'
 import { ConfirmModal } from '../../common/components/confirm_modal'
 import { Overlay } from '../../common/components/overlay'
@@ -197,9 +198,9 @@ function HubWelcome() {
           <Button asChild>
             <Link to="/settings/cameras/ajout">Ajouter une caméra</Link>
           </Button>
-          <Button asChild variant="outline">
-            <Link to="/settings/notifications">Configurer les notifications</Link>
-          </Button>
+          <SecondaryButton icon={Bell} to="/settings/notifications">
+            Configurer les notifications
+          </SecondaryButton>
         </div>
       </Card>
     </main>
@@ -272,9 +273,10 @@ function HubOperational({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="font-serif text-2xl">En direct</h2>
           <div className="flex flex-wrap items-center gap-2">
-            <Button
+            <SecondaryButton
+              icon={allPrivate ? Eye : EyeOff}
               type="button"
-              variant={allPrivate ? 'default' : 'outline'}
+              active={allPrivate}
               size="sm"
               onClick={() =>
                 onPrivacyPendingSet({
@@ -285,10 +287,10 @@ function HubOperational({
               }
             >
               {allPrivate ? 'Reprendre la surveillance' : 'Tout couper'}
-            </Button>
-            <Button asChild variant="ghost" size="sm">
-              <Link to="/settings/cameras">Gérer les caméras</Link>
-            </Button>
+            </SecondaryButton>
+            <SecondaryButton icon={Settings2} to="/settings/cameras" size="sm">
+              Gérer les caméras
+            </SecondaryButton>
           </div>
         </div>
 
@@ -333,9 +335,9 @@ function HubOperational({
           )}
 
           <div className="mt-4">
-            <Button asChild variant="outline" size="sm">
-              <Link to="/history">Tout l’historique</Link>
-            </Button>
+            <SecondaryButton icon={History} to="/history" size="sm">
+              Tout l’historique
+            </SecondaryButton>
           </div>
         </Card>
 
@@ -346,9 +348,9 @@ function HubOperational({
               {alertsSummary(data.notifications)}
             </p>
             <div className="mt-4">
-              <Button asChild variant="outline" size="sm">
-                <Link to="/settings/notifications">Configurer les notifications</Link>
-              </Button>
+              <SecondaryButton icon={Bell} to="/settings/notifications" size="sm">
+                Configurer les notifications
+              </SecondaryButton>
             </div>
           </Card>
 
@@ -361,7 +363,7 @@ function HubOperational({
           title={privacyWording(privacyPending).title}
           body={privacyWording(privacyPending).body}
           confirmLabel={privacyWording(privacyPending).confirmLabel}
-          tone={privacyPending.active ? 'warn' : 'confirm'}
+          tone={privacyPending.active ? 'warn' : 'default'}
           loading={privacyLoading}
           onConfirm={() => onTogglePrivacy(privacyPending)}
           onCancel={() => onPrivacyPendingSet(null)}

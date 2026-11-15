@@ -1,7 +1,8 @@
 import { useEffect, useReducer, useRef } from 'react'
-import { Trash2 } from 'lucide-react'
+import { RefreshCw, Trash2 } from 'lucide-react'
 import { Badge } from '../../common/components/badge'
 import { Button } from '../../common/ui/button'
+import { SecondaryButton } from '../../common/components/secondary_button'
 import { SettingsPage } from '../../common/settings/settings_page'
 import { AdvancedFold } from '../../common/settings/advanced_fold'
 import { useToast } from '../../common/components/toast'
@@ -88,7 +89,7 @@ export function PersonPhotosView() {
                   variant="ghost"
                   size="icon"
                   aria-label={`Supprimer la photo ${photo.filename}`}
-                  className="absolute top-1 right-1 bg-card/80"
+                  className="absolute top-1 right-1 bg-card/80 text-muted-foreground hover:text-foreground"
                   onClick={() => presenter.onAskRemove(photo.id)}
                 >
                   <Trash2 aria-hidden="true" />
@@ -106,14 +107,14 @@ export function PersonPhotosView() {
         )}
 
         <AdvancedFold lede="Si une photo reste « en attente », renvoyez toute la bibliothèque au moteur de reconnaissance.">
-          <Button
+          <SecondaryButton
+            icon={RefreshCw}
             type="button"
-            variant="outline"
             disabled={uido.resyncing}
             onClick={presenter.onAskResync}
           >
             {uido.resyncing ? 'Reprise…' : 'Reprendre toutes les photos'}
-          </Button>
+          </SecondaryButton>
         </AdvancedFold>
       </SettingsPage>
 
@@ -138,7 +139,6 @@ export function PersonPhotosView() {
           title="Reprendre toutes les photos ?"
           body="Toutes les photos de toutes les personnes sont réanalysées. Selon leur nombre, cela prend de quelques secondes à plusieurs minutes."
           confirmLabel="Reprendre"
-          tone="confirm"
           loading={uido.resyncing}
           onConfirm={presenter.onResync}
           onCancel={presenter.onCancelResync}

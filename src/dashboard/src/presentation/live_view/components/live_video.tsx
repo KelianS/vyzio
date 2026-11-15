@@ -1,7 +1,6 @@
 import { useEffect, useReducer, useRef, useState, type ReactNode } from 'react'
-import { Volume2, VolumeX } from 'lucide-react'
+import { RotateCw, Volume2, VolumeX } from 'lucide-react'
 import { cn } from '../../../common/ui/utils'
-import { Button } from '../../../common/ui/button'
 import { DiagnosticLine } from '../../../common/components/error_message'
 import { liveWaitMessage } from '../../../common/components/live_frame'
 import { LiveWaitVeil } from '../../../common/components/live_wait_veil'
@@ -17,6 +16,7 @@ import { BAR_ABOVE, type LiveLayout } from '../live_layout'
 import { LiveImage } from './live_image'
 import { LIVE_CONTROL } from './live_control'
 import { PressableControl } from '../../../common/components/pressable'
+import { SecondaryButton } from '../../../common/components/secondary_button'
 
 const RECONNECT_MS = 2000
 // A camera that no longer answers is tried again less and less often, never further apart than this.
@@ -347,9 +347,9 @@ export function LiveVideo({
           )}
           <Notice layout={layout} sentence={shown.sentence} diagnostic={failed.diagnostic}>
             {MAY_PASS[failed.failure] && (
-              <Button variant="outline" size="sm" onClick={() => setAttempt((n) => n + 1)}>
+              <SecondaryButton icon={RotateCw} size="sm" onClick={() => setAttempt((n) => n + 1)}>
                 Réessayer
-              </Button>
+              </SecondaryButton>
             )}
             {shown.otherQuality && qualitySwitch}
           </Notice>

@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { TriangleAlert } from 'lucide-react'
-import { Button } from '../../common/ui/button'
+import { ExternalLink, TriangleAlert } from 'lucide-react'
 import { SettingsPage } from '../../common/settings/settings_page'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
+import { SecondaryButton } from '../../common/components/secondary_button'
 
 // One file: a local timeout is its only state, and it calls no use case.
 export function ExpertView() {
@@ -47,11 +47,9 @@ export function ExpertView() {
             </ol>
 
             <div className="mt-5">
-              <Button asChild variant="outline">
-                <a href={frigateBaseUrl} target="_blank" rel="noreferrer">
-                  Ouvrir Frigate dans un onglet
-                </a>
-              </Button>
+              <SecondaryButton icon={ExternalLink} href={frigateBaseUrl}>
+                Ouvrir Frigate dans un onglet
+              </SecondaryButton>
             </div>
           </div>
         </div>

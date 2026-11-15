@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { Link } from 'react-router'
-import { ChevronRight, TriangleAlert, WifiOff } from 'lucide-react'
-import { Button } from '../ui/button'
+import { ChevronRight, Pause, Play, TriangleAlert, WifiOff } from 'lucide-react'
 import { privacyBadge, privacyMissLabel } from '../privacy/privacy_status'
 import { PrivacyStateIcon } from '../privacy/privacy_state_icon'
 import { cn } from '../ui/utils'
@@ -15,6 +14,7 @@ import {
 import type { Camera } from '../../domain/entities/camera.entity'
 import type { FrigateStatus } from '../../domain/entities/system_stats.entity'
 import { PressableSurface } from './pressable'
+import { SecondaryButton } from './secondary_button'
 
 interface CameraLiveThumbnailProps {
   camera: Camera
@@ -158,9 +158,10 @@ export function CameraLiveThumbnail({
           </span>
         )}
         {onTogglePrivacy && (
-          <Button
+          <SecondaryButton
+            icon={camera.privacyModeActive ? Play : Pause}
             type="button"
-            variant={camera.privacyModeActive ? 'default' : 'outline'}
+            active={camera.privacyModeActive}
             size="sm"
             disabled={busy}
             onClick={handleTogglePrivacy}
@@ -171,7 +172,7 @@ export function CameraLiveThumbnail({
             }
           >
             {busy ? 'En cours…' : camera.privacyModeActive ? 'Réactiver' : 'Pause'}
-          </Button>
+          </SecondaryButton>
         )}
       </div>
       {/* Outside the frame, which may be a button; the privacy screen says why (PRIV-05). */}

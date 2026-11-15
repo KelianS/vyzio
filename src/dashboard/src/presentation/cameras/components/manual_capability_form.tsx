@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus } from 'lucide-react'
+import { Plus, Settings2 } from 'lucide-react'
 import type {
   CameraCapabilityBinding,
   Capability,
@@ -7,6 +7,7 @@ import type {
 } from '../../../domain/entities/camera_capability_binding.entity'
 import type { CameraProtocol } from '../../../domain/entities/camera_protocol.entity'
 import { Button } from '../../../common/ui/button'
+import { SecondaryButton } from '../../../common/components/secondary_button'
 import { CAPABILITY_LABELS } from '../cameras.formatters'
 import {
   NO_PROTOCOL_FOR_ANOTHER_CAPABILITY,
@@ -69,10 +70,9 @@ export function ManualCapability({
       onCancel={onClose}
     />
   ) : (
-    <Button type="button" variant="outline" size="sm" className="self-start" onClick={onOpen}>
-      <Plus aria-hidden="true" />
+    <SecondaryButton icon={Plus} type="button" size="sm" className="self-start" onClick={onOpen}>
       Ajouter une capacité
-    </Button>
+    </SecondaryButton>
   )
 }
 
@@ -140,15 +140,15 @@ function ManualCapabilityForm({
           />
         </label>
 
-        <Button
+        <SecondaryButton
+          icon={Settings2}
           type="button"
-          variant="outline"
           size="sm"
           disabled={configuring || testsSuspended}
           onClick={() => onConfigure(selectedCapability, selectedProtocol)}
         >
           {configuring ? 'Configuration…' : 'Configurer'}
-        </Button>
+        </SecondaryButton>
         <Button type="button" variant="ghost" size="sm" disabled={configuring} onClick={onCancel}>
           Annuler
         </Button>

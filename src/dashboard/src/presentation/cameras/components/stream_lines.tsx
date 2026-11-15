@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus } from 'lucide-react'
+import { Check, Plus, RefreshCw } from 'lucide-react'
 import { Badge } from '../../../common/components/badge'
 import { ConfirmModal } from '../../../common/components/confirm_modal'
 import { DiagnosticLine, ReadFailure } from '../../../common/components/error_message'
@@ -9,6 +9,7 @@ import type { AppError } from '../../../common/errors/app_error'
 import { scrubSecrets } from '../../../common/errors/scrub_secrets'
 import { TEXT_KEYBOARD } from '../../../common/settings/text_keyboard'
 import { Button } from '../../../common/ui/button'
+import { SecondaryButton } from '../../../common/components/secondary_button'
 import { Input } from '../../../common/ui/input'
 import type { StreamProtocol } from '../../../domain/entities/camera_capability_binding.entity'
 import {
@@ -18,7 +19,6 @@ import {
   type CameraStreamAddition,
   type CameraStreamLineup,
 } from '../../../domain/entities/camera_stream.entity'
-import { DESTRUCTIVE_OUTLINE } from '../cameras.formatters'
 import { StreamTask } from '../camera_connection.uido'
 import type { ProtocolOption } from '../protocol_labels'
 import {
@@ -199,20 +199,19 @@ function StreamLine({
         />
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <Button
+        <SecondaryButton
+          icon={RefreshCw}
           type="button"
-          variant="outline"
           size="sm"
           disabled={task !== undefined}
           onClick={() => intents.onCheck(stream.id)}
         >
           {task === StreamTask.Check ? 'Vérification…' : 'Vérifier'}
-        </Button>
+        </SecondaryButton>
         <Button
           type="button"
-          variant="outline"
+          variant="destructive-outline"
           size="sm"
-          className={DESTRUCTIVE_OUTLINE}
           disabled={records || task !== undefined}
           onClick={() => setConfirmRemove(true)}
         >
@@ -275,9 +274,9 @@ function AddStream({
       onCancel={intents.onCloseForm}
     />
   ) : (
-    <Button
+    <SecondaryButton
+      icon={Plus}
       type="button"
-      variant="outline"
       size="sm"
       className="self-start"
       onClick={() => {
@@ -285,9 +284,8 @@ function AddStream({
         intents.onListAvailable(first)
       }}
     >
-      <Plus aria-hidden="true" />
       Ajouter un flux
-    </Button>
+    </SecondaryButton>
   )
 }
 
@@ -379,15 +377,15 @@ function AddStreamForm({
           />
         </label>
         <div className="flex flex-wrap gap-2">
-          <Button
+          <SecondaryButton
+            icon={Check}
             type="button"
-            variant="outline"
             size="sm"
             disabled={adding || !selected || pathMissing}
             onClick={add}
           >
             {adding ? 'Vérification…' : 'Ajouter et vérifier'}
-          </Button>
+          </SecondaryButton>
           <Button type="button" variant="ghost" size="sm" disabled={adding} onClick={onCancel}>
             Annuler
           </Button>

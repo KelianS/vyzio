@@ -1,6 +1,7 @@
 import { useEffect, useReducer, useState, type ReactNode } from 'react'
-import { SlidersHorizontal, Trash2, UserRoundPen } from 'lucide-react'
+import { ChevronDown, SlidersHorizontal, Trash2, UserRoundPen } from 'lucide-react'
 import { Button } from '../../common/ui/button'
+import { SecondaryButton } from '../../common/components/secondary_button'
 import { Input } from '../../common/ui/input'
 import { useToast } from '../../common/components/toast'
 import { HelpPanel } from '../../common/components/help_panel'
@@ -79,17 +80,17 @@ export function DetectionHistoryView() {
 
         {/* Filtrer est une option qu'on ouvre, pas le haut de l'ecran : ce qu'on vient lire ici,
             ce sont les detections. */}
-        <Button
+        <SecondaryButton
+          icon={SlidersHorizontal}
           type="button"
-          variant={uido.filtersOpen || filtered ? 'default' : 'outline'}
+          active={uido.filtersOpen || filtered}
           size="sm"
           aria-expanded={uido.filtersOpen}
           aria-controls="history-filters"
           onClick={presenter.onFiltersToggle}
         >
-          <SlidersHorizontal aria-hidden="true" />
           Filtrer
-        </Button>
+        </SecondaryButton>
       </div>
 
       {uido.filtersOpen && (
@@ -205,15 +206,15 @@ export function DetectionHistoryView() {
       {/* L'historique se parcourt en remontant le temps : une page suivante n'a pas de numero. */}
       {!uido.loading && uido.nextCursor && (
         <div className="flex justify-center">
-          <Button
+          <SecondaryButton
+            icon={ChevronDown}
             type="button"
-            variant="outline"
             size="sm"
             disabled={uido.loadingMore}
             onClick={() => presenter.onLoadMore(query, uido.nextCursor!)}
           >
             {uido.loadingMore ? 'Chargement…' : 'Voir plus ancien'}
-          </Button>
+          </SecondaryButton>
         </div>
       )}
 
@@ -243,15 +244,14 @@ export function DetectionHistoryView() {
             clipGone={uido.clipGoneEventId === media.eventId}
             onVideoError={() => presenter.onVideoFailed(media.eventId)}
           >
-            <Button
+            <SecondaryButton
+              icon={Trash2}
               type="button"
-              variant="secondary"
               size="sm"
               onClick={() => presenter.onAskDelete(media.eventId)}
             >
-              <Trash2 aria-hidden="true" />
               Supprimer
-            </Button>
+            </SecondaryButton>
           </DetectionPreview>
         </Overlay>
       )}
@@ -297,12 +297,11 @@ function IdentityCorrection({
 
   if (!fixing) {
     return (
-      // `ghost` did not pass for a button, sitting under a line of grey text.
       <Button
         type="button"
-        variant="outline"
+        variant="ghost"
         size="sm"
-        className="mt-1.5"
+        className="mt-0.5 -ml-3"
         onClick={() => setFixing(true)}
       >
         <UserRoundPen aria-hidden="true" />

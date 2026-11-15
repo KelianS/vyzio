@@ -7,8 +7,7 @@ import { useSettingsDraft } from '../../common/settings/use_settings_draft'
 import type { SettingDeclaration } from '../../common/settings/setting_declaration'
 import { useUnsavedChanges } from '../navigation/use_unsaved_changes'
 import { useToast } from '../../common/components/toast'
-import { ConfirmModal } from '../../common/components/confirm_modal'
-import { Button } from '../../common/ui/button'
+import { DeleteAction } from '../../common/components/delete_action'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import type { ProfileAlertMode, ProfileCategory } from '../../domain/entities/profile.entity'
@@ -76,11 +75,18 @@ export function PersonIdentityView() {
       <SettingsPage lede={describeLastSeen(person.lastSeenAt)}>
         <SettingsList settings={declarations} />
 
-        <div className="mt-5">
-          <Button type="button" variant="destructive" onClick={presenter.onAskDelete}>
-            Supprimer cette personne
-          </Button>
-        </div>
+        <DeleteAction
+          label="Supprimer cette personne"
+          question={`Supprimer « ${person.name} » ?`}
+          consequence="Ses photos sont effacées et Vyzio cesse de la reconnaître. Les détections déjà enregistrées restent dans l’historique."
+          confirming={uido.confirmDelete}
+          deleting={uido.deleting}
+          onAsk={presenter.onAskDelete}
+          onConfirm={async () => {
+            if (await presenter.onDelete(person)) void navigate('/settings/detection/personnes')
+          }}
+          onCancel={presenter.onCancelDelete}
+        />
       </SettingsPage>
 
       <SettingsDraftBar
@@ -93,20 +99,6 @@ export function PersonIdentityView() {
         }}
         onDiscard={draft.discard}
       />
-
-      {uido.confirmDelete && (
-        <ConfirmModal
-          title={`Supprimer « ${person.name} » ?`}
-          body="Ses photos sont effacées et Vyzio cesse de la reconnaître. Les détections déjà enregistrées restent dans l’historique."
-          confirmLabel="Supprimer"
-          tone="danger"
-          loading={uido.deleting}
-          onConfirm={async () => {
-            if (await presenter.onDelete(person)) void navigate('/settings/detection/personnes')
-          }}
-          onCancel={presenter.onCancelDelete}
-        />
-      )}
     </>
   )
 }

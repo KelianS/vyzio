@@ -1,8 +1,9 @@
+import { Settings2 } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import type { ChoiceOption } from '../../../common/settings/setting_declaration'
 import type { SupportedProtocol } from '../../../domain/entities/camera_capability_binding.entity'
 import type { ProtocolOption } from '../protocol_labels'
-import { Button } from '../../../common/ui/button'
+import { SecondaryButton } from '../../../common/components/secondary_button'
 import {
   Select,
   SelectContent,
@@ -50,15 +51,15 @@ export function ProtocolChoice({
             onChange={(value) => setPicked(value as SupportedProtocol)}
           />
         </label>
-        <Button
+        <SecondaryButton
+          icon={Settings2}
           type="button"
-          variant="outline"
           size="sm"
           disabled={unchanged || configuring || disabled || asked?.ready === false}
           onClick={() => void onConfigure(selected)}
         >
           {configuring ? 'Configuration…' : 'Configurer'}
-        </Button>
+        </SecondaryButton>
       </div>
       {asked?.node}
     </div>
