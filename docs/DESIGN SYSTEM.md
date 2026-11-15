@@ -31,7 +31,7 @@ of both themes. Usage rules:
 
 - Critical surfaces use `--bg-elevated` to keep a soft contrast.
 - `--brand-moss` carries the calls to action and the product indicators.
-- `--alert-high` is reserved for important events and attention states.
+- `--alert-high` is reserved for important events, attention states and destructive actions.
 - `--brand-sand` never marks a hover: a quiet action (outline, ghost) hovers to `--bg-sunken`.
 - Colour never carries a meaning alone: a kind of thing is told apart by its icon and its name, and a
   fill that must be told apart differs by its pattern too.
@@ -145,8 +145,8 @@ is dropped.
 A settings row is always, in this order: **name, help trigger, control, provenance, undo**. The
 control sits in one column of common width across the app; on a small screen the row folds into
 two lines, the name above, the control below, keeping that column. A control fills the column,
-but a switch and a number field start at its edge and keep their own size: a number is as wide as
-its value, its unit inside the field, never beside it. A followed value reads greyed,
+but a switch and a number field start at its edge and keep their own size: a number field is narrow,
+sized for the values it takes, its unit inside the field, never beside it. A followed value reads greyed,
 an own value reads normally, never with a caption; undo appears only where there is something to
 undo and names the value it restores. A page lists its most common setting first; a new setting
 is placed by its expected frequency, never at the end, and the rare ones go to `Avancé`.
@@ -199,7 +199,7 @@ the user gave included). Each feature's words are its use case's.
 | Fold | Where | Holds |
 | --- | --- | --- |
 | `Options` | Inside a card, closed | That card's settings |
-| `Avancé` | The end of the page, closed | Rare settings: a position, not a mode (UI-09) |
+| `Avancé` | The end of the page, closed, before a removal (§ Action weight) | Rare settings: a position, not a mode (UI-09) |
 | `En savoir plus` panel | Next to what it explains | Task help (§ Help) |
 | `Détails techniques` | The end of a card, closed | Figures for support (§ Technical details) |
 
