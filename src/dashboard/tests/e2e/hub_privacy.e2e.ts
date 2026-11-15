@@ -64,9 +64,9 @@ test.describe('HubView privacy', () => {
 
     await expect(page).toHaveURL(/\/settings\/cameras\/camera-1\/vie-privee$/)
     await expect(page.getByText('Caméra non tournée, enregistrement désactivé')).toBeVisible()
-    await expect(page.getByRole('status')).toContainText(
-      'ne s’est pas tournée vers sa position Parking',
-    )
-    await expect(page.getByRole('status')).toContainText('ONVIF Ptz: no answer')
+    // The page's own loading state is a status too: read the one that explains the miss.
+    const why = page.getByRole('status').filter({ hasText: 'ne s’est pas tournée' })
+    await expect(why).toContainText('ne s’est pas tournée vers sa position Parking')
+    await expect(why).toContainText('ONVIF Ptz: no answer')
   })
 })
