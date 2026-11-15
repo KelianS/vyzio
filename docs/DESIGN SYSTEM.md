@@ -66,6 +66,9 @@ Two shadows, both tokens: `--shadow-soft` lifts the elevated surfaces, a modal i
 drawn as a panel (`--radius-panel`, `--bg-elevated`, no border); `--shadow-strong` floats the
 navigation header over the page. Sections are spaced `24px` to `32px` apart.
 
+**A control is a finger's size on a phone**: a button, a field or a list row is at least `44px`
+tall there, and takes back its compact height from `md` up, where a pointer aims.
+
 **Shape rule: a pill is a state, a rounded rectangle is an action.** A pill means a **non-clickable**
 element (a status pill, a badge, a header navigation link); a rounded rectangle (`--radius-sm` /
 `--radius`) means a **clickable** one, any action button. That contrast tells a `Connectée` pill from an
@@ -141,7 +144,9 @@ is dropped.
 
 A settings row is always, in this order: **name, help trigger, control, provenance, undo**. The
 control sits in one column of common width across the app; on a small screen the row folds into
-two lines, the name above, the control below, keeping that column. A followed value reads greyed,
+two lines, the name above, the control below, keeping that column. A control fills the column,
+but a switch and a number field start at its edge and keep their own size: a number is as wide as
+its value, its unit inside the field, never beside it. A followed value reads greyed,
 an own value reads normally, never with a caption; undo appears only where there is something to
 undo and names the value it restores. A page lists its most common setting first; a new setting
 is placed by its expected frequency, never at the end, and the rare ones go to `Avancé`.
@@ -168,6 +173,19 @@ without a page or a layout of its own: **title** · *state pill* · *state line*
 
 **No dead control**: outside its card, a control is offered only while what it drives works; otherwise
 one short line takes its place, naming as a link the page where it is fixed.
+
+### Action weight
+
+A page has one loud action at most; the others read quieter, each the same wherever it sits.
+
+- **A quiet action** is outlined and rests on the card's fill, so it looks the same on the canvas
+  as on a card, and its hover shows on both.
+- **A row's action** in a list whose rows each offer one is a ghost button in the product colour,
+  never a bordered box repeated on every row.
+- **A destructive action is quiet until confirmed**: outlined in the destructive colour
+  (`--alert-high`) on its page, solid only on its confirmation's button. Removing what the page
+  names closes the page: always last, after `Avancé`, under a separator, never beside another
+  action. One shared component draws it, so no page can drift.
 
 ### State pills
 
