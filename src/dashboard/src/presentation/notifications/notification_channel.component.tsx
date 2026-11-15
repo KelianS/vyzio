@@ -22,7 +22,6 @@ import {
   type MediaMode,
   type NotificationChannelConfig,
 } from '../../domain/entities/notification_channel_config.entity'
-import { sendingSentence } from './channel_status'
 import { NotificationLog } from './components/notification_log'
 import { CommandJournal } from './components/command_journal'
 import { ChannelPairingSection } from './components/channel_pairing_section'
@@ -147,20 +146,12 @@ function ChannelForm({
 
   useUnsavedChanges(draft.dirty)
 
-  // Enabling ships images off the local network: asked once, at save, never on the toggle itself.
+  // A first configuration ships images off the local network: asked once, at save (NOTIF-04).
   async function save() {
     if (await presenter.onSave(config, draft.values)) draft.accept()
   }
 
   const channelSettings: SettingDeclaration[] = [
-    {
-      id: 'channel-enabled',
-      label: `Notifications ${config.displayName}`,
-      nature: { kind: 'toggle' },
-      consequence: `Photos, vidéos et noms de caméras transitent par les serveurs de ${config.displayName} : ces images quittent votre réseau.`,
-      value: draft.values.enabled,
-      onChange: (value) => draft.set('enabled', value as boolean),
-    },
     // What the channel asks for, it declares: the screen knows no channel of its own.
     ...config.credentials.map((credential): SettingDeclaration => {
       const copy = credentialCopy(config.channel, credential.field)
@@ -470,5 +461,5 @@ function ChannelForm({
 /** Channel status in one sentence, right where it's configured. */
 function describeChannel(config: NotificationChannelConfig): string {
   if (!config.isConfigured) return 'Pas encore configuré.'
-  return sendingSentence(config.isEnabled)
+  return 'Les notifications sont envoyées.'
 }

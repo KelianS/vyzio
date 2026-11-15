@@ -12,7 +12,6 @@ export function makeChannelSummary(
     channel: 'telegram',
     displayName: 'Telegram',
     isConfigured: true,
-    isEnabled: true,
     acceptsCommands: true,
     ...overrides,
   }
@@ -25,7 +24,6 @@ export function makeChannelConfig(
   return {
     channel: 'telegram',
     displayName: 'Telegram',
-    isEnabled: true,
     isConfigured: true,
     credentials: [
       { field: 'bot_token', secret: true, isSet: true, value: null },
