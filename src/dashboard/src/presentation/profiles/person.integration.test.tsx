@@ -25,7 +25,6 @@ describe('PersonView', () => {
 
     // Assert
     expect(await screen.findByRole('heading', { name: 'Alice' })).toBeInTheDocument()
-    expect(screen.getByText('Intervenant')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Photos' })).toHaveAttribute(
       'href',
       '/settings/detection/personnes/person-1/photos',

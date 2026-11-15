@@ -1,6 +1,7 @@
 import { useEffect, useReducer } from 'react'
 import { Link } from 'react-router'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
+import { PageHeader } from '../../common/components/page_header'
 import { ReadFailure } from '../../common/components/error_message'
 import { SettingsPage } from '../../common/settings/settings_page'
 import { usePresenter } from '../../common/presenter/use_presenter'
@@ -29,16 +30,10 @@ export function AddNotificationChannelView() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <Link
-          to="/settings/notifications"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ChevronLeft className="size-4" aria-hidden="true" />
-          Notifications
-        </Link>
-        <h1 className="mt-1 font-serif text-3xl">Ajouter un canal</h1>
-      </div>
+      <PageHeader
+        back={{ to: '/settings/notifications', label: 'Notifications' }}
+        title="Ajouter un canal"
+      />
 
       <SettingsPage>
         {uido.error ? (

@@ -1,7 +1,8 @@
 import { useEffect, useReducer, type ComponentPropsWithoutRef, type ReactNode } from 'react'
 import ReactMarkdown from 'react-markdown'
-import { Link, useNavigate } from 'react-router'
-import { ChevronLeft, Keyboard, Radar } from 'lucide-react'
+import { useNavigate } from 'react-router'
+import { Keyboard, Radar } from 'lucide-react'
+import { PageHeader } from '../../common/components/page_header'
 import { DiagnosticLine, ErrorMessage } from '../../common/components/error_message'
 import { Badge } from '../../common/components/badge'
 import { ListRow } from '../../common/components/list_row'
@@ -134,16 +135,7 @@ export function AddCameraView() {
   return (
     <div className="flex flex-col gap-4">
       {/* Own back link: this route names a task, not the rubric, and owns its exit on mobile. */}
-      <div>
-        <Link
-          to="/settings/cameras"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ChevronLeft className="size-4" aria-hidden="true" />
-          Caméras
-        </Link>
-        <h1 className="mt-1 font-serif text-3xl">Ajouter une caméra</h1>
-      </div>
+      <PageHeader back={{ to: '/settings/cameras', label: 'Caméras' }} title="Ajouter une caméra" />
 
       <SettingsPage>
         <SettingsSection

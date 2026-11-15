@@ -1,11 +1,11 @@
 import { Link, Outlet } from 'react-router'
-import { ChevronLeft } from 'lucide-react'
 import { TabBar } from '../../../common/components/tab_bar'
 import { SettingsPage } from '../../../common/settings/settings_page'
 import { ReadFailure } from '../../../common/components/error_message'
 import type { AppError } from '../../../common/errors/app_error'
 import type { Camera } from '../../../domain/entities/camera.entity'
-import { formatCameraStatusLabel } from '../../../common/camera/camera_status'
+import { formatCameraStatusLabel, formatStatusTone } from '../../../common/camera/camera_status'
+import { PageHeader } from '../../../common/components/page_header'
 import { CameraNotFound } from './camera_not_found'
 
 // The pages of one camera, each the twin of an installation page one notch lower (UI-08).
@@ -54,19 +54,11 @@ export function CameraPage({
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <Link
-          to="/settings/cameras"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ChevronLeft className="size-4" aria-hidden="true" />
-          Caméras
-        </Link>
-        <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <h1 className="font-serif text-3xl">{camera.displayName}</h1>
-          <span className="text-sm text-muted-foreground">{formatCameraStatusLabel(camera)}</span>
-        </div>
-      </div>
+      <PageHeader
+        back={{ to: '/settings/cameras', label: 'Caméras' }}
+        title={camera.displayName}
+        state={{ tone: formatStatusTone(camera), label: formatCameraStatusLabel(camera) }}
+      />
 
       {/* Tabs rather than a list: few pages at this level, and one moves between them. */}
       <TabBar

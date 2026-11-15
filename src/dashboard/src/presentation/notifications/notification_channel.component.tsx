@@ -1,6 +1,5 @@
 import { useEffect, useReducer } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
-import { ChevronLeft } from 'lucide-react'
 import { SettingsPage, SettingsSection } from '../../common/settings/settings_page'
 import { SettingsList } from '../../common/settings/settings_list'
 import { AdvancedFold } from '../../common/settings/advanced_fold'
@@ -23,7 +22,8 @@ import {
   type MediaMode,
   type NotificationChannelConfig,
 } from '../../domain/entities/notification_channel_config.entity'
-import { sendingSentence } from './channel_status'
+import { channelPill } from './channel_status'
+import { PageHeader } from '../../common/components/page_header'
 import { NotificationLog } from './components/notification_log'
 import { CommandJournal } from './components/command_journal'
 import { ChannelPairingSection } from './components/channel_pairing_section'
@@ -261,25 +261,17 @@ function ChannelForm({
   return (
     <>
       <div className="flex flex-col gap-4">
-        <div>
-          <Link
-            to="/settings/notifications"
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-          >
-            <ChevronLeft className="size-4" aria-hidden="true" />
-            Notifications
-          </Link>
-          <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <h1 className="font-serif text-3xl">{config.displayName}</h1>
-            <span className="text-sm text-muted-foreground">{describeChannel(config)}</span>
-          </div>
-        </div>
+        <PageHeader
+          back={{ to: '/settings/notifications', label: 'Notifications' }}
+          title={config.displayName}
+          state={config.isConfigured ? channelPill(config.isEnabled) : undefined}
+        />
 
         <SettingsPage>
           <SettingsSection title="Connexion">
             <SettingsList settings={channelSettings} />
 
-            {/* Tester agit tout de suite : il n'a rien a faire dans le brouillon. */}
+            {/* Testing acts at once: it has no place in the draft. */}
             <div className="mt-5">
               <Button
                 type="button"
@@ -465,10 +457,4 @@ function ChannelForm({
       )}
     </>
   )
-}
-
-/** Channel status in one sentence, right where it's configured. */
-function describeChannel(config: NotificationChannelConfig): string {
-  if (!config.isConfigured) return 'Pas encore configuré.'
-  return sendingSentence(config.isEnabled)
 }
