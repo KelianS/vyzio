@@ -122,7 +122,7 @@ function ChangePasswordForm({
       }}
     >
       <div className="space-y-2">
-        <label htmlFor="current-password" className="block text-sm font-medium">
+        <label htmlFor="current-password" className="block font-medium">
           Mot de passe actuel
         </label>
         <Input
@@ -136,7 +136,7 @@ function ChangePasswordForm({
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="new-password" className="block text-sm font-medium">
+        <label htmlFor="new-password" className="block font-medium">
           Nouveau mot de passe
         </label>
         <Input

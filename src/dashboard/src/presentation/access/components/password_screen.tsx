@@ -48,7 +48,7 @@ export function PasswordScreen({
 
       <form onSubmit={submit} className="space-y-4">
         <div className="space-y-2">
-          <label htmlFor="password" className="block text-sm font-medium">
+          <label htmlFor="password" className="block font-medium">
             {label}
           </label>
           <Input

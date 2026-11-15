@@ -14,6 +14,7 @@ import {
   type ProtocolOption,
 } from '../protocol_labels'
 import { Picker } from './protocol_choice'
+import { Field } from '../../../common/components/field'
 
 // The stream is never added by hand: a camera is born with it (ADR-04).
 const ADDABLE_CAPABILITIES: Capability[] = ['ptz', 'hardware_privacy', 'image_settings']
@@ -115,8 +116,7 @@ function ManualCapabilityForm({
     <div className="rounded-inset border border-border p-3">
       <p className="font-medium">Configurer manuellement</p>
       <div className="mt-2 flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-muted-foreground">Capacité</span>
+        <Field label="Capacité">
           <Picker
             value={selectedCapability}
             options={availableCapabilities.map((cap) => ({
@@ -129,16 +129,15 @@ function ManualCapabilityForm({
               setSelectedProtocol(firstOf(cap))
             }}
           />
-        </label>
+        </Field>
 
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-muted-foreground">Protocole</span>
+        <Field label="Protocole">
           <Picker
             value={selectedProtocol}
             options={optionsOf(selectedCapability)}
             onChange={(value) => setSelectedProtocol(value as SupportedProtocol)}
           />
-        </label>
+        </Field>
 
         <Button
           type="button"

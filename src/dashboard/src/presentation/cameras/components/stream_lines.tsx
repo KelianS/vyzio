@@ -38,6 +38,7 @@ import {
   type StreamChoice,
 } from '../stream_lines'
 import { Picker } from './protocol_choice'
+import { Field } from '../../../common/components/field'
 
 /** What the stream lines ask of their screen. */
 export interface StreamLineIntents {
@@ -341,8 +342,7 @@ function AddStreamForm({
     >
       <p className="font-medium">Ajouter un flux</p>
       <div className="mt-2 flex flex-col gap-3">
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-muted-foreground">Protocole</span>
+        <Field label="Protocole">
           <Picker
             value={protocol}
             options={protocols}
@@ -352,7 +352,7 @@ function AddStreamForm({
               onList(value as StreamProtocol)
             }}
           />
-        </label>
+        </Field>
         <StreamPicker
           choices={choices}
           selected={selected}
@@ -365,8 +365,7 @@ function AddStreamForm({
           }}
           onRetry={() => onList(protocol)}
         />
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-muted-foreground">Rôle</span>
+        <Field label="Rôle">
           <Picker
             value={role}
             options={Object.values(StreamRole).map((value) => ({
@@ -375,7 +374,7 @@ function AddStreamForm({
             }))}
             onChange={(value) => setRole(value as StreamRole)}
           />
-        </label>
+        </Field>
         <div className="flex flex-wrap gap-2">
           <Button
             type="button"
@@ -416,28 +415,26 @@ export function StreamPicker({
   return (
     <>
       {choices.length > 0 ? (
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-muted-foreground">Flux</span>
+        <Field label="Flux">
           <Picker
             value={(selected ?? choices[0]).key}
             options={choiceOptions(choices)}
             onChange={onPick}
           />
-        </label>
+        </Field>
       ) : (
         !error && <p className="text-sm text-muted-foreground">Aucun autre flux à ajouter.</p>
       )}
       {error && onRetry && <ListFailure error={error} onRetry={onRetry} />}
       {selected?.other && (
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-muted-foreground">Chemin du flux</span>
+        <Field label="Chemin du flux">
           <Input
             {...TEXT_KEYBOARD.identifier}
             placeholder="/stream2"
             value={typed}
             onChange={(event) => onType(event.target.value)}
           />
-        </label>
+        </Field>
       )}
     </>
   )
