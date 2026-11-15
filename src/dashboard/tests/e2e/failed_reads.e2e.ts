@@ -21,7 +21,7 @@ test.describe('Failed reads', () => {
   test('ConservationView_ShouldShowTheFailure_WhenTheSettingsCannotBeRead', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
     await failRead(page, '/api/settings/recording')
-    await page.goto('/settings/conservation')
+    await page.goto('/settings/retention')
 
     const alert = page.getByRole('alert')
     await expect(alert).toContainText(SERVER_FAILURE)
@@ -33,7 +33,7 @@ test.describe('Failed reads', () => {
   }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
     await failRead(page, '/api/settings/recording')
-    await page.goto('/settings/conservation')
+    await page.goto('/settings/retention')
     await expect(page.getByRole('alert')).toBeVisible()
 
     await page.unroute('**/api/settings/recording')
@@ -48,7 +48,7 @@ test.describe('Failed reads', () => {
   }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
     await failRead(page, '/api/cameras/camera-1/detection-config')
-    await page.goto('/settings/cameras/camera-1/conservation')
+    await page.goto('/settings/cameras/camera-1/retention')
 
     const alert = page.getByRole('alert')
     await expect(alert).toContainText(SERVER_FAILURE)
@@ -89,7 +89,7 @@ test.describe('Failed reads', () => {
   }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
     await failRead(page, '/api/cameras')
-    await page.goto('/settings/cameras/camera-1/conservation')
+    await page.goto('/settings/cameras/camera-1/retention')
 
     const alert = page.getByRole('alert')
     await expect(alert).toContainText(SERVER_FAILURE)

@@ -14,7 +14,7 @@ import {
 test.describe('CameraConnectionView', () => {
   test.beforeEach(async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
-    await page.goto('/settings/cameras/camera-1/connexion')
+    await page.goto('/settings/cameras/camera-1/connection')
   })
 
   test('CameraConnectionView_ShouldSaveTheNameThroughTheDraft_WhenTheUserRenamesTheCamera', async ({
@@ -71,7 +71,7 @@ test.describe('CameraConnectionView three levels', () => {
       makeFakeProtocol({ protocol: 'tapo_klap', effectivePort: 80 }),
     ]
     await installFakeBackend(page, state)
-    await page.goto('/settings/cameras/camera-1/connexion')
+    await page.goto('/settings/cameras/camera-1/connection')
     await page.locator('summary', { hasText: 'Avancé' }).click()
     const klap = page.getByRole('listitem', { name: 'Tapo KLAP' })
 
@@ -93,7 +93,7 @@ test.describe('CameraConnectionView three levels', () => {
     page,
   }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
-    await page.goto('/settings/cameras/camera-1/connexion')
+    await page.goto('/settings/cameras/camera-1/connection')
     await page.locator('summary', { hasText: 'Avancé' }).click()
 
     await page.getByRole('button', { name: 'Ajouter un protocole' }).click()
@@ -119,7 +119,7 @@ test.describe('CameraConnectionView three levels', () => {
     const state = createFakeBackendState({ cameras: [makeFakeCamera()] })
     state.protocols.push(makeFakeProtocol({ protocol: 'onvif', effectivePort: 2020 }))
     await installFakeBackend(page, state)
-    await page.goto('/settings/cameras/camera-1/connexion')
+    await page.goto('/settings/cameras/camera-1/connection')
 
     await page.getByRole('button', { name: 'Ajouter une capacité' }).click()
     await expect(page.getByText('Configurer manuellement')).toBeVisible()
@@ -129,7 +129,7 @@ test.describe('CameraConnectionView three levels', () => {
     page,
   }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
-    await page.goto('/settings/cameras/camera-1/connexion')
+    await page.goto('/settings/cameras/camera-1/connection')
     const stream = page.getByRole('list', { name: 'Capacités' }).getByRole('listitem').first()
 
     await stream.getByText('Options').click()
@@ -147,7 +147,7 @@ test.describe('CameraConnectionView stream lines', () => {
     page,
   }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
-    await page.goto('/settings/cameras/camera-1/connexion')
+    await page.goto('/settings/cameras/camera-1/connection')
     const stream = page.getByRole('list', { name: 'Capacités' }).getByRole('listitem').first()
     await stream.getByText('Options').click()
     const sub = stream.getByRole('listitem', { name: '640 × 360 · 10 img/s' })
@@ -169,7 +169,7 @@ test.describe('CameraConnectionView stream lines', () => {
     page,
   }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
-    await page.goto('/settings/cameras/camera-1/connexion')
+    await page.goto('/settings/cameras/camera-1/connection')
     const stream = page.getByRole('list', { name: 'Capacités' }).getByRole('listitem').first()
     await stream.getByText('Options').click()
     const main = stream.getByRole('listitem', { name: '1920 × 1080 · 15 img/s' })
@@ -198,7 +198,7 @@ test.describe('CameraConnectionView stream lines', () => {
     ]
     state.servedStreams = []
     await installFakeBackend(page, state)
-    await page.goto('/settings/cameras/camera-1/connexion')
+    await page.goto('/settings/cameras/camera-1/connection')
     const stream = page.getByRole('list', { name: 'Capacités' }).getByRole('listitem').first()
     await stream.getByText('Options').click()
 
@@ -223,7 +223,7 @@ test.describe('CameraConnectionView capability cards', () => {
     const state = createFakeBackendState({ cameras: [makeFakeCamera({ ptzSupported: true })] })
     state.ptzBinding = { protocol: 'onvif', configJson: null }
     await installFakeBackend(page, state)
-    await page.goto('/settings/cameras/camera-1/connexion')
+    await page.goto('/settings/cameras/camera-1/connection')
     const cards = page.getByRole('list', { name: 'Capacités' }).getByRole('listitem')
 
     await cards.filter({ hasText: 'Flux vidéo' }).getByRole('button', { name: 'Vérifier' }).click()
@@ -250,7 +250,7 @@ test.describe('CameraConnectionView camera without protocols', () => {
     page,
   }) => {
     await installFakeBackend(page, cameraWithoutProtocols())
-    await page.goto('/settings/cameras/camera-1/connexion')
+    await page.goto('/settings/cameras/camera-1/connection')
     const stream = page.getByRole('list', { name: 'Capacités' }).getByRole('listitem').first()
     await expect(stream).toContainText('Détecter automatiquement')
     await expect(stream.getByText('Options', { exact: true })).toHaveCount(0)
@@ -266,7 +266,7 @@ test.describe('CameraConnectionView camera without protocols', () => {
     page,
   }) => {
     await installFakeBackend(page, cameraWithoutProtocols())
-    await page.goto('/settings/cameras/camera-1/connexion')
+    await page.goto('/settings/cameras/camera-1/connection')
     await page.locator('summary', { hasText: 'Avancé' }).click()
 
     await page.getByRole('button', { name: 'Rechercher les protocoles' }).click()

@@ -144,7 +144,7 @@ const router = createBrowserRouter([
     children: [
       // Consultation
       { path: '/', element: <HubView /> },
-      { path: '/history', element: <DetectionHistoryView /> },
+      { path: '/detections', element: <DetectionHistoryView /> },
       // A screen of its own, without the header: the picture takes the whole viewport (LIVE-19).
       { path: LIVE_VIEW_ROUTE, element: <LiveViewScreen />, handle: FULL_SCREEN },
 
@@ -155,7 +155,7 @@ const router = createBrowserRouter([
         element: <SettingsView />,
         children: [
           // Names the task, not the section.
-          { path: 'cameras/ajout', element: <AddCameraView />, handle: OWN_HEADER },
+          { path: 'cameras/add', element: <AddCameraView />, handle: OWN_HEADER },
           // One screen: the list, then the camera the route names, with its tabs.
           {
             path: 'cameras',
@@ -167,40 +167,40 @@ const router = createBrowserRouter([
                 handle: OWN_HEADER,
                 children: [
                   // A camera always opens on Connexion (CAM-61).
-                  { index: true, element: <Navigate to="connexion" replace /> },
-                  { path: 'connexion', element: <CameraConnectionView /> },
-                  { path: 'vie-privee', element: <CameraPrivacyView /> },
+                  { index: true, element: <Navigate to="connection" replace /> },
+                  { path: 'connection', element: <CameraConnectionView /> },
+                  { path: 'privacy', element: <CameraPrivacyView /> },
                   { path: 'detection', element: <CameraDetectionView /> },
                   { path: 'image', element: <CameraImageView /> },
-                  { path: 'conservation', element: <CameraConservationView /> },
+                  { path: 'retention', element: <CameraConservationView /> },
                 ],
               },
             ],
           },
-          { path: 'detection', element: <Navigate to="/settings/detection/personnes" replace /> },
+          { path: 'detection', element: <Navigate to="/settings/detection/people" replace /> },
           // Screens not reworked yet: they already carry a title, never a back link.
           // The marker goes away with their rework, not before - without it the page
           // would announce itself twice.
-          { path: 'detection/personnes', element: <PersonListView /> },
+          { path: 'detection/people', element: <PersonListView /> },
           // Names the task, not the section.
-          { path: 'detection/personnes/ajout', element: <AddPersonView />, handle: OWN_HEADER },
+          { path: 'detection/people/add', element: <AddPersonView />, handle: OWN_HEADER },
           {
-            path: 'detection/personnes/:profileId',
+            path: 'detection/people/:profileId',
             element: <PersonView />,
             // Carries the name of the open person, and their tabs.
             handle: OWN_HEADER,
             children: [
-              { index: true, element: <Navigate to="identite" replace /> },
-              { path: 'identite', element: <PersonIdentityView /> },
+              { index: true, element: <Navigate to="identity" replace /> },
+              { path: 'identity', element: <PersonIdentityView /> },
               { path: 'photos', element: <PersonPhotosView /> },
               { path: 'cameras', element: <PersonCamerasView /> },
             ],
           },
-          { path: 'conservation', element: <ConservationView /> },
+          { path: 'retention', element: <ConservationView /> },
           { path: 'notifications', element: <NotificationChannelListView /> },
           // Names the task, not the section.
           {
-            path: 'notifications/ajout',
+            path: 'notifications/add',
             element: <AddNotificationChannelView />,
             handle: OWN_HEADER,
           },
@@ -210,21 +210,14 @@ const router = createBrowserRouter([
             element: <NotificationChannelView />,
             handle: OWN_HEADER,
           },
-          { path: 'planification', element: <ScheduleWeekView /> },
-          { path: 'planification/ajout', element: <ScheduleRuleView />, handle: OWN_HEADER },
-          { path: 'planification/:ruleId', element: <ScheduleRuleView />, handle: OWN_HEADER },
-          { path: 'acces', element: <AccessView /> },
-          { path: 'systeme', element: <SystemView /> },
-          { path: 'systeme/avance', element: <ExpertView />, handle: OWN_HEADER_ONLY },
+          { path: 'schedule', element: <ScheduleWeekView /> },
+          { path: 'schedule/add', element: <ScheduleRuleView />, handle: OWN_HEADER },
+          { path: 'schedule/:ruleId', element: <ScheduleRuleView />, handle: OWN_HEADER },
+          { path: 'access', element: <AccessView /> },
+          { path: 'hardware', element: <SystemView /> },
+          { path: 'hardware/advanced', element: <ExpertView />, handle: OWN_HEADER_ONLY },
         ],
       },
-
-      // Former addresses: a kept link or a bookmark must not fall into the void
-      // because the tree changed.
-      { path: '/cameras', element: <Navigate to="/settings/cameras" replace /> },
-      { path: '/profiles', element: <Navigate to="/settings/detection/personnes" replace /> },
-      { path: '/notifications', element: <Navigate to="/settings/notifications" replace /> },
-      { path: '/expert', element: <Navigate to="/settings/systeme/avance" replace /> },
     ],
   },
 ])

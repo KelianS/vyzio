@@ -34,7 +34,7 @@ describe('SecondaryButton', () => {
     // Arrange & Act
     render(
       <MemoryRouter>
-        <SecondaryButton icon={RefreshCw} to="/history">
+        <SecondaryButton icon={RefreshCw} to="/detections">
           Tout l’historique
         </SecondaryButton>
       </MemoryRouter>,
@@ -42,7 +42,7 @@ describe('SecondaryButton', () => {
 
     // Assert
     const link = screen.getByRole('link', { name: 'Tout l’historique' })
-    expect(link).toHaveAttribute('href', '/history')
+    expect(link).toHaveAttribute('href', '/detections')
     expect(link.querySelector('svg')).toBeInTheDocument()
   })
 })

@@ -90,7 +90,7 @@ test.describe('Base styles', () => {
     expect(await contrastOf(badge)).toBeGreaterThan(3)
 
     // The iframe shell, last screen brought onto the socle.
-    await page.goto('/settings/systeme/avance')
+    await page.goto('/settings/hardware/advanced')
     await expect(
       page
         .getByRole('status', { name: 'Chargement de Frigate…' })
@@ -200,7 +200,7 @@ test.describe('Style foundations', () => {
         ],
       }),
     )
-    await page.goto('/settings/detection/personnes/profile-1/photos')
+    await page.goto('/settings/detection/people/profile-1/photos')
 
     const state = page.getByText(/^Aucune photo/)
     const advice = page.getByText(/^Des photos nettes/)
@@ -237,7 +237,7 @@ test.describe('Style foundations', () => {
 
   test('ConfirmDialog_ShouldConfirmWithTheFilledButton_WhenItAsksPlainly', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
-    await page.goto('/settings/acces')
+    await page.goto('/settings/access')
     await page.getByRole('button', { name: 'Déconnecter tous les appareils' }).click()
 
     await expect(
@@ -247,7 +247,7 @@ test.describe('Style foundations', () => {
 
   test('ClosedFold_ShouldTakeTheClickableRadius_WhenItSitsInACard', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
-    await page.goto('/settings/cameras/camera-1/connexion')
+    await page.goto('/settings/cameras/camera-1/connection')
 
     await expect(page.locator('summary', { hasText: 'Options' }).first()).toHaveCSS(
       'border-top-left-radius',

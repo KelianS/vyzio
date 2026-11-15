@@ -12,15 +12,15 @@ import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fi
 
 const SETTINGS_ROUTES = [
   '/settings/cameras/camera-1/detection',
-  '/settings/cameras/camera-1/conservation',
-  '/settings/cameras/camera-1/vie-privee',
+  '/settings/cameras/camera-1/retention',
+  '/settings/cameras/camera-1/privacy',
   '/settings/cameras/camera-1/image',
-  '/settings/cameras/camera-1/connexion',
-  '/settings/conservation',
+  '/settings/cameras/camera-1/connection',
+  '/settings/retention',
   // The settings are in the channel, not in the list leading to it.
   '/settings/notifications/telegram',
   '/settings/notifications/discord',
-  '/settings/detection/personnes/profile-1/identite',
+  '/settings/detection/people/profile-1/identity',
 ]
 
 interface FieldMeasure {
@@ -151,7 +151,7 @@ test.describe('Settings screens coherence', () => {
     }
   })
 
-  const FOLD_ROUTES = ['/settings/systeme', '/settings/detection/personnes/profile-1/photos']
+  const FOLD_ROUTES = ['/settings/hardware', '/settings/detection/people/profile-1/photos']
 
   for (const path of FOLD_ROUTES) {
     test(`AdvancedFold_ShouldBeClosed_WhenThePageOpens (${path})`, async ({ page }) => {

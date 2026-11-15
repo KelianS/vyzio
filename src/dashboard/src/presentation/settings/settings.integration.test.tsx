@@ -16,7 +16,7 @@ describe('SettingsView', () => {
 
   it('SettingsView_ShouldNameTheRubricAndLeadBack_WhenARubricIsOpen', () => {
     // Arrange & Act
-    renderScreen(<SettingsView />, { path: '/settings/*', url: '/settings/conservation' })
+    renderScreen(<SettingsView />, { path: '/settings/*', url: '/settings/retention' })
 
     // Assert
     expect(screen.getByRole('heading', { level: 1, name: 'Conservation' })).toBeInTheDocument()

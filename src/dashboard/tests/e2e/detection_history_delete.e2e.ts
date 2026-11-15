@@ -6,7 +6,7 @@ import {
 } from './fixtures/fake_backend'
 
 async function openTheCarPreview(page: Page) {
-  await page.goto('/history')
+  await page.goto('/detections')
   await page.getByRole('button', { name: /Voir l’aperçu.*Voiture/ }).click()
   return page.getByRole('dialog', { name: 'Aperçu de la détection' })
 }
@@ -65,7 +65,7 @@ test.describe('DetectionHistoryView deletion', () => {
   test('DetectionHistoryView_ShouldSayTheVideoWasDeleted_WhenItWasErasedWithAnotherDetection', async ({
     page,
   }) => {
-    await page.goto('/history')
+    await page.goto('/detections')
     await page.getByRole('button', { name: 'Vidéo' }).click()
 
     await expect(page.getByText('La vidéo de ce moment a été supprimée.')).toBeVisible()

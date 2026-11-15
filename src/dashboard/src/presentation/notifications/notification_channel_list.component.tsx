@@ -67,7 +67,7 @@ export function NotificationChannelListView() {
       {remaining > 0 && (
         <div className="mt-5">
           <Button asChild>
-            <Link to="/settings/notifications/ajout">
+            <Link to="/settings/notifications/add">
               <Plus aria-hidden="true" />
               Ajouter un canal
             </Link>

@@ -5,7 +5,7 @@ test.describe('People', () => {
   test('AddPersonView_ShouldOpenThePhotosOfThePerson_WhenTheUserAddsSomeone', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState({ profiles: [] }))
 
-    await page.goto('/settings/detection/personnes')
+    await page.goto('/settings/detection/people')
     await expect(page.getByText('Personne d’enregistrée pour l’instant.')).toBeVisible()
 
     await page.getByRole('link', { name: 'Ajouter une personne' }).click()
@@ -14,7 +14,7 @@ test.describe('People', () => {
 
     // The rest of the task, and not the page: without a photo the profile recognises
     // nobody, and nothing else would say so.
-    await expect(page).toHaveURL(/\/settings\/detection\/personnes\/profile-\d+\/photos$/)
+    await expect(page).toHaveURL(/\/settings\/detection\/people\/profile-\d+\/photos$/)
     await expect(
       page.getByText('Aucune photo : la reconnaissance est inactive pour cette personne.'),
     ).toBeVisible()
@@ -42,7 +42,7 @@ test.describe('People', () => {
       }),
     )
 
-    await page.goto('/settings/detection/personnes/profile-1/identite')
+    await page.goto('/settings/detection/people/profile-1/identity')
     await expect(page.getByRole('heading', { name: 'Alice' })).toBeVisible()
 
     await page.getByRole('textbox', { name: 'Nom' }).fill('Alice Martin')
@@ -75,7 +75,7 @@ test.describe('People', () => {
         ],
       }),
     )
-    await page.goto('/settings/detection/personnes/profile-1/cameras')
+    await page.goto('/settings/detection/people/profile-1/cameras')
 
     // A new person is signalled everywhere: every camera is offered, none ticked.
     const cameras = page.getByRole('combobox', { name: 'Me notifier seulement sur' })

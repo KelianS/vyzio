@@ -6,7 +6,7 @@ export function OrientationUnavailable({ cameraId }: { cameraId: string }) {
     <p className="text-sm text-muted-foreground">
       L’orientation n’est pas disponible pour le moment : voir «{' '}
       <Link
-        to={`/settings/cameras/${cameraId}/connexion`}
+        to={`/settings/cameras/${cameraId}/connection`}
         className="underline underline-offset-2 hover:text-foreground"
       >
         Connexion

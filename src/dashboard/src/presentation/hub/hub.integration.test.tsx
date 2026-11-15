@@ -94,7 +94,7 @@ describe('HubView', () => {
     // Assert
     expect(await screen.findByRole('link', { name: 'Front Door' })).toHaveAttribute(
       'href',
-      '/cameras/camera-1/direct',
+      '/cameras/camera-1',
     )
   })
   it('onMount_ShouldSayVyzioDoesNotAnswer_WhenTheOverviewFails', async () => {

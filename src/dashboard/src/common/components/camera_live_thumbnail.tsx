@@ -180,7 +180,7 @@ export function CameraLiveThumbnail({
         {/* Outside the frame, which may be a button; the privacy screen says why (PRIV-05). */}
         {missLabel && (
           <Link
-            to={`/settings/cameras/${camera.id}/vie-privee`}
+            to={`/settings/cameras/${camera.id}/privacy`}
             className="flex items-center gap-1.5 px-3 pb-3 text-xs text-muted-foreground underline underline-offset-2"
           >
             <TriangleAlert className="size-3.5 shrink-0" aria-hidden="true" />

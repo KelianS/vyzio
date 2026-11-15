@@ -30,7 +30,7 @@ test.describe('DetectionHistoryView retention', () => {
         ],
       }),
     )
-    await page.goto('/history')
+    await page.goto('/detections')
 
     await expect(page.getByText(/Aperçu et vidéo effacés/)).toBeVisible()
     // An erased media is not a failure: nothing to retry, so nothing to click.
@@ -47,7 +47,7 @@ test.describe('DetectionHistoryView retention', () => {
         detectionHistory: [makeFakeDetectionEvent({ hasClip: true, hasSnapshot: true })],
       }),
     )
-    await page.goto('/history')
+    await page.goto('/detections')
 
     await expect(page.getByText(/Aperçu et vidéo effacés/)).toHaveCount(0)
     await expect(page.getByRole('button', { name: /Voir l’aperçu/ })).toBeVisible()
@@ -69,7 +69,7 @@ test.describe('DetectionHistoryView older pages', () => {
       }),
     )
     await installFakeBackend(page, createFakeBackendState({ detectionHistory: history }))
-    await page.goto('/history')
+    await page.goto('/detections')
 
     await expect(page.getByText(/camera 0 · /)).toBeVisible()
     await expect(page.getByText(/camera 20 · /)).toHaveCount(0)
@@ -90,7 +90,7 @@ test.describe('DetectionHistoryView older pages', () => {
       page,
       createFakeBackendState({ detectionHistory: [makeFakeDetectionEvent()] }),
     )
-    await page.goto('/history')
+    await page.goto('/detections')
 
     await expect(page.getByRole('button', { name: 'Voir plus ancien' })).toHaveCount(0)
   })

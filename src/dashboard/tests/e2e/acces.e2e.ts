@@ -108,7 +108,7 @@ test.describe('Password change', () => {
   }) => {
     await installFakeBackend(page, createFakeBackendState())
 
-    await page.goto('/settings/acces')
+    await page.goto('/settings/access')
     await page.getByLabel('Mot de passe actuel').fill('pas-le-bon-mot')
     await page.getByLabel('Nouveau mot de passe').fill('un-nouveau-mot')
     await page.getByRole('button', { name: 'Changer le mot de passe' }).click()
@@ -123,7 +123,7 @@ test.describe('Password change', () => {
   }) => {
     await page.setViewportSize({ width: 390, height: 844 })
     await installFakeBackend(page, createFakeBackendState())
-    await page.goto('/settings/acces')
+    await page.goto('/settings/access')
     const change = page.getByRole('button', { name: 'Changer le mot de passe' })
     await page.getByLabel('Mot de passe actuel').fill('pas-le-bon-mot')
     await page.getByLabel('Nouveau mot de passe').fill('un-nouveau-mot')
@@ -141,7 +141,7 @@ test.describe('Password change', () => {
     const state = createFakeBackendState()
     await installFakeBackend(page, state)
 
-    await page.goto('/settings/acces')
+    await page.goto('/settings/access')
     await page.getByLabel('Mot de passe actuel').fill(FAKE_PASSWORD)
     await page.getByLabel('Nouveau mot de passe').fill('un-nouveau-mot')
     await page.getByRole('button', { name: 'Changer le mot de passe' }).click()
@@ -211,7 +211,7 @@ test.describe('Session end', () => {
   test('AccessView_ShouldLeadBackToTheLockedScreen_WhenTheUserSignsOut', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState())
 
-    await page.goto('/settings/acces')
+    await page.goto('/settings/access')
     await page.getByRole('button', { name: 'Se déconnecter' }).click()
 
     await expect(page.getByRole('heading', { name: 'Vyzio est verrouillé' })).toBeVisible()
@@ -222,7 +222,7 @@ test.describe('Session end', () => {
   }) => {
     await installFakeBackend(page, createFakeBackendState())
 
-    await page.goto('/settings/acces')
+    await page.goto('/settings/access')
     await page.getByRole('button', { name: 'Déconnecter tous les appareils' }).click()
 
     const dialog = page.getByRole('alertdialog')

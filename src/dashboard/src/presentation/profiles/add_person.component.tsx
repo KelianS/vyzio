@@ -26,7 +26,7 @@ export function AddPersonView() {
   async function add() {
     const createdId = await presenter.onCreate(uido.form)
     // Photos are next: without them recognition can't do anything with this profile.
-    if (createdId) void navigate(`/settings/detection/personnes/${createdId}/photos`)
+    if (createdId) void navigate(`/settings/detection/people/${createdId}/photos`)
   }
 
   const declarations: SettingDeclaration[] = [
@@ -57,7 +57,7 @@ export function AddPersonView() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        back={{ to: '/settings/detection/personnes', label: 'Personnes' }}
+        back={{ to: '/settings/detection/people', label: 'Personnes' }}
         title="Ajouter une personne"
       />
 

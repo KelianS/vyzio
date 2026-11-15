@@ -13,7 +13,7 @@ import { buildInitialPersonUido } from './person.uido'
 import { Loading } from '../../common/components/loading'
 
 const PERSON_PAGES = [
-  { slug: 'identite', label: 'Identité' },
+  { slug: 'identity', label: 'Identité' },
   { slug: 'photos', label: 'Photos' },
   { slug: 'cameras', label: 'Caméras' },
 ]
@@ -49,7 +49,7 @@ export function PersonView() {
           className="mt-3"
         />
         <Link
-          to="/settings/detection/personnes"
+          to="/settings/detection/people"
           className="mt-3 inline-block underline underline-offset-2"
         >
           Revenir à la liste
@@ -64,7 +64,7 @@ export function PersonView() {
       <SettingsPage>
         <h1 className="font-serif text-3xl">Personne introuvable</h1>
         <Link
-          to="/settings/detection/personnes"
+          to="/settings/detection/people"
           className="mt-3 inline-block underline underline-offset-2"
         >
           Revenir à la liste
@@ -76,14 +76,14 @@ export function PersonView() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        back={{ to: '/settings/detection/personnes', label: 'Personnes' }}
+        back={{ to: '/settings/detection/people', label: 'Personnes' }}
         title={found.name}
       />
 
       <TabBar
         label="Réglages de la personne"
         tabs={PERSON_PAGES.map((page) => ({
-          to: `/settings/detection/personnes/${found.id}/${page.slug}`,
+          to: `/settings/detection/people/${found.id}/${page.slug}`,
           label: page.label,
         }))}
       />

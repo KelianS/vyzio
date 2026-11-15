@@ -8,7 +8,7 @@ import { ConservationView } from './conservation.component'
 
 const SETTINGS = 'GET /api/settings/recording'
 const SAVE = 'PUT /api/settings/recording'
-const CONSERVATION = { path: '/settings/conservation', url: '/settings/conservation' }
+const CONSERVATION = { path: '/settings/retention', url: '/settings/retention' }
 
 const settings: RecordingSettings = {
   continuous: { days: 0, default: 0 },

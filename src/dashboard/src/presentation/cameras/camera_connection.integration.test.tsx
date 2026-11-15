@@ -122,8 +122,8 @@ const privacyToConfigure = makeCapabilityBinding({
 
 function connectionTab(shown = camera) {
   return {
-    path: '/settings/cameras/:cameraId/connexion',
-    url: '/settings/cameras/camera-1/connexion',
+    path: '/settings/cameras/:cameraId/connection',
+    url: '/settings/cameras/camera-1/connection',
     outletContext: shown,
   }
 }

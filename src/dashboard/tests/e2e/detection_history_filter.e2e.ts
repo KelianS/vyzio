@@ -22,7 +22,7 @@ test.describe('DetectionHistoryView filters', () => {
         ],
       }),
     )
-    await page.goto('/history')
+    await page.goto('/detections')
     // Filters are an option you open (see `ui_defauts.e2e.ts`), not the top of the screen.
     await page.getByRole('button', { name: 'Filtrer' }).click()
   })

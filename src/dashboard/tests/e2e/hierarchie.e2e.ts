@@ -64,7 +64,7 @@ test.describe('A page is named once', () => {
     // The section menu gives way to the page: without this title, the screen
     // would have nothing left to name itself.
     await page.setViewportSize({ width: 390, height: 844 })
-    await page.goto('/settings/conservation')
+    await page.goto('/settings/retention')
 
     await expect(page.getByRole('heading', { name: 'Conservation', level: 1 })).toHaveCount(1)
   })

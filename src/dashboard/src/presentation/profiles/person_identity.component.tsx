@@ -83,7 +83,7 @@ export function PersonIdentityView() {
           deleting={uido.deleting}
           onAsk={presenter.onAskDelete}
           onConfirm={async () => {
-            if (await presenter.onDelete(person)) void navigate('/settings/detection/personnes')
+            if (await presenter.onDelete(person)) void navigate('/settings/detection/people')
           }}
           onCancel={presenter.onCancelDelete}
         />

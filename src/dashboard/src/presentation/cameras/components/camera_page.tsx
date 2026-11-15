@@ -11,11 +11,11 @@ import { Loading } from '../../../common/components/loading'
 
 // The pages of one camera, each the twin of an installation page one notch lower (UI-08).
 const CAMERA_PAGES = [
-  { slug: 'connexion', label: 'Connexion' },
-  { slug: 'vie-privee', label: 'Vie privée' },
+  { slug: 'connection', label: 'Connexion' },
+  { slug: 'privacy', label: 'Vie privée' },
   { slug: 'detection', label: 'Détection' },
   { slug: 'image', label: 'Image et pilotage' },
-  { slug: 'conservation', label: 'Conservation' },
+  { slug: 'retention', label: 'Conservation' },
 ]
 
 export function CameraPage({

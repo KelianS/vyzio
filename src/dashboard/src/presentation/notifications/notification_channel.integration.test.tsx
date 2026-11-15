@@ -95,7 +95,7 @@ describe('NotificationChannelView', () => {
     ).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Voir la planification' })).toHaveAttribute(
       'href',
-      '/settings/planification',
+      '/settings/schedule',
     )
     expect(screen.queryByText('Seulement à certaines heures')).not.toBeInTheDocument()
   })

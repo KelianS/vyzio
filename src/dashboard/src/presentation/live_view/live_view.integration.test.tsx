@@ -123,7 +123,7 @@ describe('LiveView', () => {
     ).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Connexion' })).toHaveAttribute(
       'href',
-      '/settings/cameras/camera-1/connexion',
+      '/settings/cameras/camera-1/connection',
     )
     expect(screen.queryByTitle('Haut')).not.toBeInTheDocument()
     expect(network.sent).toEqual([])
@@ -990,7 +990,7 @@ describe('LiveViewScreen', () => {
   })
 
   // The whole slice as the app mounts it: the shell reads the cameras, the address names one.
-  function openTheAddress(url = '/cameras/camera-1/direct') {
+  function openTheAddress(url = '/cameras/camera-1') {
     useRootStore.setState(useRootStore.getInitialState(), true)
     const router = createMemoryRouter(
       [

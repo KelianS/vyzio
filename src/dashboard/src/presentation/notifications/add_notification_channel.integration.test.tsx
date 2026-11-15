@@ -7,7 +7,7 @@ import { renderScreen } from '../../testing/render_screen'
 import { AddNotificationChannelView } from './add_notification_channel.component'
 
 const CHANNELS = 'GET /api/notifications/channels'
-const ADD = { path: '/settings/notifications/ajout', url: '/settings/notifications/ajout' }
+const ADD = { path: '/settings/notifications/add', url: '/settings/notifications/add' }
 
 describe('AddNotificationChannelView', () => {
   it('onLoad_ShouldOfferEachChannelLeftAndWhetherItAnswers_WhenSomeAreFree', async () => {

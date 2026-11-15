@@ -12,8 +12,8 @@ const REMOVE = 'DELETE /api/profiles/person-1/photos/photo-1'
 const RESYNC = 'POST /api/profiles/resync-face-library'
 
 const PHOTOS_TAB = {
-  path: '/settings/detection/personnes/:profileId/photos',
-  url: '/settings/detection/personnes/person-1/photos',
+  path: '/settings/detection/people/:profileId/photos',
+  url: '/settings/detection/people/person-1/photos',
   outletContext: { person: makeProfile(), reload: () => undefined },
 }
 

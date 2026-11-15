@@ -36,7 +36,7 @@ describe('CameraLiveThumbnail', () => {
     expect(screen.getByText('Caméra non tournée, enregistrement désactivé')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'La caméra ne s’est pas tournée' })).toHaveAttribute(
       'href',
-      '/settings/cameras/camera-1/vie-privee',
+      '/settings/cameras/camera-1/privacy',
     )
   })
 
@@ -91,7 +91,7 @@ describe('CameraLiveThumbnail', () => {
           <CameraLiveThumbnail
             camera={makeCamera({ connected, status })}
             apiBaseUrl=""
-            liveTo="/cameras/camera-1/direct"
+            liveTo="/cameras/camera-1"
           />
         </MemoryRouter>,
       )

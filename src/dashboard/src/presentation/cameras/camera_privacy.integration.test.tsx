@@ -11,8 +11,8 @@ import { CameraPrivacyView } from './camera_privacy.component'
 const camera = makeCamera()
 
 const PRIVACY_TAB = {
-  path: '/settings/cameras/:cameraId/vie-privee',
-  url: '/settings/cameras/camera-1/vie-privee',
+  path: '/settings/cameras/:cameraId/privacy',
+  url: '/settings/cameras/camera-1/privacy',
   outletContext: camera,
 }
 
@@ -73,7 +73,7 @@ describe('CameraPrivacyView', () => {
     expect(await screen.findByText('1 plage « Vie privée » s’applique')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Voir la planification' })).toHaveAttribute(
       'href',
-      '/settings/planification',
+      '/settings/schedule',
     )
   })
 

@@ -78,7 +78,7 @@ const DAY_OPTIONS: readonly SettingOption[] = WEEK_DAYS.map((day) => ({
   label: day.name,
 }))
 
-/** One range editor for every rule type (ADR-15): adding at `ajout`, editing at the rule's id. */
+/** One range editor for every rule type (ADR-15): adding at `add`, editing at the rule's id. */
 export function ScheduleRuleView() {
   const { ruleId = null } = useParams()
   const {

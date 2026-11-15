@@ -14,7 +14,7 @@ import { PressableSurface } from './pressable'
  */
 const CONSULTATION_ITEMS = [
   { path: '/', label: 'Accueil' },
-  { path: '/history', label: 'Historique' },
+  { path: '/detections', label: 'Historique' },
 ]
 
 const SETTINGS_ITEM = { path: '/settings', label: 'Réglages' }

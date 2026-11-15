@@ -6,7 +6,7 @@ import {
 } from '../../domain/entities/schedule_rule.entity'
 
 /** Where the house's calendar lives (ADR-15). */
-export const SCHEDULES_PATH = '/settings/planification'
+export const SCHEDULES_PATH = '/settings/schedule'
 
 /** A rule type in the interface's words: the same name, icon and effect everywhere (DESIGN SYSTEM § Shared words). */
 interface ScheduleTypeCopy {

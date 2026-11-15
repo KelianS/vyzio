@@ -152,7 +152,7 @@ export function ScheduleWeekView() {
 
       <div className="mt-6">
         <Button asChild>
-          <Link to={`${SCHEDULES_PATH}/ajout`}>
+          <Link to={`${SCHEDULES_PATH}/add`}>
             <Plus aria-hidden="true" />
             Ajouter une plage
           </Link>

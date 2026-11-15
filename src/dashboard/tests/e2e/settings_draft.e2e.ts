@@ -8,7 +8,7 @@ import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fi
 test.describe('Settings editing cycle', () => {
   test.beforeEach(async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
-    await page.goto('/settings/conservation')
+    await page.goto('/settings/retention')
   })
 
   test('SettingsDraftBar_ShouldNameTheChangeWithNothingSaved_WhenTheUserEditsAValue', async ({
@@ -76,7 +76,7 @@ test.describe('Settings editing cycle', () => {
 
     // Staying: nothing moves, and what was typed survives.
     await page.getByRole('button', { name: 'Rester sur la page' }).click()
-    await expect(page).toHaveURL('/settings/conservation')
+    await expect(page).toHaveURL('/settings/retention')
     await expect(motion).toHaveValue('30')
 
     // Leaving: navigation carries on.

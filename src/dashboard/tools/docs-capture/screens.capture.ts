@@ -129,9 +129,9 @@ test('phone screens', async ({ page }) => {
   }
 
   await shoot('/', 'hub.jpg', JPEG_QUALITY)
-  await shoot('/history', 'history.jpg', JPEG_QUALITY)
+  await shoot('/detections', 'history.jpg', JPEG_QUALITY)
   await shoot('/settings/cameras', 'cameras.png')
-  await shoot('/settings/detection/personnes', 'people.png')
+  await shoot('/settings/detection/people', 'people.png')
 
   await open(page, '/')
   await page.setViewportSize({ width: 390, height: 844 })

@@ -35,7 +35,7 @@ describe('SystemMonitorPanel', () => {
     expect(screen.getByText('Porte d’entrée')).not.toBeVisible()
     expect(screen.getByRole('link', { name: 'Ouvrir l’interface technique' })).toHaveAttribute(
       'href',
-      '/settings/systeme/avance',
+      '/settings/hardware/advanced',
     )
   })
 
@@ -84,7 +84,7 @@ describe('SystemMonitorPanel', () => {
     expect(screen.getByText('Arrêtée')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Diagnostiquer' })).toHaveAttribute(
       'href',
-      '/settings/systeme/avance',
+      '/settings/hardware/advanced',
     )
   })
 })

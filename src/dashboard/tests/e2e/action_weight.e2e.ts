@@ -85,7 +85,7 @@ test.describe('Action weight', () => {
     page,
   }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
-    await page.goto('/settings/cameras/camera-1/connexion')
+    await page.goto('/settings/cameras/camera-1/connection')
     await expect(page.getByRole('button', { name: 'Vérifier' })).toBeVisible()
 
     const green = await page
@@ -103,7 +103,7 @@ test.describe('Action weight', () => {
     page,
   }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
-    await page.goto('/settings/cameras/camera-1/connexion')
+    await page.goto('/settings/cameras/camera-1/connection')
 
     const tint = await page
       .getByRole('button', { name: 'Vérifier' })
@@ -135,7 +135,7 @@ test.describe('Action weight', () => {
       page,
       createFakeBackendState({ detectionHistory: [makeFakeDetectionEvent({ eventId: 'e1' })] }),
     )
-    await page.goto('/history')
+    await page.goto('/detections')
 
     const identify = page.getByRole('button', { name: 'Identifier' })
     await expect(identify).toHaveCSS('border-top-width', '0px')
@@ -147,7 +147,7 @@ test.describe('Action weight', () => {
   }) => {
     await page.setViewportSize(PHONE)
     await installFakeBackend(page, createFakeBackendState())
-    await page.goto('/settings/conservation')
+    await page.goto('/settings/retention')
 
     const field = page.getByRole('spinbutton').first()
     const unit = page.locator('[data-setting-control]').first().getByText('jours', { exact: true })
@@ -209,7 +209,7 @@ test.describe('Touch size', () => {
       await heightOf(page.getByRole('combobox', { name: 'Ce qui déclenche une notification' })),
     ).toBeGreaterThanOrEqual(44)
 
-    await page.goto('/settings/detection/personnes/profile-1/identite')
+    await page.goto('/settings/detection/people/profile-1/identity')
     expect(
       await heightOf(page.getByRole('combobox', { name: 'Lien avec vous' })),
     ).toBeGreaterThanOrEqual(44)

@@ -64,7 +64,7 @@ export function CameraList({
       {!unread && (
         <div className="mt-5">
           <Button asChild>
-            <Link to="/settings/cameras/ajout">
+            <Link to="/settings/cameras/add">
               <Plus aria-hidden="true" />
               Ajouter une caméra
             </Link>

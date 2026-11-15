@@ -1,10 +1,10 @@
 /** The live view's own address: a screen, never a layer over a page (LIVE-19). */
-export const LIVE_VIEW_ROUTE = '/cameras/:cameraId/direct'
+export const LIVE_VIEW_ROUTE = '/cameras/:cameraId'
 
-const LIVE_VIEW_PATH = /^\/cameras\/[^/]+\/direct$/
+const LIVE_VIEW_PATH = /^\/cameras\/[^/]+$/
 
 export function liveViewPath(cameraId: string): string {
-  return `/cameras/${encodeURIComponent(cameraId)}/direct`
+  return `/cameras/${encodeURIComponent(cameraId)}`
 }
 
 export function isLiveViewPath(pathname: string): boolean {

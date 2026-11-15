@@ -192,7 +192,7 @@ function HubWelcome() {
 
         <div className="mt-6 flex flex-wrap gap-2">
           <Button asChild>
-            <Link to="/settings/cameras/ajout">Ajouter une caméra</Link>
+            <Link to="/settings/cameras/add">Ajouter une caméra</Link>
           </Button>
           <SecondaryButton icon={Bell} to="/settings/notifications">
             Configurer les notifications
@@ -328,7 +328,7 @@ function HubOperational({
           )}
 
           <div className="mt-4">
-            <SecondaryButton icon={History} to="/history" size="sm">
+            <SecondaryButton icon={History} to="/detections" size="sm">
               Tout l’historique
             </SecondaryButton>
           </div>

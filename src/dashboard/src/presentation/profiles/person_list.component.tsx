@@ -39,7 +39,7 @@ export function PersonListView() {
           {uido.people.map((person) => (
             <li key={person.id}>
               <ListRow>
-                <Link to={`/settings/detection/personnes/${person.id}`}>
+                <Link to={`/settings/detection/people/${person.id}`}>
                   <span className="min-w-0">
                     <span className="block font-medium">{person.name}</span>
                     <span className="block text-sm text-muted-foreground">
@@ -63,7 +63,7 @@ export function PersonListView() {
 
       <div className="mt-5">
         <Button asChild>
-          <Link to="/settings/detection/personnes/ajout">
+          <Link to="/settings/detection/people/add">
             <Plus aria-hidden="true" />
             Ajouter une personne
           </Link>

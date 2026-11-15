@@ -9,7 +9,7 @@ test.describe('Capability to confirm', () => {
     const state = createFakeBackendState({ cameras: [makeFakeCamera({ ptzSupported: false })] })
     state.ptzBinding = { protocol: 'v380', configJson: null, status: 'to_confirm' }
     await installFakeBackend(page, state)
-    await page.goto('/settings/cameras/camera-1/connexion')
+    await page.goto('/settings/cameras/camera-1/connection')
     const orientation = page
       .getByRole('list', { name: 'Capacités' })
       .getByRole('listitem')
@@ -30,7 +30,7 @@ test.describe('Capability to confirm', () => {
     const state = createFakeBackendState({ cameras: [makeFakeCamera({ ptzSupported: false })] })
     state.ptzBinding = { protocol: 'dvrip', configJson: null, status: 'to_confirm' }
     await installFakeBackend(page, state)
-    await page.goto('/settings/cameras/camera-1/connexion')
+    await page.goto('/settings/cameras/camera-1/connection')
     const orientation = page
       .getByRole('list', { name: 'Capacités' })
       .getByRole('listitem')

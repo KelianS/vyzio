@@ -7,8 +7,8 @@ import { renderScreen } from '../../testing/render_screen'
 import { CameraConservationView } from './camera_conservation.component'
 
 const CONSERVATION_TAB = {
-  path: '/settings/cameras/:cameraId/conservation',
-  url: '/settings/cameras/camera-1/conservation',
+  path: '/settings/cameras/:cameraId/retention',
+  url: '/settings/cameras/camera-1/retention',
 }
 
 async function setMotionToTenDays() {

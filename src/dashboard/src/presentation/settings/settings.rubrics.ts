@@ -19,7 +19,7 @@ export const SETTINGS_RUBRICS: readonly SettingsRubric[] = [
     summary: 'Ce qui est reconnu',
   },
   {
-    slug: 'conservation',
+    slug: 'retention',
     label: 'Conservation',
     summary: 'Durée des enregistrements',
   },
@@ -29,18 +29,18 @@ export const SETTINGS_RUBRICS: readonly SettingsRubric[] = [
     summary: 'Canaux et messages',
   },
   {
-    slug: 'planification',
+    slug: 'schedule',
     label: 'Planification',
     summary: 'Vie privée et notifications',
   },
   {
-    slug: 'acces',
+    slug: 'access',
     label: 'Accès',
     summary: 'Mot de passe et appareils',
   },
   {
-    slug: 'systeme',
-    label: 'Système',
+    slug: 'hardware',
+    label: 'Matériel',
     summary: 'Stockage et ressources',
   },
 ]

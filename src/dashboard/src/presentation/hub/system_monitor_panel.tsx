@@ -43,7 +43,7 @@ const DEGRADED_SHOWS_DIAGNOSIS: Record<DegradedStatus, boolean> = {
   unavailable: true,
 }
 
-const ADVANCED_PATH = '/settings/systeme/avance'
+const ADVANCED_PATH = '/settings/hardware/advanced'
 
 export function SystemMonitorPanel({ stats, cameras }: { stats: SystemStats; cameras: Camera[] }) {
   switch (stats.status) {

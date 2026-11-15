@@ -29,7 +29,7 @@ test.describe('AddCameraView', () => {
   }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [] }))
 
-    await page.goto('/settings/cameras/ajout')
+    await page.goto('/settings/cameras/add')
     await expect(page.getByRole('heading', { name: 'Ajouter une caméra' })).toBeVisible()
 
     // The cost of the search and every range it will sweep are announced before starting it (ADR-05).
@@ -53,7 +53,7 @@ test.describe('AddCameraView', () => {
     await page.getByRole('button', { name: 'Ajouter la caméra' }).click()
 
     // Adding opens the camera's page, which detects it on arrival (ADR-04).
-    await expect(page).toHaveURL(/\/settings\/cameras\/camera-\d+\/connexion$/)
+    await expect(page).toHaveURL(/\/settings\/cameras\/camera-\d+\/connection$/)
     // The page says what detection found, in plain words, and keeps it on screen.
     await expect(
       page.getByText('Détection terminée : le flux vidéo de la caméra fonctionne.'),
@@ -79,7 +79,7 @@ test.describe('AddCameraView', () => {
         protocols: [makeFakeProtocol({ status: 'unreachable' })],
       }),
     )
-    await page.goto('/settings/cameras/ajout')
+    await page.goto('/settings/cameras/add')
 
     await page.getByRole('button', { name: 'Saisir l’adresse moi-même' }).click()
     await page.getByRole('textbox', { name: 'Nom' }).fill('Garage')
@@ -95,7 +95,7 @@ test.describe('AddCameraView', () => {
 
     await page.goto('/')
     await page.getByRole('link', { name: 'À configurer : Garage' }).click()
-    await expect(page).toHaveURL(/\/settings\/cameras\/camera-\d+\/connexion$/)
+    await expect(page).toHaveURL(/\/settings\/cameras\/camera-\d+\/connection$/)
   })
 
   test('AddCameraView_ShouldAddACameraOverDvripDirectly_WhenItsStreamIsReadyOverDvripOnly', async ({
@@ -106,7 +106,7 @@ test.describe('AddCameraView', () => {
     await page.route('**/api/cameras/discovery', (route) =>
       route.fulfill({ json: [dvripOnlyCandidate] }),
     )
-    await page.goto('/settings/cameras/ajout')
+    await page.goto('/settings/cameras/add')
 
     await page.getByRole('button', { name: 'Rechercher sur le réseau' }).click()
     await page.getByRole('alertdialog').getByRole('button', { name: 'Rechercher' }).click()
@@ -118,12 +118,12 @@ test.describe('AddCameraView', () => {
     await expect(page.getByRole('textbox', { name: 'Nom' })).toHaveValue('Caméra ICSee')
     await page.getByRole('button', { name: 'Ajouter la caméra' }).click()
 
-    await expect(page).toHaveURL(/\/settings\/cameras\/camera-\d+\/connexion$/)
+    await expect(page).toHaveURL(/\/settings\/cameras\/camera-\d+\/connection$/)
   })
 
   test('AddCameraView_ShouldOfferManualEntry_WhenNoSearchHasRun', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [] }))
-    await page.goto('/settings/cameras/ajout')
+    await page.goto('/settings/cameras/add')
 
     // Manual entry is offered right away, without having to search first.
     await page.getByRole('button', { name: 'Saisir l’adresse moi-même' }).click()
@@ -136,7 +136,7 @@ test.describe('AddCameraView', () => {
     page,
   }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [] }))
-    await page.goto('/settings/cameras/ajout')
+    await page.goto('/settings/cameras/add')
 
     await page.getByRole('button', { name: 'Saisir l’adresse moi-même' }).click()
     await page.getByRole('combobox', { name: 'Marque' }).click()
@@ -149,7 +149,7 @@ test.describe('AddCameraView', () => {
     page,
   }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [] }))
-    await page.goto('/settings/cameras/ajout')
+    await page.goto('/settings/cameras/add')
 
     await page.getByRole('button', { name: 'Rechercher sur le réseau' }).click()
     await page.getByRole('alertdialog').getByRole('button', { name: 'Rechercher' }).click()
@@ -178,7 +178,7 @@ test.describe('AddCameraView', () => {
       page,
       createFakeBackendState({ cameras: [makeFakeCamera({ host: '192.168.1.77' })] }),
     )
-    await page.goto('/settings/cameras/ajout')
+    await page.goto('/settings/cameras/add')
 
     await page.getByRole('button', { name: 'Rechercher sur le réseau' }).click()
     await page.getByRole('alertdialog').getByRole('button', { name: 'Rechercher' }).click()

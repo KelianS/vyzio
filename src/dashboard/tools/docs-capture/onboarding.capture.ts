@@ -17,7 +17,7 @@ test('adding a camera', async ({ page }) => {
     await page.screenshot({ path: path.join(OUT, `onboarding-${++step}.png`) })
   }
 
-  await page.goto('/settings/cameras/ajout')
+  await page.goto('/settings/cameras/add')
   await shoot(page.getByRole('heading', { name: 'Ajouter une caméra' }))
 
   await page.getByRole('button', { name: 'Rechercher sur le réseau' }).click()

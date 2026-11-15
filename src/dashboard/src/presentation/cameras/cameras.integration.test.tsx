@@ -97,7 +97,7 @@ describe('CamerasView', () => {
     expect(screen.getByRole('heading', { name: 'Front Door' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Conservation' })).toHaveAttribute(
       'href',
-      '/settings/cameras/camera-1/conservation',
+      '/settings/cameras/camera-1/retention',
     )
   })
 

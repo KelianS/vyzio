@@ -43,7 +43,7 @@ test.describe('LiveView', () => {
     await page.goto('/')
     await page.getByRole('link', { name: 'Salon' }).click()
 
-    await expect(page).toHaveURL('/cameras/camera-1/direct')
+    await expect(page).toHaveURL('/cameras/camera-1')
     await expect(page.getByRole('main', { name: 'Salon' })).toBeVisible()
     await expect(page.getByRole('navigation', { name: 'Navigation principale' })).toBeHidden()
 
@@ -56,7 +56,7 @@ test.describe('LiveView', () => {
     const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
     await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
 
-    await page.goto('/cameras/camera-1/direct')
+    await page.goto('/cameras/camera-1')
     const back = await page.getByRole('button', { name: 'Retour' }).boundingBox()
     const picture = await page.locator('video[aria-label="Salon"]').boundingBox()
 
@@ -73,7 +73,7 @@ test.describe('LiveView', () => {
     })
     await installFakeBackend(page, state)
 
-    await page.goto('/cameras/camera-1/direct')
+    await page.goto('/cameras/camera-1')
     await expect(page.getByTitle('Enregistrer la position actuelle ici').first()).toBeVisible()
     const pad = await page.getByTitle('Haut').locator('..').boundingBox()
     const tile = await page.getByTitle('Enregistrer la position actuelle ici').first().boundingBox()
@@ -91,7 +91,7 @@ test.describe('LiveView', () => {
     })
     await installFakeBackend(page, state)
 
-    await page.goto('/cameras/camera-1/direct')
+    await page.goto('/cameras/camera-1')
     await expect(page.getByTitle('Enregistrer la position actuelle ici').first()).toBeVisible()
     const screen = page.getByRole('main', { name: 'Porte d’entrée' })
 
@@ -104,7 +104,7 @@ test.describe('LiveView', () => {
 
     await page.goto('/')
     await page.getByRole('link', { name: 'Salon' }).click()
-    await expect(page).toHaveURL('/cameras/camera-1/direct')
+    await expect(page).toHaveURL('/cameras/camera-1')
     await page.goBack()
 
     await expect(page).toHaveURL('/')
@@ -118,7 +118,7 @@ test.describe('LiveView', () => {
     const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
     await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
 
-    await page.goto('/cameras/camera-1/direct')
+    await page.goto('/cameras/camera-1')
     const back = page.getByRole('button', { name: 'Retour' })
     await expect(back).toBeVisible()
     await expect(back).toBeHidden({ timeout: 6000 })
@@ -255,7 +255,7 @@ test.describe('DetectionHistoryView', () => {
         detectionHistory: [makeEvent(), makeEvent({ eventId: 'event-2' })],
       }),
     )
-    await page.goto('/history')
+    await page.goto('/detections')
   }
 
   test('DetectionHistoryView_ShouldShowDetectionsWithFiltersFolded_WhenOpened', async ({
@@ -293,7 +293,7 @@ test.describe('DetectionHistoryView', () => {
         detectionHistory: [makeEvent(), makeEvent({ eventId: 'event-2', label: 'cat' })],
       }),
     )
-    await page.goto('/history')
+    await page.goto('/detections')
 
     // Only person detections carry an identity (person_known/person_unknown).
     await expect(page.getByRole('button', { name: 'Identifier' })).toHaveCount(1)

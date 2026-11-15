@@ -9,7 +9,7 @@ import { renderScreen } from '../../testing/render_screen'
 import { readTheCameraList } from '../../testing/shared_reads'
 import { ScheduleWeekView } from './schedule_week.component'
 
-const WEEK = { path: '/settings/planification', url: '/settings/planification' }
+const WEEK = { path: '/settings/schedule', url: '/settings/schedule' }
 
 const RULES = 'GET /api/schedules'
 const CLOCK = 'GET /api/schedules/clock'
@@ -71,7 +71,7 @@ describe('ScheduleWeekView', () => {
       within(dayRow('Lundi')).getByRole('link', {
         name: 'Vie privée · 22:00 → 06:00 le lendemain · Salon, Cuisine',
       }),
-    ).toHaveAttribute('href', '/settings/planification/rule-1')
+    ).toHaveAttribute('href', '/settings/schedule/rule-1')
     expect(
       within(dayRow('Mardi')).getByRole('link', {
         name: 'Vie privée · jusqu’à 06:00, depuis la veille · Salon, Cuisine',
@@ -184,7 +184,7 @@ describe('ScheduleWeekView', () => {
     // Assert
     expect(await screen.findByText(/Plus aucune caméra visée/)).toHaveAttribute(
       'href',
-      '/settings/planification/rule-1',
+      '/settings/schedule/rule-1',
     )
     expect(
       within(dayRow('Lundi')).getByRole('link', {
@@ -209,7 +209,7 @@ describe('ScheduleWeekView', () => {
     // Assert
     expect(await screen.findByRole('link', { name: 'Ajouter une plage' })).toHaveAttribute(
       'href',
-      '/settings/planification/ajout',
+      '/settings/schedule/add',
     )
     expect(screen.getAllByText('Rien de prévu')).toHaveLength(7)
   })

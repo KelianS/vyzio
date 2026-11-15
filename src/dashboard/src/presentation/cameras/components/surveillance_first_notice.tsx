@@ -20,7 +20,7 @@ export function SurveillanceFirstNotice({
         <p className="text-sm text-muted-foreground">
           {LIVE_VIEW_WAITS}, et son flux vidéo n’a pas encore fonctionné : voir «{' '}
           <Link
-            to={`/settings/cameras/${cameraId}/connexion`}
+            to={`/settings/cameras/${cameraId}/connection`}
             className="underline underline-offset-2 hover:text-foreground"
           >
             Connexion

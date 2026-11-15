@@ -29,7 +29,7 @@ test.describe('House calendar', () => {
     await page.keyboard.press('Escape')
     await page.getByRole('button', { name: 'Ajouter' }).click()
 
-    await expect(page).toHaveURL(/\/settings\/planification$/)
+    await expect(page).toHaveURL(/\/settings\/schedule$/)
     const monday = page
       .getByRole('listitem')
       .filter({ has: page.getByRole('heading', { name: 'Lundi' }) })
@@ -69,18 +69,18 @@ test.describe('House calendar', () => {
         ],
       }),
     )
-    await page.goto('/settings/cameras/camera-1/vie-privee')
+    await page.goto('/settings/cameras/camera-1/privacy')
 
     await expect(page.getByText('1 plage « Vie privée » s’applique')).toBeVisible()
     await page.getByRole('link', { name: 'Voir la planification' }).click()
 
-    await expect(page).toHaveURL(/\/settings\/planification$/)
+    await expect(page).toHaveURL(/\/settings\/schedule$/)
     await expect(page.getByRole('link', { name: /Salon, Cuisine/ }).first()).toBeVisible()
   })
 
   test('ScheduleRuleView_ShouldSayWhatToChange_WhenStartAndEndAreTheSame', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [salon] }))
-    await page.goto('/settings/planification/ajout')
+    await page.goto('/settings/schedule/add')
 
     await page.getByRole('combobox', { name: 'Caméras' }).click()
     await page.getByRole('checkbox', { name: 'Salon' }).click()
@@ -91,7 +91,7 @@ test.describe('House calendar', () => {
     const alert = page.getByRole('alert')
     await expect(alert).toContainText('choisissez deux heures différentes')
     await expect(alert).toContainText('schedule_empty_range')
-    await expect(page).toHaveURL(/\/settings\/planification\/ajout$/)
+    await expect(page).toHaveURL(/\/settings\/schedule\/add$/)
   })
 
   test('NotificationChannelView_ShouldCountTheMutingRange_WhenOneTargetsTheChannel', async ({
@@ -145,13 +145,13 @@ test.describe('House calendar', () => {
         ],
       }),
     )
-    await page.goto('/settings/planification')
+    await page.goto('/settings/schedule')
 
     await page.getByRole('link', { name: /Vie privée · 08:00 → 12:00/ }).click()
     await page.getByRole('button', { name: 'Supprimer la plage' }).click()
     await page.getByRole('alertdialog').getByRole('button', { name: 'Supprimer' }).click()
 
-    await expect(page).toHaveURL(/\/settings\/planification$/)
+    await expect(page).toHaveURL(/\/settings\/schedule$/)
     await expect(page.getByText('Rien de prévu')).toHaveCount(7)
   })
 
@@ -176,7 +176,7 @@ test.describe('House calendar', () => {
         ],
       }),
     )
-    await page.goto('/settings/planification')
+    await page.goto('/settings/schedule')
 
     const tuesday = page
       .getByRole('listitem')
@@ -193,6 +193,6 @@ test.describe('House calendar', () => {
     expect(width).toBeCloseTo(1 / 6, 1)
 
     await block.click()
-    await expect(page).toHaveURL(/\/settings\/planification\/rule-1$/)
+    await expect(page).toHaveURL(/\/settings\/schedule\/rule-1$/)
   })
 })

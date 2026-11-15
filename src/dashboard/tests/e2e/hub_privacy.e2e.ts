@@ -35,7 +35,7 @@ test.describe('HubView privacy', () => {
     })
     await installFakeBackend(page, createFakeBackendState({ cameras: [resumed] }))
 
-    await page.goto('/settings/cameras/camera-1/vie-privee')
+    await page.goto('/settings/cameras/camera-1/privacy')
 
     await expect(
       page.getByText(
@@ -62,7 +62,7 @@ test.describe('HubView privacy', () => {
     await page.goto('/')
     await page.getByRole('link', { name: 'La caméra ne s’est pas tournée' }).click()
 
-    await expect(page).toHaveURL(/\/settings\/cameras\/camera-1\/vie-privee$/)
+    await expect(page).toHaveURL(/\/settings\/cameras\/camera-1\/privacy$/)
     await expect(page.getByText('Caméra non tournée, enregistrement désactivé')).toBeVisible()
     // The page's own loading state is a status too: read the one that explains the miss.
     const why = page.getByRole('status').filter({ hasText: 'ne s’est pas tournée' })

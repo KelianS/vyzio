@@ -7,7 +7,7 @@ test.describe('Surveillance restart', () => {
 
   test('RestartSurveillanceTrigger_ShouldStayHidden_WhenNothingChanged', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
-    await page.goto('/settings/conservation')
+    await page.goto('/settings/retention')
 
     // Its absence is the information: everything saved is in service.
     await expect(page.getByRole('button', trigger())).toHaveCount(0)
@@ -17,7 +17,7 @@ test.describe('Surveillance restart', () => {
     page,
   }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
-    await page.goto('/settings/conservation')
+    await page.goto('/settings/retention')
 
     const motion = page.getByRole('spinbutton').nth(1)
     await motion.fill('30')
@@ -36,7 +36,7 @@ test.describe('Surveillance restart', () => {
     const state = createFakeBackendState({ cameras: [makeFakeCamera()] })
     state.pendingChanges = true
     await installFakeBackend(page, state)
-    await page.goto('/settings/conservation')
+    await page.goto('/settings/retention')
 
     await page.getByRole('button', trigger()).click()
 
@@ -55,7 +55,7 @@ test.describe('Surveillance restart', () => {
     state.pendingChanges = true
     state.restartFails = true
     await installFakeBackend(page, state)
-    await page.goto('/settings/conservation')
+    await page.goto('/settings/retention')
 
     await page.getByRole('button', trigger()).click()
     await page.getByRole('alertdialog').getByRole('button', { name: 'Redémarrer' }).click()
@@ -80,7 +80,7 @@ test.describe('Surveillance restart', () => {
     state.pendingChanges = true
     state.restartBreaks = true
     await installFakeBackend(page, state)
-    await page.goto('/settings/conservation')
+    await page.goto('/settings/retention')
 
     await page.getByRole('button', trigger()).click()
     await page.getByRole('alertdialog').getByRole('button', { name: 'Redémarrer' }).click()
@@ -103,13 +103,13 @@ test.describe('Surveillance restart', () => {
 
     // The most common gesture while configuring: asking here would nag, and stack with the draft guard.
     await page.getByRole('link', { name: 'Conservation', exact: true }).click()
-    await expect(page).toHaveURL('/settings/cameras/camera-1/conservation')
+    await expect(page).toHaveURL('/settings/cameras/camera-1/retention')
     await expect(page.getByRole('alertdialog')).toHaveCount(0)
   })
 
   // Wait for the page to be mounted: with two blockers competing this passed by a race.
   for (const [url, where] of [
-    ['/settings/conservation', 'a settings page'],
+    ['/settings/retention', 'a settings page'],
     ['/settings/cameras/camera-1/detection', 'a camera page'],
   ]) {
     test(`NavigationGuard_ShouldAskAndLetThroughEitherWay_WhenTheUserLeavesTheSettings (${where})`, async ({
@@ -137,7 +137,7 @@ test.describe('Surveillance restart', () => {
     const state = createFakeBackendState({ cameras: [makeFakeCamera()] })
     state.pendingChanges = true
     await installFakeBackend(page, state)
-    await page.goto('/settings/conservation')
+    await page.goto('/settings/retention')
 
     const motion = page.getByRole('spinbutton').nth(1)
     await motion.fill('30')

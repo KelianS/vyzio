@@ -40,8 +40,8 @@ test.describe('Navigation', () => {
     await rubrics.getByRole('link', { name: /Notifications/ }).click()
     await expect(page.getByRole('heading', { name: 'Notifications' })).toBeVisible()
 
-    await rubrics.getByRole('link', { name: /Système/ }).click()
-    await expect(page.getByRole('heading', { name: 'Système' })).toBeVisible()
+    await rubrics.getByRole('link', { name: /Matériel/ }).click()
+    await expect(page.getByRole('heading', { name: 'Matériel' })).toBeVisible()
 
     // The niche one is put deep, not hidden: the technical interface is only
     // reachable by unfolding "Avance", and it always is.
@@ -64,22 +64,6 @@ test.describe('Navigation', () => {
     )
   })
 
-  test('AppShell_ShouldRedirectToTheNewAddress_WhenTheUserFollowsAnOldLink', async ({ page }) => {
-    await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
-
-    // A bookmark or a kept link must not fall into the void because the tree
-    // changed.
-    for (const [old, expected] of [
-      ['/cameras', '/settings/cameras'],
-      ['/profiles', '/settings/detection/personnes'],
-      ['/notifications', '/settings/notifications'],
-      ['/expert', '/settings/systeme/avance'],
-    ]) {
-      await page.goto(old)
-      await expect(page).toHaveURL(expected)
-    }
-  })
-
   test('CamerasView_ShouldOpenOnConnexionWithTabsInSetupOrder_WhenACameraIsPickedFromTheList', async ({
     page,
   }) => {
@@ -88,7 +72,7 @@ test.describe('Navigation', () => {
 
     await page.getByRole('link', { name: /Porte d’entrée/ }).click()
 
-    await expect(page).toHaveURL('/settings/cameras/camera-1/connexion')
+    await expect(page).toHaveURL('/settings/cameras/camera-1/connection')
     const tabs = page.getByRole('navigation', { name: 'Réglages de la caméra' })
     await expect(tabs.getByRole('link', { name: 'Connexion' })).toHaveAttribute(
       'aria-current',
@@ -125,7 +109,7 @@ test.describe('Navigation', () => {
       createFakeBackendState({ cameras: [makeFakeCamera({ id: 'camera-1' })] }),
     )
 
-    await page.goto('/settings/cameras/camera-1/conservation')
+    await page.goto('/settings/cameras/camera-1/retention')
 
     const tabs = page.getByRole('navigation', { name: 'Réglages de la caméra' })
     // One row that scrolls: landing on the last tab must still show it.
