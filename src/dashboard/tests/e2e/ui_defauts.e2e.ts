@@ -28,7 +28,9 @@ test.describe('Camera pause', () => {
     await dialog.getByRole('button', { name: 'Mettre en pause' }).click()
 
     // And the result is said: without that, nothing tells a long operation from a failed one.
-    await expect(page.getByRole('status')).toContainText('Salon est en pause.')
+    await expect(
+      page.getByRole('region', { name: 'Notifications' }).getByRole('status'),
+    ).toContainText('Salon est en pause.')
     await expect(page.getByRole('button', { name: 'Réactiver' })).toBeVisible()
   })
 })
@@ -170,7 +172,9 @@ test.describe('LiveView PTZ positions', () => {
     // The long press is the overwrite gesture; there is nothing to overwrite.
     await page.getByTitle('Enregistrer la position actuelle ici').first().click()
 
-    await expect(page.getByRole('status')).toContainText('enregistrée')
+    await expect(
+      page.getByRole('region', { name: 'Notifications' }).getByRole('status'),
+    ).toContainText('enregistrée')
     expect(state.ptz.presets).toHaveLength(1)
   })
 
@@ -188,7 +192,9 @@ test.describe('LiveView PTZ positions', () => {
 
     await tile.click()
 
-    await expect(page.getByRole('status')).toContainText('Caméra en position « Parking ».')
+    await expect(
+      page.getByRole('region', { name: 'Notifications' }).getByRole('status'),
+    ).toContainText('Caméra en position « Parking ».')
     // The capture waits CAPTURE_DELAY_MS after the acknowledgement, on the real clock here.
     await expect.poll(() => state.ptz.presets[0].thumbnail, { timeout: 10_000 }).toBe(true)
     await expect(page.getByTitle(/^Parking \(appui : y aller, appui long/)).toBeVisible()
@@ -214,7 +220,9 @@ test.describe('LiveView PTZ positions', () => {
     await tile.click()
 
     // A move takes time: without an acknowledgement, the press looks like it did nothing.
-    await expect(page.getByRole('status')).toContainText('Caméra en position « Surveillance ».')
+    await expect(
+      page.getByRole('region', { name: 'Notifications' }).getByRole('status'),
+    ).toContainText('Caméra en position « Surveillance ».')
     await expect(tile).toHaveAttribute('aria-pressed', 'true')
   })
 
@@ -226,12 +234,16 @@ test.describe('LiveView PTZ positions', () => {
     await expect(page.getByText(/pas de position de référence/)).toBeVisible()
 
     await page.getByRole('button', { name: 'Calibrer maintenant' }).click()
-    await expect(page.getByRole('status')).toContainText('Caméra calibrée')
+    await expect(
+      page.getByRole('region', { name: 'Notifications' }).getByRole('status'),
+    ).toContainText('Caméra calibrée')
     expect(state.ptz.calibrated).toBe(true)
 
     // And the positions become usable again without going through the settings.
     await page.getByTitle('Enregistrer la position actuelle ici').first().click()
-    await expect(page.getByRole('status').last()).toContainText('enregistrée')
+    await expect(
+      page.getByRole('region', { name: 'Notifications' }).getByRole('status').last(),
+    ).toContainText('enregistrée')
   })
 })
 

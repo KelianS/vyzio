@@ -67,7 +67,9 @@ async function toastEntrances(page: Page) {
 async function pauseTheCamera(page: Page) {
   await page.getByRole('button', { name: 'Pause' }).click()
   await page.getByRole('alertdialog').getByRole('button', { name: 'Mettre en pause' }).click()
-  await expect(page.getByRole('status')).toContainText('Salon est en pause.')
+  await expect(
+    page.getByRole('region', { name: 'Notifications' }).getByRole('status'),
+  ).toContainText('Salon est en pause.')
 }
 
 test.describe('Press feedback', () => {
@@ -224,9 +226,14 @@ test.describe('Press feedback on every kind of control', () => {
     await page.goto('/')
     await pauseTheCamera(page)
 
-    expect(await pressed(page.getByRole('status').getByRole('button', { name: 'Fermer' }))).toEqual(
-      SHRUNK,
-    )
+    expect(
+      await pressed(
+        page
+          .getByRole('region', { name: 'Notifications' })
+          .getByRole('status')
+          .getByRole('button', { name: 'Fermer' }),
+      ),
+    ).toEqual(SHRUNK)
   })
 
   test('AccessRetry_ShouldShrinkSlightly_WhenItIsPressed', async ({ page }) => {
@@ -312,7 +319,9 @@ test.describe('Layers', () => {
     await slowDownMotion(page)
 
     await dialog.getByRole('button', { name: 'Mettre en pause' }).click()
-    await expect(page.getByRole('status')).toContainText('Salon est en pause.')
+    await expect(
+      page.getByRole('region', { name: 'Notifications' }).getByRole('status'),
+    ).toContainText('Salon est en pause.')
 
     // Leaving after its action, it is a copy hidden from assistive technologies.
     const leaving = page.locator('[data-slot="alert-dialog-content"][data-state="closed"]')
@@ -420,7 +429,7 @@ test.describe('Toasts', () => {
   test('Toast_ShouldFadeOut_WhenTheUserClosesIt', async ({ page }) => {
     await page.goto('/')
     await pauseTheCamera(page)
-    const toast = page.getByRole('status')
+    const toast = page.getByRole('region', { name: 'Notifications' }).getByRole('status')
     await expect.poll(() => toast.evaluate((el) => el.getAnimations().length)).toBe(0)
     await slowDownMotion(page)
 
