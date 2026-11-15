@@ -8,81 +8,77 @@ reproduced verbatim.
 
 ## Intent
 
-The Vyzio Hub must feel reassuring, readable and domestic, never like an expert NVR tool: a light,
-calm interface where the system state shows immediately, recent events read at a glance, primary
-actions are explicit, and rare settings sit in depth, out of the everyday path and never naming the
-engine underneath (product principle 2).
+The Vyzio Hub must feel calm, readable and domestic, never like an expert NVR tool: a dark, quiet
+interface where the cameras come first, their state reads at a glance from one mark, each view has
+one main action, and everything else stays neutral. Rare settings sit in depth, out of the everyday
+path and never naming the engine underneath (product principle 2). Less is the default: a word, a
+subtitle or a frame is added only when it carries something the user acts on.
 
 ## Palette
 
-- Surfaces: `--bg-canvas: #f4efe6` the main background, warm rather than clinical;
-  `--bg-elevated: #fffaf2` primary surfaces; `--bg-strong: #1f3a33` structural dark panels;
-  `--bg-sunken: #f2ebdf` an inset inside a surface (a track, a chip, a step number), opaque so it
-  shows on a card as on the canvas; the **neutral tint**, a light translucent ink, the fill
-  of a secondary action and a fold, and of a hovered or selected row, tab or option; `--bg-muted`,
-  translucent, only for a control laid over the picture, through the `--glass` role (`bg-glass`).
-- Ink: `--ink-strong: #18201d` primary text; `--ink-soft: #606d67` secondary text;
-  `--line-soft: #d8cfbf` discreet borders, the colour of every border that names no other, never
-  the text colour.
-- Brand: `--brand-moss: #2f6b59` the main product colour; `--brand-sand: #d9b37a` a warm accent.
-- Alerts: `--alert-high: #b04c30` a priority event; `--alert-ok: #2d7a52` a healthy state.
+**Dark only.** One theme; a light theme can come back later from the same roles, never from colours
+written in a screen. Each role is a token; the Tailwind theme realises them, and no component writes
+a colour.
 
-These are the light theme values; the dark theme (same roles) lives in `src/index.css`, the single home
-of both themes. Usage rules:
+| Role | Value | Use |
+| --- | --- | --- |
+| Ground | `#101412` | The page background |
+| Surface | `#1b201d` | A card, a grouped list, a sheet |
+| Raised | `#242a26` | A neutral pill or button on a surface, a pressed or selected row |
+| Icon circle | `#2a312d` | The round background of an icon button and of a row's icon |
+| Line | `#2c332f` | The separator between rows, every border that names no other |
+| Field line | `#3a433d` | The border of a field |
+| Ink | `#eef2ef` | Primary text |
+| Ink soft | `#9aa59e` | Secondary text, a subtitle, a section label |
+| Ink muted | `#c9d1cb` | Text over the picture or inside the bar, a step below the ink |
+| Bar | `#1d4a3a` | The top bar |
+| Action | `#7fd1a8` on `#0e2a1f` | The one main action of a view, and the "running" mark |
+| Silence | `#f2c46d` on `#2b1f05` | Silence only |
+| Alert | `#f29a8b` | Offline, a failure, a warning, a destructive action |
+| Mark off | `#6f7a73` | The "cut" and "not verified" mark |
 
-- Critical surfaces use `--bg-elevated` to keep a soft contrast.
-- `--brand-moss` is reserved for the one main action of a view, a selected or active state (a
-  switch on, a box ticked) and the product indicators: never a second action.
-- `--alert-high` is reserved for important events, attention states and destructive actions.
-- A hovered or pressed control darkens; `--brand-sand` never marks a hover.
-- Colour never carries a meaning alone: a kind of thing is told apart by its icon and its name, and a
-  fill that must be told apart differs by its pattern too.
+Colour roles, each with one meaning:
+
+- **Green** is the one main action of a view and the "running" state; never a second action, never a
+  decoration.
+- **Amber** is Silence and nothing else.
+- **Coral** is offline, a failure and a warning, and the ink of a destructive action.
+- **Neutral grey** is everything else: icon circles, secondary actions, folds, selected rows.
+- Colour never carries a meaning alone: a state also reads from its mark's shape (§ Status mark), a
+  kind of thing from its icon and its name.
 
 ## Typography
 
-**The scale is Tailwind's, with no root size override** (16px base). Two levels are distinguished by
-**three signals at once**, size, weight and colour: one alone does not separate a heading from its
-summary.
+**One family, Inter, self-hosted**: the hub works offline, so no font is fetched from the network.
+**Four sizes**, never a fifth:
 
-| Role | Class |
-| --- | --- |
-| Page title | `font-serif text-3xl` |
-| Section or heading title | `font-serif text-2xl` |
-| Card title | `font-serif text-lg` |
-| Setting or field label, list entry | `font-medium` (16px) |
-| Secondary text, summary, help | `text-sm text-muted-foreground` |
+| Size | Role | Weight |
+| --- | --- | --- |
+| `26px` | Page title | Bold, tracked slightly tighter |
+| `17px` | Row or card title, a field's value | Semibold for a title, regular for a value |
+| `15px` | Secondary text, a button label, a subtitle | Regular; semibold on a button |
+| `13px` | Section label above a grouped list, a caption over the picture | Semibold, ink soft |
 
-The serif (`--heading`) is reserved for titles; it carries the domestic character of the interface.
+Two levels are told apart by size, weight and colour together: one signal alone does not separate a
+title from its subtitle.
 
 ## Interface tokens
 
-Radii, two scales never confused (exact values in `src/index.css`, the single home):
+Radii, three shapes never confused (exact values in `src/index.css`, the single home):
 
-| Token | Use |
+| Shape | Use |
 | --- | --- |
-| `999px` | The pill: every **button**, every **navigation** link or tab, and the status pills |
-| `--radius`, `--radius-sm/md/lg/xl` | What **holds** a value or content and opens on a press: a field, a select, a fold |
-| `--radius-inset`, `--radius-card`, `--radius-panel` | **Non-clickable** surfaces (cards, panels, modals) |
+| Pill (`999px`) | Every button, every pill, every tab |
+| Circle | An icon button, a row's icon, a status mark, a day toggle |
+| Rounded rectangle | A surface (card, grouped list, sheet), a field, the picture's frame |
 
-Two shadows, both tokens: `--shadow-soft` lifts the elevated surfaces, a modal included, which is
-drawn as a panel (`--radius-panel`, `--bg-elevated`, no border); `--shadow-strong` floats the
-navigation header over the page. Sections are spaced `24px` to `32px` apart.
+**A control is a finger's size**: every control reaches `44px` to the touch, a list row is drawn at
+least `56px` tall, an icon button `44px` round. A control never relies on an invisible margin to
+reach it on a phone.
 
-**One surface, one padding scale.** A card or a page's panel is drawn by one shared component, never
-rewritten in a screen: `--bg-elevated`, `--radius-card`, `--shadow-soft`, and one of three insets, the
-content inset (`20px`, `24px` from `sm`), the list inset (`8px`, its rows carrying their own) or none,
-for a picture that fills it. A thing shown on two screens sits at the same indent on both.
-
-**A control is a finger's size**: a button is drawn `40px` tall (`32px` compact, beside navigation or
-in a dense row), an icon button at its own size, and each reaches at least `44px` to the touch through
-an invisible margin, never by being drawn taller. A field and a list row are drawn at least `44px` tall
-on a phone, `40px` from `md` up.
-
-**Shape rule: an action or a way somewhere is a pill, what holds a value is a rounded rectangle.**
-Buttons, the header navigation and tabs share one shape and one compact size, so the page reads as
-one language. A **status pill** is a pill too, and stays told apart from a button at a glance: smaller
-(`text-xs`), tinted by its state, no border, no shadow, never pressed. A field, a select and a fold
-take the clickable radius (`--radius`); a surface takes its own.
+**One surface.** A card, a grouped list or a sheet is drawn by one shared component, never rewritten
+in a screen: the surface colour, its radius, no border, no shadow; rows inside are split by a line.
+Sections are spaced `24px` apart, a section label `8px` above its list.
 
 ## Component foundation
 
@@ -90,22 +86,22 @@ Two tiers, never confused ([ADR-01](adr/0001-stack-and-runtime.md)):
 
 - **Primitives**: shadcn/ui code copied into the repository (accessibility, focus, keyboard), modified
   **only** for the theme, never with a business rule inside, outside the project's writing discipline.
-- **Vyzio components**, built **on top of** the primitives, carry the product vocabulary (a setting
-  field and its provenance, a settings row, a foldable section, the draft bar): the project's code
-  discipline applies there.
+- **Vyzio components**, built **on top of** the primitives, carry the product vocabulary (the top
+  bar, a grouped list and its rows, the status mark, a setting field and its provenance, a sheet):
+  the project's code discipline applies there.
 
 **The tokens are the source; the Tailwind theme is their realisation.** One styling system, Tailwind
-plus tokens: no global class, no literal colour, radius or shadow in a component. The **dark theme is
-supported everywhere**: a screen without it is a screen writing a colour by hand. Responsive design
-follows the library's scale from the small screen upwards; another breakpoint must be justified.
+plus tokens: no global class, no literal colour, radius, size or shadow in a component. Responsive
+design follows the library's scale from the phone upwards; a larger screen develops the same
+structure ([SPECS](SPECS.md) UI-10).
 
 **Icons are line icons**, from the one icon set, never an emoji: its glyph and colours change with
 the phone, and it reads as another product beside the line icons.
 
-**A press never selects.** What the user acts on, a button, a link, a tab, a field's label or a strip
-of controls marked `data-press-only`, never selects its text nor opens the phone's callout on a long
-press; text to read stays selectable, and so does a field, even inside its label. One base rule in
-`src/index.css` carries it, never a class per component.
+**A press never selects.** What the user acts on, a button, a link, a tab, a row, a field's label or
+a strip of controls marked `data-press-only`, never selects its text nor opens the phone's callout on
+a long press; text to read stays selectable, and so does a field. One base rule in `src/index.css`
+carries it, never a class per component.
 
 ## Motion
 
@@ -118,152 +114,172 @@ otherwise jump, never decorates. One curve and three durations, never a value wr
 | `--ease-calm` | **The one curve** of every transition and animation: a strong ease-out, fast at the start so the answer is immediate, long to settle. Never an ease-in |
 | `--duration-press` | Press feedback |
 | `--duration-short` | Small layers (popover, select, tooltip), a toast leaving, faded controls coming back on a tap |
-| `--duration-long` | Dialogs, a toast arriving, faded controls leaving by themselves |
+| `--duration-long` | Dialogs and sheets, a toast arriving, faded controls leaving by themselves |
 
-- **Layers fade.** A dialog or a confirmation also grows slightly from the centre; a popover, a select
-  or a tooltip grows from its trigger with a short slide. The viewer layer of a picture (§ Full-screen
-  viewing) only fades: a full-bleed surface has no edge to grow from. A layer leaves the same way
-  however it closes: cancelled, or once the action it asked for has settled.
+- **Layers fade.** A dialog also grows slightly from the centre; a sheet rises from the bottom edge;
+  a popover, a select or a tooltip grows from its trigger with a short slide. A full-screen picture
+  only fades: a full-bleed surface has no edge to grow from. A layer leaves the same way however it
+  closes.
 - **A toast** fades in with a short rise and fades out where it stands; raised again while it fades,
   it comes back rather than showing twice.
 - **Every press answers**, so a tap never looks unheard while the answer is on its way.
-  - A **control** (a button, a control over the picture, a retry) shrinks slightly while pressed: the
-    button primitive takes it by itself, any other control is wrapped in the shared pressable
-    control. A link drawn as a button is an action, and presses like one.
-  - A **surface that leads somewhere** (a header link, a list row, a camera's picture) dims while
-    pressed and never moves: used tens of times a day, it must not move. Every list row that leads
-    somewhere or picks something is the registry `item`, with its hover and focus; any other such
-    surface is wrapped in the shared pressable surface.
+  - A **control** (a button, a pill, an icon button, a control over the picture) shrinks slightly
+    while pressed: the button primitive takes it by itself, any other control is wrapped in the
+    shared pressable control.
+  - A **surface that leads somewhere** (a row, a card, a camera's picture) dims while pressed and
+    never moves; it is wrapped in the shared pressable surface or is the registry `item`.
   - Every press is taken by a slot, never by a class on a screen.
-  - A tab bar keeps its colour change only. A screen change is instant.
+  - A tab keeps its colour change only. A screen change is instant.
 - **Reduce motion.** When the phone asks for less motion, only fades remain: no growing, no slide,
-  no rise, and a press dims instead of shrinking. `src/index.css` carries it for the layers and the
-  press; an entrance a component draws itself keeps its movement under `motion-safe:`. A spinner
-  keeps turning: it is the only sign that work goes on.
+  no rise, and a press dims instead of shrinking. A spinner keeps turning: it is the only sign that
+  work goes on.
 
 ## Patterns
 
-### Settings screens
+### Top bar
 
-A setting **is declared, it is not drawn**: its nature determines its control, alignment, provenance and
-undo ([ADR-15](adr/0015-settings-model-schedules-and-edit-cycle.md); the table from a nature to its
-control is the settings renderer's, in code). A page **does not name itself**: whatever led there
-has named it.
-`SettingsPage` has no title; `SettingsSection` opens one only in a page covering several subjects, and a
-section title repeating the page's means one more page was needed. A section title is in the heading
-serif, a setting label in the body weight. A page opens on a lede only to say what its name leaves
-out, a scope, a default, a timing, a state or where to look instead; a lede that rephrases the name
-is dropped.
+The shell is **one top bar, anchored at the top, its bottom corners rounded, on the bar colour; there
+is no navigation bar** ([SPECS](SPECS.md) UI-29).
 
-A settings row is always, in this order: **name, help trigger, control, provenance, undo**. The
-control sits in one column of common width across the app; on a small screen the row folds into
-two lines, the name above, the control below, keeping that column. A control fills the column,
-but a switch and a number field start at its edge and keep their own size: a number field is narrow,
-sized for the values it takes, its unit inside the field, never beside it. A followed value reads greyed,
-an own value reads normally, never with a caption; undo appears only where there is something to
-undo and names the value it restores. A page lists its most common setting first; a new setting
-is placed by its expected frequency, never at the end, and the rare ones go to `Avancé`.
-
-**An option that cannot be chosen yet stays in the list**, greyed and not selectable, with the reason
-and the way out on a quieter second line under its label (`text-xs text-muted-foreground`): what is
-missing, and the screen where it is fixed. The saved value is the exception: when it can no longer
-act, it stays choosable, so the draft can come back to it, and its consequence line gives the reason.
-
-**A check, a choice that runs a test, adding or removing are actions**, never draft values
-([ADR-15](adr/0015-settings-model-schedules-and-edit-cycle.md)): they act at
-once and return a result. Only declared settings follow the page's draft.
+- On the home: the product name on the left, a gear on the right that opens `Réglages`.
+- On an inner page: a round back button, then the page title at the page title size. A page about
+  one thing (a camera) adds the thing's status mark beside its title, and may carry one icon button
+  on the right for that thing (a camera's gear, the filter of `Détections`).
+- **The alert slot**: the bar grows downwards to carry an alert, a line in ink with a quieter second
+  line, on every page while it holds (UI-30). Several alerts stack, the most recent first.
+- **The settings apply**: inside the settings only, the bar carries `Appliquer les changements` as
+  its main action while a saved setting waits for the restart (§ Editing cycle).
 
 ### Page header
 
-A page opens on one header, the same on every screen, drawn by one shared component: the way back
-above it when the page has one, then the title at the page title size, on the canvas above the
-content, never inside a card. A page that names one thing shows its state beside the title **with the
-pill its list uses**, the same word in the same tone (§ State pills); a thing whose list shows no pill
-shows none. One serif title is visible at the head of a page: a section heading that would repeat it
-stays for screen readers only.
+A page title lives in the top bar, never repeated in the page. A page opens on its content; a lede
+appears only to say what the title leaves out (a scope, a timing, a state).
 
-### Cards
+### Status mark
 
-Things the user checks or sets read as **cards sharing one anatomy**, so a new one takes its place
-without a page or a layout of its own: **title** · *state pill* · *state line* · *settings* · **actions**.
+**One mark, the same everywhere, beside a name**, `8px`, never a word for a nominal state:
 
-- **The title** is the plain name of the thing, never a protocol or a technical acronym.
-- **The state line** justifies the pill (principle 4) and says what to do next: when it was last
-  verified, or a plain sentence with the way out and, if the failure carries one, the diagnostic line.
-- **The settings** are declared rows behind the card's own `Options` fold, closed by default.
-- **The actions** close the card in one row, the check first, then what the thing itself allows.
+| Mark | Camera | Capability |
+| --- | --- | --- |
+| Filled green dot | Running | Works |
+| Filled grey dot | Cut | Not verified, to confirm |
+| Hollow coral ring | Offline | Fails |
 
-**No dead control**: outside its card, a control is offered only while what it drives works; otherwise
-one short line takes its place, naming as a link the page where it is fixed.
+A row or a card carries a subtitle **only for an exception or a state to act on** (`Coupée jusqu'à
+7 h`, `À configurer`, `Hors ligne depuis 4 min`); the nominal state is the mark alone. The mark carries
+its state as its accessible name.
+
+### Grouped lists
+
+Settings and lists of things read as **grouped lists**: a section label (`13px`, ink soft) above one
+surface holding rows split by a line. A row is, in order: an optional round icon, the title with its
+mark, an optional subtitle, then what it leads to (a chevron) or the control it holds (a switch, a
+check). A row that adds something (`Ajouter une caméra`, `Ajouter une plage`) is the last row of its
+list, neutral, with a `+` icon. No nominal subtitle: a list reads as names.
 
 ### Action weight
 
-Three weights of button, each calm and plain, each the same wherever it sits; a page has one
-filled button at most. Every button stays visibly distinct from the surface under it, canvas or card:
-none is drawn as a bare line on a light surface.
+Two kinds of action, no intermediate style:
 
-- **Filled**: the one main action of a view, the only green button on screen; a second action that
-  matters is secondary, never a second filled button. A toggle drawn filled while it is on (a camera
-  cut, a filter open) shows a state, not an action, and does not count.
-- **Secondary**: every other action that matters, a pill on the neutral tint holding an icon that
-  names the action, then its ink label. The icon is part of how a secondary action is declared,
-  never left out: it is what tells the action from a fold, which shares the tint.
-- **Text**: the lightest, a label in ink with no fill: a list whose rows each offer one action, and
-  the way out of a form or a dialog (`Annuler`); a dialog confirms with a filled
-  button, or a destructive one when it warns or removes.
-- **A destructive action is quiet until confirmed**: a light tint of the destructive colour
-  (`--alert-high`) with its line, on its page; solid only on its confirmation's button. Removing what the page
-  names closes the page: always last, after `Avancé`, under a separator, never beside another
-  action. One shared component draws it, so no page can drift.
+- **The main action**: the one green button of a view, full width at the end of a form or under
+  what it acts on, `52px` tall (`Ajouter`, `Enregistrer`, `Réactiver`). A view has one at most; a
+  second action that matters is neutral.
+- **Neutral**: every other action, a pill on the raised colour (`44px` to `48px`) holding a line icon
+  that names the action, then its label, or a row of a grouped list. The icon is part of how a neutral
+  action is declared, never left out.
+- **A toggle** shows a state, not an action: the eye beside a camera's name is an icon button whose
+  icon says the state; `Silence` turns amber while it holds.
+- **A destructive action is quiet until confirmed**: a coral-tinted pill with coral ink, last on its
+  page, after `Avancé`, alone on its line; solid only on its confirmation's button.
+- **Text**: the way out of a sheet or a dialog (`Annuler`), a label with no fill.
 
-Buttons in a row stand `8px` apart and wrap. In a page or a card, actions start under what they act
-on, the main one first. A footer that settles a layer (a dialog) aligns its actions to the end, the
-confirmation last; on a phone they stack full width, the confirmation on top.
+Buttons in a row stand `8px` apart and wrap. A footer that settles a dialog aligns its actions to the
+end, the confirmation last; on a phone they stack full width, the confirmation on top.
+
+### Tabs
+
+Two or three tabs under a picture or a page head, as pills in one track: the selected one raised, the
+others in ink soft. A tab may carry a dot when something new waits behind it.
+
+### Sheets
+
+A choice that is quick and reversible (a duration, a filter, a clip's actions) opens a **sheet** from
+the bottom: a title, one line saying the effect, the options as rows, `Annuler` last. One tap on an
+option applies it and closes the sheet; nothing to confirm.
 
 ### State pills
 
-A pill speaks **one vocabulary per level**: one set of words, the same for every item of that level,
-each word one state, never two; a word shared by two levels keeps one meaning in each. Four tones:
-`ok`, `warn` (the user has something to do), `danger` (a failure), `neutral` (nothing wrong, an answer
-the user gave included). Each feature's words are its use case's.
+Where a word must say a state beside a value (a channel, a protocol), a pill speaks **one vocabulary
+per level**: one set of words, the same for every item of that level, each word one state, never two.
+Four tones: `ok`, `warn` (the user has something to do), `danger` (a failure), `neutral` (nothing
+wrong, an answer the user gave included). Each feature's words are its use case's. A camera's or a
+capability's state is a mark, not a pill (§ Status mark).
+
+### Settings screens
+
+A setting **is declared, it is not drawn**: its nature determines its control, alignment, provenance
+and undo ([ADR-15](adr/0015-settings-model-schedules-and-edit-cycle.md); the table from a nature to
+its control is the settings renderer's, in code). A page **does not name itself in its content**: its
+title is in the bar.
+
+A settings row is always, in this order: **name, help trigger, control, provenance, undo**. On a
+phone the row folds into two lines, the name above, the control below. A followed value reads
+greyed, an own value reads normally, never with a caption; undo appears only where there is something
+to undo and names the value it restores. A page lists its most common setting first; the rare ones go
+to `Avancé`.
+
+**An option that cannot be chosen yet stays in the list**, greyed and not selectable, with the reason
+and the way out on a quieter second line: what is missing, and the screen where it is fixed. The saved
+value is the exception: when it can no longer act, it stays choosable, and its consequence line gives
+the reason.
+
+**A check, a choice that runs a test, adding or removing are actions**, never draft values
+([ADR-15](adr/0015-settings-model-schedules-and-edit-cycle.md)): they act at once and return a result.
+
+### Cards
+
+A thing the user checks or sets (a capability, a channel) reads as **a card sharing one anatomy**:
+**title** with its mark · *state line* · *settings* · **actions**.
+
+- **The title** is the plain name of the thing, never a protocol or a technical acronym.
+- **The state line** appears only for an exception: it justifies the mark (principle 4) and says what
+  to do next, with the diagnostic line when the failure carries one.
+- **The settings** are declared rows behind the card's own `Options` fold, closed by default.
+- **The actions** close the card in one row, the check first.
+
+**No dead control**: a control is offered only while what it drives works; otherwise one short line
+takes its place, naming as a link the page where it is fixed.
 
 ### Folds
 
 | Fold | Where | Holds |
 | --- | --- | --- |
 | `Options` | Inside a card, closed | That card's settings |
-| `Avancé` | The end of the page, closed, before a removal (§ Action weight) | Rare settings: a position, not a mode (UI-09) |
-| `En savoir plus` panel | Next to what it explains | Task help (§ Help) |
-| `Détails techniques` | The end of a card, closed | Figures for support (§ Technical details) |
+| `Avancé` | The end of the page, closed, before a removal | Rare settings: a position, not a mode (UI-09) |
+| Help row | A row of the page's grouped list, leading to its help | Task help (§ Help) |
+| `Détails techniques` | The end of an error or a card, closed | Figures for support (§ Technical details) |
 
 None stands in for another: no setting in help or technical details, no help in `Avancé`.
-
-A fold opens on a press and holds content: it takes the clickable radius (`--radius`), never a
-surface's or the pill's (§ Interface tokens).
 
 ### Help: three levels, not a manual
 
 How to use a feature lives **in the screen that carries it**
-([ADR-17](adr/0017-help-lives-in-the-interface-three-levels.md)), at three depths:
-what is **visible** (a label and its cost), a setting's **tooltip**, a section's **`En savoir plus`**
-panel. **A tooltip fits in two sentences**: what overflows is about the task, not the field, and goes to
-the panel. A **cost** never moves down: it stays visible without a gesture.
+([ADR-17](adr/0017-help-lives-in-the-interface-three-levels.md)), at three depths: what is
+**visible** (a label and its cost), a setting's **tooltip**, a **help row** whose title is the
+question the reader asks (`Où trouver ces identifiants`, `Une vérification échoue`), never "En savoir
+plus". **A tooltip fits in two sentences**. A **cost** never moves down: it stays visible without a
+gesture.
 
-An **action** says its cost once, before the effect ([SPECS](SPECS.md) UI-16, UI-19): in its confirmation when
-it asks one, with nothing above the button; otherwise in one line above its button. An action that
-costs nothing gets no line.
-
-The panel is `common/components/help_panel`, never a rewritten `<details>`. Its header is the
-**question** the reader asks ("Où trouver ces informations ?"), never "En savoir plus"; it opens on its
-own only where the task it explains is not yet done.
+An **action** says its cost once, before the effect ([SPECS](SPECS.md) UI-16, UI-19): in its
+confirmation when it asks one, otherwise in one line above its button. An action that costs nothing
+gets no line.
 
 ### Technical details: figures for support
 
-A figure the user cannot act on stays off the card, in the `Détails techniques` fold
+A figure the user cannot act on stays in the `Détails techniques` fold
 (`common/components/technical_details`). Only the user opens it, and a figure is **never read as a
-fault**: no line and no warning colour come from it. It speaks the product's words, a thing under the
-name the user gave it, never an internal identifier or a technical name ([SPECS](SPECS.md) UI-02). It
-never holds a setting, an explanation or an error's diagnostic line.
+fault**. It speaks the product's words, never an internal identifier or a technical name
+([SPECS](SPECS.md) UI-02). It never holds a setting, an explanation or an error's diagnostic line.
 
 ### Errors
 
@@ -271,54 +287,43 @@ An error reads at two levels ([SPECS](SPECS.md) UI-01).
 
 - **The sentence** names the effect in the product's words, and what to do when there is something to
   do. It is all the user needs.
-- **The diagnostic line** sits under it in `font-mono text-xs`, a step quieter (`text-muted-foreground`
-  in place, the toast's own foreground at 70 % on the dark toast), selectable to be copied. Its content
-  comes from the error pipeline ([DASHBOARD-18](rules/dashboard.md)). It never replaces the sentence.
+- **The diagnostic line** sits under it in a monospace `13px`, ink soft, selectable to be copied. Its
+  content comes from the error pipeline ([DASHBOARD-18](rules/dashboard.md)). It never replaces the
+  sentence.
 - **A toast carrying a diagnostic line stays until dismissed**, long enough to be photographed. Any
   other toast closes by itself, and the same failure raised twice shows once.
-- **A read that fails shows where its data would have been**, with `Réessayer`, never an empty or
-  welcome state passing for a real answer. Under data already shown, the data stays and the failure
-  goes to a toast. It first says what could not be read: a heading when it fills a page nothing else
-  names, a plain sentence in a page the shell already names, which never gains a title for it.
+- **A read that fails shows where its data would have been**, with `Réessayer`, never an empty state
+  passing for a real answer. Under data already shown, the data stays and the failure goes to a toast.
 - **An answer that the thing no longer exists is not a failed read**: it is said as such, with the way
-  back, never `Réessayer`, which cannot succeed.
+  back, never `Réessayer`.
+- **The hub out of reach** is the one error that fills the screen: the product name, a title, the
+  sentence, `Réessayer` as the main action and `Détails techniques`, while the app retries on its own
+  ([SPECS](SPECS.md) UI-34).
 
 ### Empty and loading
 
-- **A list with nothing in it says so in one quiet sentence** (`text-sm text-muted-foreground`),
-  left-aligned where its items would be, inside the list's own surface, followed by the action that
-  fills it when there is one. One shared component draws it. Nothing that needs an item is offered:
-  a filter stays offered on an empty list only while one is set, to take it back. An unread list is
-  never shown empty (§ Errors).
+- **A list with nothing in it says so in one quiet sentence**, where its items would be, followed by
+  the action that fills it when there is one. One shared component draws it. A filter stays offered on
+  an empty list only while one is set, to take it back. An unread list is never shown empty.
 - **A read in progress shows nothing during a short delay**, so an answer that comes fast never
-  flashes. Past it, one shared component shows the shape of what it replaces, pulsing quietly: lines
-  on an inset for a list or a settings page, a title and picture frames for the home, in the colour
-  of the cards they stand for. Never a bare `Chargement…` sentence, which jumps to the content when
-  it lands.
+  flashes. Past it, one shared component shows **skeletons in the shape of the content** it replaces,
+  pulsing quietly in the surface colour: rows for a list, picture frames and tiles for the home. Never
+  a bare `Chargement…` sentence.
 
 ### Full-screen viewing
 
-A picture the user watches and drives is **a screen of its own, with its own route**, never a
-layer over a page: the browser's back closes it, home when there is nothing to go back to, and
-nothing of the page stays around it. A layer (`common/components/overlay`) remains for glancing at a
-still image or a recording. Where each control sits in a given screen is its use case.
+A picture the user watches and drives is **a screen of its own, with its own route**, never a layer
+over a page: the back button returns to the previous page, home when there is nothing to go back to.
 
-- **The picture goes edge to edge.** A top bar carries back, the name, then the picture's own
-  controls, on the dark structural surface (`--bg-strong`). When the picture neither fills the screen
-  nor has controls beside it, the bar sits above it and never covers it; otherwise it lies over the
-  picture, dimmed so it reads over any picture. Above the picture, the frame takes the picture's own
-  shape: no band beside it, nothing cropped.
-- **The other controls sit beside or below the picture when there is room**, on the page surface,
-  and over it only when the picture fills the screen. Below the picture they keep a capped size
-  that does not grow with the free height, and stand centred in the room left.
-- **Controls over a filling picture fade** after a few seconds without a gesture and come back on a
-  tap; never while a finger holds one. Controls beside or below the picture never fade. A line that
-  explains a state (a failure, a missing step) is not a control: it never fades.
-- **The browser's own bars**: when the picture fills the screen, the screen asks the browser to go
-  full screen on a gesture, with a button where no gesture has come, and one to give the bars back
-  without leaving the screen, the browser's own way out not always working. Where the browser
-  cannot, the screen fills what it leaves visible, and keeps every control inside the device's safe
-  areas.
+- **Upright**, the picture fills the width under the bar, in its own shape, nothing cropped; what acts
+  on it sits below, in tabs. A caption or a pill over the picture (`Revenir au direct`) sits on a
+  translucent dark plate so it reads over any image.
+- **Full screen** (landscape, or the `Plein écran` button), the picture goes edge to edge and the
+  controls lie over it, translucent; they fade after a few seconds without a gesture and come back on a
+  tap, never while a finger holds one. A line that explains a state never fades. Where each control
+  sits is the use case's.
+- **The browser's own bars**: in full screen, the screen asks the browser to hide them on a gesture,
+  and keeps every control inside the device's safe areas.
 
 ## UX vocabulary
 
@@ -328,46 +333,50 @@ the user learns the interface once.
 ### Navigation
 
 A label states the **nature** of a screen, viewing or configuring, never its audience
-([SPECS](SPECS.md) UI-06, UI-24).
+([SPECS](SPECS.md) UI-06).
 
-- Viewing: `Accueil`, `Direct`, `Historique`.
-- Configuring: `Réglages`, then a section (`Caméras`, `Détection`, `Conservation`, `Notifications`,
-  `Planification`, `Accès`, `Système`).
+- Viewing: `Accueil` (the product name in the bar), a camera's view, `Détections`.
+- Configuring: `Réglages`, in two sections:
+  - **Surveillance**: `Caméras`, `Détection`, `Planification`, `Notifications`;
+  - **Système**: `Conservation`, `Accès`, `Matériel`.
 - Known people (`Personnes`) sit under `Détection`, next to what names them.
-- Banned as entries: `Expert` (an audience, not a content), and `Alertes` for a settings screen (it
-  promises a list of events, which lives under `Historique`).
+- Banned as entries: `Expert` (an audience, not a content), `Alertes` for a settings screen, and
+  `Historique` (the list of what was seen is `Détections`).
+- **A route is English** (`/settings/hardware`, `/settings/schedule`), whatever the French label it
+  carries: the address is code, only the displayed words are French (COMMON-01).
 
 ### Shared words
 
 - What Vyzio sends to a channel is a **`notification`**, sending it **`notifier`**: never `alerte`,
-  `prévenir` or `signaler`. A person is `notifié`, a channel sends `notifications`, a setting says
-  `Me notifier`.
-- A time range is a **`plage`**, its rubric **`Planification`**; each type has one name, icon and effect
-  line, the same in every screen ([SPECS](SPECS.md) SCHED-02). `Couper` stays the word of privacy mode and
-  `Silence` that of the spacing between repeated notifications.
+  `prévenir` or `signaler`. An `alerte` is only what the top bar carries.
+- **`Silence`** is the one word for notifications held quiet, by hand or by a range: the cameras keep
+  filming and detecting. The spacing between two notifications of the same kind is an
+  **`espacement`**, never a silence.
+- **`Couper`** is the word of privacy mode, for one camera (`Couper la caméra`) or all
+  (`Couper les caméras`); its way back is **`Réactiver`**.
+- A time range is a **`plage`**, its rubric **`Planification`**; each type has one name, icon and
+  colour, the same in every screen ([SPECS](SPECS.md) SCHED-02): `Caméras coupées` in grey, `Silence`
+  in amber.
 - A capability is titled by what the camera does, in the product's words: `Flux vidéo`, `Orientation`,
-  `Coupure matérielle` (as on the privacy screen), `Réglages image`. Where a protocol name may appear
-  is UI-02; help naming protocols or ports sits in `Avancé`, help next to the cards stays plain.
+  `Vie privée matérielle`, `Réglages image`. Where a protocol name may appear is UI-02.
+- A time reads `22 h`, `7 h 30`, a range `22 h – 7 h`; days `lundi au vendredi`.
 
 ### Editing cycle
 
 A setting is saved; surveillance is restarted separately
 ([ADR-15](adr/0015-settings-model-schedules-and-edit-cycle.md)).
 
-- **`Enregistrer`** is the single verb of validation: it persists, nothing more. Never `Appliquer`
-  (promises an effect that does not happen) nor `Mettre en service` (hides the interruption).
+- **`Enregistrer`** is the single verb of validation: it persists, nothing more. A page that edits
+  one thing (a range, a camera's name, a channel) saves with its own green `Enregistrer`, its main
+  action, at the end of the page. Never `Appliquer` for a save.
 - **`Annuler`** is the single verb of abandonment: back to the last saved state.
-- The draft is **per page**: it groups what that page changed, and leaving a modified page asks for
-  confirmation. Its bar sits in one fixed place, the same on every screen, never in the flow of the
-  content. Undoing an override is a draft change like any other.
-- A value's **provenance** (followed or its own) and its **edit state** (saved or in the draft)
-  read separately.
-- The draft announces **what has changed**, never an interruption: that belongs to the restart.
-- The restart's trigger, `Appliquer les changements`, names **the pending state**, still true when read
-  two days later; its question, `Redémarrer la surveillance maintenant ?`, names **the act** and states
-  the interruption when deciding. The trigger appears only when something is pending, and names the
-  settings that wait ([SPECS](SPECS.md) UI-14). A failed restart reads as a **breakdown**,
-  persistent, with `Réessayer`.
+- The draft is **per page**: leaving a modified page asks for confirmation. A value's **provenance**
+  (followed or its own) and its **edit state** (saved or in the draft) read separately.
+- **`Appliquer les changements` is the exception**: the restart's trigger, in the settings bar only,
+  and only while a saved setting waits for it ([SPECS](SPECS.md) UI-28, UI-14). It names **the pending
+  state**, with the count when it helps (`Appliquer 3 changements`); its question,
+  `Redémarrer la surveillance maintenant ?`, names **the act** and states the interruption. A failed
+  restart reads as a **breakdown**, persistent, with `Réessayer`.
 
 The underlying rule: **never name the mechanism, always name the effect.** Principle 2 forbids naming
 the engine, not saying what is happening.
@@ -377,5 +386,5 @@ the engine, not saying what is happening.
 - Never `MQTT`, `broker`, `frigate events`, `sub_label`, `NVR`, nor the name of the detection engine, in
   the nominal journey (product principle 2). The diagnostic line of an error is not the nominal journey.
 - Never an opaque state without a readable justification (principle 4).
-- Never instructions for use outside the product, nor help that paraphrases the screen: navigation, a
-  greyed-out button, a missing option already read on screen (ADR-17).
+- Never a word for a nominal state: the mark says it.
+- Never instructions for use outside the product, nor help that paraphrases the screen (ADR-17).
