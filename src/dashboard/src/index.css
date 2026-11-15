@@ -1,16 +1,15 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
-/* Le theme sombre suit une classe posee sur <html>, pas seulement la preference
-   systeme : l'utilisateur doit pouvoir choisir. `ThemePreference` applique l'une
-   ou l'autre au demarrage. */
+/* The dark theme follows a class on <html>, not only the system preference: the
+   user must be able to choose. `ThemePreference` applies one or the other at start. */
 @custom-variant dark (&:is(.dark *));
 
 /* ---------------------------------------------------------------------------
-   Tokens Vyzio — realisation des valeurs definies par docs/DESIGN SYSTEM.md,
-   qui en reste la source. Toute couleur, tout rayon employe dans un composant
-   passe par un token : c'est ce qui rend un defaut de contraste corrigeable en
-   un point, et ce qui garantit le theme sombre par construction (ADR-01).
+   Vyzio tokens: the realisation of the values docs/DESIGN SYSTEM.md defines,
+   which stays their source. Every colour and radius a component uses goes
+   through a token: a contrast defect is fixed in one place, and the dark theme
+   holds by construction (ADR-01).
    --------------------------------------------------------------------------- */
 
 :root {
@@ -21,18 +20,15 @@
   --bg-sunken: #f2ebdf;
   --bg-strong: #1f3a33;
   --ink-strong: #18201d;
-  /* Texte secondaire : assez clair pour se distinguer du texte principal au
-     premier coup d'oeil, assez sombre pour rester lisible (>= 4.5:1 sur
-     --bg-elevated ; l'ancienne valeur #6f7c76 ne tenait qu'a 4.19:1, trouve
-     par le balayage WCAG e2e). */
+  /* Secondary text: light enough to tell from the main text at a glance, dark
+     enough to stay readable (>= 4.5:1 on --bg-elevated, held by the WCAG e2e scan). */
   --ink-soft: #606d67;
   --ink-inverse: #f7f4ed;
   --line-soft: #d8cfbf;
   --brand-moss: #2f6b59;
   --brand-moss-strong: #214c3f;
   --brand-sand: #d9b37a;
-  /* White button text on this needs >= 4.5:1; #c65c3d only cleared 4.2:1
-     (found by the WCAG e2e scan) — darkened just enough to pass. */
+  /* White button text on this needs >= 4.5:1, held by the WCAG e2e scan. */
   --alert-high: #b04c30;
   --alert-ok: #2d7a52;
   --shadow-soft: 0 18px 50px rgba(24, 32, 29, 0.08);
@@ -42,7 +38,7 @@
   --heading: 'Iowan Old Style', 'Palatino Linotype', serif;
   --mono: 'Cascadia Code', 'Consolas', monospace;
 
-  /* Fond de page : degrade chaud + trame discrete (voir body plus bas). */
+  /* Page background: a warm gradient and a discreet grid (see body below). */
   --canvas-gradient:
     radial-gradient(circle at top left, rgba(217, 179, 122, 0.22), transparent 28%),
     radial-gradient(circle at top right, rgba(47, 107, 89, 0.14), transparent 22%),
@@ -50,9 +46,9 @@
   --canvas-grid: rgba(24, 32, 29, 0.025);
 }
 
-/* Version sombre des memes tokens. Elle reste chaude et domestique : un theme
-   sombre clinique (gris neutres) contredirait l'intention du design system
-   autant qu'un theme clair clinique. */
+/* The dark version of the same tokens. It stays warm and domestic: a clinical
+   dark theme (neutral greys) would contradict the design system's intent as much
+   as a clinical light one. */
 .dark {
   --bg-canvas: #121a17;
   --bg-elevated: #1b2723;
@@ -79,9 +75,9 @@
 }
 
 /* ---------------------------------------------------------------------------
-   Couche semantique consommee par les primitives shadcn/ui. Elle ne definit
-   aucune couleur : elle nomme un role et pointe vers un token Vyzio. C'est ce
-   qui permet de rethematiser les primitives sans jamais les modifier (ADR-01).
+   The semantic layer the shadcn/ui primitives read. It defines no colour: it
+   names a role and points at a Vyzio token, which rethemes the primitives
+   without ever modifying them (ADR-01).
    --------------------------------------------------------------------------- */
 
 :root,
@@ -105,7 +101,7 @@
   --destructive: var(--alert-high);
   --destructive-foreground: var(--ink-inverse);
   --success: var(--alert-ok);
-  /* Surface inversee : bandeau de navigation et panneaux structurants fonces. */
+  /* Inverse surface: the navigation header and dark structural panels. */
   --surface-inverse: var(--bg-strong);
   --surface-inverse-foreground: var(--ink-inverse);
   --border: var(--line-soft);
@@ -145,33 +141,29 @@
   --shadow-elevated: var(--shadow-soft);
   --shadow-header: var(--shadow-strong);
 
-  /* Echelle `rounded-*` — celle des **elements cliquables**, conformement a la
-     regle de forme du DESIGN SYSTEM (rectangle arrondi = action, 8 a 12px).
-     Elle est calee sur le rayon de bouton Vyzio, ce qui rethematise les
-     primitives shadcn sans les modifier. `inline` : Tailwind n'emet alors
-     aucune variable, il inline la valeur dans l'utilitaire. */
+  /* The `rounded-*` scale is the **clickable** elements' one, per the DESIGN
+     SYSTEM shape rule (a rounded rectangle is an action). It is set on the Vyzio
+     button radius, which rethemes the shadcn primitives without modifying them.
+     `inline`: Tailwind emits no variable and inlines the value in the utility. */
   --radius: 12px;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
-  /* Rayons de **surface** (non cliquables) : noms distincts, donc aucune
-     collision, et l'intention reste lisible a l'usage. */
+  /* **Surface** radii (not clickable): distinct names, so no collision, and the
+     intent reads where they are used. */
   --radius-inset: 18px;
   --radius-card: 24px;
   --radius-panel: 28px;
 }
 
 /* ---------------------------------------------------------------------------
-   Base document. Ce qui suit habille la page elle-meme, pas un composant.
+   Document base: what follows dresses the page itself, not a component.
    --------------------------------------------------------------------------- */
 
-/* Base typographique : celle de Tailwind, sans surcharge de taille racine. Le
-   `18px/1.5` d'origine ecrasait toute l'echelle — `text-sm` valait 14px face a
-   un corps de 18, soit un ecart trop faible pour separer deux niveaux
-   d'information. Repartir de 16px rend l'echelle par defaut utilisable telle
-   quelle, et supprime un reglage a compenser dans chaque composant. */
+/* Tailwind's type base, with no root size override: the default scale then
+   separates two levels of information as it is (DESIGN SYSTEM § Typography). */
 :root {
   font-family: var(--sans);
   line-height: 1.5;
@@ -214,10 +206,8 @@ body::before {
   min-height: 100svh;
 }
 
-/* Layered so Tailwind utilities (text-primary-foreground, etc. on a Button
-   rendered `asChild` as a link) can still override it — unlayered CSS beats
-   utility classes regardless of specificity, which silently broke button
-   text color on every link-as-button (found by the WCAG e2e scan). */
+/* Layered so a utility (a link rendered as a button) still overrides it:
+   unlayered CSS beats utility classes whatever their specificity. */
 @layer base {
   /* A border that names no colour takes the soft line, never the text colour (DESIGN SYSTEM § Palette). */
   *,

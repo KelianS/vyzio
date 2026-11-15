@@ -116,7 +116,7 @@ function ToastChip({
       ref={chipRef}
       role="status"
       className={cn(
-        'pointer-events-auto flex min-w-60 max-w-sm items-start gap-3 rounded-lg bg-surface-inverse px-4 py-3 text-surface-inverse-foreground shadow-elevated',
+        'pointer-events-auto flex min-w-60 max-w-sm items-start gap-3 rounded-card bg-surface-inverse px-4 py-3 text-surface-inverse-foreground shadow-elevated',
         // Transitions, not keyframes: a toast raised mid-fade picks up from where it stands.
         'transition-[opacity,translate] starting:opacity-0 motion-safe:starting:translate-y-2',
         item.leaving
