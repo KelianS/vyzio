@@ -18,8 +18,8 @@ engine underneath (product principle 2).
 - Surfaces: `--bg-canvas: #f4efe6` the main background, warm rather than clinical;
   `--bg-elevated: #fffaf2` primary surfaces; `--bg-strong: #1f3a33` structural dark panels;
   `--bg-sunken: #f2ebdf` an inset inside a surface (a track, a chip, a step number, a fold, a quiet
-  hover), opaque so it shows on a card as on the canvas; `--bg-muted`, translucent, only for a
-  control laid over the picture.
+  hover, a secondary button), opaque so it shows on a card as on the canvas; `--bg-muted`,
+  translucent, only for a control laid over the picture.
 - Ink: `--ink-strong: #18201d` primary text; `--ink-soft: #606d67` secondary text;
   `--line-soft: #d8cfbf` discreet borders, the colour of every border that names no other, never
   the text colour.
@@ -186,6 +186,9 @@ the user gave included). Each feature's words are its use case's.
 | `Détails techniques` | The end of a card, closed | Figures for support (§ Technical details) |
 
 None stands in for another: no setting in help or technical details, no help in `Avancé`.
+
+A fold opens on a press, so it is an action: it takes the clickable radius (`--radius`), never a
+surface's or the pill's (§ Interface tokens).
 
 ### Help: three levels, not a manual
 
