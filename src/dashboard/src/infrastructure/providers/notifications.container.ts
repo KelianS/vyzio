@@ -10,6 +10,8 @@ import { RevokeChannelPairing } from '../../domain/usecases/revoke_channel_pairi
 import { SaveNotificationChannelConfig } from '../../domain/usecases/save_notification_channel_config.use_case'
 import { StartChannelPairing } from '../../domain/usecases/start_channel_pairing.use_case'
 import { TestNotificationChannel } from '../../domain/usecases/test_notification_channel.use_case'
+import { GetSilence, StartSilence, StopSilence } from '../../domain/usecases/silence.use_case'
+import type { SilenceRepository } from '../../domain/ports/silence.port'
 import type { NotificationSettingsRepository } from '../../domain/ports/notification_settings.port'
 import type { DetectionLabelsRepository } from '../../domain/usecases/get_detection_labels.use_case'
 
@@ -26,11 +28,15 @@ export interface NotificationsContainer {
   getCommandJournal: GetCommandJournal
   startChannelPairing: StartChannelPairing
   revokeChannelPairing: RevokeChannelPairing
+  getSilence: GetSilence
+  startSilence: StartSilence
+  stopSilence: StopSilence
 }
 
 export function makeNotificationsContainer(
   notificationSettingsRepository: NotificationSettingsRepository,
   notificationLabelsRepository: DetectionLabelsRepository,
+  silenceRepository: SilenceRepository,
 ): NotificationsContainer {
   return {
     listNotificationChannels: new ListNotificationChannels(notificationSettingsRepository),
@@ -47,5 +53,8 @@ export function makeNotificationsContainer(
     getCommandJournal: new GetCommandJournal(notificationSettingsRepository),
     startChannelPairing: new StartChannelPairing(notificationSettingsRepository),
     revokeChannelPairing: new RevokeChannelPairing(notificationSettingsRepository),
+    getSilence: new GetSilence(silenceRepository),
+    startSilence: new StartSilence(silenceRepository),
+    stopSilence: new StopSilence(silenceRepository),
   }
 }

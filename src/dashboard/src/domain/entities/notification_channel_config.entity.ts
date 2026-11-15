@@ -36,7 +36,6 @@ export interface NotificationChannelSummary {
   channel: NotificationChannelName
   displayName: string
   isConfigured: boolean
-  isEnabled: boolean
   /** A channel that cannot receive stays an alert channel; the screen says so before activation (ADR-14). */
   acceptsCommands: boolean
 }
@@ -81,7 +80,6 @@ export interface CommandJournalEntry {
 export interface NotificationChannelConfig {
   channel: NotificationChannelName
   displayName: string
-  isEnabled: boolean
   isConfigured: boolean
   credentials: ChannelCredential[]
   capabilities: ChannelCapabilities
@@ -98,7 +96,6 @@ export interface NotificationChannelConfig {
 }
 
 export interface SaveNotificationChannelConfigRequest {
-  isEnabled: boolean
   /** A field left out keeps the value already stored. */
   credentials?: Partial<Record<ChannelCredentialField, string>>
   minimumConfidence?: number

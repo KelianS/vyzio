@@ -11,6 +11,7 @@ import { HttpNotificationSettingsRepository } from '../repositories/notification
 import { HttpProfileRepository } from '../repositories/profile.repository'
 import { HttpRecordingSettingsRepository } from '../repositories/recording_settings.repository'
 import { HttpScheduleRepository } from '../repositories/schedule.repository'
+import { HttpSilenceRepository } from '../repositories/silence.repository'
 import { HttpSystemRepository } from '../repositories/system.repository'
 import { makeAccessContainer, type AccessContainer } from './access.container'
 import { makeCamerasContainer, type CamerasContainer } from './cameras.container'
@@ -67,6 +68,7 @@ function makeAppContainer(): AppContainer {
     notifications: makeNotificationsContainer(
       notificationSettingsRepository,
       notificationLabelsRepository,
+      new HttpSilenceRepository(runtime.apiBaseUrl),
     ),
     schedules: makeSchedulesContainer(scheduleRepository),
     detectionHistory: makeDetectionHistoryContainer(profileRepository, cameraLabelsRepository),

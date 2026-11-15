@@ -131,6 +131,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<DeleteNotificationChannelConfigUseCase>();
         services.AddScoped<TestNotificationChannelUseCase>();
         services.AddScoped<GetNotificationLogUseCase>();
+        services.AddScoped<GetSilenceUseCase>();
+        services.AddScoped<StartSilenceUseCase>();
+        services.AddScoped<StopSilenceUseCase>();
 
         // Remote commands — one registration per command, nothing else to edit (ADR-14)
         services.AddScoped<IRemoteCommandHandler, Commands.SystemStateCommandHandler>();

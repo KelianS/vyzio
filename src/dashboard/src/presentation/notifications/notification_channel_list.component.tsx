@@ -1,13 +1,11 @@
 import { useEffect, useReducer } from 'react'
 import { Link } from 'react-router'
 import { ChevronRight, Plus } from 'lucide-react'
-import { Badge } from '../../common/components/badge'
 import { ReadFailure } from '../../common/components/error_message'
 import { Button } from '../../common/ui/button'
 import { SettingsPage } from '../../common/settings/settings_page'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
-import { channelPill } from './channel_status'
 import { buildNotificationChannelListPresenter } from './notification_channel_list.presenter'
 import { notificationChannelListReducer } from './notification_channel_list.reducer'
 import { buildInitialNotificationChannelListUido } from './notification_channel_list.uido'
@@ -43,27 +41,19 @@ export function NotificationChannelListView() {
         />
       ) : configured.length > 0 ? (
         <ul className="divide-y divide-border">
-          {configured.map((channel) => {
-            const pill = channelPill(channel.isEnabled)
-            return (
-              <li key={channel.channel}>
-                <ListRow>
-                  <Link to={`/settings/notifications/${channel.channel}`}>
-                    <span className="min-w-0">
-                      <span className="block font-medium">{channel.displayName}</span>
-                      <span className="block text-sm text-muted-foreground">
-                        {sendingSentence(channel.isEnabled)}
-                      </span>
-                    </span>
-                    <span className="flex shrink-0 items-center gap-3">
-                      <Badge tone={pill.tone}>{pill.label}</Badge>
-                      <ChevronRight className="size-4 text-muted-foreground" aria-hidden="true" />
-                    </span>
-                  </Link>
-                </ListRow>
-              </li>
-            )
-          })}
+          {configured.map((channel) => (
+            <li key={channel.channel}>
+              <ListRow>
+                <Link to={`/settings/notifications/${channel.channel}`}>
+                  <span className="min-w-0 font-medium">{channel.displayName}</span>
+                  <ChevronRight
+                    className="size-4 shrink-0 text-muted-foreground"
+                    aria-hidden="true"
+                  />
+                </Link>
+              </ListRow>
+            </li>
+          ))}
         </ul>
       ) : uido.loading ? (
         <Loading />
@@ -86,11 +76,4 @@ export function NotificationChannelListView() {
       )}
     </SettingsPage>
   )
-}
-
-/** Whether a configured channel sends, said in words beside its pill. */
-function sendingSentence(enabled: boolean): string {
-  return enabled
-    ? 'Les notifications sont envoyées.'
-    : 'Configuré, mais aucune notification n’est envoyée.'
 }

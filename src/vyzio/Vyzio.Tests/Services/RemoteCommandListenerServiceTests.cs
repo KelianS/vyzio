@@ -53,10 +53,9 @@ public class RemoteCommandListenerServiceTests
         return new NotificationChannelCatalog([sender]);
     }
 
-    private static NotificationChannelConfig Telegram(bool enabled) => new()
+    private static NotificationChannelConfig Telegram() => new()
     {
         Channel = NotificationChannel.Telegram,
-        IsEnabled = enabled,
         Credentials = new ChannelCredentials([new(ChannelCredential.BotToken, "123:abc")]),
         ConfiguredAt = DateTimeOffset.Parse("2026-09-01T00:00:00+00:00", CultureInfo.InvariantCulture),
     };
@@ -77,10 +76,10 @@ public class RemoteCommandListenerServiceTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldListen_WhenAChannelIsEnabledWithItsBotToken()
+    public async Task ExecuteAsync_ShouldListen_WhenAChannelIsConfiguredWithItsBotToken()
     {
         // Arrange
-        _configs.GetAllAsync(Arg.Any<CancellationToken>()).Returns([Telegram(enabled: true)]);
+        _configs.GetAllAsync(Arg.Any<CancellationToken>()).Returns([Telegram()]);
         var listening = SignalOnReceive(call: 1);
         var sut = CreateSut();
 
@@ -97,7 +96,7 @@ public class RemoteCommandListenerServiceTests
     public async Task ExecuteAsync_ShouldListenAgain_WhenARoundFailsThenTheChannelComesBack()
     {
         // Arrange
-        _configs.GetAllAsync(Arg.Any<CancellationToken>()).Returns([Telegram(enabled: true)]);
+        _configs.GetAllAsync(Arg.Any<CancellationToken>()).Returns([Telegram()]);
         var back = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var calls = 0;
         _telegram.ReceiveAsync(Arg.Any<IReadOnlyList<RemoteCommandDescriptor>>(), Arg.Any<ChannelCredentials>(), Arg.Any<CancellationToken>())
@@ -126,7 +125,7 @@ public class RemoteCommandListenerServiceTests
         _configs.GetAllAsync(Arg.Any<CancellationToken>())
             .Returns(
                 _ => throw new InvalidOperationException("database is locked"),
-                _ => Task.FromResult<IReadOnlyList<NotificationChannelConfig>>([Telegram(enabled: true)]));
+                _ => Task.FromResult<IReadOnlyList<NotificationChannelConfig>>([Telegram()]));
         var listening = SignalOnReceive(call: 1);
         var sut = CreateSut();
 
@@ -140,13 +139,13 @@ public class RemoteCommandListenerServiceTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldStopListening_WhenTheChannelIsDisabled()
+    public async Task ExecuteAsync_ShouldStopListening_WhenTheChannelIsRemoved()
     {
         // Arrange
         _configs.GetAllAsync(Arg.Any<CancellationToken>())
             .Returns(
-                _ => Task.FromResult<IReadOnlyList<NotificationChannelConfig>>([Telegram(enabled: true)]),
-                _ => Task.FromResult<IReadOnlyList<NotificationChannelConfig>>([Telegram(enabled: false)]));
+                _ => Task.FromResult<IReadOnlyList<NotificationChannelConfig>>([Telegram()]),
+                _ => Task.FromResult<IReadOnlyList<NotificationChannelConfig>>([]));
         var stopped = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         _health.When(h => h.Stopped(NotificationChannel.Telegram)).Do(_ => stopped.TrySetResult());
         SignalOnReceive(call: 1);
@@ -185,7 +184,7 @@ public class RemoteCommandListenerServiceTests
     public async Task StopAsync_ShouldEndTheLoop_WhenTheHostShutsDown()
     {
         // Arrange
-        _configs.GetAllAsync(Arg.Any<CancellationToken>()).Returns([Telegram(enabled: true)]);
+        _configs.GetAllAsync(Arg.Any<CancellationToken>()).Returns([Telegram()]);
         var listening = SignalOnReceive(call: 1);
         var sut = CreateSut();
         await sut.StartAsync(CancellationToken.None);

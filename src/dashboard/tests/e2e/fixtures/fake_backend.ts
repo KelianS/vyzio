@@ -199,7 +199,6 @@ interface FakeCommandJournalEntry {
 export interface FakeChannelConfig {
   channel: string
   displayName: string
-  isEnabled: boolean
   isConfigured: boolean
   credentials: { field: string; secret: boolean; isSet: boolean; value: string | null }[]
   capabilities: {
@@ -249,7 +248,6 @@ export function makeFakeChannel(
   const base = unconfiguredChannel(channel)
   return {
     ...base,
-    isEnabled: true,
     isConfigured: true,
     credentials: base.credentials.map((credential) => ({ ...credential, isSet: true })),
     configuredAt: new Date().toISOString(),
@@ -261,7 +259,6 @@ function unconfiguredChannel(channel: string): FakeChannelConfig {
   return {
     channel,
     displayName: CHANNEL_CATALOGUE[channel].displayName,
-    isEnabled: false,
     isConfigured: false,
     credentials: CHANNEL_CATALOGUE[channel].credentials.map((credential) => ({
       ...credential,
@@ -787,9 +784,8 @@ export async function installFakeBackend(
         profiles: state.profiles,
         // Counted from the channels set up, so the hub and the Notifications screen tell the same story.
         notifications: {
-          activeChannels: Object.values(state.notificationChannels).filter(
-            (c) => c.isEnabled && c.isConfigured,
-          ).length,
+          activeChannels: Object.values(state.notificationChannels).filter((c) => c.isConfigured)
+            .length,
           sentCount: 0,
           lastSentAt: null,
         },
@@ -1385,7 +1381,6 @@ export async function installFakeBackend(
             channel,
             displayName: CHANNEL_CATALOGUE[channel].displayName,
             isConfigured: config?.isConfigured ?? false,
-            isEnabled: config?.isEnabled ?? false,
             acceptsCommands: true,
           }
         }),
@@ -1414,7 +1409,6 @@ export async function installFakeBackend(
         })
         const config: FakeChannelConfig = {
           ...existing,
-          isEnabled: Boolean(postData?.isEnabled),
           credentials,
           isConfigured: credentials.every((credential) => credential.isSet),
           minimumConfidence: (postData?.minimumConfidence as number) ?? existing.minimumConfidence,

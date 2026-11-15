@@ -159,14 +159,14 @@ describe('NotificationChannelView', () => {
     expect(await screen.findByRole('heading', { name: 'Canal introuvable' })).toBeInTheDocument()
   })
 
-  it('onConfirmEnable_ShouldAskFirstThenSave_WhenTheUserEnablesTheChannel', async () => {
+  it('onConfirmEnable_ShouldAskFirstThenSave_WhenTheUserConfiguresTheChannelForTheFirstTime', async () => {
     // Arrange
     const network = fakeNetwork({
-      ...channelRoutes(makeChannelConfig({ isEnabled: false })),
+      ...channelRoutes(makeChannelConfig({ isConfigured: false })),
       [SAVE]: ok(makeChannelConfig()),
     })
     renderScreen(<NotificationChannelView />, channelAt('telegram'))
-    await userEvent.click(await screen.findByRole('switch', { name: /Notifications Telegram/ }))
+    await userEvent.type(await screen.findByLabelText('Token du bot'), '123:abc')
     await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
     const question = screen.getByRole('alertdialog', {
       name: 'Envoyer les notifications par Telegram ?',
@@ -178,7 +178,10 @@ describe('NotificationChannelView', () => {
     // Assert
     expect(await screen.findByText('Notifications enregistrées.')).toBeInTheDocument()
     expect(network.sent).toContainEqual(
-      expect.objectContaining({ route: SAVE, body: expect.objectContaining({ isEnabled: true }) }),
+      expect.objectContaining({
+        route: SAVE,
+        body: expect.objectContaining({ credentials: { bot_token: '123:abc' } }),
+      }),
     )
   })
 
@@ -186,7 +189,7 @@ describe('NotificationChannelView', () => {
     // Arrange
     fakeNetwork({ ...channelRoutes(), [SAVE]: failure(500) })
     renderScreen(<NotificationChannelView />, channelAt('telegram'))
-    await userEvent.click(await screen.findByRole('switch', { name: /Notifications Telegram/ }))
+    await userEvent.type(await screen.findByLabelText('Token du bot'), '123:abc')
 
     // Act
     await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
@@ -194,7 +197,7 @@ describe('NotificationChannelView', () => {
     // Assert
     expect(await screen.findByText(/Vyzio a rencontré une erreur/)).toBeInTheDocument()
     expect(screen.getByText(/PUT \/api\/notifications\/settings\/telegram · 500/)).toBeVisible()
-    expect(screen.getByRole('switch', { name: /Notifications Telegram/ })).not.toBeChecked()
+    expect(screen.getByLabelText('Token du bot')).toHaveValue('123:abc')
   })
 
   it('onTest_ShouldSayTheSendFailedAndShowWhy_WhenTheChannelRefuses', async () => {
@@ -340,7 +343,7 @@ describe('NotificationChannelView', () => {
     expect(
       await screen.findByText(/GET \/api\/detection-labels\/notifications · 500/),
     ).toBeVisible()
-    expect(screen.getByRole('switch', { name: /Notifications Telegram/ })).toBeInTheDocument()
+    expect(screen.getByLabelText('Token du bot')).toBeInTheDocument()
   })
 
   it('onRetryLabels_ShouldOfferTheTriggers_WhenTheSecondReadSucceeds', async () => {
@@ -513,7 +516,7 @@ describe('NotificationChannelView', () => {
     // Arrange
     const network = fakeNetwork({ ...channelRoutes(), [SAVE]: ok(makeChannelConfig()) })
     renderScreen(<NotificationChannelView />, channelAt('telegram'))
-    await userEvent.click(await screen.findByRole('switch', { name: /Notifications Telegram/ }))
+    await userEvent.type(await screen.findByLabelText('Token du bot'), '123:abc')
     network.answer(SETTINGS, failure(500))
 
     // Act

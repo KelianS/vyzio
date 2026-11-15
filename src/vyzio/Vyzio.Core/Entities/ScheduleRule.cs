@@ -104,6 +104,9 @@ public class ScheduleRule
     private static bool TryParseTime(string value, out TimeSpan time) =>
         TimeSpan.TryParseExact(value, @"hh\:mm", CultureInfo.InvariantCulture, out time);
 
+    /// <summary>The time of day the range starts, or null when it is not readable.</summary>
+    public TimeSpan? Start => TryParseTime(StartTime, out var start) ? start : null;
+
     /// <summary>The time of day the range ends, or null when it is not readable.</summary>
     public TimeSpan? End => TryParseTime(EndTime, out var end) ? end : null;
 

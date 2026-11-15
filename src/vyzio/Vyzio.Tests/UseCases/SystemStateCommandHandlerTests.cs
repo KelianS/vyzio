@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using NSubstitute;
 using Vyzio.Application.Commands;
 using Vyzio.Application.UseCases.Cameras;
@@ -58,7 +58,6 @@ public class SystemStateCommandHandlerTests
             new NotificationChannelConfig
             {
                 Channel = NotificationChannel.Telegram,
-                IsEnabled = true,
                 Credentials = new ChannelCredentials(new Dictionary<ChannelCredential, string>
                 {
                     [ChannelCredential.BotToken] = "token"

@@ -23,7 +23,7 @@ public sealed class GetHubOverviewUseCase(
         await Task.WhenAll(profilesTask, sentCountTask, lastSentTask, configsTask);
 
         var activeChannels = configsTask.Result.Count(config =>
-            config.IsEnabled && catalog.Describe(config.Channel)?.IsSatisfiedBy(config.Credentials) == true);
+            catalog.Describe(config.Channel)?.IsSatisfiedBy(config.Credentials) == true);
 
         var warnings = new List<string>();
         if (activeChannels == 0)

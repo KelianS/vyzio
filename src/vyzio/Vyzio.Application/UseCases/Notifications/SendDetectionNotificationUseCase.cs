@@ -21,6 +21,7 @@ public sealed class SendDetectionNotificationUseCase(
     INotificationChannelCatalog catalog,
     INotificationChannelConfigRepository channelConfigs,
     IScheduleRuleRepository scheduleRules,
+    INotificationSilenceRepository silences,
     IFrigateEventImageProvider imageProvider,
     IFrigateClipProvider clipProvider,
     DetectionMessageFormatter formatter,
@@ -50,6 +51,9 @@ public sealed class SendDetectionNotificationUseCase(
                 detection.EventId, detection.Identity, detection.Camera, decision);
             return false;
         }
+
+        if (await IsSilencedAsync(detection, ct))
+            return false;
 
         var configs = await channelConfigs.GetAllAsync(ct);
         var muteRules = await scheduleRules.GetByKindAsync(ScheduleRuleKind.MuteNotifications, ct);
@@ -113,6 +117,10 @@ public sealed class SendDetectionNotificationUseCase(
                 return false;
             }
 
+            // Gathering the media can outlast the moment the user asked for Silence: dropped, never delayed (NOTIF-33).
+            if (await IsSilencedAsync(detection, ct))
+                return false;
+
             await sender.SendAsync(new OutgoingNotification(message, photo, video), config.Credentials, ct);
             logger.LogInformation(
                 "Sent {Channel} notification for event {EventId} label={Label} age={AgeSeconds}s score={Score} photo={HasPhoto} video={HasVideo}",
@@ -141,10 +149,9 @@ public sealed class SendDetectionNotificationUseCase(
         FrigateDetection detection,
         CancellationToken ct)
     {
-        if (!config.IsEnabled || !descriptor.IsSatisfiedBy(config.Credentials))
+        if (!descriptor.IsSatisfiedBy(config.Credentials))
         {
-            logger.LogDebug("{Channel} skipped for event {EventId}: channel not ready (enabled={IsEnabled})",
-                config.Channel, detection.EventId, config.IsEnabled);
+            logger.LogDebug("{Channel} skipped for event {EventId}: channel not configured", config.Channel, detection.EventId);
             return false;
         }
 
@@ -237,6 +244,17 @@ public sealed class SendDetectionNotificationUseCase(
             logger.LogWarning("Snapshot unavailable for event {EventId} — falling back to text message", detection.EventId);
 
         return (photo, video);
+    }
+
+    /// <summary>Held while a Silence covers the moment of the detection or the moment of sending it.</summary>
+    private async Task<bool> IsSilencedAsync(FrigateDetection detection, CancellationToken ct)
+    {
+        if (await silences.GetAsync(ct) is not { } silence) return false;
+        if (!silence.Covers(detection.OccurredAt) && !silence.Covers(time.GetUtcNow())) return false;
+
+        logger.LogInformation("Notification for event {EventId} dropped: Silence holds every channel until {Until}",
+            detection.EventId, silence.Until);
+        return true;
     }
 
     // An erasure that lands during the send has already cleared the journal: the row must not come back (HIST-10, HIST-12).
