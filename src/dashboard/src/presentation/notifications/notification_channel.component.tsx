@@ -11,6 +11,7 @@ import type { SettingDeclaration } from '../../common/settings/setting_declarati
 import { useUnsavedChanges } from '../navigation/use_unsaved_changes'
 import { useToast } from '../../common/components/toast'
 import { ConfirmModal } from '../../common/components/confirm_modal'
+import { DeleteAction } from '../../common/components/delete_action'
 import { ReadFailure } from '../../common/components/error_message'
 import { ScheduleCountLine } from '../../common/schedule/schedule_count_line'
 import { ScheduleRuleKind } from '../../domain/entities/schedule_rule.entity'
@@ -278,9 +279,8 @@ function ChannelForm({
           <SettingsSection title="Connexion">
             <SettingsList settings={channelSettings} />
 
-            {/* Tester et supprimer agissent tout de suite : ils n'ont rien a faire
-                dans le brouillon. */}
-            <div className="mt-5 flex flex-wrap gap-2">
+            {/* Tester agit tout de suite : il n'a rien a faire dans le brouillon. */}
+            <div className="mt-5">
               <Button
                 type="button"
                 variant="outline"
@@ -290,11 +290,6 @@ function ChannelForm({
               >
                 {uido.testing ? 'Envoi…' : 'Envoyer un message de test'}
               </Button>
-              {config.isConfigured && (
-                <Button type="button" variant="destructive" onClick={presenter.onAskRemove}>
-                  Supprimer le canal
-                </Button>
-              )}
             </div>
 
             {/* Unfolded while nothing is configured: the walkthrough is then the task, not a fallback. */}
@@ -427,6 +422,23 @@ function ChannelForm({
               </SettingsSection>
             )}
           </AdvancedFold>
+
+          {config.isConfigured && (
+            <DeleteAction
+              label="Supprimer le canal"
+              question={`Supprimer le canal ${config.displayName} ?`}
+              consequence="Les informations de connexion seront effacées. Vous ne recevrez plus de notifications par ce canal tant qu’il n’est pas reconfiguré."
+              confirming={uido.confirmRemove}
+              deleting={uido.removing}
+              onAsk={presenter.onAskRemove}
+              onConfirm={async () => {
+                if (!(await presenter.onRemove(channel))) return
+                draft.discard()
+                void navigate('/settings/notifications')
+              }}
+              onCancel={presenter.onCancelRemove}
+            />
+          )}
         </SettingsPage>
       </div>
 
@@ -449,22 +461,6 @@ function ChannelForm({
             if (await presenter.onConfirmEnable(config, draft.values)) draft.accept()
           }}
           onCancel={presenter.onCancelEnable}
-        />
-      )}
-
-      {uido.confirmRemove && (
-        <ConfirmModal
-          title={`Supprimer le canal ${config.displayName} ?`}
-          body="Les informations de connexion seront effacées. Vous ne recevrez plus de notifications par ce canal tant qu’il n’est pas reconfiguré."
-          confirmLabel="Supprimer"
-          tone="danger"
-          loading={uido.removing}
-          onConfirm={async () => {
-            if (!(await presenter.onRemove(channel))) return
-            draft.discard()
-            void navigate('/settings/notifications')
-          }}
-          onCancel={presenter.onCancelRemove}
         />
       )}
     </>

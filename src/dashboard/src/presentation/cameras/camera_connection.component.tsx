@@ -6,7 +6,7 @@ import { useUnsavedChanges } from '../navigation/use_unsaved_changes'
 import { useSettingsDraft } from '../../common/settings/use_settings_draft'
 import type { SettingDeclaration } from '../../common/settings/setting_declaration'
 import { useToast } from '../../common/components/toast'
-import { ConfirmModal } from '../../common/components/confirm_modal'
+import { DeleteAction } from '../../common/components/delete_action'
 import { Button } from '../../common/ui/button'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
@@ -237,12 +237,6 @@ export function CameraConnectionView() {
           </HelpPanel>
         </SettingsSection>
 
-        <div className="mt-8 border-t border-border pt-6">
-          <Button type="button" variant="destructive" onClick={presenter.onAskDelete}>
-            Supprimer cette caméra
-          </Button>
-        </div>
-
         <AdvancedFold lede="Comment Vyzio joint cette caméra.">
           <SettingsList settings={access} />
 
@@ -312,6 +306,19 @@ export function CameraConnectionView() {
             </p>
           </HelpPanel>
         </AdvancedFold>
+
+        <DeleteAction
+          label="Supprimer cette caméra"
+          question={`Supprimer « ${camera.displayName} » ?`}
+          consequence="Vyzio cesse de surveiller cette caméra. Les enregistrements déjà faits ne sont pas effacés."
+          confirming={uido.confirmDelete}
+          deleting={uido.deleting}
+          onAsk={presenter.onAskDelete}
+          onConfirm={async () => {
+            if (await presenter.onDelete(cameraId)) void navigate('/settings/cameras')
+          }}
+          onCancel={presenter.onCancelDelete}
+        />
       </SettingsPage>
 
       <SettingsDraftBar
@@ -322,20 +329,6 @@ export function CameraConnectionView() {
         }}
         onDiscard={draft.discard}
       />
-
-      {uido.confirmDelete && (
-        <ConfirmModal
-          title={`Supprimer « ${camera.displayName} » ?`}
-          body="Vyzio cesse de surveiller cette caméra. Les enregistrements déjà faits ne sont pas effacés."
-          confirmLabel="Supprimer"
-          tone="danger"
-          loading={uido.deleting}
-          onConfirm={async () => {
-            if (await presenter.onDelete(cameraId)) void navigate('/settings/cameras')
-          }}
-          onCancel={presenter.onCancelDelete}
-        />
-      )}
     </>
   )
 }

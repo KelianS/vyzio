@@ -161,7 +161,7 @@ function MultiChoiceControl({
           {visible.map((option) => (
             <label
               key={option.value}
-              className="flex cursor-pointer items-center gap-2 rounded-inset px-1 py-1 text-sm hover:bg-muted"
+              className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg px-1 py-1 text-sm hover:bg-muted md:min-h-0"
             >
               <Checkbox
                 checked={selected.includes(option.value)}
@@ -223,9 +223,8 @@ function NumberControl({
   }
 
   return (
-    // The field fills the column like every other control: a width of its own, fitted to
-    // the number, broke the vertical alignment the fixed anatomy is after (ADR-15).
-    <div className="flex w-full items-center gap-2">
+    // Sized to its value and starting at the column's edge, so the anatomy stays aligned (ADR-15).
+    <div className="relative w-36">
       <Input
         id={setting.id}
         type="number"
@@ -233,7 +232,7 @@ function NumberControl({
         min={min}
         max={max}
         disabled={setting.disabled}
-        className={cn('w-full text-right tabular-nums', followingClass(setting))}
+        className={cn('tabular-nums', nature.unit && 'pr-20', followingClass(setting))}
         value={typed ?? String(setting.value)}
         onChange={(event) => setTyped(event.target.value)}
         onBlur={commit}
@@ -242,7 +241,11 @@ function NumberControl({
         }}
       />
       {/* L'unite appartient a la valeur, jamais au libelle. */}
-      {nature.unit && <span className="shrink-0 text-sm text-muted-foreground">{nature.unit}</span>}
+      {nature.unit && (
+        <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">
+          {nature.unit}
+        </span>
+      )}
     </div>
   )
 }

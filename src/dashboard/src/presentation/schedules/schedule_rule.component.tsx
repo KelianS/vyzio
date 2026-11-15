@@ -8,7 +8,7 @@ import { SettingsDraftBar } from '../../common/settings/settings_draft_bar'
 import { useSettingsDraft } from '../../common/settings/use_settings_draft'
 import { midnightRangeHint } from '../../common/settings/midnight_range'
 import type { SettingDeclaration, SettingOption } from '../../common/settings/setting_declaration'
-import { ConfirmModal } from '../../common/components/confirm_modal'
+import { DeleteAction } from '../../common/components/delete_action'
 import { ErrorMessage, ReadFailure } from '../../common/components/error_message'
 import { useToast } from '../../common/components/toast'
 import { usePresenter } from '../../common/presenter/use_presenter'
@@ -290,17 +290,26 @@ function RuleForm({
 
         {uido.failure && <ErrorMessage error={uido.failure} className="mt-3" />}
 
-        <div className="mt-5 flex flex-wrap gap-2">
-          {rule === null ? (
+        {rule === null ? (
+          <div className="mt-5">
             <Button type="button" disabled={uido.saving} onClick={() => void add()}>
               {uido.saving ? 'Ajout…' : 'Ajouter'}
             </Button>
-          ) : (
-            <Button type="button" variant="destructive" onClick={presenter.onAskDelete}>
-              Supprimer la plage
-            </Button>
-          )}
-        </div>
+          </div>
+        ) : (
+          <DeleteAction
+            label="Supprimer la plage"
+            question="Supprimer cette plage ?"
+            consequence={`La plage « ${type.name} » de ${rule.startTime} à ${rule.endTime}${
+              savedTargets.length > 0 ? ` sur ${savedTargets.join(', ')}` : ''
+            } ne s’appliquera plus.`}
+            confirming={uido.confirmDelete}
+            deleting={uido.deleting}
+            onAsk={presenter.onAskDelete}
+            onConfirm={() => remove(rule.id)}
+            onCancel={presenter.onCancelDelete}
+          />
+        )}
       </SettingsPage>
 
       {rule !== null && (
@@ -311,20 +320,6 @@ function RuleForm({
             if (await presenter.onUpdate(rule.id, input)) draft.accept()
           }}
           onDiscard={draft.discard}
-        />
-      )}
-
-      {rule !== null && uido.confirmDelete && (
-        <ConfirmModal
-          title="Supprimer cette plage ?"
-          body={`La plage « ${type.name} » de ${rule.startTime} à ${rule.endTime}${
-            savedTargets.length > 0 ? ` sur ${savedTargets.join(', ')}` : ''
-          } ne s’appliquera plus.`}
-          confirmLabel="Supprimer"
-          tone="danger"
-          loading={uido.deleting}
-          onConfirm={() => remove(rule.id)}
-          onCancel={presenter.onCancelDelete}
         />
       )}
     </Page>

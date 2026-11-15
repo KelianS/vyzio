@@ -9,7 +9,7 @@ import { SettingsList } from '../../../common/settings/settings_list'
 import type { SettingDeclaration } from '../../../common/settings/setting_declaration'
 import type { SupportedProtocol } from '../../../domain/entities/camera_capability_binding.entity'
 import type { CameraProtocol } from '../../../domain/entities/camera_protocol.entity'
-import { DESTRUCTIVE_OUTLINE, formatCheckedAt } from '../cameras.formatters'
+import { formatCheckedAt } from '../cameras.formatters'
 import type { ProtocolValues } from '../camera_connection_values'
 import { protocolFailureLine, protocolPill } from '../capability_state'
 import { PROTOCOL_LABELS, SPECIFIC_ACCOUNT_HELP } from '../protocol_labels'
@@ -197,9 +197,8 @@ function ProtocolBox({
         </Button>
         <Button
           type="button"
-          variant="outline"
+          variant="destructive-outline"
           size="sm"
-          className={DESTRUCTIVE_OUTLINE}
           disabled={removalBlocker !== null || removing}
           onClick={() => setConfirmRemove(true)}
         >

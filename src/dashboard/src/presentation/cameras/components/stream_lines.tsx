@@ -18,7 +18,6 @@ import {
   type CameraStreamAddition,
   type CameraStreamLineup,
 } from '../../../domain/entities/camera_stream.entity'
-import { DESTRUCTIVE_OUTLINE } from '../cameras.formatters'
 import { StreamTask } from '../camera_connection.uido'
 import type { ProtocolOption } from '../protocol_labels'
 import {
@@ -210,9 +209,8 @@ function StreamLine({
         </Button>
         <Button
           type="button"
-          variant="outline"
+          variant="destructive-outline"
           size="sm"
-          className={DESTRUCTIVE_OUTLINE}
           disabled={records || task !== undefined}
           onClick={() => setConfirmRemove(true)}
         >

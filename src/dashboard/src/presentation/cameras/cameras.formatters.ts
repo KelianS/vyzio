@@ -17,9 +17,6 @@ export const STREAM_LABEL = CAPABILITY_LABELS.stream
 export const STREAM_REPAIR =
   'vérifiez l’adresse et le compte de la caméra dans Avancé, puis les options du flux vidéo.'
 
-/** A removal button drawn in outline, so it reads as destructive without shouting. */
-export const DESTRUCTIVE_OUTLINE = 'border-destructive text-destructive hover:bg-destructive/10'
-
 /** Why a capability test cannot run, next to every button it greys out (CAM-08). */
 export const TESTS_SUSPENDED =
   'Les autres capacités se vérifient une fois que le flux vidéo fonctionne.'

@@ -21,7 +21,6 @@ import { cn } from '../../../common/ui/utils'
 import type { SettingDeclaration } from '../../../common/settings/setting_declaration'
 import {
   CAPABILITY_LABELS,
-  DESTRUCTIVE_OUTLINE,
   STREAM_LABEL,
   STREAM_UNCHECKED,
   TESTS_SUSPENDED,
@@ -591,9 +590,8 @@ function BindingCard({
     return (
       <Button
         type="button"
-        variant="outline"
+        variant="destructive-outline"
         size="sm"
-        className={DESTRUCTIVE_OUTLINE}
         onClick={() => setConfirmRemove(true)}
       >
         Retirer
@@ -607,9 +605,8 @@ function BindingCard({
     return (
       <Button
         type="button"
-        variant="outline"
+        variant="destructive-outline"
         size="sm"
-        className={DESTRUCTIVE_OUTLINE}
         onClick={() => setConfirmDisable(true)}
       >
         Désactiver

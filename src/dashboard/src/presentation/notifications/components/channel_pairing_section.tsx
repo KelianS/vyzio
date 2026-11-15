@@ -86,7 +86,7 @@ export function ChannelPairingSection({
 
         <div className="flex flex-wrap gap-2">
           {status === 'paired' ? (
-            <Button type="button" variant="destructive" onClick={onAskRevoke}>
+            <Button type="button" variant="destructive-outline" onClick={onAskRevoke}>
               Couper le lien
             </Button>
           ) : (

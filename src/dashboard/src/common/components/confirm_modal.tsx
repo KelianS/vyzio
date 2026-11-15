@@ -11,7 +11,6 @@ import {
   AlertDialogTitle,
 } from '../ui/alert-dialog'
 import type { buttonVariants } from '../ui/button'
-import { cn } from '../ui/utils'
 import { DiagnosticLine } from './error_message'
 import { useLayerExit } from './layer_exit'
 
@@ -34,7 +33,7 @@ interface ConfirmModalProps {
 
 const CONFIRM_VARIANT: Record<Required<ConfirmModalProps>['tone'], ButtonVariant> = {
   danger: 'destructive',
-  warn: 'outline',
+  warn: 'destructive-outline',
   confirm: 'default',
   default: 'secondary',
 }
@@ -87,9 +86,6 @@ export function ConfirmModal({
           </AlertDialogCancel>
           <AlertDialogAction
             variant={CONFIRM_VARIANT[tone]}
-            className={cn(
-              tone === 'warn' && 'border-destructive text-destructive hover:bg-destructive/10',
-            )}
             disabled={isLoading}
             onClick={handleConfirm}
           >
