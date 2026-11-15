@@ -32,7 +32,7 @@ of both themes. Usage rules:
 - Critical surfaces use `--bg-elevated` to keep a soft contrast.
 - `--brand-moss` carries the calls to action and the product indicators.
 - `--alert-high` is reserved for important events, attention states and destructive actions.
-- `--brand-sand` never marks a hover: a quiet action (outline, ghost) hovers to `--bg-sunken`.
+- `--brand-sand` never marks a hover: a quiet action (outlined, text) hovers to a tint of the product colour.
 - Colour never carries a meaning alone: a kind of thing is told apart by its icon and its name, and a
   fill that must be told apart differs by its pattern too.
 
