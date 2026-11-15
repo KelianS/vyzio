@@ -268,7 +268,10 @@ function ChannelForm({
         />
 
         <SettingsPage>
-          <SettingsSection title="Connexion">
+          <SettingsSection
+            title="Connexion"
+            lede={config.isConfigured ? undefined : 'Pas encore configuré.'}
+          >
             <SettingsList settings={channelSettings} />
 
             {/* Testing acts at once: it has no place in the draft. */}

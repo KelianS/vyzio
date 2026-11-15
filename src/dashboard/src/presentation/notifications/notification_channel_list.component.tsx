@@ -41,26 +41,27 @@ export function NotificationChannelListView() {
         />
       ) : configured.length > 0 ? (
         <ul className="divide-y divide-border">
-          {configured.map((channel) => (
-            <li key={channel.channel}>
-              <ListRow>
-                <Link to={`/settings/notifications/${channel.channel}`}>
-                  <span className="min-w-0">
-                    <span className="block font-medium">{channel.displayName}</span>
-                    <span className="block text-sm text-muted-foreground">
-                      {sendingSentence(channel.isEnabled)}
+          {configured.map((channel) => {
+            const pill = channelPill(channel.isEnabled)
+            return (
+              <li key={channel.channel}>
+                <ListRow>
+                  <Link to={`/settings/notifications/${channel.channel}`}>
+                    <span className="min-w-0">
+                      <span className="block font-medium">{channel.displayName}</span>
+                      <span className="block text-sm text-muted-foreground">
+                        {sendingSentence(channel.isEnabled)}
+                      </span>
                     </span>
-                  </span>
-                  <span className="flex shrink-0 items-center gap-3">
-                    <Badge tone={channelPill(channel.isEnabled).tone}>
-                      {channelPill(channel.isEnabled).label}
-                    </Badge>
-                    <ChevronRight className="size-4 text-muted-foreground" aria-hidden="true" />
-                  </span>
-                </Link>
-              </ListRow>
-            </li>
-          ))}
+                    <span className="flex shrink-0 items-center gap-3">
+                      <Badge tone={pill.tone}>{pill.label}</Badge>
+                      <ChevronRight className="size-4 text-muted-foreground" aria-hidden="true" />
+                    </span>
+                  </Link>
+                </ListRow>
+              </li>
+            )
+          })}
         </ul>
       ) : (
         <p className="py-3 text-muted-foreground">

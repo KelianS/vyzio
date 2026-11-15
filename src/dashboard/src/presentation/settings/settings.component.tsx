@@ -39,8 +39,8 @@ export function SettingsView() {
       <div className="grid gap-4 md:grid-cols-[minmax(0,17rem)_minmax(0,1fr)] md:items-start">
         {/* On mobile the list gives way to the open page. */}
         <div className={atRoot ? 'block' : 'hidden md:block'}>
-          {/* Above the list like every page title; beside the open page, the rubric title names the screen. */}
-          <PageHeader title="Réglages" className="mb-3 md:sr-only" />
+          {/* Above the list, on the canvas, like every page title. */}
+          <PageHeader title="Réglages" className="mb-3" />
           <Surface inset="list" asChild>
             <nav aria-label="Rubriques de réglages">
               <ul className="flex flex-col gap-0.5">
