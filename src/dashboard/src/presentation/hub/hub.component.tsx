@@ -98,11 +98,11 @@ function HubLoading() {
   return (
     <main className="py-4">
       <Loading className="gap-6 py-0">
-        <Skeleton className="h-9 w-2/3 rounded-full" />
+        <Skeleton className="h-9 w-2/3 rounded-full bg-card" />
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <Skeleton className="aspect-video rounded-card" />
-          <Skeleton className="aspect-video rounded-card" />
-          <Skeleton className="aspect-video rounded-card" />
+          <Skeleton className="aspect-video rounded-card bg-card" />
+          <Skeleton className="aspect-video rounded-card bg-card" />
+          <Skeleton className="aspect-video rounded-card bg-card" />
         </div>
       </Loading>
     </main>
