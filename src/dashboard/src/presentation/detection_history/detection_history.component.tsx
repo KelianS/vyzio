@@ -19,6 +19,7 @@ import { buildInitialDetectionHistoryUido } from './detection_history.uido'
 import { PickOne, UNKNOWN } from './history_pickers'
 import { DiagnosticLine } from '../../common/components/error_message'
 import { Field } from '../../common/components/field'
+import { PageHeader } from '../../common/components/page_header'
 import { Surface } from '../../common/components/surface'
 
 /** A detection without an identity isn't anonymous by mistake — it's unknown. */
@@ -73,7 +74,7 @@ export function DetectionHistoryView() {
     <main className="flex flex-col gap-4 py-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h1 className="font-serif text-3xl">Historique</h1>
+          <PageHeader title="Historique" />
           <p className="mt-1 text-sm text-muted-foreground">
             Ce que Vyzio a vu, et qui il a cru reconnaître.
           </p>

@@ -7,7 +7,7 @@ import { Button } from '../../common/ui/button'
 import { SettingsPage } from '../../common/settings/settings_page'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
-import { channelPill, sendingSentence } from './channel_status'
+import { channelPill } from './channel_status'
 import { buildNotificationChannelListPresenter } from './notification_channel_list.presenter'
 import { notificationChannelListReducer } from './notification_channel_list.reducer'
 import { buildInitialNotificationChannelListUido } from './notification_channel_list.uido'
@@ -83,4 +83,11 @@ export function NotificationChannelListView() {
       )}
     </SettingsPage>
   )
+}
+
+/** Whether a configured channel sends, said in words beside its pill. */
+function sendingSentence(enabled: boolean): string {
+  return enabled
+    ? 'Les notifications sont envoyées.'
+    : 'Configuré, mais aucune notification n’est envoyée.'
 }
