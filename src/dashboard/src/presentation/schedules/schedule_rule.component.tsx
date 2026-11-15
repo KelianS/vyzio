@@ -1,6 +1,6 @@
 import { useEffect, useReducer, useState, type ReactNode } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
-import { ChevronLeft } from 'lucide-react'
+import { useNavigate, useParams } from 'react-router'
+import { PageHeader } from '../../common/components/page_header'
 import { Button } from '../../common/ui/button'
 import { SettingsPage } from '../../common/settings/settings_page'
 import { SettingsList } from '../../common/settings/settings_list'
@@ -330,16 +330,7 @@ function RuleForm({
 function Page({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <Link
-          to={SCHEDULES_PATH}
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ChevronLeft className="size-4" aria-hidden="true" />
-          Planification
-        </Link>
-        <h1 className="mt-1 font-serif text-3xl">{title}</h1>
-      </div>
+      <PageHeader back={{ to: SCHEDULES_PATH, label: 'Planification' }} title={title} />
       {children}
     </div>
   )

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { screen } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { makeCamera } from '../../testing/camera_fixture'
 import { failure, fakeNetwork, ok } from '../../testing/fake_network'
@@ -98,6 +98,22 @@ describe('CamerasView', () => {
     expect(screen.getByRole('link', { name: 'Conservation' })).toHaveAttribute(
       'href',
       '/settings/cameras/camera-1/conservation',
+    )
+  })
+
+  it('render_ShouldShowTheListPillBesideTheCameraName_WhenTheCameraIsOpened', async () => {
+    // Arrange
+    fakeNetwork({ 'GET /api/cameras': ok([makeCamera()]) })
+    renderScreen(<CamerasView />, OPEN_CAMERA)
+
+    // Act
+    await readTheCameraList()
+
+    // Assert
+    const title = screen.getByRole('heading', { level: 1, name: 'Front Door' })
+    expect(within(title.parentElement!).getByText('Connectée')).toHaveAttribute(
+      'data-slot',
+      'badge',
     )
   })
 

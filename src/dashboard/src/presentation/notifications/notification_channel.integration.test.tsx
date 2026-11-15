@@ -75,6 +75,24 @@ function commandRoutes(pairing = makePairing()) {
 }
 
 describe('NotificationChannelView', () => {
+  it.each([
+    [true, 'Actif'],
+    [false, 'En pause'],
+  ])(
+    'onOpen_ShouldShowTheListPillBesideTheTitle_WhenTheChannelIsConfigured (enabled %s)',
+    async (isEnabled, pill) => {
+      // Arrange
+      fakeNetwork(channelRoutes(makeChannelConfig({ isEnabled })))
+
+      // Act
+      renderScreen(<NotificationChannelView />, channelAt('telegram'))
+
+      // Assert
+      const title = await screen.findByRole('heading', { level: 1, name: 'Telegram' })
+      expect(within(title.parentElement!).getByText(pill)).toBeInTheDocument()
+    },
+  )
+
   it('onOpen_ShouldCountTheRangesMutingThisChannelAndLinkToTheCalendar_WhenSomeTargetIt', async () => {
     // Arrange
     fakeNetwork({

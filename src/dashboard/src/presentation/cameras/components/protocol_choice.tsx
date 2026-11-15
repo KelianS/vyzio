@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../../common/ui/select'
+import { Field } from '../../../common/components/field'
 
 /** The protocol a capability goes through, inside its card's Options fold (CAM-23). */
 export function ProtocolChoice({
@@ -43,14 +44,13 @@ export function ProtocolChoice({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-end gap-2">
-        <label className="flex min-w-0 flex-1 flex-col gap-1 text-sm">
-          <span className="text-muted-foreground">Protocole</span>
+        <Field label="Protocole" className="min-w-0 flex-1">
           <Picker
             value={selected}
             options={options}
             onChange={(value) => setPicked(value as SupportedProtocol)}
           />
-        </label>
+        </Field>
         <SecondaryButton
           icon={Settings2}
           type="button"

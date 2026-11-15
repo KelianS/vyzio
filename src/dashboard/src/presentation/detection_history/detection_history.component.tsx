@@ -1,4 +1,4 @@
-import { useEffect, useReducer, useState, type ReactNode } from 'react'
+import { useEffect, useReducer, useState } from 'react'
 import { ChevronDown, SlidersHorizontal, Trash2, UserRoundPen } from 'lucide-react'
 import { Button } from '../../common/ui/button'
 import { SecondaryButton } from '../../common/components/secondary_button'
@@ -19,6 +19,9 @@ import { detectionHistoryReducer } from './detection_history.reducer'
 import { buildInitialDetectionHistoryUido } from './detection_history.uido'
 import { PickOne, UNKNOWN } from './history_pickers'
 import { DiagnosticLine } from '../../common/components/error_message'
+import { Field } from '../../common/components/field'
+import { PageHeader } from '../../common/components/page_header'
+import { Surface } from '../../common/components/surface'
 
 /** A detection without an identity isn't anonymous by mistake — it's unknown. */
 const UNIDENTIFIED = 'Inconnu'
@@ -72,14 +75,13 @@ export function DetectionHistoryView() {
     <main className="flex flex-col gap-4 py-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h1 className="font-serif text-3xl">Historique</h1>
+          <PageHeader title="Historique" />
           <p className="mt-1 text-sm text-muted-foreground">
             Ce que Vyzio a vu, et qui il a cru reconnaître.
           </p>
         </div>
 
-        {/* Filtrer est une option qu'on ouvre, pas le haut de l'ecran : ce qu'on vient lire ici,
-            ce sont les detections. */}
+        {/* Filtering is an option one opens, not the top of the screen: one comes to read detections. */}
         <SecondaryButton
           icon={SlidersHorizontal}
           type="button"
@@ -94,76 +96,76 @@ export function DetectionHistoryView() {
       </div>
 
       {uido.filtersOpen && (
-        <section
-          id="history-filters"
-          aria-label="Filtres"
-          className="rounded-card bg-card p-4 text-card-foreground shadow-elevated"
-        >
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <Field label="Caméra">
-              <Input
-                value={uido.filterCamera}
-                placeholder="Toutes"
-                onChange={(event) => presenter.onFilterCameraChange(event.target.value)}
-              />
-            </Field>
+        <Surface asChild>
+          <section id="history-filters" aria-label="Filtres">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <Field label="Caméra">
+                <Input
+                  value={uido.filterCamera}
+                  placeholder="Toutes"
+                  onChange={(event) => presenter.onFilterCameraChange(event.target.value)}
+                />
+              </Field>
 
-            <Field label="Type">
-              <PickOne
-                value={uido.filterLabel}
-                anyLabel="Tous"
-                options={uido.detectionLabels.map((label) => ({
-                  value: label.value,
-                  label: `${label.emoji} ${label.displayName}`,
-                }))}
-                onChange={presenter.onFilterLabelChange}
-              />
-            </Field>
+              <Field label="Type">
+                <PickOne
+                  value={uido.filterLabel}
+                  anyLabel="Tous"
+                  options={uido.detectionLabels.map((label) => ({
+                    value: label.value,
+                    label: `${label.emoji} ${label.displayName}`,
+                  }))}
+                  onChange={presenter.onFilterLabelChange}
+                />
+              </Field>
 
-            <Field label="Personne">
-              <PickOne
-                value={uido.filterProfileId}
-                anyLabel="Toutes"
-                options={uido.profiles.map((profile) => ({
-                  value: profile.id,
-                  label: profile.name,
-                }))}
-                onChange={presenter.onFilterProfileChange}
-              />
-            </Field>
+              <Field label="Personne">
+                <PickOne
+                  value={uido.filterProfileId}
+                  anyLabel="Toutes"
+                  options={uido.profiles.map((profile) => ({
+                    value: profile.id,
+                    label: profile.name,
+                  }))}
+                  onChange={presenter.onFilterProfileChange}
+                />
+              </Field>
 
-            <Field label="Depuis">
-              <Input
-                type="datetime-local"
-                value={toLocalInput(uido.filterFrom)}
-                onChange={(event) =>
-                  presenter.onFilterFromChange(fromLocalInput(event.target.value))
-                }
-              />
-            </Field>
+              <Field label="Depuis">
+                <Input
+                  type="datetime-local"
+                  value={toLocalInput(uido.filterFrom)}
+                  onChange={(event) =>
+                    presenter.onFilterFromChange(fromLocalInput(event.target.value))
+                  }
+                />
+              </Field>
 
-            <Field label="Jusqu’à">
-              <Input
-                type="datetime-local"
-                value={toLocalInput(uido.filterTo)}
-                onChange={(event) => presenter.onFilterToChange(fromLocalInput(event.target.value))}
-              />
-            </Field>
-          </div>
+              <Field label="Jusqu’à">
+                <Input
+                  type="datetime-local"
+                  value={toLocalInput(uido.filterTo)}
+                  onChange={(event) =>
+                    presenter.onFilterToChange(fromLocalInput(event.target.value))
+                  }
+                />
+              </Field>
+            </div>
 
-          {/* Reinitialiser n'existe que s'il y a quelque chose a reinitialiser. */}
-          {filtered && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="mt-3"
-              onClick={presenter.onResetFilters}
-            >
-              Tout afficher
-            </Button>
-          )}
-        </section>
+            {/* Resetting exists only when there is something to reset. */}
+            {filtered && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="mt-3"
+                onClick={presenter.onResetFilters}
+              >
+                Tout afficher
+              </Button>
+            )}
+          </section>
+        </Surface>
       )}
 
       {uido.error && (
@@ -176,13 +178,15 @@ export function DetectionHistoryView() {
       {uido.loading && <p className="text-muted-foreground">Chargement…</p>}
 
       {!uido.loading && uido.loaded && uido.items.length === 0 && (
-        <p className="rounded-card bg-card p-6 text-center text-muted-foreground shadow-elevated">
-          {filtered ? 'Aucune détection avec ces filtres.' : 'Aucune détection pour l’instant.'}
-        </p>
+        <Surface asChild className="text-center text-muted-foreground">
+          <p>
+            {filtered ? 'Aucune détection avec ces filtres.' : 'Aucune détection pour l’instant.'}
+          </p>
+        </Surface>
       )}
 
       {!uido.loading && uido.items.length > 0 && (
-        <div className="rounded-card bg-card px-4 py-2 text-card-foreground shadow-elevated">
+        <Surface>
           <DetectionList
             events={uido.items}
             labels={uido.detectionLabels}
@@ -200,10 +204,10 @@ export function DetectionHistoryView() {
               )
             }
           />
-        </div>
+        </Surface>
       )}
 
-      {/* L'historique se parcourt en remontant le temps : une page suivante n'a pas de numero. */}
+      {/* The history is read back in time: a next page has no number. */}
       {!uido.loading && uido.nextCursor && (
         <div className="flex justify-center">
           <SecondaryButton
@@ -268,15 +272,6 @@ export function DetectionHistoryView() {
         />
       )}
     </main>
-  )
-}
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <label className="flex flex-col gap-1.5">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      {children}
-    </label>
   )
 }
 

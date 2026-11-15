@@ -1,13 +1,12 @@
 import { useEffect, useReducer } from 'react'
 import { Link, Outlet, useParams } from 'react-router'
-import { ChevronLeft } from 'lucide-react'
 import { TabBar } from '../../common/components/tab_bar'
 import { ReadFailure } from '../../common/components/error_message'
 import { SettingsPage } from '../../common/settings/settings_page'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import type { PersonContext } from './person_context'
-import { CATEGORY_LABELS } from './person_labels'
+import { PageHeader } from '../../common/components/page_header'
 import { buildPersonPresenter } from './person.presenter'
 import { personReducer } from './person.reducer'
 import { buildInitialPersonUido } from './person.uido'
@@ -70,19 +69,10 @@ export function PersonView() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <Link
-          to="/settings/detection/personnes"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ChevronLeft className="size-4" aria-hidden="true" />
-          Personnes
-        </Link>
-        <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <h1 className="font-serif text-3xl">{found.name}</h1>
-          <span className="text-sm text-muted-foreground">{CATEGORY_LABELS[found.category]}</span>
-        </div>
-      </div>
+      <PageHeader
+        back={{ to: '/settings/detection/personnes', label: 'Personnes' }}
+        title={found.name}
+      />
 
       <TabBar
         label="Réglages de la personne"

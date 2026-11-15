@@ -15,6 +15,7 @@ import type { Camera } from '../../domain/entities/camera.entity'
 import type { FrigateStatus } from '../../domain/entities/system_stats.entity'
 import { PressableSurface } from './pressable'
 import { SecondaryButton } from './secondary_button'
+import { Surface } from './surface'
 
 interface CameraLiveThumbnailProps {
   camera: Camera
@@ -118,73 +119,75 @@ export function CameraLiveThumbnail({
   )
 
   return (
-    <article className="overflow-hidden rounded-card bg-card shadow-elevated">
-      {/* Only the frame is the link: the footer's privacy toggle is a button, and nesting is invalid. */}
-      {expandable && liveTo ? (
-        <PressableSurface>
-          <Link
-            to={liveTo}
-            // Names the frame itself: the image, hidden during an outage, took its name along.
-            aria-label={camera.displayName}
-            className={cn(
-              FRAME,
-              'block focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring',
-            )}
-          >
-            {picture}
-          </Link>
-        </PressableSurface>
-      ) : (
-        <div className={FRAME}>{picture}</div>
-      )}
+    <Surface inset="none" asChild>
+      <article>
+        {/* Only the frame is the link: the footer's privacy toggle is a button, and nesting is invalid. */}
+        {expandable && liveTo ? (
+          <PressableSurface>
+            <Link
+              to={liveTo}
+              // Names the frame itself: the image, hidden during an outage, took its name along.
+              aria-label={camera.displayName}
+              className={cn(
+                FRAME,
+                'block focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring',
+              )}
+            >
+              {picture}
+            </Link>
+          </PressableSurface>
+        ) : (
+          <div className={FRAME}>{picture}</div>
+        )}
 
-      <div className="flex items-center gap-2 p-3">
-        <span
-          className={cn(
-            'size-2 shrink-0 rounded-full',
-            camera.privacyModeActive || deviceOffline || unwatched
-              ? 'bg-muted-foreground/40'
-              : 'bg-success',
-          )}
-          aria-hidden="true"
-        />
-        <span className="min-w-0 flex-1 truncate font-medium">{camera.displayName}</span>
-        {camera.privacyModeSource === 'schedule' && (
+        <div className="flex items-center gap-2 p-3">
           <span
-            className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground"
-            title="Activé par planification"
+            className={cn(
+              'size-2 shrink-0 rounded-full',
+              camera.privacyModeActive || deviceOffline || unwatched
+                ? 'bg-muted-foreground/40'
+                : 'bg-success',
+            )}
+            aria-hidden="true"
+          />
+          <span className="min-w-0 flex-1 truncate font-medium">{camera.displayName}</span>
+          {camera.privacyModeSource === 'schedule' && (
+            <span
+              className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground"
+              title="Activé par planification"
+            >
+              planifié
+            </span>
+          )}
+          {onTogglePrivacy && (
+            <SecondaryButton
+              icon={camera.privacyModeActive ? Play : Pause}
+              type="button"
+              active={camera.privacyModeActive}
+              size="sm"
+              disabled={busy}
+              onClick={handleTogglePrivacy}
+              title={
+                camera.privacyModeActive
+                  ? 'Désactiver le mode vie privée'
+                  : 'Activer le mode vie privée'
+              }
+            >
+              {busy ? 'En cours…' : camera.privacyModeActive ? 'Réactiver' : 'Pause'}
+            </SecondaryButton>
+          )}
+        </div>
+        {/* Outside the frame, which may be a button; the privacy screen says why (PRIV-05). */}
+        {missLabel && (
+          <Link
+            to={`/settings/cameras/${camera.id}/vie-privee`}
+            className="flex items-center gap-1.5 px-3 pb-3 text-xs text-muted-foreground underline underline-offset-2"
           >
-            planifié
-          </span>
+            <TriangleAlert className="size-3.5 shrink-0" aria-hidden="true" />
+            {missLabel}
+          </Link>
         )}
-        {onTogglePrivacy && (
-          <SecondaryButton
-            icon={camera.privacyModeActive ? Play : Pause}
-            type="button"
-            active={camera.privacyModeActive}
-            size="sm"
-            disabled={busy}
-            onClick={handleTogglePrivacy}
-            title={
-              camera.privacyModeActive
-                ? 'Désactiver le mode vie privée'
-                : 'Activer le mode vie privée'
-            }
-          >
-            {busy ? 'En cours…' : camera.privacyModeActive ? 'Réactiver' : 'Pause'}
-          </SecondaryButton>
-        )}
-      </div>
-      {/* Outside the frame, which may be a button; the privacy screen says why (PRIV-05). */}
-      {missLabel && (
-        <Link
-          to={`/settings/cameras/${camera.id}/vie-privee`}
-          className="flex items-center gap-1.5 px-3 pb-3 text-xs text-muted-foreground underline underline-offset-2"
-        >
-          <TriangleAlert className="size-3.5 shrink-0" aria-hidden="true" />
-          {missLabel}
-        </Link>
-      )}
-    </article>
+      </article>
+    </Surface>
   )
 }

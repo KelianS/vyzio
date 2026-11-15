@@ -49,7 +49,7 @@ summary.
 | Page title | `font-serif text-3xl` |
 | Section or heading title | `font-serif text-2xl` |
 | Card title | `font-serif text-lg` |
-| Setting label, list entry | `font-medium` (16px) |
+| Setting or field label, list entry | `font-medium` (16px) |
 | Secondary text, summary, help | `text-sm text-muted-foreground` |
 
 The serif (`--heading`) is reserved for titles; it carries the domestic character of the interface.
@@ -67,6 +67,11 @@ Radii, two scales never confused (exact values in `src/index.css`, the single ho
 Two shadows, both tokens: `--shadow-soft` lifts the elevated surfaces, a modal included, which is
 drawn as a panel (`--radius-panel`, `--bg-elevated`, no border); `--shadow-strong` floats the
 navigation header over the page. Sections are spaced `24px` to `32px` apart.
+
+**One surface, one padding scale.** A card or a page's panel is drawn by one shared component, never
+rewritten in a screen: `--bg-elevated`, `--radius-card`, `--shadow-soft`, and one of three insets, the
+content inset (`20px`, `24px` from `sm`), the list inset (`8px`, its rows carrying their own) or none,
+for a picture that fills it. A thing shown on two screens sits at the same indent on both.
 
 **A control is a finger's size**: a button is drawn `40px` tall (`32px` compact, beside navigation or
 in a dense row), an icon button at its own size, and each reaches at least `44px` to the touch through
@@ -164,6 +169,15 @@ act, it stays choosable, so the draft can come back to it, and its consequence l
 **A check, a choice that runs a test, adding or removing are actions**, never draft values
 ([ADR-15](adr/0015-settings-model-schedules-and-edit-cycle.md)): they act at
 once and return a result. Only declared settings follow the page's draft.
+
+### Page header
+
+A page opens on one header, the same on every screen, drawn by one shared component: the way back
+above it when the page has one, then the title at the page title size, on the canvas above the
+content, never inside a card. A page that names one thing shows its state beside the title **with the
+pill its list uses**, the same word in the same tone (§ State pills); a thing whose list shows no pill
+shows none. One serif title is visible at the head of a page: a section heading that would repeat it
+stays for screen readers only.
 
 ### Cards
 

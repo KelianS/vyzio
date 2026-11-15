@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation, useMatches } from 'react-router'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 import { cn } from '../../common/ui/utils'
 import {
   SETTINGS_RUBRICS,
@@ -9,6 +9,8 @@ import {
   rubricPath,
 } from './settings.rubrics'
 import { ListRow } from '../../common/components/list_row'
+import { BackLink, PageHeader } from '../../common/components/page_header'
+import { Surface } from '../../common/components/surface'
 
 /**
  * The settings shell (UI-25): first level = the sections, second = the pages of
@@ -35,63 +37,61 @@ export function SettingsView() {
   return (
     <main className="py-4">
       <div className="grid gap-4 md:grid-cols-[minmax(0,17rem)_minmax(0,1fr)] md:items-start">
-        <nav
-          aria-label="Rubriques de réglages"
-          className={cn(
-            'rounded-card bg-card text-card-foreground shadow-elevated p-2',
-            // On mobile the list gives way to the open page.
-            atRoot ? 'block' : 'hidden md:block',
-          )}
-        >
-          <h1 className="px-3 pt-2 pb-3 font-serif text-2xl">Réglages</h1>
-          <ul className="flex flex-col gap-0.5">
-            {SETTINGS_RUBRICS.map((rubric) => {
-              const active = current?.slug === rubric.slug
-              return (
-                <li key={rubric.slug}>
-                  <ListRow
-                    className={cn(
-                      'rounded-full px-4 py-2.5',
-                      active && 'bg-secondary font-semibold',
-                    )}
-                  >
-                    <Link to={rubricPath(rubric.slug)} aria-current={active ? 'page' : undefined}>
-                      {/* Size, weight and colour together: one signal alone left the two lines alike. */}
-                      <span className="min-w-0">
-                        <span className="block font-medium">{rubric.label}</span>
-                        <span className="block text-sm text-muted-foreground">
-                          {rubric.summary}
-                        </span>
-                      </span>
-                      <ChevronRight
-                        className="size-4 shrink-0 text-muted-foreground md:hidden"
-                        aria-hidden="true"
-                      />
-                    </Link>
-                  </ListRow>
-                </li>
-              )
-            })}
-          </ul>
-        </nav>
+        {/* On mobile the list gives way to the open page. */}
+        <div className={atRoot ? 'block' : 'hidden md:block'}>
+          {/* Above the list, on the canvas, like every page title. */}
+          <PageHeader title="Réglages" className="mb-3" />
+          <Surface inset="list" asChild>
+            <nav aria-label="Rubriques de réglages">
+              <ul className="flex flex-col gap-0.5">
+                {SETTINGS_RUBRICS.map((rubric) => {
+                  const active = current?.slug === rubric.slug
+                  return (
+                    <li key={rubric.slug}>
+                      <ListRow
+                        className={cn(
+                          'rounded-full px-4 py-2.5',
+                          active && 'bg-secondary font-semibold',
+                        )}
+                      >
+                        <Link
+                          to={rubricPath(rubric.slug)}
+                          aria-current={active ? 'page' : undefined}
+                        >
+                          {/* Size, weight and colour together: one signal alone left the two lines alike. */}
+                          <span className="min-w-0">
+                            <span className="block font-medium">{rubric.label}</span>
+                            <span className="block text-sm text-muted-foreground">
+                              {rubric.summary}
+                            </span>
+                          </span>
+                          <ChevronRight
+                            className="size-4 shrink-0 text-muted-foreground md:hidden"
+                            aria-hidden="true"
+                          />
+                        </Link>
+                      </ListRow>
+                    </li>
+                  )
+                })}
+              </ul>
+            </nav>
+          </Surface>
+        </div>
 
         <div className={cn('min-w-0', atRoot ? 'hidden md:block' : 'block')}>
           {showRubricBackLink && (
-            <Link
-              to={SETTINGS_ROOT}
-              className="mb-2 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground md:hidden"
-            >
-              <ChevronLeft className="size-4" aria-hidden="true" />
+            <BackLink to={SETTINGS_ROOT} className="mb-1 md:hidden">
               Réglages
-            </Link>
+            </BackLink>
           )}
 
-          {showRubricTitle && <h1 className="mb-3 font-serif text-3xl">{current.label}</h1>}
+          {showRubricTitle && <PageHeader title={current.label} className="mb-3" />}
 
           {atRoot ? (
-            <p className="hidden md:block rounded-card bg-card p-6 text-muted-foreground shadow-elevated">
-              Choisissez une rubrique.
-            </p>
+            <Surface asChild className="hidden text-muted-foreground md:block">
+              <p>Choisissez une rubrique.</p>
+            </Surface>
           ) : (
             <Outlet />
           )}

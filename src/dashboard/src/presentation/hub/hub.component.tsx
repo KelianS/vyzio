@@ -1,11 +1,11 @@
-import { useEffect, useReducer, useState, type ReactNode } from 'react'
+import { useEffect, useReducer, useState } from 'react'
 import { Link } from 'react-router'
 import { Bell, Eye, EyeOff, History, Settings2, TriangleAlert } from 'lucide-react'
 import type { AppError } from '../../common/errors/app_error'
 import { ErrorMessage, ReadFailure } from '../../common/components/error_message'
 import { Button } from '../../common/ui/button'
 import { SecondaryButton } from '../../common/components/secondary_button'
-import { cn } from '../../common/ui/utils'
+import { Surface } from '../../common/components/surface'
 import { ConfirmModal } from '../../common/components/confirm_modal'
 import { Overlay } from '../../common/components/overlay'
 import { SurveillanceEntry, surveillanceEntryOf } from '../../common/camera/camera_status'
@@ -91,19 +91,6 @@ export function HubView() {
   )
 }
 
-function Card({ className, children }: { className?: string; children: ReactNode }) {
-  return (
-    <section
-      className={cn(
-        'rounded-card bg-card p-5 text-card-foreground shadow-elevated sm:p-6',
-        className,
-      )}
-    >
-      {children}
-    </section>
-  )
-}
-
 function HubLoading() {
   return (
     <main className="flex flex-col gap-4 py-4" aria-label="Chargement">
@@ -121,7 +108,7 @@ function HubLoading() {
 function HubUnreachable({ error }: { error: AppError | null }) {
   return (
     <main className="py-4">
-      <Card>
+      <Surface>
         <div className="flex items-start gap-3">
           <TriangleAlert className="mt-1 size-5 shrink-0 text-destructive" aria-hidden="true" />
           <div>
@@ -140,7 +127,7 @@ function HubUnreachable({ error }: { error: AppError | null }) {
             {error && <ErrorMessage error={error} className="mt-4" />}
           </div>
         </div>
-      </Card>
+      </Surface>
     </main>
   )
 }
@@ -149,11 +136,11 @@ function HubUnreachable({ error }: { error: AppError | null }) {
 function HubCamerasUnread({ error, onRetry }: { error: AppError; onRetry: () => void }) {
   return (
     <main className="py-4">
-      <Card>
+      <Surface>
         <h1 className="font-serif text-3xl">Vos caméras ne s’affichent pas</h1>
         <p className="mt-1 text-muted-foreground">La liste de vos caméras n’a pas pu être lue.</p>
         <ReadFailure error={error} onRetry={onRetry} className="mt-4" />
-      </Card>
+      </Surface>
     </main>
   )
 }
@@ -176,7 +163,7 @@ const WELCOME_STEPS = [
 function HubWelcome() {
   return (
     <main className="py-4">
-      <Card>
+      <Surface>
         <h1 className="font-serif text-3xl">Bienvenue</h1>
         <p className="mt-1 text-muted-foreground">
           Trois étapes, et vos caméras sont sous surveillance.
@@ -202,7 +189,7 @@ function HubWelcome() {
             Configurer les notifications
           </SecondaryButton>
         </div>
-      </Card>
+      </Surface>
     </main>
   )
 }
@@ -246,9 +233,8 @@ function HubOperational({
   ).length
 
   return (
-    <main className="flex flex-col gap-4 py-4">
-      {/* Une phrase, pas une rangee de compteurs : ce que l'on vient verifier en
-          arrivant, c'est que la surveillance tourne. */}
+    <main className="flex flex-col gap-6 py-4">
+      {/* A sentence, not a row of counters: what one comes to check is that surveillance runs. */}
       <div>
         <h1 className="font-serif text-3xl">
           {allPrivate
@@ -267,33 +253,31 @@ function HubOperational({
             ))}
           </ul>
         )}
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <SecondaryButton
+            icon={allPrivate ? Eye : EyeOff}
+            type="button"
+            active={allPrivate}
+            size="sm"
+            onClick={() =>
+              onPrivacyPendingSet({
+                cameraIds: cameras.map((camera) => camera.id),
+                active: !allPrivate,
+                cameraLabel: null,
+              })
+            }
+          >
+            {allPrivate ? 'Reprendre la surveillance' : 'Tout couper'}
+          </SecondaryButton>
+          <SecondaryButton icon={Settings2} to="/settings/cameras" size="sm">
+            Gérer les caméras
+          </SecondaryButton>
+        </div>
       </div>
 
-      <section className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="font-serif text-2xl">En direct</h2>
-          <div className="flex flex-wrap items-center gap-2">
-            <SecondaryButton
-              icon={allPrivate ? Eye : EyeOff}
-              type="button"
-              active={allPrivate}
-              size="sm"
-              onClick={() =>
-                onPrivacyPendingSet({
-                  cameraIds: cameras.map((camera) => camera.id),
-                  active: !allPrivate,
-                  cameraLabel: null,
-                })
-              }
-            >
-              {allPrivate ? 'Reprendre la surveillance' : 'Tout couper'}
-            </SecondaryButton>
-            <SecondaryButton icon={Settings2} to="/settings/cameras" size="sm">
-              Gérer les caméras
-            </SecondaryButton>
-          </div>
-        </div>
-
+      {/* The page title already says it: one serif title heads the page (DESIGN SYSTEM § Page header). */}
+      <section>
+        <h2 className="sr-only">En direct</h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {cameras.map((camera) => (
             <CameraLiveThumbnail
@@ -315,8 +299,8 @@ function HubOperational({
         </div>
       </section>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)] lg:items-start">
-        <Card>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)] lg:items-start">
+        <Surface>
           <h2 className="font-serif text-2xl">Dernières détections</h2>
 
           {data.recentEvents.length > 0 ? (
@@ -339,10 +323,10 @@ function HubOperational({
               Tout l’historique
             </SecondaryButton>
           </div>
-        </Card>
+        </Surface>
 
-        <div className="flex flex-col gap-4">
-          <Card>
+        <div className="flex flex-col gap-6">
+          <Surface>
             <h2 className="font-serif text-2xl">Notifications</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               {alertsSummary(data.notifications)}
@@ -352,7 +336,7 @@ function HubOperational({
                 Configurer les notifications
               </SecondaryButton>
             </div>
-          </Card>
+          </Surface>
 
           {systemStats && <SystemMonitorPanel stats={systemStats} cameras={cameras} />}
         </div>

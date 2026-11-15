@@ -2,6 +2,7 @@ import { useEffect, useReducer, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { useToast } from '../../common/components/toast'
 import { ReadFailure } from '../../common/components/error_message'
+import { Surface } from '../../common/components/surface'
 import { LiveWaitVeil } from '../../common/components/live_wait_veil'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { cn } from '../../common/ui/utils'
@@ -112,13 +113,13 @@ export function LiveViewScreen() {
     case LiveAccess.Unread:
       return closed(
         error && (
-          <div className="rounded-card bg-card p-4 text-left text-card-foreground">
+          <Surface className="text-left">
             <ReadFailure
               error={error}
               onRetry={presenter.onRetry}
               subject="La liste de vos caméras n’a pas pu être lue."
             />
-          </div>
+          </Surface>
         ),
       )
     case LiveAccess.Removed:

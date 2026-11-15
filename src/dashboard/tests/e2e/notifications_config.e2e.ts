@@ -29,7 +29,7 @@ test.describe('NotificationChannelView', () => {
     await expect(dialog).toContainText('serveurs de Telegram')
     await dialog.getByRole('button', { name: 'Activer' }).click()
 
-    await expect(page.getByText('Les notifications sont envoyées.')).toBeVisible()
+    await expect(page.getByText('Actif', { exact: true })).toBeVisible()
 
     await page.getByRole('button', { name: 'Envoyer un message de test' }).click()
     await expect(page.getByText('Message envoyé : le canal fonctionne.')).toBeVisible()
