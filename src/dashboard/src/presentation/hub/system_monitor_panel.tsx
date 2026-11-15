@@ -53,7 +53,7 @@ export function SystemMonitorPanel({ stats, cameras }: { stats: SystemStats; cam
           <p className="mt-3 text-sm text-muted-foreground">{DEGRADED_MESSAGE[stats.status]}</p>
           {DEGRADED_SHOWS_DIAGNOSIS[stats.status] && (
             <div className="mt-4">
-              <Button asChild variant="outline" size="sm">
+              <Button asChild variant="secondary" size="sm">
                 <Link to={ADVANCED_PATH}>Diagnostiquer</Link>
               </Button>
             </div>

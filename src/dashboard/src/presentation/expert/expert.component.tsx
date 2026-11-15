@@ -47,7 +47,7 @@ export function ExpertView() {
             </ol>
 
             <div className="mt-5">
-              <Button asChild variant="outline">
+              <Button asChild variant="secondary">
                 <a href={frigateBaseUrl} target="_blank" rel="noreferrer">
                   Ouvrir Frigate dans un onglet
                 </a>

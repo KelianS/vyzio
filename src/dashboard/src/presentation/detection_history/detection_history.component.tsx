@@ -81,7 +81,7 @@ export function DetectionHistoryView() {
             ce sont les detections. */}
         <Button
           type="button"
-          variant={uido.filtersOpen || filtered ? 'default' : 'outline'}
+          variant={uido.filtersOpen || filtered ? 'default' : 'secondary'}
           size="sm"
           aria-expanded={uido.filtersOpen}
           aria-controls="history-filters"
@@ -207,7 +207,7 @@ export function DetectionHistoryView() {
         <div className="flex justify-center">
           <Button
             type="button"
-            variant="outline"
+            variant="secondary"
             size="sm"
             disabled={uido.loadingMore}
             onClick={() => presenter.onLoadMore(query, uido.nextCursor!)}

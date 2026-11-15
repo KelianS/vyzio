@@ -165,7 +165,7 @@ export function AddCameraView() {
               </span>
               <Button
                 type="button"
-                variant="outline"
+                variant="secondary"
                 size="sm"
                 onClick={presenter.onClearSelection}
               >
@@ -188,7 +188,7 @@ export function AddCameraView() {
                 </Button>
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="secondary"
                   disabled={busy}
                   onClick={() => presenter.onSelectManualEntry()}
                 >
@@ -239,7 +239,7 @@ export function AddCameraView() {
           >
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
               disabled={busy}
               onClick={() =>
                 candidate &&

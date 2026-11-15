@@ -52,7 +52,7 @@ export function ProtocolChoice({
         </label>
         <Button
           type="button"
-          variant="outline"
+          variant="secondary"
           size="sm"
           disabled={unchanged || configuring || disabled || asked?.ready === false}
           onClick={() => void onConfigure(selected)}

@@ -69,7 +69,7 @@ export function ManualCapability({
       onCancel={onClose}
     />
   ) : (
-    <Button type="button" variant="outline" size="sm" className="self-start" onClick={onOpen}>
+    <Button type="button" variant="secondary" size="sm" className="self-start" onClick={onOpen}>
       <Plus aria-hidden="true" />
       Ajouter une capacité
     </Button>
@@ -142,7 +142,7 @@ function ManualCapabilityForm({
 
         <Button
           type="button"
-          variant="outline"
+          variant="secondary"
           size="sm"
           disabled={configuring || testsSuspended}
           onClick={() => onConfigure(selectedCapability, selectedProtocol)}

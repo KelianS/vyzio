@@ -37,7 +37,7 @@ export function ReadFailure({
     <div className={cn('flex flex-col items-start gap-3', className)}>
       {subject && <p>{subject}</p>}
       <ErrorMessage error={error} />
-      <Button type="button" variant="outline" size="sm" onClick={onRetry}>
+      <Button type="button" variant="secondary" size="sm" onClick={onRetry}>
         Réessayer
       </Button>
     </div>

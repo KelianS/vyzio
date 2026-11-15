@@ -90,7 +90,7 @@ export function ChannelPairingSection({
               Couper le lien
             </Button>
           ) : (
-            <Button type="button" variant="outline" disabled={starting} onClick={onStart}>
+            <Button type="button" variant="secondary" disabled={starting} onClick={onStart}>
               {status === 'awaiting_conversation'
                 ? 'Générer un autre code'
                 : 'Relier une conversation'}
@@ -100,7 +100,7 @@ export function ChannelPairingSection({
           {inUse && (
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
               size="sm"
               disabled={pairingLoading || listeningLoading}
               onClick={onRefresh}

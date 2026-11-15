@@ -43,7 +43,7 @@ export function AccessView() {
 
       <SettingsSection title="Cet appareil">
         <Button
-          variant="outline"
+          variant="secondary"
           disabled={uido.leaving}
           onClick={() => void leave(presenter.onSignOut)}
         >
@@ -54,7 +54,7 @@ export function AccessView() {
       {/* The cost is said by the confirmation, not above the button (DESIGN SYSTEM § Help). */}
       <SettingsSection title="Tous les appareils">
         <Button
-          variant="outline"
+          variant="secondary"
           disabled={uido.leavingEverywhere}
           onClick={presenter.onAskSignOutEverywhere}
         >

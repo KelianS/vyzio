@@ -35,7 +35,7 @@ export function AddProtocol({
   return open ? (
     <AddProtocolForm available={available} adding={adding} onAdd={onAdd} onCancel={onClose} />
   ) : (
-    <Button type="button" variant="outline" size="sm" className="self-start" onClick={onOpen}>
+    <Button type="button" variant="secondary" size="sm" className="self-start" onClick={onOpen}>
       <Plus aria-hidden="true" />
       Ajouter un protocole
     </Button>
@@ -125,7 +125,7 @@ function AddProtocolForm({
           </>
         )}
         <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" size="sm" disabled={adding} onClick={add}>
+          <Button type="button" variant="secondary" size="sm" disabled={adding} onClick={add}>
             {adding ? 'Vérification…' : 'Ajouter et vérifier'}
           </Button>
           <Button type="button" variant="ghost" size="sm" disabled={adding} onClick={onCancel}>

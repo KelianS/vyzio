@@ -21,7 +21,7 @@ export function NotificationLog({
   return (
     <div>
       <div className="mb-3">
-        <Button type="button" variant="outline" size="sm" disabled={loading} onClick={onRefresh}>
+        <Button type="button" variant="secondary" size="sm" disabled={loading} onClick={onRefresh}>
           <RotateCw className={cn(loading && 'animate-spin')} aria-hidden="true" />
           Actualiser
         </Button>

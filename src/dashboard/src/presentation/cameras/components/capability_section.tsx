@@ -209,7 +209,7 @@ export function CapabilitySection({
         {/* A stream not chosen yet is detection's to choose, so it does not wait for the stream (ADR-04). */}
         <Button
           type="button"
-          variant="outline"
+          variant="secondary"
           size="sm"
           disabled={detecting || (testsSuspended && stream?.isConfigured !== false)}
           onClick={intents.onDetect}
@@ -381,7 +381,7 @@ function StreamCard({
       actions={
         <Button
           type="button"
-          variant="outline"
+          variant="secondary"
           size="sm"
           disabled={verifying || unconfigured}
           onClick={onVerify}
@@ -561,7 +561,7 @@ function BindingCard({
         </Button>
         <Button
           type="button"
-          variant="outline"
+          variant="secondary"
           size="sm"
           disabled={answering}
           onClick={() => intents.onAnswer(binding.capability, false)}
@@ -576,7 +576,7 @@ function BindingCard({
     return (
       <Button
         type="button"
-        variant="outline"
+        variant="secondary"
         size="sm"
         disabled={trying || testsSuspended || camera.privacyModeActive}
         onClick={() => intents.onTry(binding.capability)}
@@ -621,7 +621,7 @@ function BindingCard({
           suggested && (
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
               size="sm"
               disabled={configuring || testsSuspended}
               onClick={() => void intents.onConfigure(binding.capability, suggested)}
@@ -634,7 +634,7 @@ function BindingCard({
         return (
           <Button
             type="button"
-            variant="outline"
+            variant="secondary"
             size="sm"
             disabled={toggling}
             onClick={() => void intents.onTogglePtz()}
@@ -667,7 +667,7 @@ function BindingCard({
           <>
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
               size="sm"
               disabled={verifying || testsSuspended}
               onClick={() => intents.onVerify(binding.capability)}

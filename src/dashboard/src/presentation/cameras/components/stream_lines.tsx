@@ -200,7 +200,7 @@ function StreamLine({
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <Button
           type="button"
-          variant="outline"
+          variant="secondary"
           size="sm"
           disabled={task !== undefined}
           onClick={() => intents.onCheck(stream.id)}
@@ -275,7 +275,7 @@ function AddStream({
   ) : (
     <Button
       type="button"
-      variant="outline"
+      variant="secondary"
       size="sm"
       className="self-start"
       onClick={() => {
@@ -379,7 +379,7 @@ function AddStreamForm({
         <div className="flex flex-wrap gap-2">
           <Button
             type="button"
-            variant="outline"
+            variant="secondary"
             size="sm"
             disabled={adding || !selected || pathMissing}
             onClick={add}

@@ -124,11 +124,11 @@ test.describe('Base styles', () => {
   })
 })
 
-// The token values these read: `--line-soft`, `--bg-sunken`, `--bg-elevated`, `--brand-moss` and `--shadow-soft` of `src/index.css`.
+// The token values these read: `--line-soft`, `--bg-sunken`, `--bg-elevated`, `--ink-strong` and `--shadow-soft` of `src/index.css`.
 const LINE_SOFT = 'rgb(216, 207, 191)'
 const SUNKEN = 'rgb(242, 235, 223)'
 const ELEVATED = 'rgb(255, 250, 242)'
-const MOSS = 'rgb(47, 107, 89)'
+const INK = 'rgb(24, 32, 29)'
 const TRANSPARENT = 'rgba(0, 0, 0, 0)'
 
 test.describe('Style foundations', () => {
@@ -169,15 +169,15 @@ test.describe('Style foundations', () => {
     )
   })
 
-  test('OutlineButton_ShouldTintWithTheProductColour_WhenHovered', async ({ page }) => {
+  test('TonalButton_ShouldDeepenItsTint_WhenHovered', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
     await page.goto('/')
 
     const cutAll = page.getByRole('button', { name: 'Tout couper' })
-    await expect(cutAll).toHaveCSS('background-color', TRANSPARENT)
+    const resting = await cutAll.evaluate((el) => getComputedStyle(el).backgroundColor)
     await cutAll.hover()
 
-    await expect(cutAll).not.toHaveCSS('background-color', TRANSPARENT)
+    await expect(cutAll).not.toHaveCSS('background-color', resting)
   })
 
   test('ConfirmDialog_ShouldBeDrawnAsAPanel_WhenItOpens', async ({ page }) => {
@@ -201,7 +201,7 @@ test.describe('Style foundations', () => {
     await page.getByRole('button', { name: 'Déconnecter tous les appareils' }).click()
 
     const disconnect = page.getByRole('alertdialog').getByRole('button', { name: 'Déconnecter' })
-    await expect(disconnect).toHaveCSS('color', MOSS)
+    await expect(disconnect).toHaveCSS('color', INK)
     await expect(disconnect).not.toHaveCSS('background-color', ELEVATED)
     await expect(disconnect).not.toHaveCSS('background-color', TRANSPARENT)
   })

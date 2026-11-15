@@ -192,7 +192,7 @@ function ProtocolBox({
         <SettingsList settings={settings} />
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <Button type="button" variant="outline" size="sm" disabled={checking} onClick={onCheck}>
+        <Button type="button" variant="secondary" size="sm" disabled={checking} onClick={onCheck}>
           {checking ? 'Vérification…' : 'Vérifier'}
         </Button>
         <Button

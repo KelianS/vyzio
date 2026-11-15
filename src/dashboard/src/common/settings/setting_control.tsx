@@ -102,7 +102,7 @@ function DropdownControl({
 
 /** The multiple choice opens like a select, so it is drawn as a field, never as a button. */
 const FIELD_TRIGGER =
-  'h-11 w-full justify-between rounded-md border-input bg-transparent px-3 font-normal text-foreground hover:bg-transparent md:h-10'
+  'h-11 w-full justify-between rounded-md border border-input bg-transparent px-3 font-normal text-foreground hover:bg-transparent md:h-10'
 
 function MultiChoiceControl({
   setting,
@@ -131,7 +131,7 @@ function MultiChoiceControl({
         <Button
           id={setting.id}
           type="button"
-          variant="outline"
+          variant="secondary"
           role="combobox"
           disabled={setting.disabled}
           className={cn(FIELD_TRIGGER, followingClass(setting))}
@@ -165,7 +165,7 @@ function MultiChoiceControl({
           {visible.map((option) => (
             <label
               key={option.value}
-              className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg px-1 py-1 text-sm hover:bg-muted md:min-h-0"
+              className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg px-1 py-1 text-sm hover:bg-secondary md:min-h-0"
             >
               <Checkbox
                 checked={selected.includes(option.value)}

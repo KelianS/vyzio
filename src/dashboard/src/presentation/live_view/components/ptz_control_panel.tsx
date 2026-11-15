@@ -336,7 +336,7 @@ export function PtzControlPanel({
                 </p>
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="secondary"
                   size="sm"
                   disabled={uido.calibrating}
                   onClick={onCalibrate}

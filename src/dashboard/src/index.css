@@ -94,8 +94,8 @@
   --popover-foreground: var(--ink-strong);
   --primary: var(--brand-moss);
   --primary-foreground: var(--ink-inverse);
-  --secondary: color-mix(in srgb, var(--brand-moss) 12%, transparent);
-  --secondary-foreground: var(--brand-moss);
+  --secondary: color-mix(in srgb, var(--ink-strong) 7%, transparent);
+  --secondary-foreground: var(--ink-strong);
   --muted: var(--bg-sunken);
   /* A control laid over the picture: translucent, so the picture stays in view behind it. */
   --glass: var(--bg-muted);

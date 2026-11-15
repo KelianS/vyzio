@@ -108,7 +108,7 @@ export function PersonPhotosView() {
         <AdvancedFold lede="Si une photo reste « en attente », renvoyez toute la bibliothèque au moteur de reconnaissance.">
           <Button
             type="button"
-            variant="outline"
+            variant="secondary"
             disabled={uido.resyncing}
             onClick={presenter.onAskResync}
           >

@@ -32,7 +32,7 @@ export function PtzCalibrationSection({
               : 'Cette caméra n’a pas encore de position de référence. Ouvrez la vue en direct pour la calibrer, puis définir ses positions.'}
           </span>
 
-          <Button asChild variant="outline" size="sm" className="self-start">
+          <Button asChild variant="secondary" size="sm" className="self-start">
             <Link to={liveTo}>Piloter la caméra</Link>
           </Button>
         </>

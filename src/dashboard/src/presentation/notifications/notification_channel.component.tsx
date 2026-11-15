@@ -283,7 +283,7 @@ function ChannelForm({
             <div className="mt-5">
               <Button
                 type="button"
-                variant="outline"
+                variant="secondary"
                 disabled={uido.testing || !testable}
                 title={testable ? undefined : 'Enregistrez la configuration avant de tester'}
                 onClick={() => void presenter.onTest(channel)}

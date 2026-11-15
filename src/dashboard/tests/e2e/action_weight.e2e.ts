@@ -7,8 +7,9 @@ import {
   makeFakeDetectionEvent,
 } from './fixtures/fake_backend'
 
-// The token values these read: `--alert-high` and `--brand-moss` of `src/index.css`.
+// The token values these read: `--alert-high`, `--ink-strong` and `--brand-moss` of `src/index.css`.
 const DESTRUCTIVE = 'rgb(176, 76, 48)'
+const INK = 'rgb(24, 32, 29)'
 const MOSS = 'rgb(47, 107, 89)'
 const TRANSPARENT = 'rgba(0, 0, 0, 0)'
 
@@ -41,7 +42,7 @@ test.describe('Action weight', () => {
     const remove = page.getByRole('button', { name: 'Supprimer le canal' })
     await expect(remove).toHaveCSS('color', DESTRUCTIVE)
     await expect(remove).toHaveCSS('border-top-width', '1px')
-    await expect(remove).toHaveCSS('background-color', TRANSPARENT)
+    await expect(remove).not.toHaveCSS('background-color', TRANSPARENT)
 
     const removeTop = (await remove.boundingBox())?.y ?? 0
     const advancedTop = (await page.locator('summary', { hasText: 'Avancé' }).boundingBox())?.y ?? 0
@@ -56,9 +57,7 @@ test.describe('Action weight', () => {
     ).toHaveCSS('background-color', DESTRUCTIVE)
   })
 
-  test('OutlineButton_ShouldReadAsAnActionInTheProductColour_WhenItSitsOnACardOrThePage', async ({
-    page,
-  }) => {
+  test('TonalButton_ShouldStandOnTheNeutralTint_WhenItSitsOnACardOrThePage', async ({ page }) => {
     await installFakeBackend(
       page,
       createFakeBackendState({
@@ -69,13 +68,45 @@ test.describe('Action weight', () => {
 
     await page.goto('/settings/notifications/telegram')
     const onCard = page.getByRole('button', { name: 'Envoyer un message de test' })
-    await expect(onCard).toHaveCSS('color', MOSS)
-    await expect(onCard).toHaveCSS('border-top-width', '1px')
+    await expect(onCard).toHaveCSS('color', INK)
+    await expect(onCard).not.toHaveCSS('background-color', TRANSPARENT)
 
     await page.goto('/')
     const onPage = page.getByRole('button', { name: 'Tout couper' })
-    await expect(onPage).toHaveCSS('color', MOSS)
-    await expect(onPage).toHaveCSS('border-top-width', '1px')
+    await expect(onPage).toHaveCSS('color', INK)
+    await expect(onPage).not.toHaveCSS('background-color', TRANSPARENT)
+  })
+
+  test('SettingsPage_ShouldShowOneGreenButtonAtMost_WhenItOffersSeveralActions', async ({
+    page,
+  }) => {
+    await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
+    await page.goto('/settings/cameras/camera-1/connexion')
+    await expect(page.getByRole('button', { name: 'Vérifier' })).toBeVisible()
+
+    const green = await page
+      .locator('main button, main a[data-slot="button"]')
+      .evaluateAll(
+        (controls, moss) =>
+          controls.filter((control) => getComputedStyle(control).backgroundColor === moss).length,
+        MOSS,
+      )
+
+    expect(green).toBeLessThanOrEqual(1)
+  })
+
+  test('FoldAndTonalButton_ShouldShareTheNeutralTint_WhenTheySitOnOneCard', async ({ page }) => {
+    await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
+    await page.goto('/settings/cameras/camera-1/connexion')
+
+    const tint = await page
+      .getByRole('button', { name: 'Vérifier' })
+      .evaluate((el) => getComputedStyle(el).backgroundColor)
+    await expect(page.locator('details', { hasText: 'Options' }).first()).toHaveCSS(
+      'background-color',
+      tint,
+    )
+    await expect(page.getByRole('link', { name: 'Connexion' })).toHaveCSS('background-color', tint)
   })
 
   test('Button_ShouldShareTheNavigationPill_WhenItSitsInTheHeader', async ({ page }) => {
@@ -102,7 +133,7 @@ test.describe('Action weight', () => {
 
     const identify = page.getByRole('button', { name: 'Identifier' })
     await expect(identify).toHaveCSS('border-top-width', '0px')
-    await expect(identify).toHaveCSS('color', MOSS)
+    await expect(identify).toHaveCSS('color', INK)
   })
 
   test('DurationSetting_ShouldReadItsUnitInsideAFieldSizedToItsValue_WhenItRenders', async ({

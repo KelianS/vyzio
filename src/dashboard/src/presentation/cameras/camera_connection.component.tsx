@@ -266,7 +266,7 @@ export function CameraConnectionView() {
               <div className="flex flex-wrap items-center gap-2">
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="secondary"
                   size="sm"
                   disabled={uido.searchingProtocols}
                   onClick={() => void presenter.onSearchProtocols(cameraId)}

@@ -347,7 +347,7 @@ export function LiveVideo({
           )}
           <Notice layout={layout} sentence={shown.sentence} diagnostic={failed.diagnostic}>
             {MAY_PASS[failed.failure] && (
-              <Button variant="outline" size="sm" onClick={() => setAttempt((n) => n + 1)}>
+              <Button variant="secondary" size="sm" onClick={() => setAttempt((n) => n + 1)}>
                 Réessayer
               </Button>
             )}

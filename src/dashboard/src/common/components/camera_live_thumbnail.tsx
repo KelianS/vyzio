@@ -160,7 +160,7 @@ export function CameraLiveThumbnail({
         {onTogglePrivacy && (
           <Button
             type="button"
-            variant={camera.privacyModeActive ? 'default' : 'outline'}
+            variant={camera.privacyModeActive ? 'default' : 'secondary'}
             size="sm"
             disabled={busy}
             onClick={handleTogglePrivacy}

@@ -197,7 +197,7 @@ function HubWelcome() {
           <Button asChild>
             <Link to="/settings/cameras/ajout">Ajouter une caméra</Link>
           </Button>
-          <Button asChild variant="outline">
+          <Button asChild variant="secondary">
             <Link to="/settings/notifications">Configurer les notifications</Link>
           </Button>
         </div>
@@ -274,7 +274,7 @@ function HubOperational({
           <div className="flex flex-wrap items-center gap-2">
             <Button
               type="button"
-              variant={allPrivate ? 'default' : 'outline'}
+              variant={allPrivate ? 'default' : 'secondary'}
               size="sm"
               onClick={() =>
                 onPrivacyPendingSet({
@@ -333,7 +333,7 @@ function HubOperational({
           )}
 
           <div className="mt-4">
-            <Button asChild variant="outline" size="sm">
+            <Button asChild variant="secondary" size="sm">
               <Link to="/history">Tout l’historique</Link>
             </Button>
           </div>
@@ -346,7 +346,7 @@ function HubOperational({
               {alertsSummary(data.notifications)}
             </p>
             <div className="mt-4">
-              <Button asChild variant="outline" size="sm">
+              <Button asChild variant="secondary" size="sm">
                 <Link to="/settings/notifications">Configurer les notifications</Link>
               </Button>
             </div>
