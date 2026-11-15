@@ -23,7 +23,7 @@ export function CapabilityCard({
   return (
     <li className="rounded-inset border border-border p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="font-serif text-lg">{title}</h3>
+        <h3 className="text-row">{title}</h3>
         {pill && <Badge tone={pill.tone}>{pill.label}</Badge>}
       </div>
       {children && <div className="mt-1 flex flex-col gap-1">{children}</div>}

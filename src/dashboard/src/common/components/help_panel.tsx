@@ -26,7 +26,7 @@ export function HelpPanel({
           {title}
         </>
       }
-      bodyClassName="space-y-3 px-3 pt-1 pb-3 text-sm text-muted-foreground"
+      bodyClassName="space-y-3 px-3 pt-1 pb-3 text-body text-muted-foreground"
     >
       {children}
     </Fold>

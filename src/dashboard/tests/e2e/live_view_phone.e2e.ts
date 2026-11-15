@@ -121,7 +121,7 @@ test.describe('Live view on a phone', () => {
   })
 })
 
-// `--bg-muted` and `--bg-sunken` of `src/index.css`: translucent over the picture, opaque below it.
+// `--glass` and `--raised` of `src/index.css`: translucent over the picture, opaque below it.
 test.describe('PTZ controls fill', () => {
   test('DirectionKeysAndPositions_ShouldStayTranslucent_WhenLaidOverThePictureOnAPhoneOnItsSide', async ({
     page,
@@ -129,10 +129,10 @@ test.describe('PTZ controls fill', () => {
     await page.setViewportSize({ width: 844, height: 390 })
     await openTheLiveView(page, fourPositions())
 
-    await expect(page.getByTitle('Haut')).toHaveCSS('background-color', 'rgba(255, 250, 242, 0.72)')
+    await expect(page.getByTitle('Haut')).toHaveCSS('background-color', 'rgba(16, 20, 18, 0.6)')
     await expect(page.getByTitle(/^Position 1 \(appui/)).toHaveCSS(
       'background-color',
-      'rgba(255, 250, 242, 0.72)',
+      'rgba(16, 20, 18, 0.6)',
     )
   })
 
@@ -140,6 +140,6 @@ test.describe('PTZ controls fill', () => {
     await page.setViewportSize({ width: 390, height: 844 })
     await openTheLiveView(page, fourPositions())
 
-    await expect(page.getByTitle('Haut')).toHaveCSS('background-color', 'rgb(242, 235, 223)')
+    await expect(page.getByTitle('Haut')).toHaveCSS('background-color', 'rgb(36, 42, 38)')
   })
 })

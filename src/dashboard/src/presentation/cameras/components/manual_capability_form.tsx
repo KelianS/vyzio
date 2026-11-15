@@ -51,14 +51,14 @@ export function ManualCapability({
   // A capability that already has its card changes its protocol there, failing or not.
   if (unbound.length === 0)
     return (
-      <p className="text-sm text-muted-foreground">
+      <p className="text-body text-muted-foreground">
         Chaque capacité a déjà sa carte : pour en joindre une autrement, ouvrez ses options.
       </p>
     )
   // With no protocol at all, the stream card already says the way out.
   if (available.length === 0)
     return protocols.length === 0 ? null : (
-      <p className="text-sm text-muted-foreground">{NO_PROTOCOL_FOR_ANOTHER_CAPABILITY}</p>
+      <p className="text-body text-muted-foreground">{NO_PROTOCOL_FOR_ANOTHER_CAPABILITY}</p>
     )
 
   return open ? (
@@ -152,7 +152,7 @@ function ManualCapabilityForm({
           Annuler
         </Button>
       </div>
-      <p className="mt-2 text-sm text-muted-foreground">
+      <p className="mt-2 text-body text-muted-foreground">
         La capacité est testée immédiatement et activée en cas de succès.
       </p>
     </div>

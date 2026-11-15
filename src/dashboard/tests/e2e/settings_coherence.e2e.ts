@@ -132,7 +132,7 @@ test.describe('Settings screens coherence', () => {
           nodes.map((node) => ({
             text: node.textContent ?? '',
             size: Number.parseFloat(getComputedStyle(node).fontSize),
-            serif: getComputedStyle(node).fontFamily.includes('Iowan'),
+            weight: Number.parseFloat(getComputedStyle(node).fontWeight),
           })),
         )
 
@@ -142,7 +142,7 @@ test.describe('Settings screens coherence', () => {
 
       const biggestLabel = Math.max(...labels.map((entry) => entry.size))
       for (const title of titles) {
-        expect(title.serif, `${path}: "${title.text}" is not in the heading serif`).toBe(true)
+        expect(title.weight, `${path}: "${title.text}" is not set bold`).toBeGreaterThanOrEqual(600)
         expect(
           title.size,
           `${path}: "${title.text}" is the size of a setting label`,

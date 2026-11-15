@@ -13,7 +13,7 @@ export function AdvancedFold({ lede, children }: { lede?: string; children: Reac
         Avancé
       </summary>
       <div className="border-t border-border px-4 py-4">
-        {lede && <p className="mb-3 text-sm text-muted-foreground">{lede}</p>}
+        {lede && <p className="mb-3 text-body text-muted-foreground">{lede}</p>}
         {children}
       </div>
     </details>

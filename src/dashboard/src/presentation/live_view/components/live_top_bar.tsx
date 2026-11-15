@@ -32,10 +32,10 @@ export function LiveTopBar({
       {...fade}
       data-press-only
       className={cn(
-        'flex items-center gap-2 pt-[max(0.5rem,env(safe-area-inset-top))] pr-[max(0.5rem,env(safe-area-inset-right))] pl-[max(0.5rem,env(safe-area-inset-left))] text-surface-inverse-foreground',
+        'flex items-center gap-2 pt-[max(0.5rem,env(safe-area-inset-top))] pr-[max(0.5rem,env(safe-area-inset-right))] pl-[max(0.5rem,env(safe-area-inset-left))] text-ink-muted',
         above
-          ? 'bg-surface-inverse pb-2'
-          : 'absolute inset-x-0 top-0 bg-linear-to-b from-surface-inverse/80 to-transparent pb-6',
+          ? 'bg-picture pb-2'
+          : 'absolute inset-x-0 top-0 bg-linear-to-b from-picture/80 to-transparent pb-6',
         fade.className,
       )}
     >

@@ -29,7 +29,7 @@ export function LiveImage({
   const waitMessage = liveWaitMessage(frigateStatus, imageError)
 
   return (
-    <div className="absolute inset-0 bg-surface-inverse">
+    <div className="absolute inset-0 bg-picture">
       <img
         src={src}
         alt={label}

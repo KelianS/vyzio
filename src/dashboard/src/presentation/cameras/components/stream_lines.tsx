@@ -182,12 +182,12 @@ function StreamLine({
         <Badge tone={STREAM_LINE_PILLS[state].tone}>{STREAM_LINE_PILLS[state].label}</Badge>
       </div>
       {state === StreamLineState.Failed && (
-        <div className="text-sm text-destructive">
+        <div className="text-body text-destructive">
           <p>{streamFailure(records)}</p>
           {stream.lastError && <DiagnosticLine text={scrubSecrets(stream.lastError)} />}
         </div>
       )}
-      <div className="mt-2 flex flex-col gap-1 text-sm">
+      <div className="mt-2 flex flex-col gap-1 text-body">
         <div className="flex items-center gap-1">
           <span id={`${stream.id}-role`} className="text-muted-foreground">
             Rôle

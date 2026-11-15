@@ -185,11 +185,11 @@ function ProtocolBox({
         <Badge tone={pill.tone}>{pill.label}</Badge>
       </div>
       {entry.checkedAt && (
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="mt-1 text-body text-muted-foreground">
           Vérifié le {formatCheckedAt(entry.checkedAt)}
         </p>
       )}
-      {failure && <p className="mt-1 text-sm text-destructive">{failure}</p>}
+      {failure && <p className="mt-1 text-body text-destructive">{failure}</p>}
       {entry.lastError && <DiagnosticLine text={scrubSecrets(entry.lastError)} />}
       <div className="mt-2">
         <SettingsList settings={settings} />
@@ -214,7 +214,7 @@ function ProtocolBox({
           Retirer
         </Button>
       </div>
-      {removalBlocker && <p className="mt-2 text-sm text-muted-foreground">{removalBlocker}</p>}
+      {removalBlocker && <p className="mt-2 text-body text-muted-foreground">{removalBlocker}</p>}
 
       {confirmRemove && (
         <ConfirmModal

@@ -29,7 +29,7 @@ function render(body: string): ReactNode[] {
 
     if (fragment.startsWith('`')) {
       return (
-        <code key={key} className="rounded bg-muted px-1 py-0.5 text-xs">
+        <code key={key} className="rounded bg-muted px-1 py-0.5 text-label">
           {fragment.slice(1, -1)}
         </code>
       )

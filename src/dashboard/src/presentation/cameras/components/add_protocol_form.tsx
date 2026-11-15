@@ -101,7 +101,7 @@ function AddProtocolForm({
           <span className="font-medium">Compte spécifique</span>
           <Switch checked={specificAccount} onCheckedChange={setSpecificAccount} />
         </label>
-        <p className="-mt-2 text-sm text-muted-foreground">{SPECIFIC_ACCOUNT_HELP}</p>
+        <p className="-mt-2 text-body text-muted-foreground">{SPECIFIC_ACCOUNT_HELP}</p>
         {specificAccount && (
           <>
             <Field label="Identifiant">
@@ -130,7 +130,7 @@ function AddProtocolForm({
           </Button>
         </div>
       </div>
-      <p className="mt-2 text-sm text-muted-foreground">
+      <p className="mt-2 text-body text-muted-foreground">
         Vyzio vérifie aussitôt que la caméra répond par ce protocole, avec le compte de la caméra ou
         le compte spécifique.
       </p>

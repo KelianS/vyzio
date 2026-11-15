@@ -82,7 +82,7 @@ const TONE_ICON: Record<ToastTone, typeof Info> = {
 const TONE_ICON_CLASS: Record<ToastTone, string> = {
   success: 'text-success',
   error: 'text-destructive',
-  info: 'text-surface-inverse-foreground',
+  info: 'text-ink-muted',
 }
 
 function ToastChip({
@@ -116,7 +116,7 @@ function ToastChip({
       ref={chipRef}
       role="status"
       className={cn(
-        'pointer-events-auto flex min-w-60 max-w-sm items-start gap-3 rounded-card bg-surface-inverse px-4 py-3 text-surface-inverse-foreground shadow-elevated',
+        'pointer-events-auto flex min-w-60 max-w-sm items-start gap-3 rounded-card bg-picture px-4 py-3 text-ink-muted',
         // Transitions, not keyframes: a toast raised mid-fade picks up from where it stands.
         'transition-[opacity,translate] starting:opacity-0 motion-safe:starting:translate-y-2',
         item.leaving
@@ -129,9 +129,9 @@ function ToastChip({
         aria-hidden="true"
       />
       <div className="flex-1">
-        <p className="text-sm">{item.message}</p>
+        <p className="text-body">{item.message}</p>
         {item.diagnostic && (
-          <p className="mt-1 font-mono text-xs break-all text-surface-inverse-foreground/70 select-text">
+          <p className="mt-1 font-mono text-label break-all text-ink-muted/70 select-text">
             {item.diagnostic}
           </p>
         )}

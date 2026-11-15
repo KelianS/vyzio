@@ -41,7 +41,7 @@ const LAYOUT: Record<LiveLayout, { screen: string; picture: string; controls: st
   },
   // The controls place themselves over the picture.
   landscape: {
-    screen: 'bg-surface-inverse',
+    screen: 'bg-picture',
     picture: 'absolute inset-0',
     controls: '',
   },
@@ -99,8 +99,8 @@ export function LiveViewScreen() {
   const label = camera?.displayName ?? ''
 
   const closed = (body: ReactNode) => (
-    <main data-live aria-label={label || 'Direct'} className={cn(SCREEN, 'bg-surface-inverse')}>
-      <div className="flex size-full items-center justify-center px-6 text-center text-surface-inverse-foreground">
+    <main data-live aria-label={label || 'Direct'} className={cn(SCREEN, 'bg-picture')}>
+      <div className="flex size-full items-center justify-center px-6 text-center text-ink-muted">
         {body}
       </div>
       <LiveTopBar label={label} shown onBack={back} />

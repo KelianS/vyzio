@@ -20,7 +20,7 @@ export function PrivacyAnswerNotice({ camera }: { camera: Camera }) {
         </Badge>
       )}
       {sentence && (
-        <div role="status" className="text-sm">
+        <div role="status" className="text-body">
           <p>{sentence}</p>
           {camera.privacyMissDetail && (
             <DiagnosticLine text={scrubSecrets(camera.privacyMissDetail)} />

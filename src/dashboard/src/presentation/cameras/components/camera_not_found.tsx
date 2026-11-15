@@ -5,7 +5,7 @@ type Surface = 'page' | 'tab'
 
 // Inside a tab the camera page above already names the page: a sentence, never a second title.
 const STATEMENT: Record<Surface, ReactNode> = {
-  page: <h1 className="font-serif text-3xl">Caméra introuvable</h1>,
+  page: <h1 className="text-title">Caméra introuvable</h1>,
   tab: <p>Cette caméra est introuvable : elle a peut-être été supprimée.</p>,
 }
 

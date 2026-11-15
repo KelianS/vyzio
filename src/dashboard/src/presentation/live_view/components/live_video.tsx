@@ -167,7 +167,7 @@ function Notice({
   return (
     <div
       className={cn(
-        'absolute flex items-start justify-between gap-3 rounded-card bg-card p-3 text-sm text-card-foreground shadow-elevated',
+        'absolute flex items-start justify-between gap-3 rounded-card bg-card p-3 text-body text-card-foreground',
         NOTICE_PLACE[layout],
       )}
     >
@@ -366,7 +366,7 @@ export function LiveVideo({
       {above && bar(controls)}
       <div
         className={cn(
-          'relative overflow-hidden bg-surface-inverse',
+          'relative overflow-hidden bg-picture',
           above ? 'aspect-video w-full' : 'size-full',
         )}
         style={above && ratio ? { aspectRatio: ratio } : undefined}

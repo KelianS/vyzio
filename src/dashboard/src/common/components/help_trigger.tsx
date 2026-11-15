@@ -17,7 +17,7 @@ export function HelpTrigger({ question, help }: { question: string; help: string
           <HelpCircle className="size-4" aria-hidden="true" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent side="top" className="max-w-80 text-sm">
+      <PopoverContent side="top" className="max-w-80 text-body">
         {help}
       </PopoverContent>
     </Popover>

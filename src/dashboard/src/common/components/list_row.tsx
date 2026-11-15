@@ -9,7 +9,7 @@ export function ListRow({ className, ...props }: Omit<ComponentProps<typeof Item
       asChild
       // `item` hovers its links only: a row drawn as a button takes the same hover.
       className={cn(
-        'flex-nowrap justify-between gap-3 rounded-none px-0 py-3 text-base hover:bg-secondary',
+        'flex-nowrap justify-between gap-3 rounded-none px-0 py-3 text-row hover:bg-secondary',
         className,
       )}
       {...props}

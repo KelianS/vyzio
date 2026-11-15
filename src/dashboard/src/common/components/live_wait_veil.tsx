@@ -7,10 +7,10 @@ export function LiveWaitVeil({ message, className }: { message: string; classNam
       className={cn('absolute inset-0 flex flex-col items-center justify-center gap-2', className)}
     >
       <span
-        className="size-6 animate-spin rounded-full border-2 border-surface-inverse-foreground/30 border-t-surface-inverse-foreground"
+        className="size-6 animate-spin rounded-full border-2 border-ink-muted/30 border-t-ink-muted"
         aria-hidden="true"
       />
-      <span className="text-sm text-surface-inverse-foreground">{message}</span>
+      <span className="text-body text-ink-muted">{message}</span>
     </div>
   )
 }

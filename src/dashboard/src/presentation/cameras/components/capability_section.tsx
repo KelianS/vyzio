@@ -222,7 +222,7 @@ export function CapabilitySection({
       </div>
 
       {detection && (
-        <div role="status" className={cn('text-sm', DETECTION_TONE[detection.outcome])}>
+        <div role="status" className={cn('text-body', DETECTION_TONE[detection.outcome])}>
           <p>{DETECTION_SENTENCES[detection.outcome]}</p>
           {detection.diagnostic && <DiagnosticLine text={detection.diagnostic} />}
         </div>
@@ -230,7 +230,7 @@ export function CapabilitySection({
 
       {/* A stream never chosen is not waited for: its card already says what to do. */}
       {testsSuspended && stream?.isConfigured !== false && (
-        <p className="text-sm text-muted-foreground">{TESTS_SUSPENDED}</p>
+        <p className="text-body text-muted-foreground">{TESTS_SUSPENDED}</p>
       )}
     </div>
   )
@@ -287,16 +287,16 @@ function StreamCard({
     const coverage = streamCoverageLine(streams.lineup)
     switch (shown) {
       case CapabilityState.Unconfigured:
-        return <p className="text-sm text-muted-foreground">{unconfiguredLine()}</p>
+        return <p className="text-body text-muted-foreground">{unconfiguredLine()}</p>
       case CapabilityState.Unchecked:
-        return <p className="text-sm text-muted-foreground">{STREAM_UNCHECKED}</p>
+        return <p className="text-body text-muted-foreground">{STREAM_UNCHECKED}</p>
       case CapabilityState.Working:
       case CapabilityState.Failed: {
         const working = formatStreamWorkingLine(camera, binding?.verifiedAt ?? null)
         // Each sentence in its own tone: what still works is never said in red (principle 4).
         const failing = shown === CapabilityState.Failed
         return (
-          <div className="text-sm text-muted-foreground">
+          <div className="text-body text-muted-foreground">
             {check === CapabilityState.Failed ? (
               <div className="text-destructive">
                 <p>
@@ -335,7 +335,7 @@ function StreamCard({
         choices.length > 0 && (
           <>
             {binding.isConfigured && (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-body text-muted-foreground">
                 Changer de protocole remplace la liste des flux, y compris ceux que vous avez
                 ajoutés.
               </p>
@@ -501,25 +501,25 @@ function BindingCard({
         // Confirmed by the user rests on their word, and says so (ADR-04).
         if (binding.confirmedAt)
           return (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-body text-muted-foreground">
               Confirmé par vous le {formatCheckedAt(binding.confirmedAt)}
             </p>
           )
         return verifiedAtLabel ? (
-          <p className="text-sm text-muted-foreground">Vérifié le {verifiedAtLabel}</p>
+          <p className="text-body text-muted-foreground">Vérifié le {verifiedAtLabel}</p>
         ) : null
       case CapabilityState.ToConfirm:
         if (asking)
-          return <p className="text-sm font-medium">{TRY_QUESTIONS[binding.capability]}</p>
+          return <p className="text-body font-medium">{TRY_QUESTIONS[binding.capability]}</p>
         // The try acts on the camera without a confirmation: its cost is said above the button (DESIGN SYSTEM § Help).
         return (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-body text-muted-foreground">
             {camera.privacyModeActive ? TRY_REFUSED_IN_PRIVACY : TRY_COSTS[binding.capability]}
           </p>
         )
       case CapabilityState.Rejected:
         return (
-          <div className="text-sm text-muted-foreground">
+          <div className="text-body text-muted-foreground">
             <p>{USERS_NO[binding.capability]}</p>
             {/* Trying again acts on the camera too: its cost stays above the button (DESIGN SYSTEM § Help). */}
             <p>
@@ -530,7 +530,7 @@ function BindingCard({
       case CapabilityState.Failed:
         // The camera's answer is support detail: a plain sentence leads (UI-01).
         return (
-          <div className="text-sm text-destructive">
+          <div className="text-body text-destructive">
             {/* Silence, a refused account or a failed test each have their own way out (ADR-04). */}
             <p>{capabilityFailureLine(protocol?.status ?? null, binding.status)}</p>
             {binding.lastError && <DiagnosticLine text={scrubSecrets(binding.lastError)} />}
@@ -538,7 +538,7 @@ function BindingCard({
         )
       case CapabilityState.Unconfigured:
         return suggested || !protocolsRead ? null : (
-          <p className="text-sm text-muted-foreground">{NO_PROTOCOL_YET}</p>
+          <p className="text-body text-muted-foreground">{NO_PROTOCOL_YET}</p>
         )
       // Only the stream is ever unchecked.
       case CapabilityState.Unchecked:
@@ -715,7 +715,7 @@ function BindingCard({
                 />
               )}
               {binding.isConfigured && binding.nativePositions !== null && (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-body text-muted-foreground">
                   {binding.nativePositions ? POSITIONS_IN_CAMERA : POSITIONS_KEPT_BY_VYZIO}
                 </p>
               )}

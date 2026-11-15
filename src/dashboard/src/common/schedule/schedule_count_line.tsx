@@ -32,7 +32,7 @@ export function ScheduleCountLine({
   return (
     <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-3">
       <span>{appliesSentence(kind, rulesTargeting(rules, kind, targetId))}</span>
-      <Link to={SCHEDULES_PATH} className="text-sm underline underline-offset-2">
+      <Link to={SCHEDULES_PATH} className="text-body underline underline-offset-2">
         Voir la planification
       </Link>
     </p>

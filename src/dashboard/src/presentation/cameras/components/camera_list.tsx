@@ -37,7 +37,7 @@ export function CameraList({
                   <span className="min-w-0">
                     <span className="block font-medium">{camera.displayName}</span>
                     {/* Tells apart two cameras sharing a name, or the lenses of one device (CAM-02). */}
-                    <span className="block text-sm text-muted-foreground">{camera.host}</span>
+                    <span className="block text-body text-muted-foreground">{camera.host}</span>
                   </span>
                   <span className="flex shrink-0 items-center gap-3">
                     <Badge tone={formatStatusTone(camera)}>{formatCameraStatusLabel(camera)}</Badge>

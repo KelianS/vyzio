@@ -78,7 +78,7 @@ export function CameraPrivacyView() {
             onRetry={presenter.onRetryRules}
           />
           {camera.privacyResume && (
-            <p className="pb-3 text-sm">{formatPrivacyResume(camera.privacyResume)}</p>
+            <p className="pb-3 text-body">{formatPrivacyResume(camera.privacyResume)}</p>
           )}
 
           <HelpPanel title="Comment les plages et la coupure manuelle s’articulent-elles ?">

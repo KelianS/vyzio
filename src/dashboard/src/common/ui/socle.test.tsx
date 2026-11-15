@@ -41,7 +41,7 @@ describe('UI foundation', () => {
 
   it('cn_ShouldKeepTheStockValue_WhenItFollowsAThemeRadiusOrShadow', () => {
     // Arrange & Act
-    const classes = cn('rounded-panel shadow-elevated', 'rounded-none shadow-none')
+    const classes = cn('rounded-panel', 'rounded-none shadow-none')
 
     // Assert
     expect(classes).toBe('rounded-none shadow-none')

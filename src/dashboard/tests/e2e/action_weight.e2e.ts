@@ -7,10 +7,10 @@ import {
   makeFakeDetectionEvent,
 } from './fixtures/fake_backend'
 
-// The token values these read: `--alert-high`, `--ink-strong` and `--brand-moss` of `src/index.css`.
-const DESTRUCTIVE = 'rgb(176, 76, 48)'
-const INK = 'rgb(24, 32, 29)'
-const MOSS = 'rgb(47, 107, 89)'
+// The token values these read: `--alert`, `--ink` and `--action` of `src/index.css`.
+const DESTRUCTIVE = 'rgb(242, 154, 139)'
+const INK = 'rgb(238, 242, 239)'
+const MOSS = 'rgb(127, 209, 168)'
 const TRANSPARENT = 'rgba(0, 0, 0, 0)'
 
 const PHONE = { width: 390, height: 844 }
@@ -41,7 +41,7 @@ test.describe('Action weight', () => {
 
     const remove = page.getByRole('button', { name: 'Supprimer le canal' })
     await expect(remove).toHaveCSS('color', DESTRUCTIVE)
-    await expect(remove).toHaveCSS('border-top-width', '1px')
+    await expect(remove).toHaveCSS('border-top-width', '0px')
     await expect(remove).not.toHaveCSS('background-color', TRANSPARENT)
 
     const removeTop = (await remove.boundingBox())?.y ?? 0
@@ -115,16 +115,18 @@ test.describe('Action weight', () => {
     await expect(page.getByRole('link', { name: 'Connexion' })).toHaveCSS('background-color', tint)
   })
 
-  test('Button_ShouldShareTheNavigationPill_WhenItSitsInTheHeader', async ({ page }) => {
+  test('ApplyChanges_ShouldBeTheSettingsBarMainAction_WhenAChangeWaits', async ({ page }) => {
     await installFakeBackend(
       page,
       createFakeBackendState({ cameras: [makeFakeCamera()], pendingChanges: true }),
     )
-    await page.goto('/')
+    await page.goto('/settings')
 
-    const apply = page.getByRole('button', { name: 'Appliquer les changements' })
-    const home = page.getByRole('link', { name: 'Accueil' })
-    expect(await heightOf(apply)).toBe(await heightOf(home))
+    const apply = page
+      .getByRole('banner')
+      .getByRole('button', { name: 'Appliquer les changements' })
+    expect(await heightOf(apply)).toBe(48)
+    await expect(apply).toHaveCSS('background-color', MOSS)
     await expect(apply).toHaveCSS('border-top-left-radius', /e\+|\d{3,}px/)
   })
 
@@ -169,7 +171,7 @@ test.describe('Action weight', () => {
         .getByRole('group', { name: 'Ce qui déclenche une notification' })
         .locator('label')
         .first(),
-    ).toHaveCSS('border-top-left-radius', '12px')
+    ).toHaveCSS('border-top-left-radius', '16px')
   })
 })
 
@@ -196,7 +198,7 @@ test.describe('Touch size', () => {
 
     await page.goto('/settings/notifications/telegram')
     const sendTest = page.getByRole('button', { name: 'Envoyer un message de test' })
-    expect(await heightOf(sendTest)).toBe(40)
+    expect(await heightOf(sendTest)).toBe(44)
     expect(await reachesAFinger(sendTest)).toBe(true)
     expect(
       await reachesAFinger(page.getByRole('button', { name: /À quoi sert « Token du bot »/ })),
@@ -216,7 +218,7 @@ test.describe('Touch size', () => {
 
     await page.goto('/')
     const pause = page.getByRole('button', { name: 'Pause' })
-    expect(await heightOf(pause)).toBe(32)
+    expect(await heightOf(pause)).toBe(44)
     expect(await reachesAFinger(pause)).toBe(true)
 
     await page.goto('/settings/cameras')
@@ -231,10 +233,10 @@ test.describe('Touch size', () => {
     await page.goto('/settings/notifications/telegram')
 
     expect(await heightOf(page.getByRole('button', { name: 'Envoyer un message de test' }))).toBe(
-      40,
+      44,
     )
     expect(await heightOf(page.getByRole('textbox', { name: 'Identifiant de conversation' }))).toBe(
-      40,
+      52,
     )
   })
 })

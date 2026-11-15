@@ -29,13 +29,13 @@ export function AccessGate({ children }: { children: ReactNode }) {
   if (uido.error) {
     return (
       <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center gap-4 px-4 text-center">
-        <h1 className="font-serif text-2xl">Vyzio ne répond pas</h1>
+        <h1 className="text-title">Vyzio ne répond pas</h1>
         <ErrorMessage error={uido.error} className="text-muted-foreground" />
         <PressableControl>
           <button
             type="button"
             onClick={() => void presenter.onLoad()}
-            className="text-sm font-medium underline"
+            className="text-body font-medium underline"
           >
             Réessayer
           </button>

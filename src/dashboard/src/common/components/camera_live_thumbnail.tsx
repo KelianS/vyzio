@@ -28,7 +28,7 @@ interface CameraLiveThumbnailProps {
   onTogglePrivacy?: (camera: Camera, active: boolean) => void
 }
 
-const FRAME = 'relative aspect-video bg-surface-inverse'
+const FRAME = 'relative aspect-video bg-picture'
 
 export function CameraLiveThumbnail({
   camera,
@@ -81,23 +81,23 @@ export function CameraLiveThumbnail({
     <>
       {camera.privacyModeActive && privacy ? (
         // The same words as the privacy screen's badge: what the camera answered (PRIV-20).
-        <div className="flex h-full flex-col items-center justify-center gap-2 px-3 text-center text-surface-inverse-foreground">
+        <div className="flex h-full flex-col items-center justify-center gap-2 px-3 text-center text-ink-muted">
           <PrivacyStateIcon kind={privacy.kind} className="size-5" />
-          <span className="text-sm font-medium">{privacy.text}</span>
+          <span className="text-body font-medium">{privacy.text}</span>
         </div>
       ) : unwatched ? (
         <PressableSurface>
           <Link
             to={`/settings/cameras/${camera.id}`}
             aria-label={`${formatCameraStatusLabel(camera)} : ${camera.displayName}`}
-            className="flex h-full items-center justify-center gap-1 text-sm font-medium text-surface-inverse-foreground underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring"
+            className="flex h-full items-center justify-center gap-1 text-body font-medium text-ink-muted underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring"
           >
             {formatCameraStatusLabel(camera)}
             <ChevronRight className="size-4" aria-hidden="true" />
           </Link>
         </PressableSurface>
       ) : deviceOffline ? (
-        <div className="flex h-full items-center justify-center gap-2 text-sm font-medium text-surface-inverse-foreground">
+        <div className="flex h-full items-center justify-center gap-2 text-body font-medium text-ink-muted">
           <WifiOff className="size-4" aria-hidden="true" />
           Hors ligne
         </div>
@@ -112,7 +112,7 @@ export function CameraLiveThumbnail({
             onError={() => setImageError(true)}
             onLoad={() => setImageError(false)}
           />
-          {waitMessage && <LiveWaitVeil message={waitMessage} className="bg-surface-inverse/90" />}
+          {waitMessage && <LiveWaitVeil message={waitMessage} className="bg-picture/90" />}
         </>
       )}
     </>
@@ -153,7 +153,7 @@ export function CameraLiveThumbnail({
           <span className="min-w-0 flex-1 truncate font-medium">{camera.displayName}</span>
           {camera.privacyModeSource === 'schedule' && (
             <span
-              className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground"
+              className="rounded-full bg-muted px-2 py-0.5 text-label text-muted-foreground"
               title="Activé par planification"
             >
               planifié
@@ -181,7 +181,7 @@ export function CameraLiveThumbnail({
         {missLabel && (
           <Link
             to={`/settings/cameras/${camera.id}/privacy`}
-            className="flex items-center gap-1.5 px-3 pb-3 text-xs text-muted-foreground underline underline-offset-2"
+            className="flex items-center gap-1.5 px-3 pb-3 text-label text-muted-foreground underline underline-offset-2"
           >
             <TriangleAlert className="size-3.5 shrink-0" aria-hidden="true" />
             {missLabel}

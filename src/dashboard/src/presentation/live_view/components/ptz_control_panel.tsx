@@ -214,12 +214,12 @@ function PresetTile({
         )}
         {reserved && (
           <span
-            className="absolute top-0.5 right-0.5 size-1.5 rounded-full bg-accent"
+            className="absolute top-0.5 right-0.5 size-1.5 rounded-full bg-primary"
             aria-hidden="true"
           />
         )}
         {BUSY[state] && (
-          <span className="absolute inset-0 flex items-center justify-center bg-surface-inverse/60 text-xs text-surface-inverse-foreground">
+          <span className="absolute inset-0 flex items-center justify-center bg-picture/60 text-label text-ink-muted">
             …
           </span>
         )}
@@ -330,7 +330,7 @@ export function PtzControlPanel({
             {/* Without a reference the saved positions are inert, and nothing else said so. */}
             {presets && !calibrated && (
               <div className="flex flex-col items-center gap-2 rounded-inset border border-border bg-muted/40 p-2.5">
-                <p className="text-sm text-muted-foreground">
+                <p className="text-body text-muted-foreground">
                   Cette caméra n’a pas de position de référence : les positions enregistrées ne sont
                   pas utilisables tant qu’elle n’est pas calibrée.
                 </p>
@@ -379,7 +379,7 @@ export function PtzControlPanel({
                   />
                   <span
                     className={cn(
-                      'w-full text-center text-[11px] leading-tight',
+                      'w-full text-center text-label leading-tight',
                       activePresetId === presetId
                         ? 'font-medium text-foreground'
                         : 'text-muted-foreground',

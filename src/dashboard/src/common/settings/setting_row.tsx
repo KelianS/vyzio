@@ -57,7 +57,7 @@ export function SettingRow({ setting }: { setting: SettingDeclaration }) {
       </div>
 
       {setting.consequence && (
-        <p className="text-sm text-muted-foreground sm:col-span-3">{setting.consequence}</p>
+        <p className="text-body text-muted-foreground sm:col-span-3">{setting.consequence}</p>
       )}
     </div>
   )

@@ -36,7 +36,7 @@ export function NotificationLog({
       </div>
 
       {entries.length > 0 ? (
-        <ul className="divide-y divide-border text-sm">
+        <ul className="divide-y divide-border text-body">
           {entries.map((entry) => (
             <li
               key={`${entry.sentAt}-${entry.status}`}
@@ -45,7 +45,7 @@ export function NotificationLog({
               <span>{formatSentAt.format(new Date(entry.sentAt))}</span>
               <span
                 className={cn(
-                  'text-sm',
+                  'text-body',
                   entry.status === 'sent' ? 'text-muted-foreground' : 'text-destructive',
                 )}
               >

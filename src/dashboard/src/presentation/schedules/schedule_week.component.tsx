@@ -118,7 +118,7 @@ export function ScheduleWeekView() {
         ))}
       </ol>
 
-      <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground">
+      <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-body text-muted-foreground">
         {SCHEDULE_KINDS.map((kind) => {
           const type = SCHEDULE_TYPES[kind]
           const Icon = type.icon
@@ -134,7 +134,7 @@ export function ScheduleWeekView() {
       </ul>
 
       {orphans.length > 0 && (
-        <ul className="mt-4 flex flex-col gap-1 text-sm">
+        <ul className="mt-4 flex flex-col gap-1 text-body">
           {orphans.map((rule) => (
             <li key={rule.id}>
               <Link
@@ -184,7 +184,7 @@ function HourMarks() {
   return (
     <div className={ROW_GRID} aria-hidden="true">
       <span />
-      <div className="relative h-4 text-xs text-muted-foreground tabular-nums">
+      <div className="relative h-4 text-label text-muted-foreground tabular-nums">
         {HOUR_MARKS.map((hour, index) => (
           <span
             key={hour}
@@ -222,7 +222,7 @@ function DayRow({
         <span
           aria-hidden="true"
           className={cn(
-            'font-sans text-sm',
+            'text-body',
             today ? 'font-semibold text-primary' : 'text-muted-foreground',
           )}
         >

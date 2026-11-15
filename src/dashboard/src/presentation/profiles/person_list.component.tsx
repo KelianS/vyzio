@@ -42,7 +42,7 @@ export function PersonListView() {
                 <Link to={`/settings/detection/people/${person.id}`}>
                   <span className="min-w-0">
                     <span className="block font-medium">{person.name}</span>
-                    <span className="block text-sm text-muted-foreground">
+                    <span className="block text-body text-muted-foreground">
                       {CATEGORY_LABELS[person.category]} · {ALERT_MODE_LABELS[person.alertMode]}
                     </span>
                   </span>

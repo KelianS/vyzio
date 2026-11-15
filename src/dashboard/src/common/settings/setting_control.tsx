@@ -92,7 +92,7 @@ function DropdownControl({
           >
             <span className="flex flex-col items-start gap-0.5">
               {option.label}
-              {option.unavailable && <span className="text-xs">{option.unavailable}</span>}
+              {option.unavailable && <span className="text-label">{option.unavailable}</span>}
             </span>
           </SelectItem>
         ))}
@@ -103,7 +103,7 @@ function DropdownControl({
 
 /** The multiple choice opens like a select, so it is drawn as a field, never as a button. */
 const FIELD_TRIGGER =
-  'h-11 w-full justify-between rounded-md border border-input bg-transparent px-3 font-normal text-foreground hover:bg-transparent md:h-10'
+  'h-13 w-full justify-between rounded-md border border-input bg-card px-4 font-normal text-foreground hover:bg-card'
 
 function MultiChoiceControl({
   setting,
@@ -166,7 +166,7 @@ function MultiChoiceControl({
           {visible.map((option) => (
             <label
               key={option.value}
-              className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg px-1 py-1 text-sm hover:bg-secondary md:min-h-0"
+              className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg px-1 py-1 text-body hover:bg-secondary"
             >
               <Checkbox
                 checked={selected.includes(option.value)}
@@ -247,7 +247,7 @@ function NumberControl({
       />
       {/* L'unite appartient a la valeur, jamais au libelle. */}
       {nature.unit && (
-        <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">
+        <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-body text-muted-foreground">
           {nature.unit}
         </span>
       )}
@@ -278,7 +278,7 @@ function RangeControl({
         onValueChange={([value]) => setting.onChange(value)}
       />
       {/* Un curseur seul empeche de viser et de se relire. */}
-      <span className="w-16 shrink-0 text-right text-sm tabular-nums">
+      <span className="w-16 shrink-0 text-right text-body tabular-nums">
         {current} {nature.unit}
       </span>
     </div>

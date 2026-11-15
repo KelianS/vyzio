@@ -27,7 +27,7 @@ export function PtzCalibrationSection({
 
       {!loading && !error && (
         <>
-          <span className="text-sm text-muted-foreground">
+          <span className="text-body text-muted-foreground">
             {calibrated
               ? 'Ouvrez la vue en direct pour définir les positions de cette caméra.'
               : 'Cette caméra n’a pas encore de position de référence. Ouvrez la vue en direct pour la calibrer, puis définir ses positions.'}

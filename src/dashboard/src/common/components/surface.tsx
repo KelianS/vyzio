@@ -21,11 +21,7 @@ export function Surface({
   const Comp = asChild ? Slot.Root : 'div'
   return (
     <Comp
-      className={cn(
-        'rounded-card bg-card text-card-foreground shadow-elevated',
-        INSET_CLASS[inset],
-        className,
-      )}
+      className={cn('rounded-card bg-card text-card-foreground', INSET_CLASS[inset], className)}
       {...props}
     />
   )

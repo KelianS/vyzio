@@ -92,9 +92,11 @@ export function DetectionList({
 
           <span className="min-w-0 flex-1">
             <span className="block font-medium">{formatEventTitle(event, labels)}</span>
-            <span className="block text-sm text-muted-foreground">{formatEventDetail(event)}</span>
+            <span className="block text-body text-muted-foreground">
+              {formatEventDetail(event)}
+            </span>
             {event.mediaExpired && (
-              <span className="block text-sm text-muted-foreground">{MEDIA_EXPIRED}</span>
+              <span className="block text-body text-muted-foreground">{MEDIA_EXPIRED}</span>
             )}
             {renderExtra?.(event)}
           </span>

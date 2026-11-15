@@ -24,14 +24,14 @@ export const SCHEDULE_TYPES: Record<ScheduleRuleKind, ScheduleTypeCopy> = {
     effect: 'Aucun enregistrement, aucune détection, aucune notification.',
     icon: EyeOff,
     targetKind: ScheduleTargetKind.Camera,
-    fill: 'bg-surface-inverse text-surface-inverse-foreground',
+    fill: 'bg-mark-off text-background',
   },
   [ScheduleRuleKind.MuteNotifications]: {
     name: 'Sans notification',
     effect: 'Filme et enregistre, mais n’envoie aucune notification.',
     icon: BellOff,
     targetKind: ScheduleTargetKind.Channel,
-    fill: 'bg-stripes text-accent-foreground',
+    fill: 'bg-stripes text-silence-foreground',
   },
 }
 

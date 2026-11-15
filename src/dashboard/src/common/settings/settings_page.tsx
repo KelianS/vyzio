@@ -16,7 +16,7 @@ export function SettingsPage({ lede, children }: { lede?: string; children: Reac
   return (
     <Surface asChild>
       <section>
-        {lede && <p className="mb-5 text-sm text-muted-foreground">{lede}</p>}
+        {lede && <p className="mb-5 text-body text-muted-foreground">{lede}</p>}
         {children}
       </section>
     </Surface>
@@ -42,8 +42,8 @@ export function SettingsSection({
 }) {
   return (
     <section className="mt-8 border-t border-border pt-6 first:mt-0 first:border-t-0 first:pt-0">
-      <h2 className="font-serif text-2xl">{title}</h2>
-      {lede && <p className="mt-1 mb-4 text-sm text-muted-foreground">{lede}</p>}
+      <h2 className="text-row">{title}</h2>
+      {lede && <p className="mt-1 mb-4 text-body text-muted-foreground">{lede}</p>}
       <div className={lede ? undefined : 'mt-4'}>{children}</div>
     </section>
   )

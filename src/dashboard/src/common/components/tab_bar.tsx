@@ -35,10 +35,15 @@ export function TabBar({ label, tabs }: { label: string; tabs: readonly Tab[] })
 
   useEffect(() => {
     // Landing straight on the last tab must not leave it scrolled out of sight.
-    ref.current
-      ?.querySelector('[aria-current="page"]')
-      ?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' })
-    measure()
+    const reveal = () => {
+      ref.current
+        ?.querySelector('[aria-current="page"]')
+        ?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' })
+      measure()
+    }
+    reveal()
+    // Once the font arrives the tabs widen: revealed again, or the last one ends half hidden.
+    void document.fonts?.ready.then(reveal)
   }, [pathname, measure])
 
   useEffect(() => {
@@ -62,7 +67,7 @@ export function TabBar({ label, tabs }: { label: string; tabs: readonly Tab[] })
           to={tab.to}
           className={({ isActive }) =>
             cn(
-              'inline-flex h-8 shrink-0 items-center rounded-full px-3 text-sm font-medium transition-colors',
+              'inline-flex h-11 shrink-0 items-center rounded-full px-4 text-body font-semibold transition-colors',
               'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
               isActive
                 ? 'bg-secondary text-foreground'

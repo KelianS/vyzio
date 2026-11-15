@@ -1,77 +1,46 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
-/* The dark theme follows a class on <html>, not only the system preference: the
-   user must be able to choose. `ThemePreference` applies one or the other at start. */
-@custom-variant dark (&:is(.dark *));
+/* One theme, dark: the registry primitives' `dark:` classes always apply. */
+@custom-variant dark (&:where(:root, :root *));
 
 /* ---------------------------------------------------------------------------
-   Vyzio tokens: the realisation of the values docs/DESIGN SYSTEM.md defines,
-   which stays their source. Every colour and radius a component uses goes
-   through a token: a contrast defect is fixed in one place, and the dark theme
-   holds by construction (ADR-01).
+   Vyzio tokens: the realisation of the roles docs/DESIGN SYSTEM.md § Palette
+   defines, which stays their source. Every colour, radius and text size a
+   component uses goes through a token: a contrast defect is fixed in one place
+   (DASHBOARD-23).
    --------------------------------------------------------------------------- */
 
 :root {
-  --bg-canvas: #f4efe6;
-  --bg-elevated: #fffaf2;
-  --bg-muted: rgba(255, 250, 242, 0.72);
-  /* Opaque so it shows on a card; light enough that --ink-soft on it keeps 4.5:1. */
-  --bg-sunken: #f2ebdf;
-  --bg-strong: #1f3a33;
-  --ink-strong: #18201d;
-  /* Secondary text: light enough to tell from the main text at a glance, dark
-     enough to stay readable (>= 4.5:1 on --bg-elevated, held by the WCAG e2e scan). */
-  --ink-soft: #606d67;
-  --ink-inverse: #f7f4ed;
-  --line-soft: #d8cfbf;
-  --brand-moss: #2f6b59;
-  --brand-moss-strong: #214c3f;
-  --brand-sand: #d9b37a;
-  /* White button text on this needs >= 4.5:1, held by the WCAG e2e scan. */
-  --alert-high: #b04c30;
-  --alert-ok: #2d7a52;
-  --shadow-soft: 0 18px 50px rgba(24, 32, 29, 0.08);
-  --shadow-strong: 0 8px 32px rgba(24, 32, 29, 0.18);
+  color-scheme: dark;
 
-  --sans: 'Aptos', 'Segoe UI Variable Text', 'Trebuchet MS', sans-serif;
-  --heading: 'Iowan Old Style', 'Palatino Linotype', serif;
-  --mono: 'Cascadia Code', 'Consolas', monospace;
+  --ground: #101412;
+  --surface: #1b201d;
+  --raised: #242a26;
+  --icon-circle: #2a312d;
+  --line: #2c332f;
+  --field-line: #3a433d;
+  --ink: #eef2ef;
+  --ink-soft: #9aa59e;
+  --ink-muted: #c9d1cb;
+  --bar: #1d4a3a;
+  --action: #7fd1a8;
+  --action-ink: #0e2a1f;
+  --silence: #f2c46d;
+  --silence-ink: #2b1f05;
+  --alert: #f29a8b;
+  --alert-ink: #3a120c;
+  --mark-off: #6f7a73;
+  /* The well behind a picture, and what shows while it has none. */
+  --picture: #16201b;
+  /* A control over the picture: dark and translucent, so the picture stays in view behind it. */
+  --glass: rgba(16, 20, 18, 0.6);
+  /* A round button inside the bar, and the plate an alert sits on there. */
+  --bar-control: rgba(255, 255, 255, 0.14);
+  --bar-plate: rgba(16, 20, 18, 0.35);
 
-  /* Page background: a warm gradient and a discreet grid (see body below). */
-  --canvas-gradient:
-    radial-gradient(circle at top left, rgba(217, 179, 122, 0.22), transparent 28%),
-    radial-gradient(circle at top right, rgba(47, 107, 89, 0.14), transparent 22%),
-    linear-gradient(180deg, #f4efe6 0%, #ece3d4 100%);
-  --canvas-grid: rgba(24, 32, 29, 0.025);
-}
-
-/* The dark version of the same tokens. It stays warm and domestic: a clinical
-   dark theme (neutral greys) would contradict the design system's intent as much
-   as a clinical light one. */
-.dark {
-  --bg-canvas: #121a17;
-  --bg-elevated: #1b2723;
-  --bg-muted: rgba(27, 39, 35, 0.72);
-  --bg-sunken: #233430;
-  --bg-strong: #0d1613;
-  --ink-strong: #f0ece3;
-  --ink-soft: #a3afa8;
-  --ink-inverse: #121916;
-  --line-soft: #2f3f38;
-  --brand-moss: #4e9a80;
-  --brand-moss-strong: #6bb89b;
-  --brand-sand: #e0bd8a;
-  --alert-high: #e07a5a;
-  --alert-ok: #4fa87a;
-  --shadow-soft: 0 18px 50px rgba(0, 0, 0, 0.45);
-  --shadow-strong: 0 8px 32px rgba(0, 0, 0, 0.5);
-
-  --canvas-gradient:
-    radial-gradient(circle at top left, rgba(217, 179, 122, 0.1), transparent 28%),
-    radial-gradient(circle at top right, rgba(47, 107, 89, 0.14), transparent 22%),
-    linear-gradient(180deg, #121a17 0%, #0d1512 100%);
-  --canvas-grid: rgba(240, 236, 227, 0.03);
+  --sans: 'Inter Variable', system-ui, sans-serif;
+  --mono: ui-monospace, 'Cascadia Code', Consolas, monospace;
 }
 
 /* ---------------------------------------------------------------------------
@@ -80,36 +49,37 @@
    without ever modifying them (ADR-01).
    --------------------------------------------------------------------------- */
 
-:root,
-.dark {
-  --background: var(--bg-canvas);
-  --foreground: var(--ink-strong);
-  --card: var(--bg-elevated);
-  --card-foreground: var(--ink-strong);
-  --popover: var(--bg-elevated);
-  --popover-foreground: var(--ink-strong);
-  --primary: var(--brand-moss);
-  --primary-foreground: var(--ink-inverse);
-  --secondary: color-mix(in srgb, var(--ink-strong) 7%, transparent);
-  --secondary-foreground: var(--ink-strong);
-  --muted: var(--bg-sunken);
-  /* A control laid over the picture: translucent, so the picture stays in view behind it. */
-  --glass: var(--bg-muted);
+:root {
+  --background: var(--ground);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--raised);
+  --popover-foreground: var(--ink);
+  --primary: var(--action);
+  --primary-foreground: var(--action-ink);
+  --secondary: var(--raised);
+  --secondary-foreground: var(--ink);
+  --muted: var(--raised);
   --muted-foreground: var(--ink-soft);
-  --accent: var(--brand-sand);
-  --accent-foreground: var(--ink-strong);
-  --destructive: var(--alert-high);
-  --destructive-foreground: var(--ink-inverse);
-  --success: var(--alert-ok);
-  /* Inverse surface: the navigation header and dark structural panels. */
-  --surface-inverse: var(--bg-strong);
-  --surface-inverse-foreground: var(--ink-inverse);
-  --border: var(--line-soft);
-  --input: var(--line-soft);
-  --ring: var(--brand-moss);
+  --accent: var(--icon-circle);
+  --accent-foreground: var(--ink);
+  --destructive: var(--alert);
+  --destructive-foreground: var(--alert-ink);
+  --success: var(--action);
+  --border: var(--line);
+  --input: var(--field-line);
+  --ring: var(--action);
 }
 
 @theme inline {
+  --color-*: initial;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+  /* The primitives' dimming veil and a slider's thumb. */
+  --color-black: #000;
+  --color-white: #fff;
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -122,94 +92,100 @@
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
-  --color-glass: var(--glass);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-success: var(--success);
-  --color-surface-inverse: var(--surface-inverse);
-  --color-surface-inverse-foreground: var(--surface-inverse-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
 
+  --color-ink-muted: var(--ink-muted);
+  --color-icon-circle: var(--icon-circle);
+  --color-silence: var(--silence);
+  --color-silence-foreground: var(--silence-ink);
+  --color-mark-off: var(--mark-off);
+  --color-bar: var(--bar);
+  --color-bar-control: var(--bar-control);
+  --color-bar-plate: var(--bar-plate);
+  --color-picture: var(--picture);
+  --color-glass: var(--glass);
+
+  --font-*: initial;
   --font-sans: var(--sans);
-  --font-serif: var(--heading);
   --font-mono: var(--mono);
 
-  --shadow-elevated: var(--shadow-soft);
-  --shadow-header: var(--shadow-strong);
+  /* A surface carries no shadow (DESIGN SYSTEM § Interface tokens). */
+  --shadow-*: initial;
 
-  /* The `rounded-*` scale is the **clickable** elements' one, per the DESIGN
-     SYSTEM shape rule (a rounded rectangle is an action). It is set on the Vyzio
-     button radius, which rethemes the shadcn primitives without modifying them.
-     `inline`: Tailwind emits no variable and inlines the value in the utility. */
-  --radius: 12px;
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
+  /* Three shapes: the pill (`rounded-full`), the circle, the rounded rectangle.
+     The `rounded-*` scale the primitives read is the field's; a surface, the
+     plate of an alert and the bar take their own names. */
+  --radius-*: initial;
+  --radius: 16px;
+  --radius-xs: 8px;
+  --radius-sm: 10px;
+  --radius-md: var(--radius);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-
-  /* **Surface** radii (not clickable): distinct names, so no collision, and the
-     intent reads where they are used. */
+  --radius-xl: 20px;
   --radius-inset: 18px;
-  --radius-card: 24px;
+  --radius-card: 20px;
   --radius-panel: 28px;
+  --radius-full: 9999px;
+}
+
+/* The four sizes of DESIGN SYSTEM § Typography, and no other: the default scale is dropped.
+   Not inline: the page's base size reads the secondary one by its variable. */
+@theme {
+  --text-*: initial;
+  --text-title: 26px;
+  --text-title--line-height: 1.2;
+  --text-title--letter-spacing: -0.02em;
+  --text-row: 17px;
+  --text-row--line-height: 1.35;
+  --text-body: 15px;
+  --text-body--line-height: 1.45;
+  --text-label: 13px;
+  --text-label--line-height: 1.4;
 }
 
 /* ---------------------------------------------------------------------------
    Document base: what follows dresses the page itself, not a component.
    --------------------------------------------------------------------------- */
 
-/* Tailwind's type base, with no root size override: the default scale then
-   separates two levels of information as it is (DESIGN SYSTEM § Typography). */
 :root {
   font-family: var(--sans);
-  line-height: 1.5;
-  color: var(--ink-strong);
-  background: var(--bg-canvas);
+  line-height: 1.45;
+  color: var(--ink);
+  background: var(--ground);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
 }
 
 html {
   min-width: 320px;
 }
 
+/* The secondary size is the text's default; the root keeps 16 px, so the spacing scale stays whole. */
 body {
   margin: 0;
   min-width: 320px;
-  background: var(--canvas-gradient);
-}
-
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image:
-    linear-gradient(var(--canvas-grid) 1px, transparent 1px),
-    linear-gradient(90deg, var(--canvas-grid) 1px, transparent 1px);
-  background-size: 36px 36px;
-  pointer-events: none;
-  opacity: 0.35;
+  font-size: var(--text-body);
+  background: var(--ground);
 }
 
 #root {
-  position: relative;
-  width: min(1240px, calc(100% - 32px));
-  max-width: 100%;
-  margin: 0 auto;
-  padding-bottom: 40px;
   min-height: 100svh;
 }
 
 /* Layered so a utility (a link rendered as a button) still overrides it:
    unlayered CSS beats utility classes whatever their specificity. */
 @layer base {
-  /* A border that names no colour takes the soft line, never the text colour (DESIGN SYSTEM § Palette). */
+  /* A border that names no colour takes the line, never the text colour (DESIGN SYSTEM § Palette). */
   *,
   ::before,
   ::after {
@@ -221,13 +197,12 @@ body::before {
     text-decoration: none;
   }
 
-  /* Titles take the serif by default; a utility on a heading still wins, the rule being layered. */
+  /* A title is the family's bold; a utility on a heading still wins, the rule being layered. */
   h1,
   h2,
   h3 {
-    font-family: var(--heading);
-    font-weight: 500;
-    color: var(--ink-strong);
+    font-weight: 700;
+    color: var(--ink);
   }
 
   /* A press never selects: what the user acts on is not text to read (DESIGN SYSTEM § Component foundation). */
@@ -264,9 +239,13 @@ body::before {
   }
 }
 
-/* A calendar fill told apart by its pattern, never by colour alone (DESIGN SYSTEM § Palette). */
+/* A Silence fill told apart by its pattern, never by colour alone (DESIGN SYSTEM § Palette). */
 @utility bg-stripes {
-  background-image: repeating-linear-gradient(135deg, var(--accent) 0 5px, var(--card) 5px 9px);
+  background-image: repeating-linear-gradient(
+    135deg,
+    var(--silence) 0 5px,
+    var(--silence-ink) 5px 9px
+  );
 }
 
 /* ---------------------------------------------------------------------------

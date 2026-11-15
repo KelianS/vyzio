@@ -57,19 +57,17 @@ test.describe('Base styles', () => {
     await page.goto('/')
     await expect(page.getByRole('heading', { name: /sous surveillance|Bienvenue/ })).toBeVisible()
 
-    await expect(page.locator('html')).not.toHaveClass(/dark/)
-
     const headingFont = await page
       .locator('h1')
       .first()
       .evaluate((el) => getComputedStyle(el).fontFamily)
-    expect(headingFont).toContain('Iowan Old Style')
+    expect(headingFont).toContain('Inter')
 
     const controlFont = await page
       .locator('button')
       .first()
       .evaluate((el) => getComputedStyle(el).fontFamily)
-    expect(controlFont).toContain('Aptos')
+    expect(controlFont).toContain('Inter')
 
     // Surfaces keep their large radii: that is what tells their scale apart from the
     // tighter one of clickable elements.
@@ -77,7 +75,7 @@ test.describe('Base styles', () => {
       .locator('.rounded-card')
       .first()
       .evaluate((el) => getComputedStyle(el).borderTopLeftRadius)
-    expect(cardRadius).toBe('24px')
+    expect(cardRadius).toBe('20px')
 
     await fullPageScreenshot(page, { path: 'test-results/socle-hub.png' })
 
@@ -124,11 +122,11 @@ test.describe('Base styles', () => {
   })
 })
 
-// The token values these read: `--line-soft`, `--bg-sunken`, `--bg-elevated`, `--brand-moss` and `--shadow-soft` of `src/index.css`.
-const LINE_SOFT = 'rgb(216, 207, 191)'
-const SUNKEN = 'rgb(242, 235, 223)'
-const ELEVATED = 'rgb(255, 250, 242)'
-const MOSS = 'rgb(47, 107, 89)'
+// The token values these read: `--line`, `--raised`, `--surface` and `--action` of `src/index.css`.
+const LINE_SOFT = 'rgb(44, 51, 47)'
+const SUNKEN = 'rgb(36, 42, 38)'
+const ELEVATED = 'rgb(27, 32, 29)'
+const MOSS = 'rgb(127, 209, 168)'
 
 test.describe('Style foundations', () => {
   test('Border_ShouldTakeTheLineColour_WhenItNamesNoBorderColour', async ({ page }) => {
@@ -152,8 +150,8 @@ test.describe('Style foundations', () => {
     await page.goto('/')
 
     const pause = page.getByRole('button', { name: 'Pause' })
-    await expect(pause).toHaveCSS('font-size', '14px')
-    await expect(pause).toHaveCSS('font-weight', '500')
+    await expect(pause).toHaveCSS('font-size', '15px')
+    await expect(pause).toHaveCSS('font-weight', '600')
   })
 
   test('WelcomeStepNumber_ShouldSitOnAnOpaqueSunkenSurface_WhenTheHubHasNoCamera', async ({
@@ -204,8 +202,8 @@ test.describe('Style foundations', () => {
 
     const state = page.getByText(/^Aucune photo/)
     const advice = page.getByText(/^Des photos nettes/)
-    await expect(state).toHaveCSS('font-size', '14px')
-    await expect(advice).toHaveCSS('font-size', '14px')
+    await expect(state).toHaveCSS('font-size', '15px')
+    await expect(advice).toHaveCSS('font-size', '15px')
     const adviceBox = (await advice.boundingBox())!
     const addBox = (await page.getByRole('button', { name: 'Ajouter une photo' }).boundingBox())!
     expect(adviceBox.y).toBeLessThan(addBox.y)
@@ -231,8 +229,8 @@ test.describe('Style foundations', () => {
     await expect(dialog).toHaveCSS('border-top-left-radius', '28px')
     await expect(dialog).toHaveCSS('border-top-width', '0px')
     await expect(dialog).toHaveCSS('background-color', ELEVATED)
-    // Tailwind composes its empty ring layers before the shadow token: the token is the last layer.
-    await expect(dialog).toHaveCSS('box-shadow', /, rgba\(24, 32, 29, 0\.08\) 0px 18px 50px 0px$/)
+    // A surface carries no shadow, a dialog included.
+    await expect(dialog).not.toHaveCSS('box-shadow', /px/)
   })
 
   test('ConfirmDialog_ShouldConfirmWithTheFilledButton_WhenItAsksPlainly', async ({ page }) => {
@@ -251,7 +249,7 @@ test.describe('Style foundations', () => {
 
     await expect(page.locator('summary', { hasText: 'Options' }).first()).toHaveCSS(
       'border-top-left-radius',
-      '12px',
+      '16px',
     )
   })
 })

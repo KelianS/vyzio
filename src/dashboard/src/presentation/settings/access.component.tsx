@@ -151,16 +151,16 @@ function ChangePasswordForm({
           aria-describedby="new-password-hint"
         />
         {minLength !== null && (
-          <p id="new-password-hint" className="text-sm text-muted-foreground">
+          <p id="new-password-hint" className="text-body text-muted-foreground">
             Au moins {minLength} caractères.
           </p>
         )}
       </div>
 
       {/* A refusal is read beside the field it refused, in a line kept so the button never jumps. */}
-      <div className="min-h-5">
+      <div className="min-h-lh text-body">
         {refused && (
-          <p role="alert" className="text-sm font-medium text-destructive">
+          <p role="alert" className="text-body font-medium text-destructive">
             Mot de passe actuel incorrect.
           </p>
         )}

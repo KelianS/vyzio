@@ -6,7 +6,7 @@ import { SecondaryButton } from './secondary_button'
 /** The line support reads under an error: quiet, monospace, selectable to be copied (UI-01). */
 export function DiagnosticLine({ text }: { text: string }) {
   return (
-    <p className="mt-1 font-mono text-xs break-all text-muted-foreground select-text">{text}</p>
+    <p className="mt-1 font-mono text-label break-all text-muted-foreground select-text">{text}</p>
   )
 }
 
@@ -14,7 +14,7 @@ export function DiagnosticLine({ text }: { text: string }) {
 export function ErrorMessage({ error, className }: { error: AppError; className?: string }) {
   const diagnostic = appErrorDiagnostic(error)
   return (
-    <div role="alert" className={cn('text-sm text-destructive', className)}>
+    <div role="alert" className={cn('text-body text-destructive', className)}>
       <p>{appErrorMessage(error)}</p>
       {diagnostic && <DiagnosticLine text={diagnostic} />}
     </div>
