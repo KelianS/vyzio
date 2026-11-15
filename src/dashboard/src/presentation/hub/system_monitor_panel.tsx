@@ -1,6 +1,7 @@
 import { useId, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { Badge, type BadgeTone } from '../../common/components/badge'
+import { Surface } from '../../common/components/surface'
 import { Button } from '../../common/ui/button'
 import { cn } from '../../common/ui/utils'
 import { TechnicalDetails } from '../../common/components/technical_details'
@@ -147,17 +148,16 @@ function receivedFrameRates(stats: SystemStats, cameras: Camera[]) {
 function Panel({ status, children }: { status: FrigateStatus; children: ReactNode }) {
   const titleId = useId()
   return (
-    <section
-      aria-labelledby={titleId}
-      className="rounded-card bg-card p-5 text-card-foreground shadow-elevated sm:p-6"
-    >
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 id={titleId} className="font-serif text-2xl">
-          Surveillance
-        </h2>
-        <Badge tone={STATUS_TONE[status]}>{STATUS_LABEL[status]}</Badge>
-      </div>
-      {children}
-    </section>
+    <Surface asChild>
+      <section aria-labelledby={titleId}>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 id={titleId} className="font-serif text-2xl">
+            Surveillance
+          </h2>
+          <Badge tone={STATUS_TONE[status]}>{STATUS_LABEL[status]}</Badge>
+        </div>
+        {children}
+      </section>
+    </Surface>
   )
 }

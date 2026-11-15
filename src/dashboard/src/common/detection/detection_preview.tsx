@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { Surface } from '../components/surface'
 
 export type DetectionMedia =
   | { type: 'image' | 'video'; url: string; eventId: string }
@@ -18,7 +19,11 @@ interface DetectionPreviewProps {
 }
 
 function Notice({ children }: { children: ReactNode }) {
-  return <p className="rounded-card bg-card p-6 text-center text-card-foreground">{children}</p>
+  return (
+    <Surface asChild className="text-center">
+      <p>{children}</p>
+    </Surface>
+  )
 }
 
 /** The opened detection, the same on the home screen and in the history. */
