@@ -149,7 +149,7 @@ function Panel({ status, children }: { status: FrigateStatus; children: ReactNod
   return (
     <section
       aria-labelledby={titleId}
-      className="rounded-card bg-card p-5 text-card-foreground shadow-[var(--shadow-soft)] sm:p-6"
+      className="rounded-card bg-card p-5 text-card-foreground shadow-elevated sm:p-6"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 id={titleId} className="font-serif text-2xl">

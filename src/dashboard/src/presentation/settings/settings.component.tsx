@@ -38,7 +38,7 @@ export function SettingsView() {
         <nav
           aria-label="Rubriques de réglages"
           className={cn(
-            'rounded-card bg-card text-card-foreground shadow-[var(--shadow-soft)] p-2',
+            'rounded-card bg-card text-card-foreground shadow-elevated p-2',
             // On mobile the list gives way to the open page.
             atRoot ? 'block' : 'hidden md:block',
           )}
@@ -86,7 +86,7 @@ export function SettingsView() {
           {showRubricTitle && <h1 className="mb-3 font-serif text-3xl">{current.label}</h1>}
 
           {atRoot ? (
-            <p className="hidden md:block rounded-card bg-card p-6 text-muted-foreground shadow-[var(--shadow-soft)]">
+            <p className="hidden md:block rounded-card bg-card p-6 text-muted-foreground shadow-elevated">
               Choisissez une rubrique.
             </p>
           ) : (

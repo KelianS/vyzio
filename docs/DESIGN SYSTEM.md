@@ -16,9 +16,13 @@ engine underneath (product principle 2).
 ## Palette
 
 - Surfaces: `--bg-canvas: #f4efe6` the main background, warm rather than clinical;
-  `--bg-elevated: #fffaf2` primary surfaces; `--bg-strong: #1f3a33` structural dark panels.
+  `--bg-elevated: #fffaf2` primary surfaces; `--bg-strong: #1f3a33` structural dark panels;
+  `--bg-sunken: #f2ebdf` an inset inside a surface (a track, a chip, a step number, a fold, a quiet
+  hover, a secondary button), opaque so it shows on a card as on the canvas; `--bg-muted`,
+  translucent, only for a control laid over the picture, through the `--glass` role (`bg-glass`).
 - Ink: `--ink-strong: #18201d` primary text; `--ink-soft: #606d67` secondary text;
-  `--line-soft: #d8cfbf` discreet borders.
+  `--line-soft: #d8cfbf` discreet borders, the colour of every border that names no other, never
+  the text colour.
 - Brand: `--brand-moss: #2f6b59` the main product colour; `--brand-sand: #d9b37a` a warm accent.
 - Alerts: `--alert-high: #b04c30` a priority event; `--alert-ok: #2d7a52` a healthy state.
 
@@ -28,6 +32,7 @@ of both themes. Usage rules:
 - Critical surfaces use `--bg-elevated` to keep a soft contrast.
 - `--brand-moss` carries the calls to action and the product indicators.
 - `--alert-high` is reserved for important events and attention states.
+- `--brand-sand` never marks a hover: a quiet action (outline, ghost) hovers to `--bg-sunken`.
 - Colour never carries a meaning alone: a kind of thing is told apart by its icon and its name, and a
   fill that must be told apart differs by its pattern too.
 
@@ -57,7 +62,9 @@ Radii, two scales never confused (exact values in `src/index.css`, the single ho
 | `--radius-inset`, `--radius-card`, `--radius-panel` | **Non-clickable** surfaces (cards, panels, modals) |
 | `999px` | The pill, **reserved**: navigation links and status pills |
 
-A soft shadow lifts the elevated surfaces; sections are spaced `24px` to `32px` apart.
+Two shadows, both tokens: `--shadow-soft` lifts the elevated surfaces, a modal included, which is
+drawn as a panel (`--radius-panel`, `--bg-elevated`, no border); `--shadow-strong` floats the
+navigation header over the page. Sections are spaced `24px` to `32px` apart.
 
 **Shape rule: a pill is a state, a rounded rectangle is an action.** A pill means a **non-clickable**
 element (a status pill, a badge, a header navigation link); a rounded rectangle (`--radius-sm` /
@@ -179,6 +186,9 @@ the user gave included). Each feature's words are its use case's.
 | `Détails techniques` | The end of a card, closed | Figures for support (§ Technical details) |
 
 None stands in for another: no setting in help or technical details, no help in `Avancé`.
+
+A fold opens on a press, so it is an action: it takes the clickable radius (`--radius`), never a
+surface's or the pill's (§ Interface tokens).
 
 ### Help: three levels, not a manual
 

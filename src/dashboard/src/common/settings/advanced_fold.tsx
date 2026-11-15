@@ -4,8 +4,8 @@ import { ChevronRight } from 'lucide-react'
 /** `Avance` is a position at the end of the page, not a mode (UI-09): one fold, the same everywhere. */
 export function AdvancedFold({ lede, children }: { lede?: string; children: ReactNode }) {
   return (
-    <details className="group mt-8 rounded-inset border border-border">
-      <summary className="flex cursor-pointer list-none items-center gap-2 rounded-inset px-4 py-3 font-medium hover:bg-muted">
+    <details className="group mt-8 rounded-lg border border-border">
+      <summary className="flex cursor-pointer list-none items-center gap-2 rounded-lg px-4 py-3 font-medium hover:bg-muted">
         <ChevronRight
           className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-90"
           aria-hidden="true"

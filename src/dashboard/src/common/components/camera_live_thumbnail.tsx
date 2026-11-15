@@ -118,7 +118,7 @@ export function CameraLiveThumbnail({
   )
 
   return (
-    <article className="overflow-hidden rounded-card bg-card shadow-[var(--shadow-soft)]">
+    <article className="overflow-hidden rounded-card bg-card shadow-elevated">
       {/* Only the frame is the link: the footer's privacy toggle is a button, and nesting is invalid. */}
       {expandable && liveTo ? (
         <PressableSurface>

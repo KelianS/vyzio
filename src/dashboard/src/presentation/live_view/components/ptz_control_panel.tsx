@@ -24,6 +24,7 @@ const PLACE: Record<
     joystick: string
     pad: string
     button: string
+    tile: string
     icon: string
     positions: string
     messages: string
@@ -35,7 +36,8 @@ const PLACE: Record<
     panel: 'flex flex-1 flex-col items-center justify-center gap-5',
     joystick: '',
     pad: 'size-[max(7rem,min(40vw,10rem))] bg-card',
-    button: 'size-10',
+    button: 'size-10 bg-muted',
+    tile: 'bg-muted',
     icon: 'size-5',
     positions: 'flex w-full flex-col items-center gap-2',
     messages: 'flex flex-col items-center gap-2',
@@ -47,7 +49,9 @@ const PLACE: Record<
     joystick:
       'pointer-events-auto absolute top-1/2 right-[max(1rem,env(safe-area-inset-right))] -translate-y-1/2',
     pad: 'size-[116px] bg-card/60',
-    button: 'size-[34px]',
+    // Laid over the picture: the keys and tiles stay translucent (DESIGN SYSTEM § Palette).
+    button: 'size-[34px] bg-glass',
+    tile: 'bg-glass',
     icon: 'size-4',
     positions:
       'absolute bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-1/2 flex max-w-[calc(100%-18rem)] -translate-x-1/2 flex-col items-center gap-2',
@@ -59,7 +63,8 @@ const PLACE: Record<
     panel: 'flex flex-col items-center gap-6',
     joystick: '',
     pad: 'size-40 bg-card',
-    button: 'size-10',
+    button: 'size-10 bg-muted',
+    tile: 'bg-muted',
     icon: 'size-5',
     positions: 'flex w-full flex-col items-center gap-2',
     messages: 'flex flex-col items-center gap-2',
@@ -75,13 +80,13 @@ const EDGE_POSITION: Record<PtzDirection, string> = {
 }
 
 function DirButton({
-  buttonSize,
+  place,
   edge,
   title,
   children,
   ...handlers
 }: {
-  buttonSize: string
+  place: string
   edge: PtzDirection
   title: string
   children: ReactNode
@@ -97,8 +102,8 @@ function DirButton({
         title={title}
         {...handlers}
         className={cn(
-          buttonSize,
-          'absolute flex items-center justify-center rounded-full bg-muted text-foreground',
+          place,
+          'absolute flex items-center justify-center rounded-full text-foreground',
           'hover:bg-primary hover:text-primary-foreground active:bg-primary active:text-primary-foreground',
           EDGE_POSITION[edge],
         )}
@@ -131,6 +136,7 @@ function PresetTile({
   editable,
   onGoto,
   onSave,
+  fill,
 }: {
   preset: PtzPreset | undefined
   reserved: boolean
@@ -142,6 +148,7 @@ function PresetTile({
   editable: boolean
   onGoto: () => void
   onSave: () => void
+  fill: string
 }) {
   const pressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const longPressedRef = useRef(false)
@@ -183,7 +190,8 @@ function PresetTile({
         // The long press is our gesture: without this the mobile browser opens its menu over it.
         onContextMenu={(e) => e.preventDefault()}
         className={cn(
-          'relative size-14 shrink-0 touch-pan-x overflow-hidden rounded-md border bg-muted',
+          'relative size-14 shrink-0 touch-pan-x overflow-hidden rounded-md border',
+          fill,
           active ? 'border-primary ring-2 ring-primary' : 'border-border',
           'disabled:opacity-60',
         )}
@@ -293,16 +301,16 @@ export function PtzControlPanel({
             className="absolute inset-[30%] rounded-full border-2 border-background/70"
             aria-hidden="true"
           />
-          <DirButton buttonSize={place.button} edge="Up" title="Haut" {...dir('Up')}>
+          <DirButton place={place.button} edge="Up" title="Haut" {...dir('Up')}>
             <ArrowUp className={place.icon} aria-hidden="true" />
           </DirButton>
-          <DirButton buttonSize={place.button} edge="Left" title="Gauche" {...dir('Left')}>
+          <DirButton place={place.button} edge="Left" title="Gauche" {...dir('Left')}>
             <ArrowLeft className={place.icon} aria-hidden="true" />
           </DirButton>
-          <DirButton buttonSize={place.button} edge="Right" title="Droite" {...dir('Right')}>
+          <DirButton place={place.button} edge="Right" title="Droite" {...dir('Right')}>
             <ArrowRight className={place.icon} aria-hidden="true" />
           </DirButton>
-          <DirButton buttonSize={place.button} edge="Down" title="Bas" {...dir('Down')}>
+          <DirButton place={place.button} edge="Down" title="Bas" {...dir('Down')}>
             <ArrowDown className={place.icon} aria-hidden="true" />
           </DirButton>
         </div>
@@ -367,6 +375,7 @@ export function PtzControlPanel({
                     editable={calibrated}
                     onGoto={() => onGoTo(presetId)}
                     onSave={() => (preset ? onAskOverride(presetId) : onSave(presetId))}
+                    fill={place.tile}
                   />
                   <span
                     className={cn(

@@ -94,7 +94,7 @@ function Card({ className, children }: { className?: string; children: ReactNode
   return (
     <section
       className={cn(
-        'rounded-card bg-card p-5 text-card-foreground shadow-[var(--shadow-soft)] sm:p-6',
+        'rounded-card bg-card p-5 text-card-foreground shadow-elevated sm:p-6',
         className,
       )}
     >
