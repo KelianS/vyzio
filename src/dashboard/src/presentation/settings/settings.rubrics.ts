@@ -47,32 +47,23 @@ export const SETTINGS_RUBRICS: readonly SettingsRubric[] = [
 
 export const SETTINGS_ROOT = '/settings'
 
+/** Whether an address is one of the settings' pages, their root included. */
+export function isSettingsPath(pathname: string): boolean {
+  return pathname === SETTINGS_ROOT || pathname.startsWith(`${SETTINGS_ROOT}/`)
+}
+
 export function rubricPath(slug: string) {
   return `${SETTINGS_ROOT}/${slug}`
 }
 
-/** A page is named once — the settings shell does it by default; routes naming something else (a camera, a task) declare it here. */
-export interface SettingsRouteHandle {
+/** A page is named once: the settings shell names a rubric, a route naming something else (a camera, a task) declares it. */
+interface SettingsRouteHandle {
   /** The route shows its own title; the rubric shell adds none. */
   readonly ownHeader?: boolean
-  /** The route shows its own back link; the rubric shell adds none. */
-  readonly ownBackLink?: boolean
 }
 
-/** Migrated screen that names itself and provides its own way back. */
-export const OWN_HEADER: SettingsRouteHandle = { ownHeader: true, ownBackLink: true }
-
-/** Not-yet-migrated screen: has its own title but no back link, so the shell keeps providing one. */
-export const OWN_HEADER_ONLY: SettingsRouteHandle = { ownHeader: true }
-
-function handlesOf(matches: readonly { readonly handle?: unknown }[]) {
-  return matches.map((match) => match.handle as SettingsRouteHandle | undefined)
-}
+export const OWN_HEADER: SettingsRouteHandle = { ownHeader: true }
 
 export function declaresOwnHeader(matches: readonly { readonly handle?: unknown }[]): boolean {
-  return handlesOf(matches).some((handle) => handle?.ownHeader)
-}
-
-export function declaresOwnBackLink(matches: readonly { readonly handle?: unknown }[]): boolean {
-  return handlesOf(matches).some((handle) => handle?.ownBackLink)
+  return matches.some((match) => (match.handle as SettingsRouteHandle | undefined)?.ownHeader)
 }

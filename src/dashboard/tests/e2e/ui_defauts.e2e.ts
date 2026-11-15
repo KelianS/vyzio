@@ -45,7 +45,7 @@ test.describe('LiveView', () => {
 
     await expect(page).toHaveURL('/cameras/camera-1')
     await expect(page.getByRole('main', { name: 'Salon' })).toBeVisible()
-    await expect(page.getByRole('navigation', { name: 'Navigation principale' })).toBeHidden()
+    await expect(page.getByRole('banner')).toBeHidden()
 
     await page.getByRole('button', { name: 'Retour' }).click()
     await expect(page).toHaveURL('/')
@@ -263,7 +263,7 @@ test.describe('DetectionHistoryView', () => {
   }) => {
     await openHistory(page)
 
-    await expect(page.getByRole('heading', { name: 'Historique' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Détections' })).toBeVisible()
 
     // What one comes to read here is the detections - not a filter form.
     await expect(page.getByRole('region', { name: 'Filtres' })).toBeHidden()

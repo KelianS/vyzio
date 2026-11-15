@@ -40,7 +40,7 @@ export function CameraPage({
   if (!camera && error) {
     return (
       <SettingsPage>
-        <h1 className="font-serif text-3xl">Cette caméra ne s’affiche pas</h1>
+        <h1 className="text-title">Cette caméra ne s’affiche pas</h1>
         <ReadFailure error={error} onRetry={onRetry} className="mt-3" />
         <Link to="/settings/cameras" className="mt-3 inline-block underline underline-offset-2">
           Revenir à la liste des caméras
@@ -61,7 +61,6 @@ export function CameraPage({
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        back={{ to: '/settings/cameras', label: 'Caméras' }}
         title={camera.displayName}
         state={{ tone: formatStatusTone(camera), label: formatCameraStatusLabel(camera) }}
       />

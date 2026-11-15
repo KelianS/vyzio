@@ -13,18 +13,20 @@ test.describe('Navigation', () => {
 
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
 
-    const mainNav = page.getByRole('navigation', { name: 'Navigation principale' })
+    const bar = page.getByRole('banner')
     const rubrics = page.getByRole('navigation', { name: 'Rubriques de réglages' })
 
     await page.goto('/')
     await expect(page.getByRole('heading', { name: /sous surveillance|Bienvenue/ })).toBeVisible()
 
-    // The main bar carries viewing only, plus one way into the settings.
-    await mainNav.getByRole('link', { name: 'Historique', exact: true }).click()
-    await expect(page.getByRole('heading', { name: 'Historique' })).toBeVisible()
+    // No navigation bar: the home leads to the detections, the bar's gear to the settings.
+    await page.getByRole('link', { name: 'Toutes les détections' }).click()
+    await expect(bar.getByRole('heading', { name: 'Détections' })).toBeVisible()
+    await bar.getByRole('button', { name: 'Retour' }).click()
+    await expect(page).toHaveURL('/')
 
     // Every settings section is reachable from the first level.
-    await mainNav.getByRole('link', { name: 'Réglages', exact: true }).click()
+    await bar.getByRole('link', { name: 'Réglages' }).click()
 
     await rubrics.getByRole('link', { name: /Caméras/ }).click()
     // The section opens on the **list**; adding a camera is a distinct task,
@@ -56,7 +58,8 @@ test.describe('Navigation', () => {
         .first(),
     ).toBeVisible()
 
-    await mainNav.getByRole('link', { name: 'Accueil', exact: true }).click()
+    await page.goto('/settings')
+    await bar.getByRole('button', { name: 'Retour' }).click()
     await expect(page).toHaveURL('/')
 
     expect(consoleErrors, `Console errors while navigating:\n${consoleErrors.join('\n')}`).toEqual(

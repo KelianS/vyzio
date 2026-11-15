@@ -14,7 +14,7 @@ describe('SettingsView', () => {
     expect(screen.getByText('Choisissez une rubrique.')).toBeInTheDocument()
   })
 
-  it('SettingsView_ShouldNameTheRubricAndLeadBack_WhenARubricIsOpen', () => {
+  it('SettingsView_ShouldNameTheRubricAndMarkItInTheList_WhenARubricIsOpen', () => {
     // Arrange & Act
     renderScreen(<SettingsView />, { path: '/settings/*', url: '/settings/retention' })
 
@@ -24,6 +24,5 @@ describe('SettingsView', () => {
       'aria-current',
       'page',
     )
-    expect(screen.getByRole('link', { name: 'Réglages' })).toHaveAttribute('href', '/settings')
   })
 })

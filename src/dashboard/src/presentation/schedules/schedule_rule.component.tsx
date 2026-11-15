@@ -1,5 +1,6 @@
 import { useEffect, useReducer, useState, type ReactNode } from 'react'
-import { useNavigate, useParams } from 'react-router'
+import { useParams } from 'react-router'
+import { useGoBack } from '../../common/navigation/use_go_back'
 import { PageHeader } from '../../common/components/page_header'
 import { Button } from '../../common/ui/button'
 import { SettingsPage } from '../../common/settings/settings_page'
@@ -191,7 +192,7 @@ function RuleForm({
   targetOptions: Record<ScheduleTargetKind, SettingOption[]>
   presenter: ReturnType<typeof buildScheduleRulePresenter>
 }) {
-  const navigate = useNavigate()
+  const goBack = useGoBack()
   const draft = useSettingsDraft<RuleValues>({
     saved: toValues(rule, targetOptions),
     labels: DRAFT_LABELS[SCHEDULE_TYPES[rule?.kind ?? NEW_RULE.kind].targetKind],
@@ -200,8 +201,8 @@ function RuleForm({
   // Left once the draft is cleared: declared after the guard's signal, so it runs after it.
   const [leaving, setLeaving] = useState(false)
   useEffect(() => {
-    if (leaving) void navigate(SCHEDULES_PATH)
-  }, [leaving, navigate])
+    if (leaving) goBack(SCHEDULES_PATH)
+  }, [leaving, goBack])
 
   const values = draft.values
   const type = SCHEDULE_TYPES[values.kind]
@@ -331,7 +332,7 @@ function RuleForm({
 function Page({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader back={{ to: SCHEDULES_PATH, label: 'Planification' }} title={title} />
+      <PageHeader title={title} />
       {children}
     </div>
   )

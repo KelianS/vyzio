@@ -2,7 +2,7 @@ import { lazy } from 'react'
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router'
 import { ToastProvider } from './common/components/toast'
 import { AppContainerProvider } from './infrastructure/providers/app_container.context'
-import { OWN_HEADER, OWN_HEADER_ONLY } from './presentation/settings/settings.rubrics'
+import { OWN_HEADER } from './presentation/settings/settings.rubrics'
 import { AccessGate } from './presentation/access/access_gate.component'
 import { AppShell } from './presentation/shell/app_shell.component'
 import { FULL_SCREEN } from './presentation/shell/app_shell.handle'
@@ -178,9 +178,6 @@ const router = createBrowserRouter([
             ],
           },
           { path: 'detection', element: <Navigate to="/settings/detection/people" replace /> },
-          // Screens not reworked yet: they already carry a title, never a back link.
-          // The marker goes away with their rework, not before - without it the page
-          // would announce itself twice.
           { path: 'detection/people', element: <PersonListView /> },
           // Names the task, not the section.
           { path: 'detection/people/add', element: <AddPersonView />, handle: OWN_HEADER },
@@ -215,7 +212,7 @@ const router = createBrowserRouter([
           { path: 'schedule/:ruleId', element: <ScheduleRuleView />, handle: OWN_HEADER },
           { path: 'access', element: <AccessView /> },
           { path: 'hardware', element: <SystemView /> },
-          { path: 'hardware/advanced', element: <ExpertView />, handle: OWN_HEADER_ONLY },
+          { path: 'hardware/advanced', element: <ExpertView />, handle: OWN_HEADER },
         ],
       },
     ],

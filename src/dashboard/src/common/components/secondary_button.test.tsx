@@ -35,13 +35,13 @@ describe('SecondaryButton', () => {
     render(
       <MemoryRouter>
         <SecondaryButton icon={RefreshCw} to="/detections">
-          Tout l’historique
+          Toutes les détections
         </SecondaryButton>
       </MemoryRouter>,
     )
 
     // Assert
-    const link = screen.getByRole('link', { name: 'Tout l’historique' })
+    const link = screen.getByRole('link', { name: 'Toutes les détections' })
     expect(link).toHaveAttribute('href', '/detections')
     expect(link.querySelector('svg')).toBeInTheDocument()
   })

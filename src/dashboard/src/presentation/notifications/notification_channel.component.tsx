@@ -1,5 +1,5 @@
 import { useEffect, useReducer } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { Link, useParams } from 'react-router'
 import { Send } from 'lucide-react'
 import { SettingsPage, SettingsSection } from '../../common/settings/settings_page'
 import { SettingsList } from '../../common/settings/settings_list'
@@ -22,6 +22,7 @@ import {
   type MediaMode,
   type NotificationChannelConfig,
 } from '../../domain/entities/notification_channel_config.entity'
+import { useGoBack } from '../../common/navigation/use_go_back'
 import { PageHeader } from '../../common/components/page_header'
 import { NotificationLog } from './components/notification_log'
 import { CommandJournal } from './components/command_journal'
@@ -85,7 +86,7 @@ export function NotificationChannelView() {
   if (channel && uido.configError) {
     return (
       <SettingsPage>
-        <h1 className="font-serif text-3xl">Ce canal ne s’affiche pas</h1>
+        <h1 className="text-title">Ce canal ne s’affiche pas</h1>
         <ReadFailure
           error={uido.configError}
           onRetry={() => presenter.onLoad(channel)}
@@ -106,7 +107,7 @@ export function NotificationChannelView() {
       // This route announces that it carries its own header: with no channel to name,
       // the failure has to do it, or the page would stay anonymous.
       <SettingsPage>
-        <h1 className="font-serif text-3xl">Canal introuvable</h1>
+        <h1 className="text-title">Canal introuvable</h1>
         <Link
           to="/settings/notifications"
           className="mt-3 inline-block underline underline-offset-2"
@@ -137,7 +138,7 @@ function ChannelForm({
   uido: NotificationChannelUido
   presenter: ReturnType<typeof buildNotificationChannelPresenter>
 }) {
-  const navigate = useNavigate()
+  const goBack = useGoBack()
   const { channel, acceptsCommands } = config
 
   // The sections below the settings read on mount, as they did when each fetched its own.
@@ -258,10 +259,7 @@ function ChannelForm({
   return (
     <>
       <div className="flex flex-col gap-4">
-        <PageHeader
-          back={{ to: '/settings/notifications', label: 'Notifications' }}
-          title={config.displayName}
-        />
+        <PageHeader title={config.displayName} />
 
         <SettingsPage>
           <SettingsSection
@@ -322,9 +320,9 @@ function ChannelForm({
 
               <HelpPanel title="Que puis-je demander, une fois relié ?">
                 <p>
-                  Envoyez <code className="rounded bg-muted px-1 py-0.5 text-xs">/aide</code> dans
-                  la conversation reliée : le bot répond lui-même la liste de ce qu’il sait faire,
-                  toujours à jour.
+                  Envoyez <code className="rounded bg-muted px-1 py-0.5 text-label">/aide</code>{' '}
+                  dans la conversation reliée : le bot répond lui-même la liste de ce qu’il sait
+                  faire, toujours à jour.
                 </p>
                 <p>
                   Une seule conversation à la fois : en relier une nouvelle remplace la précédente.
@@ -425,7 +423,7 @@ function ChannelForm({
               onConfirm={async () => {
                 if (!(await presenter.onRemove(channel))) return
                 draft.discard()
-                void navigate('/settings/notifications')
+                goBack('/settings/notifications')
               }}
               onCancel={presenter.onCancelRemove}
             />

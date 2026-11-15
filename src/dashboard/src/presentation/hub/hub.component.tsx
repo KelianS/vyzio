@@ -118,7 +118,7 @@ function HubUnreachable({ error }: { error: AppError | null }) {
         <div className="flex items-start gap-3">
           <TriangleAlert className="mt-1 size-5 shrink-0 text-destructive" aria-hidden="true" />
           <div>
-            <h1 className="font-serif text-3xl">Vyzio ne répond pas</h1>
+            <h1 className="text-title">Vyzio ne répond pas</h1>
             <p className="mt-1 text-muted-foreground">
               La surveillance continue peut-être, mais cette page ne peut pas le confirmer.
             </p>
@@ -143,7 +143,7 @@ function HubCamerasUnread({ error, onRetry }: { error: AppError; onRetry: () => 
   return (
     <main className="py-4">
       <Surface>
-        <h1 className="font-serif text-3xl">Vos caméras ne s’affichent pas</h1>
+        <h1 className="text-title">Vos caméras ne s’affichent pas</h1>
         <p className="mt-1 text-muted-foreground">La liste de vos caméras n’a pas pu être lue.</p>
         <ReadFailure error={error} onRetry={onRetry} className="mt-4" />
       </Surface>
@@ -170,8 +170,8 @@ function HubWelcome() {
   return (
     <main className="py-4">
       <Surface>
-        <h1 className="font-serif text-3xl">Bienvenue</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <h1 className="text-title">Bienvenue</h1>
+        <p className="mt-1 text-body text-muted-foreground">
           Trois étapes, et vos caméras sont sous surveillance.
         </p>
 
@@ -180,12 +180,12 @@ function HubWelcome() {
             <li key={step.title} className="grid grid-cols-[2rem_1fr] gap-x-3">
               <span
                 aria-hidden="true"
-                className="row-span-2 flex size-8 items-center justify-center rounded-full bg-muted text-sm font-semibold text-primary"
+                className="row-span-2 flex size-8 items-center justify-center rounded-full bg-muted text-body font-semibold text-primary"
               >
                 {index + 1}
               </span>
               <p className="font-medium">{step.title}</p>
-              <p className="text-sm text-muted-foreground">{step.body}</p>
+              <p className="text-body text-muted-foreground">{step.body}</p>
             </li>
           ))}
         </ol>
@@ -245,7 +245,7 @@ function HubOperational({
     <main className="flex flex-col gap-6 py-4">
       {/* A sentence, not a row of counters: what one comes to check is that surveillance runs. */}
       <div>
-        <h1 className="font-serif text-3xl">
+        <h1 className="text-title">
           {allPrivate
             ? 'Surveillance coupée'
             : watched === 0
@@ -255,7 +255,7 @@ function HubOperational({
         {data.warnings.length > 0 && (
           <ul className="mt-2 space-y-1">
             {data.warnings.map((warning) => (
-              <li key={warning} className="flex items-start gap-2 text-sm text-destructive">
+              <li key={warning} className="flex items-start gap-2 text-body text-destructive">
                 <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
                 {warning}
               </li>
@@ -310,7 +310,7 @@ function HubOperational({
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)] lg:items-start">
         <Surface>
-          <h2 className="font-serif text-2xl">Dernières détections</h2>
+          <h2 className="text-row">Dernières détections</h2>
 
           {data.recentEvents.length > 0 ? (
             <div className="mt-3">
@@ -329,15 +329,15 @@ function HubOperational({
 
           <div className="mt-4">
             <SecondaryButton icon={History} to="/detections" size="sm">
-              Tout l’historique
+              Toutes les détections
             </SecondaryButton>
           </div>
         </Surface>
 
         <div className="flex flex-col gap-6">
           <Surface>
-            <h2 className="font-serif text-2xl">Notifications</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <h2 className="text-row">Notifications</h2>
+            <p className="mt-1 text-body text-muted-foreground">
               {alertsSummary(data.notifications)}
             </p>
             <div className="mt-4">

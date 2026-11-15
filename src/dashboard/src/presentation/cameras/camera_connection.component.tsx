@@ -1,6 +1,7 @@
 import { Search } from 'lucide-react'
 import { useEffect, useMemo, useReducer } from 'react'
-import { useNavigate, useOutletContext } from 'react-router'
+import { useGoBack } from '../../common/navigation/use_go_back'
+import { useOutletContext } from 'react-router'
 import { SettingsList } from '../../common/settings/settings_list'
 import { SettingsDraftBar } from '../../common/settings/settings_draft_bar'
 import { useUnsavedChanges } from '../navigation/use_unsaved_changes'
@@ -52,7 +53,7 @@ export function CameraConnectionView() {
   const camera = useOutletContext<Camera>()
   const { cameras: container, hub: hubContainer } = useAppContainer()
   const { toast } = useToast()
-  const navigate = useNavigate()
+  const goBack = useGoBack()
   const [uido, dispatch] = useReducer(
     cameraConnectionReducer,
     undefined,
@@ -316,7 +317,7 @@ export function CameraConnectionView() {
           deleting={uido.deleting}
           onAsk={presenter.onAskDelete}
           onConfirm={async () => {
-            if (await presenter.onDelete(cameraId)) void navigate('/settings/cameras')
+            if (await presenter.onDelete(cameraId)) goBack('/settings/cameras')
           }}
           onCancel={presenter.onCancelDelete}
         />

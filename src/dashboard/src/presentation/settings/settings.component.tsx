@@ -1,15 +1,9 @@
 import { Link, Outlet, useLocation, useMatches } from 'react-router'
 import { ChevronRight } from 'lucide-react'
 import { cn } from '../../common/ui/utils'
-import {
-  SETTINGS_RUBRICS,
-  SETTINGS_ROOT,
-  declaresOwnBackLink,
-  declaresOwnHeader,
-  rubricPath,
-} from './settings.rubrics'
+import { SETTINGS_RUBRICS, SETTINGS_ROOT, declaresOwnHeader, rubricPath } from './settings.rubrics'
 import { ListRow } from '../../common/components/list_row'
-import { BackLink, PageHeader } from '../../common/components/page_header'
+import { PageHeader } from '../../common/components/page_header'
 import { Surface } from '../../common/components/surface'
 
 /**
@@ -17,9 +11,9 @@ import { Surface } from '../../common/components/surface'
  * each one.
  *
  * Designed for the small screen first: **one level is visible at a time**, list
- * then page, with an explicit way back. The large screen unfolds that same
- * structure into two columns - it does not replace it, which avoids keeping two
- * navigation architectures alive.
+ * then page, the bar's back button the way out. The large screen unfolds that
+ * same structure into two columns - it does not replace it, which avoids keeping
+ * two navigation architectures alive.
  */
 export function SettingsView() {
   const location = useLocation()
@@ -28,19 +22,16 @@ export function SettingsView() {
     location.pathname.startsWith(rubricPath(rubric.slug)),
   )
   const matches = useMatches()
-  // Title and back link are two services rendered separately: a screen can name
-  // itself without knowing where one came from. Merging them stacked two arrows on
-  // the camera page, or left the screens not reworked yet with no way out.
   const showRubricTitle = current !== undefined && !declaresOwnHeader(matches)
-  const showRubricBackLink = current !== undefined && !declaresOwnBackLink(matches)
 
   return (
-    <main className="py-4">
+    <main>
+      {atRoot && <PageHeader title="Réglages" />}
+      {showRubricTitle && <PageHeader title={current.label} />}
+
       <div className="grid gap-4 md:grid-cols-[minmax(0,17rem)_minmax(0,1fr)] md:items-start">
         {/* On mobile the list gives way to the open page. */}
         <div className={atRoot ? 'block' : 'hidden md:block'}>
-          {/* Above the list, on the canvas, like every page title. */}
-          <PageHeader title="Réglages" className="mb-3" />
           <Surface inset="list" asChild>
             <nav aria-label="Rubriques de réglages">
               <ul className="flex flex-col gap-0.5">
@@ -60,13 +51,13 @@ export function SettingsView() {
                         >
                           {/* Size, weight and colour together: one signal alone left the two lines alike. */}
                           <span className="min-w-0">
-                            <span className="block font-medium">{rubric.label}</span>
-                            <span className="block text-sm text-muted-foreground">
+                            <span className="block text-row font-semibold">{rubric.label}</span>
+                            <span className="block text-body text-muted-foreground">
                               {rubric.summary}
                             </span>
                           </span>
                           <ChevronRight
-                            className="size-4 shrink-0 text-muted-foreground md:hidden"
+                            className="size-5 shrink-0 text-muted-foreground md:hidden"
                             aria-hidden="true"
                           />
                         </Link>
@@ -80,14 +71,6 @@ export function SettingsView() {
         </div>
 
         <div className={cn('min-w-0', atRoot ? 'hidden md:block' : 'block')}>
-          {showRubricBackLink && (
-            <BackLink to={SETTINGS_ROOT} className="mb-1 md:hidden">
-              Réglages
-            </BackLink>
-          )}
-
-          {showRubricTitle && <PageHeader title={current.label} className="mb-3" />}
-
           {atRoot ? (
             <Surface asChild className="hidden text-muted-foreground md:block">
               <p>Choisissez une rubrique.</p>

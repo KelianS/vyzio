@@ -46,7 +46,7 @@ test.describe('DetectionHistoryView deletion', () => {
     await expect(page.getByText(/garage/)).toHaveCount(0)
     await expect(page.getByText(/front door/)).toBeVisible()
 
-    await page.getByRole('link', { name: 'Accueil' }).click()
+    await page.getByRole('banner').getByRole('button', { name: 'Retour' }).click()
     await expect(page.getByText(/front door/).first()).toBeVisible()
     await expect(page.getByText(/garage/)).toHaveCount(0)
   })

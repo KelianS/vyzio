@@ -42,7 +42,7 @@ export function PersonView() {
   if (uido.error) {
     return (
       <SettingsPage>
-        <h1 className="font-serif text-3xl">Cette personne ne s’affiche pas</h1>
+        <h1 className="text-title">Cette personne ne s’affiche pas</h1>
         <ReadFailure
           error={uido.error}
           onRetry={() => presenter.onLoad(profileId!)}
@@ -62,7 +62,7 @@ export function PersonView() {
     return (
       // This route owns its header; with no person to name, it must do so itself.
       <SettingsPage>
-        <h1 className="font-serif text-3xl">Personne introuvable</h1>
+        <h1 className="text-title">Personne introuvable</h1>
         <Link
           to="/settings/detection/people"
           className="mt-3 inline-block underline underline-offset-2"
@@ -75,10 +75,7 @@ export function PersonView() {
 
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader
-        back={{ to: '/settings/detection/people', label: 'Personnes' }}
-        title={found.name}
-      />
+      <PageHeader title={found.name} />
 
       <TabBar
         label="Réglages de la personne"

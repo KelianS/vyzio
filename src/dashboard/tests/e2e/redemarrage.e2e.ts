@@ -65,12 +65,18 @@ test.describe('Surveillance restart', () => {
     await expect(failed).toBeVisible()
 
     // Leaving the settings asks the question again - it must start from the failure, not from zero.
-    await page.getByRole('link', { name: 'Accueil' }).click()
+    await page.getByRole('banner').getByRole('button', { name: 'Retour' }).click()
     const guard = page.getByRole('alertdialog')
     await expect(guard).toContainText('La surveillance n’a pas redémarré.')
     await guard.getByRole('button', { name: 'Réessayer' }).click()
 
-    await expect(failed).toBeVisible()
+    // Outside the settings the failure stays, as the bar's alert (UI-17, UI-30).
+    await expect(page).toHaveURL('/')
+    await expect(
+      page
+        .getByRole('list', { name: 'Alertes' })
+        .getByText('Les changements ne sont pas appliqués'),
+    ).toBeVisible()
   })
 
   test('RestartSurveillanceTrigger_ShouldShowWhatSupportNeeds_WhenTheServerBreaksOnTheRestart', async ({
@@ -121,15 +127,15 @@ test.describe('Surveillance restart', () => {
       await page.goto(url)
       await expect(page.getByRole('region', { name: 'Modifications en attente' })).toBeHidden()
 
-      await page.getByRole('link', { name: 'Accueil' }).click()
+      await page.getByRole('banner').getByRole('button', { name: 'Retour' }).click()
 
       const dialog = page.getByRole('alertdialog')
       await expect(dialog).toContainText('Redémarrer la surveillance maintenant ?')
 
-      // "Plus tard" lets through too: the gap is allowed.
+      // "Plus tard" lets through too: the gap is allowed, and asked about from the settings only (UI-28).
       await dialog.getByRole('button', { name: 'Plus tard' }).click()
       await expect(page).toHaveURL('/')
-      await expect(page.getByRole('button', trigger())).toBeVisible()
+      await expect(page.getByRole('button', trigger())).toHaveCount(0)
     })
   }
 
@@ -143,7 +149,7 @@ test.describe('Surveillance restart', () => {
     await motion.fill('30')
     await motion.blur()
 
-    await page.getByRole('link', { name: 'Accueil' }).click()
+    await page.getByRole('banner').getByRole('button', { name: 'Retour' }).click()
 
     // Losing edits comes first: the only one of the two whose wrong answer destroys something.
     const dialog = page.getByRole('alertdialog')

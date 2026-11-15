@@ -79,8 +79,8 @@ export function DetectionHistoryView() {
     <main className="flex flex-col gap-4 py-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <PageHeader title="Historique" />
-          <p className="mt-1 text-sm text-muted-foreground">
+          <PageHeader title="Détections" />
+          <p className="mt-1 text-body text-muted-foreground">
             Ce que Vyzio a vu, et qui il a cru reconnaître.
           </p>
         </div>

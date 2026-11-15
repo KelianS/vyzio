@@ -74,8 +74,8 @@ test.describe('Capability to confirm', () => {
     await orientation.getByRole('button', { name: 'Oui' }).click()
     await expect(orientation.getByText('Fonctionne')).toBeVisible()
 
-    await page.getByRole('link', { name: 'Accueil' }).click()
-    await page.getByRole('link', { name: 'Porte d’entrée' }).click()
+    // Back from the camera's settings to its view.
+    await page.getByRole('banner').getByRole('button', { name: 'Retour' }).click()
     await expect(page.getByTitle('Haut')).toBeVisible()
   })
 })

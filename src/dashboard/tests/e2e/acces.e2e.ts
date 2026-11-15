@@ -33,12 +33,12 @@ test.describe('First opening', () => {
 
     await expect(page.getByRole('heading', { name: 'Protégez votre installation' })).toBeVisible()
     // None of the application is mounted behind it: no navigation, no cameras.
-    await expect(page.getByRole('navigation', { name: 'Navigation principale' })).toHaveCount(0)
+    await expect(page.getByRole('banner')).toHaveCount(0)
 
     await page.getByLabel('Mot de passe').fill(FAKE_PASSWORD)
     await page.getByRole('button', { name: 'Protéger et continuer' }).click()
 
-    await expect(page.getByRole('navigation', { name: 'Navigation principale' })).toBeVisible()
+    await expect(page.getByRole('banner')).toBeVisible()
   })
 
   test('AccessGate_ShouldSayTheMinimumAndWithholdSubmit_WhenTheChosenPasswordIsTooShort', async ({
@@ -78,7 +78,7 @@ test.describe('Sign-in', () => {
     await page.getByLabel('Mot de passe').fill(FAKE_PASSWORD)
     await page.getByRole('button', { name: 'Déverrouiller' }).click()
 
-    await expect(page.getByRole('navigation', { name: 'Navigation principale' })).toBeVisible()
+    await expect(page.getByRole('banner')).toBeVisible()
   })
   test('AccessGate_ShouldShowTheRefusalInTheErrorColourWithoutMovingTheButton_WhenThePasswordIsWrong', async ({
     page,
@@ -158,7 +158,7 @@ test.describe('Password change', () => {
 
     await page.getByLabel('Mot de passe').fill('un-nouveau-mot')
     await page.getByRole('button', { name: 'Déverrouiller' }).click()
-    await expect(page.getByRole('navigation', { name: 'Navigation principale' })).toBeVisible()
+    await expect(page.getByRole('banner')).toBeVisible()
   })
 })
 
@@ -184,7 +184,7 @@ test.describe('Forgotten password', () => {
     await page.getByLabel('Mot de passe').fill('un-nouveau-mot')
     await page.getByRole('button', { name: 'Enregistrer et continuer' }).click()
 
-    await expect(page.getByRole('navigation', { name: 'Navigation principale' })).toBeVisible()
+    await expect(page.getByRole('banner')).toBeVisible()
   })
 })
 
@@ -194,7 +194,7 @@ test.describe('Session end', () => {
     await installFakeBackend(page, state)
 
     await page.goto('/')
-    await expect(page.getByRole('navigation', { name: 'Navigation principale' })).toBeVisible()
+    await expect(page.getByRole('banner')).toBeVisible()
 
     // The session ends elsewhere: another device closed it, or it expired.
     state.access = { ...state.access, signedIn: false }

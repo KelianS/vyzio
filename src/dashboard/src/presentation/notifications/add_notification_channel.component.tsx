@@ -32,10 +32,7 @@ export function AddNotificationChannelView() {
 
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader
-        back={{ to: '/settings/notifications', label: 'Notifications' }}
-        title="Ajouter un canal"
-      />
+      <PageHeader title="Ajouter un canal" />
 
       <SettingsPage>
         {uido.error ? (
@@ -53,11 +50,11 @@ export function AddNotificationChannelView() {
                   <Link to={`/settings/notifications/${channel.channel}`}>
                     <span className="min-w-0">
                       <span className="block font-medium">{channel.displayName}</span>
-                      <span className="block text-sm text-muted-foreground">
+                      <span className="block text-body text-muted-foreground">
                         {channelSetupLede(channel.channel)}
                       </span>
                       {/* Dit avant l'activation, pour ne jamais laisser croire qu'on pourra lui parler (ADR-14). */}
-                      <span className="block text-sm text-muted-foreground">
+                      <span className="block text-body text-muted-foreground">
                         {channel.acceptsCommands
                           ? 'Vous pourrez aussi lui demander ce qui se passe chez vous.'
                           : 'Ce canal envoie des notifications, mais ne répond pas aux questions.'}

@@ -212,7 +212,7 @@ describe('ScheduleRuleView', () => {
     expect(router.state.location.pathname).toBe('/settings/schedule/rule-1')
   })
 
-  it('onLoad_ShouldSayTheRangeIsGoneWithTheWayBack_WhenItWasDeletedMeanwhile', async () => {
+  it('onLoad_ShouldSayTheRangeIsGoneWithoutOfferingARetry_WhenItWasDeletedMeanwhile', async () => {
     // Arrange
     fakeNetwork({ ...houseRoutes(), [RULE]: failure(404) })
 
@@ -221,10 +221,6 @@ describe('ScheduleRuleView', () => {
 
     // Assert
     expect(await screen.findByRole('heading', { name: 'Plage introuvable' })).toBeVisible()
-    expect(screen.getByRole('link', { name: 'Planification' })).toHaveAttribute(
-      'href',
-      '/settings/schedule',
-    )
     expect(screen.queryByRole('button', { name: 'Réessayer' })).not.toBeInTheDocument()
   })
 

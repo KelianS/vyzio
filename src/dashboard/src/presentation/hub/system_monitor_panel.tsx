@@ -5,6 +5,7 @@ import { SecondaryButton } from '../../common/components/secondary_button'
 import { Surface } from '../../common/components/surface'
 import { cn } from '../../common/ui/utils'
 import { TechnicalDetails } from '../../common/components/technical_details'
+import { isStorageCritical, storageUsedRatio } from '../../common/surveillance/storage'
 import type { Camera } from '../../domain/entities/camera.entity'
 import type {
   FrigateDetectorKind,
@@ -51,7 +52,7 @@ export function SystemMonitorPanel({ stats, cameras }: { stats: SystemStats; cam
     case 'unavailable':
       return (
         <Panel status={stats.status}>
-          <p className="mt-3 text-sm text-muted-foreground">{DEGRADED_MESSAGE[stats.status]}</p>
+          <p className="mt-3 text-body text-muted-foreground">{DEGRADED_MESSAGE[stats.status]}</p>
           {DEGRADED_SHOWS_DIAGNOSIS[stats.status] && (
             <div className="mt-4">
               <SecondaryButton icon={Activity} to={ADVANCED_PATH} size="sm">
@@ -69,21 +70,20 @@ export function SystemMonitorPanel({ stats, cameras }: { stats: SystemStats; cam
     }
   }
 
-  const usedRatio =
-    stats.storage && stats.storage.totalGb > 0 ? stats.storage.usedGb / stats.storage.totalGb : 0
+  const usedRatio = stats.storage ? storageUsedRatio(stats.storage) : 0
   const frameRates = receivedFrameRates(stats, cameras)
 
   return (
     <Panel status={stats.status}>
       {stats.storage && (
-        <dl className="mt-3 text-sm">
+        <dl className="mt-3 text-body">
           <dt className="text-muted-foreground">Espace disque</dt>
           <dd>
             <div className="mt-1 h-2 overflow-hidden rounded-full bg-muted">
               <div
                 className={cn(
                   'h-full rounded-full',
-                  usedRatio > 0.9 ? 'bg-destructive' : 'bg-primary',
+                  isStorageCritical(stats.storage) ? 'bg-destructive' : 'bg-primary',
                 )}
                 style={{ width: `${Math.min(100, usedRatio * 100).toFixed(1)}%` }}
               />
@@ -151,7 +151,7 @@ function Panel({ status, children }: { status: FrigateStatus; children: ReactNod
     <Surface asChild>
       <section aria-labelledby={titleId}>
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 id={titleId} className="font-serif text-2xl">
+          <h2 id={titleId} className="text-row">
             Surveillance
           </h2>
           <Badge tone={STATUS_TONE[status]}>{STATUS_LABEL[status]}</Badge>

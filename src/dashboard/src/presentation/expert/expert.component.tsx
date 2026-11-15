@@ -4,6 +4,7 @@ import { SettingsPage } from '../../common/settings/settings_page'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import { SecondaryButton } from '../../common/components/secondary_button'
 import { Skeleton } from '../../common/ui/skeleton'
+import { PageHeader } from '../../common/components/page_header'
 
 // One file: a local timeout is its only state, and it calls no use case.
 export function ExpertView() {
@@ -25,13 +26,16 @@ export function ExpertView() {
     setTimedOut(false)
   }
 
+  const header = <PageHeader title="Interface technique" />
+
   if (timedOut && !loaded) {
     return (
       <SettingsPage>
+        {header}
         <div className="flex items-start gap-3">
           <TriangleAlert className="mt-1 size-5 shrink-0 text-destructive" aria-hidden="true" />
           <div>
-            <h1 className="font-serif text-3xl">Frigate inaccessible</h1>
+            <h2 className="text-row font-semibold">Frigate inaccessible</h2>
             <p className="mt-1 text-muted-foreground">
               L’interface Frigate n’a pas pu être chargée dans les délais.
             </p>
@@ -59,7 +63,8 @@ export function ExpertView() {
   }
 
   return (
-    <div className="relative h-[calc(100vh-6rem)] min-h-100">
+    <div className="relative h-[calc(100vh-10rem)] min-h-100">
+      {header}
       {!loaded && (
         <Skeleton
           role="status"

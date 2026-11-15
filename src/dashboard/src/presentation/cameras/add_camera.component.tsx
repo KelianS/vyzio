@@ -90,7 +90,7 @@ export function AddCameraView() {
 
   async function add() {
     const createdId = await presenter.onCreate(uido.form)
-    if (createdId) void navigate(`/settings/cameras/${createdId}`)
+    if (createdId) void navigate(`/settings/cameras/${createdId}`, { replace: true })
   }
 
   const declarations: SettingDeclaration[] = [
@@ -137,7 +137,7 @@ export function AddCameraView() {
   return (
     <div className="flex flex-col gap-4">
       {/* Own back link: this route names a task, not the rubric, and owns its exit on mobile. */}
-      <PageHeader back={{ to: '/settings/cameras', label: 'Caméras' }} title="Ajouter une caméra" />
+      <PageHeader title="Ajouter une caméra" />
 
       <SettingsPage>
         <SettingsSection
@@ -155,7 +155,7 @@ export function AddCameraView() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <span className="min-w-0">
                 <span className="block font-medium">{chosen.title}</span>
-                <span className="block text-sm text-muted-foreground">{chosen.detail}</span>
+                <span className="block text-body text-muted-foreground">{chosen.detail}</span>
               </span>
               <SecondaryButton
                 icon={Pencil}
@@ -273,11 +273,11 @@ export function AddCameraView() {
             <SettingsList settings={[helpChoice]} />
             <div className="mt-4">
               {vendorFamily === null ? (
-                <p className="text-sm">{OTHER_BRAND_HELP}</p>
+                <p className="text-body">{OTHER_BRAND_HELP}</p>
               ) : vendorAssistance.loading ? (
                 <Loading />
               ) : vendorAssistance.error ? (
-                <ErrorMessage error={vendorAssistance.error} className="text-base" />
+                <ErrorMessage error={vendorAssistance.error} className="text-row" />
               ) : vendorAssistance.markdown ? (
                 <VendorNotice markdown={vendorAssistance.markdown} />
               ) : null}
@@ -322,7 +322,7 @@ function CandidateRow({
     <li>
       <SelectableRow onSelect={onSelect}>
         <span className="block font-medium">{title}</span>
-        <span className="block text-sm text-muted-foreground">{candidateDetail(candidate)}</span>
+        <span className="block text-body text-muted-foreground">{candidateDetail(candidate)}</span>
         <span className="mt-1.5 flex flex-wrap gap-1.5">
           <Badge tone={candidate.stream ? 'ok' : 'warn'}>
             {candidate.stream ? 'Prête' : 'À préparer'}
@@ -341,17 +341,17 @@ const RANGE_SOURCE_LABELS: Record<DiscoveryRangeSource, string> = {
 /** What the search confirmation names: every range it will sweep, with where each comes from (ADR-05). */
 function RangesToSweep({ rangesToSweep }: { rangesToSweep: AddCameraUido['rangesToSweep'] }) {
   if (rangesToSweep.loading)
-    return <p className="text-sm text-muted-foreground">Lecture des adresses à parcourir…</p>
+    return <p className="text-body text-muted-foreground">Lecture des adresses à parcourir…</p>
   if (rangesToSweep.error)
     return (
-      <div className="text-sm text-destructive">
+      <div className="text-body text-destructive">
         <p>{rangesToSweep.error.message}</p>
         {rangesToSweep.error.diagnostic && <DiagnosticLine text={rangesToSweep.error.diagnostic} />}
       </div>
     )
   if (rangesToSweep.ranges.length === 0) return null
   return (
-    <ul className="list-disc pl-5 text-left text-sm">
+    <ul className="list-disc pl-5 text-left text-body">
       {rangesToSweep.ranges.map((range) => (
         <li key={range.cidr}>
           {range.firstAddress} à {range.lastAddress} · {RANGE_SOURCE_LABELS[range.source]}
@@ -374,12 +374,12 @@ function searchWarning(rangesToSweep: AddCameraUido['rangesToSweep']): string {
 function Feedback({ message, error }: { message: string | null; error: AddCameraUido['error'] }) {
   if (error)
     return (
-      <div role="alert" className="text-sm text-destructive">
+      <div role="alert" className="text-body text-destructive">
         <p>{error.message}</p>
         {error.diagnostic && <DiagnosticLine text={error.diagnostic} />}
       </div>
     )
-  if (message) return <p className="text-sm text-success">{message}</p>
+  if (message) return <p className="text-body text-success">{message}</p>
   return null
 }
 
@@ -424,7 +424,7 @@ function TechnicalFacts({ candidate }: { candidate: DiscoveredCamera }) {
 
   return (
     <AdvancedFold>
-      <dl className="divide-y divide-border text-sm">
+      <dl className="divide-y divide-border text-body">
         {facts.map(([term, value]) => (
           <div key={term} className="flex flex-wrap justify-between gap-x-4 py-2">
             <dt className="text-muted-foreground">{term}</dt>
@@ -438,7 +438,7 @@ function TechnicalFacts({ candidate }: { candidate: DiscoveredCamera }) {
 
 function VendorNotice({ markdown }: { markdown: string }) {
   return (
-    <div className="space-y-2 text-sm wrap-anywhere [&_a]:underline [&_a]:underline-offset-2 [&_li]:ml-5 [&_ol]:list-decimal [&_strong]:font-medium [&_ul]:list-disc">
+    <div className="space-y-2 text-body wrap-anywhere [&_a]:underline [&_a]:underline-offset-2 [&_li]:ml-5 [&_ol]:list-decimal [&_strong]:font-medium [&_ul]:list-disc">
       <ReactMarkdown
         components={{
           a({ href, children, ...props }: ComponentPropsWithoutRef<'a'>) {

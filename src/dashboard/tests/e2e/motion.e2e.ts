@@ -133,16 +133,12 @@ test.describe('Press feedback on links and rows', () => {
     })
   })
 
-  test('HeaderLink_ShouldDimWithoutMoving_WhenItIsPressed', async ({ page }) => {
+  test('TopBarGear_ShouldShrinkSlightly_WhenItIsPressed', async ({ page }) => {
     await page.goto('/')
 
-    expect(
-      await pressed(
-        page
-          .getByRole('navigation', { name: 'Navigation principale' })
-          .getByRole('link', { name: 'Historique', exact: true }),
-      ),
-    ).toEqual({ scale: 'none', opacity: '0.7' })
+    expect(await pressed(page.getByRole('banner').getByRole('link', { name: 'Réglages' }))).toEqual(
+      { scale: '0.97', opacity: '1' },
+    )
   })
 
   test('CameraRow_ShouldDimWithoutMoving_WhenItIsPressed', async ({ page }) => {

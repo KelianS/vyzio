@@ -19,7 +19,9 @@ test.describe('People', () => {
       page.getByText('Aucune photo : la reconnaissance est inactive pour cette personne.'),
     ).toBeVisible()
 
-    await page.getByRole('link', { name: 'Personnes' }).click()
+    // The added page gave way to the person: back leads to the list, not to the empty form.
+    await page.getByRole('banner').getByRole('button', { name: 'Retour' }).click()
+    await expect(page).toHaveURL('/settings/detection/people')
     await expect(page.getByRole('link', { name: /Alice/ })).toBeVisible()
   })
 
