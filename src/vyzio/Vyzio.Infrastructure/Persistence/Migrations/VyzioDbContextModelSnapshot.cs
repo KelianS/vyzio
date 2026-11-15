@@ -15,7 +15,7 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "10.0.12");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.15");
 
             modelBuilder.Entity("Vyzio.Core.Entities.Account", b =>
                 {
@@ -599,10 +599,6 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("credentials_json");
 
-                    b.Property<bool>("IsEnabled")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("is_enabled");
-
                     b.Property<string>("LastTestError")
                         .HasColumnType("TEXT")
                         .HasColumnName("last_test_error");
@@ -636,6 +632,27 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ux_notification_channel");
 
                     b.ToTable("notification_channel_configs", (string)null);
+                });
+
+            modelBuilder.Entity("Vyzio.Core.Entities.NotificationSilence", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("started_at");
+
+                    b.Property<DateTime>("Until")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("until");
+
+                    b.HasKey("Id")
+                        .HasName("pk_notification_silence");
+
+                    b.ToTable("notification_silence", (string)null);
                 });
 
             modelBuilder.Entity("Vyzio.Core.Entities.Profile", b =>

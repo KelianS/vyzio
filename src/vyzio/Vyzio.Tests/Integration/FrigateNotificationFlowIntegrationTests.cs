@@ -54,7 +54,6 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
             channelConfigs.UpsertAsync(new NotificationChannelConfig
             {
                 Channel = sender.Descriptor.Channel,
-                IsEnabled = true,
                 Credentials = sender.WorkingCredentials,
                 MinimumConfidence = 0.75f
             }).GetAwaiter().GetResult();
@@ -65,6 +64,7 @@ public sealed class FrigateNotificationFlowIntegrationTests : IDisposable
             new NotificationChannelCatalog([_telegram, _discord]),
             channelConfigs,
             new ScheduleRuleRepository(_db),
+            new NotificationSilenceRepository(_db),
             Substitute.For<IFrigateEventImageProvider>(),
             _clipProvider,
             new DetectionMessageFormatter(),

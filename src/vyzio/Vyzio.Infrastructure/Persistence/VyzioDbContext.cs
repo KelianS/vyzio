@@ -20,6 +20,7 @@ public class VyzioDbContext(DbContextOptions<VyzioDbContext> options) : DbContex
     public DbSet<Session> Sessions => Set<Session>();
     public DbSet<NotificationChannelConfig> NotificationChannelConfigs => Set<NotificationChannelConfig>();
     public DbSet<RecordingSettings> RecordingSettings => Set<RecordingSettings>();
+    public DbSet<NotificationSilence> NotificationSilences => Set<NotificationSilence>();
     public DbSet<CommandJournal> CommandJournal => Set<CommandJournal>();
     public DbSet<ChannelPairing> ChannelPairings => Set<ChannelPairing>();
     public DbSet<Account> Accounts => Set<Account>();

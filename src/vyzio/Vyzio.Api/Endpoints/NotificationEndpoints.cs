@@ -13,6 +13,15 @@ public static class NotificationEndpoints
         app.MapGet("/api/notifications/channels", ListChannels)
             .WithName("ListNotificationChannels");
 
+        app.MapGet("/api/notifications/silence", GetSilence)
+            .WithName("GetNotificationSilence");
+
+        app.MapPut("/api/notifications/silence", StartSilence)
+            .WithName("StartNotificationSilence");
+
+        app.MapDelete("/api/notifications/silence", StopSilence)
+            .WithName("StopNotificationSilence");
+
         app.MapGet("/api/notifications/settings/{channel}", GetChannelConfig)
             .WithName("GetNotificationChannelConfig");
 
@@ -48,6 +57,31 @@ public static class NotificationEndpoints
 
     private static async Task<IResult> ListChannels(ListNotificationChannelsUseCase useCase, CancellationToken ct)
         => Results.Ok(await useCase.ExecuteAsync(ct));
+
+    private static async Task<IResult> GetSilence(GetSilenceUseCase useCase, CancellationToken ct)
+        => Results.Ok(await useCase.ExecuteAsync(ct));
+
+    private static async Task<IResult> StartSilence(
+        StartSilenceRequest request,
+        StartSilenceUseCase useCase,
+        CancellationToken ct)
+    {
+        var result = await useCase.ExecuteAsync(request, ct);
+        return result.Refusal is { } refusal
+            ? ApiProblem.BadRequest($"silence_{SnakeCaseEnum.ToSnakeCase(refusal)}", SilenceRefusalDetail(refusal))
+            : Results.Ok(result.Silence);
+    }
+
+    private static async Task<IResult> StopSilence(StopSilenceUseCase useCase, CancellationToken ct)
+        => Results.Ok(await useCase.ExecuteAsync(ct));
+
+    private static string SilenceRefusalDetail(SilenceRefusal refusal) => refusal switch
+    {
+        SilenceRefusal.NoSingleEnd => "Give either an end instant or a duration in minutes, not both.",
+        SilenceRefusal.EndNotAhead => "The Silence must end after now.",
+        SilenceRefusal.TooLong => "A Silence lasts a week at most.",
+        _ => throw new ArgumentOutOfRangeException(nameof(refusal), refusal, null),
+    };
 
     private static async Task<IResult> GetChannelConfig(
         string channel,

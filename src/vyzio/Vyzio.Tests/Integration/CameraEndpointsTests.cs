@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using System.Net.WebSockets;
@@ -693,6 +693,7 @@ public sealed class CamerasApiFactory : WebApplicationFactory<Program>
     private static void SeedDatabase(VyzioDbContext db)
     {
         db.Cameras.RemoveRange(db.Cameras);
+        db.NotificationSilences.RemoveRange(db.NotificationSilences);
         db.SaveChanges();
 
         db.Cameras.Add(new Camera

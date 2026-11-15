@@ -73,7 +73,6 @@ public class GetHubOverviewUseCaseTests
             new NotificationChannelConfig
             {
                 Channel = NotificationChannel.Telegram,
-                IsEnabled = true,
                 Credentials = WorkingCredentials
             }
         ]);
