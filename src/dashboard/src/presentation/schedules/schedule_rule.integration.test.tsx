@@ -46,9 +46,9 @@ async function openAt(address: { path: string; url: string }) {
   return rendered
 }
 
-async function tick(target: string, label: string) {
-  await userEvent.click(await screen.findByRole('combobox', { name: target }))
-  await userEvent.click(await screen.findByRole('checkbox', { name: label }))
+const ADD_SILENCE = {
+  path: '/settings/schedule/add',
+  url: '/settings/schedule/add?kind=mute_notifications',
 }
 
 describe('ScheduleRuleView', () => {
@@ -56,11 +56,11 @@ describe('ScheduleRuleView', () => {
     // Arrange
     const network = fakeNetwork({ ...houseRoutes(), [CREATE]: ok(makeRule()) })
     const { router } = await openAt(ADD)
-    await tick('Caméras', 'Salon')
+    await userEvent.click(await screen.findByRole('checkbox', { name: 'Salon' }))
     await userEvent.click(screen.getByRole('checkbox', { name: 'Cuisine' }))
 
     // Act
-    await userEvent.click(screen.getByRole('button', { name: 'Ajouter' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
 
     // Assert
     await waitFor(() => expect(router.state.location.pathname).toBe('/settings/schedule'))
@@ -89,38 +89,56 @@ describe('ScheduleRuleView', () => {
     expect(
       await screen.findByText('Aucun enregistrement, aucune détection, aucune notification.'),
     ).toBeVisible()
-    expect(
-      screen.getByText('La plage passe minuit : elle se termine le lendemain à 06:00.'),
-    ).toBeVisible()
-    expect(screen.getByRole('combobox', { name: 'Caméras' })).toHaveTextContent('Aucune caméra')
+    expect(screen.getByText('Se termine le lendemain.')).toBeVisible()
+    expect(screen.getByRole('checkbox', { name: 'Salon' })).not.toBeChecked()
+    expect(screen.getByRole('button', { name: 'Lundi' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Samedi' })).toHaveAttribute('aria-pressed', 'false')
   })
 
-  it('onChangeKind_ShouldOfferTheChannelsAndSayRecordingGoesOn_WhenTheUserPicksSansNotification', async () => {
+  it('onToggleDay_ShouldSaveTheDaysAsToggled_WhenTheUserAddsSaturday', async () => {
     // Arrange
-    fakeNetwork(houseRoutes())
+    const network = fakeNetwork({ ...houseRoutes(), [CREATE]: ok(makeRule()) })
     await openAt(ADD)
-    ;(await screen.findByRole('combobox', { name: 'Type' })).focus()
-    await userEvent.keyboard('{ArrowDown}')
+    await userEvent.click(await screen.findByRole('checkbox', { name: 'Salon' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Samedi' }))
 
     // Act
-    await userEvent.click(await screen.findByRole('option', { name: 'Sans notification' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    // Assert
+    await waitFor(() =>
+      expect(network.sent).toContainEqual(
+        expect.objectContaining({
+          route: CREATE,
+          body: expect.objectContaining({ daysOfWeek: [1, 2, 3, 4, 5, 6] }),
+        }),
+      ),
+    )
+  })
+
+  it('onLoad_ShouldOfferTheChannelsAndSayRecordingGoesOn_WhenASilenceRangeIsAdded', async () => {
+    // Arrange
+    fakeNetwork(houseRoutes())
+
+    // Act
+    await openAt(ADD_SILENCE)
 
     // Assert
     expect(
-      screen.getByText('Filme et enregistre, mais n’envoie aucune notification.'),
+      await screen.findByText('Filme et enregistre, mais n’envoie aucune notification.'),
     ).toBeVisible()
-    await userEvent.click(screen.getByRole('combobox', { name: 'Canaux' }))
-    expect(await screen.findByRole('checkbox', { name: 'Telegram' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Silence' })).toBeVisible()
+    expect(screen.getByRole('checkbox', { name: 'Telegram' })).toBeInTheDocument()
   })
 
   it('onCreate_ShouldSayWhatToChange_WhenTheServerRefusesARangeWithoutTarget', async () => {
     // Arrange
     fakeNetwork({ ...houseRoutes(), [CREATE]: failure(400, 'schedule_no_target') })
     const { router } = await openAt(ADD)
-    await screen.findByRole('combobox', { name: 'Caméras' })
+    await screen.findByRole('checkbox', { name: 'Salon' })
 
     // Act
-    await userEvent.click(screen.getByRole('button', { name: 'Ajouter' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
 
     // Assert
     expect(await screen.findByRole('alert')).toHaveTextContent(
@@ -129,21 +147,21 @@ describe('ScheduleRuleView', () => {
     expect(router.state.location.pathname).toBe('/settings/schedule/add')
   })
 
-  it('onUpdate_ShouldSaveTheNewEnd_WhenTheUserChangesItAndSaves', async () => {
+  it('onUpdate_ShouldSaveTheNewEndAndGoBackToTheWeek_WhenTheUserChangesItAndSaves', async () => {
     // Arrange
     const network = fakeNetwork({
       ...houseRoutes(),
       [RULE]: ok(makeRule()),
       [UPDATE]: ok(makeRule({ endTime: '07:00' })),
     })
-    await openAt(EDIT)
-    fireEvent.change(await screen.findByLabelText('Fin'), { target: { value: '07:00' } })
+    const { router } = await openAt(EDIT)
+    fireEvent.change(await screen.findByLabelText('À'), { target: { value: '07:00' } })
 
     // Act
     await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
 
     // Assert
-    expect(await screen.findByText('Plage enregistrée.')).toBeInTheDocument()
+    await waitFor(() => expect(router.state.location.pathname).toBe('/settings/schedule'))
     expect(network.sent).toContainEqual(
       expect.objectContaining({
         route: UPDATE,
@@ -165,9 +183,10 @@ describe('ScheduleRuleView', () => {
     await openAt(EDIT)
 
     // Assert
-    expect(await screen.findByRole('heading', { name: 'Vie privée' })).toBeVisible()
-    expect(screen.getByRole('combobox', { name: 'Type' })).toBeDisabled()
-    expect(screen.getByRole('combobox', { name: 'Caméras' })).toHaveTextContent('Salon')
+    expect(await screen.findByRole('heading', { name: 'Caméras coupées' })).toBeVisible()
+    expect(screen.queryByRole('combobox', { name: 'Type' })).not.toBeInTheDocument()
+    expect(screen.getByRole('checkbox', { name: 'Salon' })).toBeChecked()
+    expect(screen.getAllByRole('checkbox')).toHaveLength(2)
   })
 
   it('onDelete_ShouldDeleteTheRangeAndGoBackToTheWeek_WhenTheUserConfirms', async () => {
@@ -194,7 +213,9 @@ describe('ScheduleRuleView', () => {
 
     // Assert
     expect(
-      screen.getByText('La plage « Vie privée » de 22:00 à 06:00 sur Salon ne s’appliquera plus.'),
+      screen.getByText(
+        'La plage « Caméras coupées » de 22 h à 6 h sur Salon ne s’appliquera plus.',
+      ),
     ).toBeVisible()
   })
 
@@ -228,7 +249,7 @@ describe('ScheduleRuleView', () => {
     // Arrange
     fakeNetwork({ ...houseRoutes(), [RULE]: ok(makeRule()), [UPDATE]: failure(404) })
     await openAt(EDIT)
-    fireEvent.change(await screen.findByLabelText('Fin'), { target: { value: '07:00' } })
+    fireEvent.change(await screen.findByLabelText('À'), { target: { value: '07:00' } })
 
     // Act
     await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
@@ -248,7 +269,7 @@ describe('ScheduleRuleView', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Réessayer' }))
 
     // Assert
-    expect(await screen.findByRole('heading', { name: 'Vie privée' })).toBeVisible()
+    expect(await screen.findByRole('heading', { name: 'Caméras coupées' })).toBeVisible()
   })
 
   it('onLoad_ShouldSayTheRangeCouldNotBeReadAndNameTheType_WhenTheServerSendsAnUnknownType', async () => {

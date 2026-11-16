@@ -114,6 +114,8 @@ export function GroupedRow({
           <span className="min-w-0 break-words">{title}</span>
           {mark && <StatusMark {...mark} />}
         </span>
+        {/* A space between the lines, so a reader says them as two words, not one. */}
+        {subtitle && ' '}
         {subtitle && <span className="text-body text-muted-foreground">{subtitle}</span>}
       </span>
       {trailing === undefined

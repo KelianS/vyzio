@@ -56,9 +56,9 @@ describe('rulesTargeting', () => {
 
 describe('appliesSentence', () => {
   it.each([
-    [0, 'Aucune plage « Vie privée » ne s’applique'],
-    [1, '1 plage « Vie privée » s’applique'],
-    [3, '3 plages « Vie privée » s’appliquent'],
+    [0, 'Aucune plage « Caméras coupées » ne s’applique'],
+    [1, '1 plage « Caméras coupées » s’applique'],
+    [3, '3 plages « Caméras coupées » s’appliquent'],
   ])('appliesSentence_ShouldNameTheTypeAndAgreeWithTheCount_WhenCounting %i', (count, expected) => {
     // Act
     const sentence = appliesSentence(ScheduleRuleKind.Privacy, count)

@@ -13,7 +13,7 @@ export function Field({
 }) {
   return (
     <label className={cn('flex flex-col gap-1.5', className)}>
-      <span className="font-medium">{label}</span>
+      <span className="ml-1 text-label font-semibold text-muted-foreground">{label}</span>
       {children}
     </label>
   )

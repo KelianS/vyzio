@@ -364,7 +364,7 @@ function ChannelForm({
                 <li>le canal est activé et entièrement renseigné ;</li>
                 <li>la catégorie détectée fait partie de celles qu’il notifie ;</li>
                 <li>la certitude atteint le seuil ;</li>
-                <li>aucune plage « Sans notification » ne s’applique à ce moment ;</li>
+                <li>aucune plage « Silence » ne s’applique à ce moment ;</li>
                 <li>aucun envoi récent ne le fait taire ;</li>
                 <li>l’événement ne lui a pas déjà été envoyé.</li>
               </ul>

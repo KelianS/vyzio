@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { screen, within } from '@testing-library/react'
+import { fireEvent, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ScheduleRuleKind, type ScheduleRule } from '../../domain/entities/schedule_rule.entity'
 import { makeCamera } from '../../testing/camera_fixture'
@@ -7,7 +7,9 @@ import { makeChannelSummary } from '../../testing/notification_fixture'
 import { failure, fakeNetwork, ok } from '../../testing/fake_network'
 import { renderScreen } from '../../testing/render_screen'
 import { readTheCameraList } from '../../testing/shared_reads'
+import { Route, Routes } from 'react-router'
 import { ScheduleWeekView } from './schedule_week.component'
+import { ScheduleRuleView } from './schedule_rule.component'
 
 const WEEK = { path: '/settings/schedule', url: '/settings/schedule' }
 
@@ -41,6 +43,15 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
+/** The week and its range page, as the settings route them. */
+const SCHEDULE_PAGES = (
+  <Routes>
+    <Route index element={<ScheduleWeekView />} />
+    <Route path=":ruleId" element={<ScheduleRuleView />} />
+  </Routes>
+)
+const SCHEDULE = { path: '/settings/schedule/*', url: '/settings/schedule' }
+
 describe('ScheduleWeekView', () => {
   it('onLoad_ShouldPlaceEachRangeOnItsDayWithItsTypeTimesAndTargets_WhenTheHouseHasRanges', async () => {
     // Arrange
@@ -69,17 +80,17 @@ describe('ScheduleWeekView', () => {
     await screen.findByRole('heading', { name: 'Lundi' })
     expect(
       within(dayRow('Lundi')).getByRole('link', {
-        name: 'Vie privée · 22:00 → 06:00 le lendemain · Salon, Cuisine',
+        name: 'Caméras coupées · 22 h – 6 h le lendemain · Salon, Cuisine',
       }),
     ).toHaveAttribute('href', '/settings/schedule/rule-1')
     expect(
       within(dayRow('Mardi')).getByRole('link', {
-        name: 'Vie privée · jusqu’à 06:00, depuis la veille · Salon, Cuisine',
+        name: 'Caméras coupées · jusqu’à 6 h, depuis la veille · Salon, Cuisine',
       }),
     ).toBeVisible()
     expect(
       within(dayRow('Samedi')).getByRole('link', {
-        name: 'Sans notification · 09:00 → 12:00 · Telegram',
+        name: 'Silence · 9 h – 12 h · Telegram',
       }),
     ).toBeVisible()
     expect(within(dayRow('Mercredi')).getByText('Rien de prévu')).toBeInTheDocument()
@@ -99,7 +110,7 @@ describe('ScheduleWeekView', () => {
     await readTheCameraList()
 
     // Assert
-    const block = await screen.findByRole('link', { name: /Vie privée · 06:00 → 12:00/ })
+    const block = await screen.findByRole('link', { name: /Caméras coupées · 6 h – 12 h/ })
     expect(block.style.left).toBe('min(25%, 100% - 1.5rem)')
     expect(block.style.width).toBe('max(1.5rem, 25%)')
   })
@@ -121,7 +132,7 @@ describe('ScheduleWeekView', () => {
     await screen.findByRole('heading', { name: 'Lundi' })
     expect(
       within(dayRow('Lundi')).getByRole('link', {
-        name: 'Vie privée · jusqu’à 06:00, depuis la veille · Salon',
+        name: 'Caméras coupées · jusqu’à 6 h, depuis la veille · Salon',
       }),
     ).toBeVisible()
   })
@@ -182,15 +193,48 @@ describe('ScheduleWeekView', () => {
     await readTheCameraList()
 
     // Assert
-    expect(await screen.findByText(/Plus aucune caméra visée/)).toHaveAttribute(
-      'href',
-      '/settings/schedule/rule-1',
-    )
+    expect(
+      await screen.findByRole('link', { name: '22 h – 6 h Plus aucune caméra visée · lundi' }),
+    ).toHaveAttribute('href', '/settings/schedule/rule-1')
     expect(
       within(dayRow('Lundi')).getByRole('link', {
-        name: 'Vie privée · 22:00 → 06:00 le lendemain · Plus aucune caméra visée',
+        name: 'Caméras coupées · 22 h – 6 h le lendemain · Plus aucune caméra visée',
       }),
     ).toBeVisible()
+  })
+
+  it('onLoad_ShouldListTheRangesByTypeWithTheirHoursTargetsAndDays_WhenTheHouseHasRanges', async () => {
+    // Arrange
+    fakeNetwork({
+      [CAMERAS]: ok([salon, cuisine]),
+      [CHANNELS]: ok([makeChannelSummary({ channel: 'telegram', displayName: 'Telegram' })]),
+      [CLOCK]: ok(wednesdayAfternoon),
+      [RULES]: ok([
+        makeRule({ targetIds: ['camera-1'], daysOfWeek: [1, 2, 3, 4, 5], endTime: '07:00' }),
+        makeRule({
+          id: 'rule-2',
+          kind: ScheduleRuleKind.MuteNotifications,
+          targetIds: ['telegram'],
+          daysOfWeek: [6, 0],
+          startTime: '09:00',
+          endTime: '11:00',
+        }),
+      ]),
+    })
+
+    // Act
+    renderScreen(<ScheduleWeekView />, WEEK)
+    await readTheCameraList()
+
+    // Assert
+    const cut = await screen.findByRole('region', { name: 'Caméras coupées' })
+    expect(
+      within(cut).getByRole('link', { name: '22 h – 7 h Salon · lundi au vendredi' }),
+    ).toHaveAttribute('href', '/settings/schedule/rule-1')
+    const silence = screen.getByRole('region', { name: 'Silence' })
+    expect(
+      within(silence).getByRole('link', { name: '9 h – 11 h Telegram · samedi et dimanche' }),
+    ).toHaveAttribute('href', '/settings/schedule/rule-2')
   })
 
   it('onLoad_ShouldOfferToAddARange_WhenTheWeekIsRead', async () => {
@@ -207,9 +251,15 @@ describe('ScheduleWeekView', () => {
     await readTheCameraList()
 
     // Assert
-    expect(await screen.findByRole('link', { name: 'Ajouter une plage' })).toHaveAttribute(
+    const cut = await screen.findByRole('region', { name: 'Caméras coupées' })
+    expect(within(cut).getByRole('link', { name: 'Ajouter une plage' })).toHaveAttribute(
       'href',
-      '/settings/schedule/add',
+      '/settings/schedule/add?kind=privacy',
+    )
+    const silence = screen.getByRole('region', { name: 'Silence' })
+    expect(within(silence).getByRole('link', { name: 'Ajouter une plage' })).toHaveAttribute(
+      'href',
+      '/settings/schedule/add?kind=mute_notifications',
     )
     expect(screen.getAllByText('Rien de prévu')).toHaveLength(7)
   })
@@ -248,7 +298,7 @@ describe('ScheduleWeekView', () => {
 
     // Assert
     expect(
-      await screen.findByRole('link', { name: /Vie privée · 22:00 → 06:00 le lendemain/ }),
+      await screen.findByRole('link', { name: /Caméras coupées · 22 h – 6 h le lendemain/ }),
     ).toBeVisible()
     expect(screen.queryByRole('img', { name: /Maintenant/ })).not.toBeInTheDocument()
   })
@@ -289,4 +339,38 @@ describe('ScheduleWeekView', () => {
     // Assert
     expect(await screen.findByText('La liste de vos caméras n’a pas pu être lue.')).toBeVisible()
   })
+
+  it.each([
+    { by: 'block', name: 'Caméras coupées · 22 h – 6 h le lendemain · Salon' },
+    { by: 'row', name: '22 h – 6 h Salon · lundi' },
+  ])(
+    'ScheduleWeek_ShouldOpenTheRangeForEditingAndShowTheResult_WhenItsTappedThenSaved (by $by)',
+    async ({ name }) => {
+      // Arrange
+      const network = fakeNetwork({
+        [CAMERAS]: ok([salon]),
+        [CHANNELS]: ok([]),
+        [CLOCK]: ok(wednesdayAfternoon),
+        [RULES]: ok([makeRule({ targetIds: ['camera-1'] })]),
+        'GET /api/schedules/rule-1': ok(makeRule({ targetIds: ['camera-1'] })),
+        'PUT /api/schedules/rule-1': ok(makeRule({ targetIds: ['camera-1'], endTime: '07:00' })),
+      })
+      renderScreen(SCHEDULE_PAGES, SCHEDULE)
+      await readTheCameraList()
+      await userEvent.click(await screen.findByRole('link', { name }))
+      fireEvent.change(await screen.findByLabelText('À'), { target: { value: '07:00' } })
+      network.answer(RULES, ok([makeRule({ targetIds: ['camera-1'], endTime: '07:00' })]))
+
+      // Act
+      await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+      // Assert
+      expect(
+        await screen.findByRole('link', {
+          name: 'Caméras coupées · 22 h – 7 h le lendemain · Salon',
+        }),
+      ).toBeVisible()
+      expect(screen.getByRole('link', { name: '22 h – 7 h Salon · lundi' })).toBeVisible()
+    },
+  )
 })

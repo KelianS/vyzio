@@ -239,15 +239,6 @@ body {
   }
 }
 
-/* A Silence fill told apart by its pattern, never by colour alone (DESIGN SYSTEM § Palette). */
-@utility bg-stripes {
-  background-image: repeating-linear-gradient(
-    135deg,
-    var(--silence) 0 5px,
-    var(--silence-ink) 5px 9px
-  );
-}
-
 /* ---------------------------------------------------------------------------
    Motion (DESIGN SYSTEM § Motion): one curve, three durations, one press, and
    what remains when the phone asks for less motion.

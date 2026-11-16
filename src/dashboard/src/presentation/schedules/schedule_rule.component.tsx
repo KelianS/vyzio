@@ -1,24 +1,23 @@
 import { useEffect, useReducer, useState, type ReactNode } from 'react'
-import { useParams } from 'react-router'
+import { useParams, useSearchParams } from 'react-router'
 import { useGoBack } from '../../common/navigation/use_go_back'
 import { PageHeader } from '../../common/components/page_header'
 import { Button } from '../../common/ui/button'
-import { SettingsPage } from '../../common/settings/settings_page'
-import { SettingsList } from '../../common/settings/settings_list'
-import { SettingsDraftBar } from '../../common/settings/settings_draft_bar'
+import { Input } from '../../common/ui/input'
+import { Field } from '../../common/components/field'
+import { SettingsPage, SettingsSection } from '../../common/settings/settings_page'
 import { useSettingsDraft } from '../../common/settings/use_settings_draft'
-import { midnightRangeHint } from '../../common/settings/midnight_range'
-import type { SettingDeclaration, SettingOption } from '../../common/settings/setting_declaration'
+import type { SettingOption } from '../../common/settings/setting_declaration'
 import { DeleteAction } from '../../common/components/delete_action'
 import { ErrorMessage, ReadFailure } from '../../common/components/error_message'
 import { useToast } from '../../common/components/toast'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import {
   endsNextDay,
+  KIND_PARAM,
   SCHEDULE_KINDS,
   SCHEDULE_TYPES,
   SCHEDULES_PATH,
-  WEEK_DAYS,
 } from '../../common/schedule/schedule_types'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import { useRootStore } from '../../infrastructure/store/root.store'
@@ -32,6 +31,9 @@ import { buildScheduleRulePresenter } from './schedule_rule.presenter'
 import { scheduleRuleReducer } from './schedule_rule.reducer'
 import { buildInitialScheduleRuleUido, type ScheduleRuleUido } from './schedule_rule.uido'
 import { Loading } from '../../common/components/loading'
+import { formatHouseTime } from '../../common/schedule/house_moment'
+import { DayToggles } from './components/day_toggles'
+import { TargetChecks } from './components/target_checks'
 
 interface RuleValues {
   kind: ScheduleRuleKind
@@ -64,24 +66,21 @@ function draftLabels(targets: string): Record<keyof RuleValues, string> {
   return { kind: 'Type', targetIds: targets, days: 'Jours', startTime: 'Début', endTime: 'Fin' }
 }
 
-const NO_TARGET_CHOSEN: Record<ScheduleTargetKind, string> = {
-  [ScheduleTargetKind.Camera]: 'Aucune caméra',
-  [ScheduleTargetKind.Channel]: 'Aucun canal',
+const NO_TARGET_TO_CHOOSE: Record<ScheduleTargetKind, string> = {
+  [ScheduleTargetKind.Camera]: 'Aucune caméra à viser pour l’instant.',
+  [ScheduleTargetKind.Channel]: 'Aucun canal configuré pour l’instant.',
 }
 
-const KIND_OPTIONS = SCHEDULE_KINDS.map((kind) => ({
-  value: kind,
-  label: SCHEDULE_TYPES[kind].name,
-}))
-
-const DAY_OPTIONS: readonly SettingOption[] = WEEK_DAYS.map((day) => ({
-  value: String(day.value),
-  label: day.name,
-}))
+/** The type the address asks for, privacy when it names none Vyzio knows. */
+function kindOf(value: string | null): ScheduleRuleKind {
+  return SCHEDULE_KINDS.find((kind) => kind === value) ?? ScheduleRuleKind.Privacy
+}
 
 /** One range editor for every rule type (ADR-15): adding at `add`, editing at the rule's id. */
 export function ScheduleRuleView() {
   const { ruleId = null } = useParams()
+  const [searchParams] = useSearchParams()
+  const newKind = kindOf(searchParams.get(KIND_PARAM))
   const {
     schedules: container,
     notifications: notificationsContainer,
@@ -104,7 +103,7 @@ export function ScheduleRuleView() {
     presenter.onLoad(ruleId)
   }, [presenter, ruleId])
 
-  const title = ruleId === null ? 'Ajouter une plage' : 'Plage'
+  const title = ruleId === null ? SCHEDULE_TYPES[newKind].name : 'Plage'
 
   if (uido.gone)
     return (
@@ -156,8 +155,9 @@ export function ScheduleRuleView() {
   return (
     <RuleForm
       // Another rule, or adding after editing, starts a fresh draft.
-      key={uido.rule?.id ?? 'new'}
+      key={uido.rule?.id ?? `new-${newKind}`}
       rule={uido.rule}
+      kind={uido.rule?.kind ?? newKind}
       uido={uido}
       targetOptions={targetOptions}
       presenter={presenter}
@@ -167,9 +167,10 @@ export function ScheduleRuleView() {
 
 function toValues(
   rule: ScheduleRule | null,
+  kind: ScheduleRuleKind,
   targetOptions: Record<ScheduleTargetKind, SettingOption[]>,
 ): RuleValues {
-  if (rule === null) return NEW_RULE
+  if (rule === null) return { ...NEW_RULE, kind }
   const known = new Set(targetOptions[SCHEDULE_TYPES[rule.kind].targetKind].map((o) => o.value))
   return {
     kind: rule.kind,
@@ -183,19 +184,22 @@ function toValues(
 
 function RuleForm({
   rule,
+  kind,
   uido,
   targetOptions,
   presenter,
 }: {
   rule: ScheduleRule | null
+  /** A new range's type, from the list it is added to; an existing one keeps its own. */
+  kind: ScheduleRuleKind
   uido: ScheduleRuleUido
   targetOptions: Record<ScheduleTargetKind, SettingOption[]>
   presenter: ReturnType<typeof buildScheduleRulePresenter>
 }) {
   const goBack = useGoBack()
   const draft = useSettingsDraft<RuleValues>({
-    saved: toValues(rule, targetOptions),
-    labels: DRAFT_LABELS[SCHEDULE_TYPES[rule?.kind ?? NEW_RULE.kind].targetKind],
+    saved: toValues(rule, kind, targetOptions),
+    labels: DRAFT_LABELS[SCHEDULE_TYPES[kind].targetKind],
   })
   useUnsavedChanges(draft.dirty)
   // Left once the draft is cleared: declared after the guard's signal, so it runs after it.
@@ -213,68 +217,17 @@ function RuleForm({
     endTime: values.endTime,
   }
 
-  const settings: SettingDeclaration[] = [
-    {
-      id: 'rule-kind',
-      label: 'Type',
-      nature: { kind: 'choice', options: KIND_OPTIONS },
-      // The effect is the point of the choice: it stays visible, never behind a gesture (UI-19).
-      consequence: type.effect,
-      // What a rule targets depends on its type: once it exists, its type stays.
-      disabled: rule !== null,
-      help:
-        rule === null
-          ? undefined
-          : 'Le type d’une plage ne change plus une fois ajoutée : supprimez-la, puis ajoutez-en une autre.',
-      value: values.kind,
-      onChange: (value) => {
-        draft.set('kind', value as ScheduleRuleKind)
-        draft.set('targetIds', [])
-      },
-    },
-    {
-      id: 'rule-targets',
-      label: TARGETS_LABEL[type.targetKind],
-      nature: {
-        kind: 'multiChoice',
-        options: targetOptions[type.targetKind],
-        emptySummary: NO_TARGET_CHOSEN[type.targetKind],
-      },
-      value: values.targetIds,
-      onChange: (value) => draft.set('targetIds', value as string[]),
-    },
-    {
-      id: 'rule-days',
-      label: 'Jours',
-      nature: { kind: 'multiChoice', options: DAY_OPTIONS, emptySummary: 'Aucun jour' },
-      value: values.days.map(String),
-      onChange: (value) => draft.set('days', (value as string[]).map(Number)),
-    },
-    {
-      id: 'rule-start',
-      label: 'Début',
-      nature: { kind: 'time' },
-      value: values.startTime,
-      onChange: (value) => draft.set('startTime', value as string),
-    },
-    {
-      id: 'rule-end',
-      label: 'Fin',
-      nature: { kind: 'time' },
-      consequence: endsNextDay(values.startTime, values.endTime)
-        ? midnightRangeHint(values.endTime)
-        : undefined,
-      value: values.endTime,
-      onChange: (value) => draft.set('endTime', value as string),
-    },
-  ]
-
   const savedTargets = targetOptions[type.targetKind]
     .filter((option) => draft.saved.targetIds.includes(option.value))
     .map((option) => option.label)
 
-  async function add() {
-    if (!(await presenter.onCreate({ kind: values.kind, ...input }))) return
+  /** Saving takes the user back to the week, which shows the result (SCHED-10). */
+  async function save() {
+    const saved =
+      rule === null
+        ? await presenter.onCreate({ kind: values.kind, ...input })
+        : await presenter.onUpdate(rule.id, input)
+    if (!saved) return
     draft.accept()
     setLeaving(true)
   }
@@ -286,23 +239,77 @@ function RuleForm({
   }
 
   return (
-    <Page title={rule === null ? 'Ajouter une plage' : type.name}>
-      <SettingsPage lede="Aux heures de la maison. Une plage déjà commencée s’applique dans la minute.">
-        <SettingsList settings={settings} />
-
-        {uido.failure && <ErrorMessage error={uido.failure} className="mt-3" />}
-
-        {rule === null ? (
-          <div className="mt-5">
-            <Button type="button" disabled={uido.saving} onClick={() => void add()}>
-              {uido.saving ? 'Ajout…' : 'Ajouter'}
-            </Button>
+    <Page title={type.name}>
+      {/* The type's effect stays in view while the range is set (SCHED-02). */}
+      <SettingsPage lede={type.effect}>
+        <SettingsSection title="Horaire">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="De">
+              <Input
+                type="time"
+                value={values.startTime}
+                onChange={(event) => draft.set('startTime', event.target.value)}
+              />
+            </Field>
+            <Field label="À">
+              <Input
+                type="time"
+                value={values.endTime}
+                onChange={(event) => draft.set('endTime', event.target.value)}
+              />
+            </Field>
           </div>
-        ) : (
+          {endsNextDay(values.startTime, values.endTime) && (
+            <p className="mx-1 text-body text-muted-foreground">Se termine le lendemain.</p>
+          )}
+        </SettingsSection>
+
+        <SettingsSection title="Jours">
+          <DayToggles
+            days={values.days}
+            onToggle={(day) =>
+              draft.set(
+                'days',
+                values.days.includes(day)
+                  ? values.days.filter((value) => value !== day)
+                  : [...values.days, day],
+              )
+            }
+          />
+        </SettingsSection>
+
+        <TargetChecks
+          label={TARGETS_LABEL[type.targetKind]}
+          options={targetOptions[type.targetKind]}
+          checked={values.targetIds}
+          empty={NO_TARGET_TO_CHOOSE[type.targetKind]}
+          onToggle={(id) =>
+            draft.set(
+              'targetIds',
+              values.targetIds.includes(id)
+                ? values.targetIds.filter((value) => value !== id)
+                : [...values.targetIds, id],
+            )
+          }
+        />
+
+        {uido.failure && <ErrorMessage error={uido.failure} />}
+
+        <Button
+          type="button"
+          size="lg"
+          className="w-full"
+          disabled={uido.saving || (rule !== null && !draft.dirty)}
+          onClick={() => void save()}
+        >
+          {uido.saving ? 'Enregistrement…' : 'Enregistrer'}
+        </Button>
+
+        {rule !== null && (
           <DeleteAction
             label="Supprimer la plage"
             question="Supprimer cette plage ?"
-            consequence={`La plage « ${type.name} » de ${rule.startTime} à ${rule.endTime}${
+            consequence={`La plage « ${type.name} » de ${formatHouseTime(rule.startTime)} à ${formatHouseTime(rule.endTime)}${
               savedTargets.length > 0 ? ` sur ${savedTargets.join(', ')}` : ''
             } ne s’appliquera plus.`}
             confirming={uido.confirmDelete}
@@ -313,17 +320,6 @@ function RuleForm({
           />
         )}
       </SettingsPage>
-
-      {rule !== null && (
-        <SettingsDraftBar
-          changes={draft.changes}
-          saving={uido.saving}
-          onSave={async () => {
-            if (await presenter.onUpdate(rule.id, input)) draft.accept()
-          }}
-          onDiscard={draft.discard}
-        />
-      )}
     </Page>
   )
 }

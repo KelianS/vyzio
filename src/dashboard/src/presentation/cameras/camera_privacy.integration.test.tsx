@@ -43,7 +43,9 @@ describe('CameraPrivacyView', () => {
     renderScreen(<CameraPrivacyView />, { ...PRIVACY_TAB, outletContext: ptzCamera })
 
     // Assert
-    expect(await screen.findByText('Aucune plage « Vie privée » ne s’applique')).toBeInTheDocument()
+    expect(
+      await screen.findByText('Aucune plage « Caméras coupées » ne s’applique'),
+    ).toBeInTheDocument()
     expect(screen.getByRole('combobox', { name: 'En mode vie privée' })).toHaveTextContent(
       'Arrêt logiciel',
     )
@@ -70,7 +72,7 @@ describe('CameraPrivacyView', () => {
     renderScreen(<CameraPrivacyView />, PRIVACY_TAB)
 
     // Assert
-    expect(await screen.findByText('1 plage « Vie privée » s’applique')).toBeInTheDocument()
+    expect(await screen.findByText('1 plage « Caméras coupées » s’applique')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Voir la planification' })).toHaveAttribute(
       'href',
       '/settings/schedule',
@@ -101,7 +103,7 @@ describe('CameraPrivacyView', () => {
     renderScreen(<CameraPrivacyView />, PRIVACY_TAB)
 
     // Assert
-    expect(await screen.findByText('1 plage « Vie privée » s’applique')).toBeInTheDocument()
+    expect(await screen.findByText('1 plage « Caméras coupées » s’applique')).toBeInTheDocument()
     expect(screen.queryByText(/Surveillance reprise/)).not.toBeInTheDocument()
   })
 
@@ -115,7 +117,9 @@ describe('CameraPrivacyView', () => {
     // Assert
     expect(await screen.findByText('La planification n’a pas pu être lue.')).toBeInTheDocument()
     expect(screen.getByRole('alert')).toHaveTextContent('GET /api/schedules · 500')
-    expect(screen.queryByText('Aucune plage « Vie privée » ne s’applique')).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('Aucune plage « Caméras coupées » ne s’applique'),
+    ).not.toBeInTheDocument()
   })
 
   it('onRetryRules_ShouldCountTheRanges_WhenTheSecondReadSucceeds', async () => {
@@ -129,7 +133,7 @@ describe('CameraPrivacyView', () => {
     await userEvent.click(retry)
 
     // Assert
-    expect(await screen.findByText('2 plages « Vie privée » s’appliquent')).toBeInTheDocument()
+    expect(await screen.findByText('2 plages « Caméras coupées » s’appliquent')).toBeInTheDocument()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
@@ -137,7 +141,7 @@ describe('CameraPrivacyView', () => {
     // Arrange
     fakeNetwork({ [RULES]: ok([]), [PRESETS]: ok({ presets: [], calibrated: true }) })
     renderScreen(<CameraPrivacyView />, { ...PRIVACY_TAB, outletContext: ptzCamera })
-    await screen.findByText('Aucune plage « Vie privée » ne s’applique')
+    await screen.findByText('Aucune plage « Caméras coupées » ne s’applique')
     screen.getByRole('combobox', { name: 'En mode vie privée' }).focus()
 
     // Act
@@ -213,7 +217,7 @@ describe('CameraPrivacyView', () => {
       'GET /api/cameras': ok([cutCamera]),
     })
     renderScreen(<CameraPrivacyView />, { ...PRIVACY_TAB, outletContext: cutCamera })
-    await screen.findByText('Aucune plage « Vie privée » ne s’applique')
+    await screen.findByText('Aucune plage « Caméras coupées » ne s’applique')
     // The list opens on the current mode; the next choosable one skips the greyed Parking.
     screen.getByRole('combobox', { name: 'En mode vie privée' }).focus()
     await userEvent.keyboard('{ArrowDown}{ArrowDown}{Enter}')
@@ -281,7 +285,7 @@ describe('CameraPrivacyView', () => {
       ...PRIVACY_TAB,
       outletContext: { ...ptzCamera, validationState: 'draft' },
     })
-    await screen.findByText('Aucune plage « Vie privée » ne s’applique')
+    await screen.findByText('Aucune plage « Caméras coupées » ne s’applique')
     screen.getByRole('combobox', { name: 'En mode vie privée' }).focus()
 
     // Act
@@ -310,7 +314,7 @@ describe('CameraPrivacyView', () => {
     })
 
     // Assert
-    await screen.findByText('Aucune plage « Vie privée » ne s’applique')
+    await screen.findByText('Aucune plage « Caméras coupées » ne s’applique')
     expect(screen.queryByText(/^Ses positions se règlent/)).not.toBeInTheDocument()
   })
 })

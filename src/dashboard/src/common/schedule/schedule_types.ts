@@ -8,6 +8,9 @@ import {
 /** Where the house's calendar lives (ADR-15). */
 export const SCHEDULES_PATH = '/settings/schedule'
 
+/** Carries the type of a range to add, from the list it is added to (SCHED-10). */
+export const KIND_PARAM = 'kind'
+
 /** A rule type in the interface's words: the same name, icon and effect everywhere (DESIGN SYSTEM § Shared words). */
 interface ScheduleTypeCopy {
   readonly name: string
@@ -20,18 +23,18 @@ interface ScheduleTypeCopy {
 
 export const SCHEDULE_TYPES: Record<ScheduleRuleKind, ScheduleTypeCopy> = {
   [ScheduleRuleKind.Privacy]: {
-    name: 'Vie privée',
+    name: 'Caméras coupées',
     effect: 'Aucun enregistrement, aucune détection, aucune notification.',
     icon: EyeOff,
     targetKind: ScheduleTargetKind.Camera,
-    fill: 'bg-mark-off text-background',
+    fill: 'bg-input text-ink-muted',
   },
   [ScheduleRuleKind.MuteNotifications]: {
-    name: 'Sans notification',
+    name: 'Silence',
     effect: 'Filme et enregistre, mais n’envoie aucune notification.',
     icon: BellOff,
     targetKind: ScheduleTargetKind.Channel,
-    fill: 'bg-stripes text-silence-foreground',
+    fill: 'bg-silence/22 text-silence',
   },
 }
 

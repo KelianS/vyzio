@@ -71,7 +71,7 @@ test.describe('House calendar', () => {
     )
     await page.goto('/settings/cameras/camera-1/privacy')
 
-    await expect(page.getByText('1 plage « Vie privée » s’applique')).toBeVisible()
+    await expect(page.getByText('1 plage « Caméras coupées » s’applique')).toBeVisible()
     await page.getByRole('link', { name: 'Voir la planification' }).click()
 
     await expect(page).toHaveURL(/\/settings\/schedule$/)
@@ -116,7 +116,7 @@ test.describe('House calendar', () => {
     )
     await page.goto('/settings/notifications/telegram')
 
-    await expect(page.getByText('1 plage « Sans notification » s’applique')).toBeVisible()
+    await expect(page.getByText('1 plage « Silence » s’applique')).toBeVisible()
     await page.getByRole('link', { name: 'Voir la planification' }).click()
 
     const saturday = page
