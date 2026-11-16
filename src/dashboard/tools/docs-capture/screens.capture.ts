@@ -7,7 +7,7 @@ import {
   makeFakeChannel,
   makeFakeDetectionEvent,
 } from '../../tests/e2e/fixtures/fake_backend'
-import { fullPageScreenshot } from '../../tests/e2e/fixtures/full_page_screenshot'
+import { settledScreenshot } from '../../tests/e2e/fixtures/settled_screenshot'
 
 const OUT = path.resolve(import.meta.dirname, '../../../../docs/assets')
 // A screen showing camera scenes is a JPEG: as a PNG, the photos weigh several times more.
@@ -112,20 +112,21 @@ async function serveConfiguredAlerts(page: Page) {
 }
 
 async function open(page: Page, route: string) {
-  // A short viewport, so the full-page shot ends where the content does, not where the screen does.
-  await page.setViewportSize({ width: 390, height: 400 })
   await page.goto(route)
   // The screens settle their own async loads; a network idle beat is enough with a fake backend.
   await page.waitForLoadState('networkidle')
 }
 
-// The phone viewport: that is the form factor the interface is designed for (UI-10).
+// The phone viewport: that is the form factor the interface is designed for (UI-10). One size for
+// every shot, so the images of a README row line up.
+test.use({ viewport: { width: 390, height: 844 } })
+
 test('phone screens', async ({ page }) => {
   await installFakeBackend(page, state)
   await serveConfiguredAlerts(page)
   const shoot = async (route: string, file: string, quality?: number) => {
     await open(page, route)
-    await fullPageScreenshot(page, { path: path.join(OUT, file), quality })
+    await settledScreenshot(page, { path: path.join(OUT, file), quality })
   }
 
   await shoot('/', 'hub.jpg', JPEG_QUALITY)
@@ -134,12 +135,11 @@ test('phone screens', async ({ page }) => {
   await shoot('/settings/face-recognition', 'people.png')
 
   await open(page, '/')
-  await page.setViewportSize({ width: 390, height: 844 })
   await page.getByRole('link', { name: 'Porte d’entrée' }).click()
   const video = page.locator('video[aria-label="Porte d’entrée"]')
   await expect.poll(() => video.evaluate((v: HTMLVideoElement) => v.readyState)).toBeGreaterThan(1)
   await expect(page.getByTitle('Haut')).toBeVisible()
   // Away from the controls, so none shows its hover state.
   await page.mouse.move(1, 1)
-  await page.screenshot({ path: path.join(OUT, 'live.jpg'), quality: JPEG_QUALITY })
+  await settledScreenshot(page, { path: path.join(OUT, 'live.jpg'), quality: JPEG_QUALITY })
 })
