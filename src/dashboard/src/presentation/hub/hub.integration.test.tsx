@@ -232,6 +232,26 @@ describe('HubView', () => {
     expect(network.sent.map((request) => request.route)).toContain(`DELETE ${SILENCE}`)
   })
 
+  it('render_ShouldKeepTheSilenceEndOnOneLineInTheTile_WhenItIsMinutePrecise', async () => {
+    // Arrange
+    home({
+      [`GET ${SILENCE}`]: ok({
+        active: true,
+        until: inTwoHours('23:08'),
+        scheduleNextChange: null,
+      }),
+    })
+
+    // Act
+    renderScreen(<HubView />)
+
+    // Assert
+    expect(await screen.findByText(/^En silence jusqu’à/)).toHaveProperty(
+      'textContent',
+      'En silence jusqu’à 23 h 08',
+    )
+  })
+
   it('onStartSilence_ShouldLeaveTheSilenceOffAndSayWhy_WhenVyzioRefuses', async () => {
     // Arrange
     home({ [`PUT ${SILENCE}`]: failure(400, 'silence_too_long', 'At most 7 days.') })

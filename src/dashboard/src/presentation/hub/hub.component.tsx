@@ -226,7 +226,7 @@ function HubOperational({
           title="Notifications"
           subtitle={
             silenceUntil
-              ? { text: `En silence jusqu’à ${silenceUntil}`, silence: true }
+              ? { text: `En silence jusqu’à ${keepTogether(silenceUntil)}`, silence: true }
               : uido.notificationsToConfigure
                 ? 'À configurer'
                 : null
@@ -244,4 +244,11 @@ function HubOperational({
       )}
     </main>
   )
+}
+
+const NBSP = ' '
+
+/** A narrow tile wraps before the end, never inside « 4 h 39 ». */
+function keepTogether(text: string): string {
+  return text.replaceAll(' ', NBSP)
 }
