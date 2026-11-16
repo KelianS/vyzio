@@ -107,34 +107,42 @@ carries it, never a class per component.
 
 ## Motion
 
-Motion is short, calm and led by opacity: it confirms a gesture or bridges a change that would
-otherwise jump, never decorates. One curve and three durations, never a value written in a component
-(exact values in `src/index.css`, the single home):
+Motion is calm and physical, the feel of a quiet, well-made phone app: it answers a gesture at once,
+follows the finger, and bridges a change that would otherwise jump; it never decorates. **Every
+movement is a spring**, never a curve and a duration. Its values live in the one motion module of
+the code (`common/motion`), never in a component nor in this document; the spring engine is
+[ADR-01](adr/0001-stack-and-runtime.md)'s.
 
-| Token              | Use                                                                                                                                                    |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `--ease-calm`      | **The one curve** of every transition and animation: a strong ease-out, fast at the start so the answer is immediate, long to settle. Never an ease-in |
-| `--duration-press` | Press feedback                                                                                                                                         |
-| `--duration-short` | Small layers (popover, select, tooltip), a toast leaving, faded controls coming back on a tap                                                          |
-| `--duration-long`  | Dialogs and sheets, a toast arriving, faded controls leaving by themselves                                                                             |
+| Token             | Use                                                                                                                                                                                          |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Response          | How quickly a spring reaches its target: one for what moves, a quicker one for a control sinking under a press                                                                               |
+| Arrival damping   | **What arrives** lands with a light bounce: a page opening, a sheet or a toast rising, a tab landing, the bar growing, a control released after a press, a dragged layer coming back to rest |
+| Departure damping | **What leaves** settles without a bounce: a layer closing, going back, a toast or an alert dismissed, the bar giving its room back                                                           |
 
-- **Layers fade.** A dialog also grows slightly from the centre; a sheet rises from the bottom edge;
-  a popover, a select or a tooltip grows from its trigger with a short slide. A full-screen picture
-  only fades: a full-bleed surface has no edge to grow from. A layer leaves the same way however it
-  closes.
-- **A toast** fades in with a short rise and fades out where it stands; raised again while it fades,
-  it comes back rather than showing twice.
-- **Every press answers**, so a tap never looks unheard while the answer is on its way.
-  - A **control** (a button, a pill, an icon button, a control over the picture) shrinks slightly
-    while pressed: the button primitive takes it by itself, any other control is wrapped in the
-    shared pressable control.
+- **Interruptible.** A spring starts from the value on screen and keeps its velocity: a motion caught
+  by a tap or a finger goes on from where it is, never jumps nor restarts.
+- **The finger leads.** What a finger drags follows it one to one. A drag starts only once its
+  direction is clear, so a scroll is never taken for a swipe, and a drag that starts on a control (a
+  steering pad, a slider, a button, a field) belongs to that control. Past an end, the finger meets a
+  rubber band that grows harder to pull. These gestures answer touch only: with a mouse, on a large
+  screen, the same layers move by their buttons.
+- **Momentum decides.** A released gesture lands where its momentum projects it: the projected end,
+  not the point of release, decides whether it completes or comes back.
+- **Transform and opacity only**, so nothing lays the page out again while it moves.
+- **Every press answers on pointer-down**, so a tap never looks unheard while the answer is on its
+  way. Every press is taken by a slot, never by a class on a screen.
+  - A **control** (a button, a pill, an icon button, a control over the picture) sinks slightly, then
+    springs back on release: the button primitive takes it by its slot, any other control is wrapped
+    in the shared pressable control.
   - A **surface that leads somewhere** (a row, a card, a camera's picture) dims while pressed and
     never moves; it is wrapped in the shared pressable surface or is the registry `item`.
-  - Every press is taken by a slot, never by a class on a screen.
-  - A tab keeps its colour change only. A screen change is instant.
-- **Reduce motion.** When the phone asks for less motion, only fades remain: no growing, no slide,
-  no rise, and a press dims instead of shrinking. A spinner keeps turning: it is the only sign that
-  work goes on.
+- **The primitives' small layers** (a popover, a select, a tooltip) and a **confirmation** keep a
+  short fade with a slight growth, on the one calm curve of `src/index.css`: they ask, they do not
+  move anything the user holds.
+- **Reduce motion.** When the phone asks for less motion, movements turn brief and bounce-free, or
+  fades: never a slide, a stretch or a bounce. A page and a tab fade in place, a sheet and a toast
+  fade, an end gives no rubber band, and a press dims instead of sinking. What the finger holds still
+  follows it. A spinner keeps turning: it is the only sign that work goes on.
 
 ## Patterns
 
@@ -148,9 +156,20 @@ is no navigation bar** ([SPECS](SPECS.md) UI-29).
   size. A page about
   one thing (a camera) adds the thing's status mark beside its title, and may carry one icon button
   on the right for that thing (a camera's gear, the filter of `Détections`).
-- **The alert slot** (UI-30): the bar grows downwards, each alert a line in ink with a quieter
-  second line, and a round close button at its end except for Vyzio out of reach.
+- **It never slides with the pages.** When the page changes, only its contents move, vertically: the
+  old ones rise out as the new ones come up from below.
+- **The alert slot** (UI-30): the bar grows downwards, its height springing to make room for an
+  alert and to give it back. Each alert is a line in ink with a quieter second line, and a round
+  close button at its end except for Vyzio out of reach; one that closes also leaves by a sideways
+  swipe, the same as its close button.
 - **The settings apply** (UI-28) is the bar's main action, drawn as one (§ Editing cycle).
+
+### Page transition
+
+Opening a page slides it in from the right, under the bar, while the previous one recedes slightly
+and dims; going back is the reverse. Changing tabs or being redirected is not a page change, and
+moves no page. Going back stays the bar's back button or the browser's (UI-29): the interface adds
+no edge swipe of its own.
 
 ### Page header
 
@@ -205,6 +224,11 @@ Two or three tabs under a picture or a page head, as pills in one track: the sel
 others in ink soft. No dot or badge marks something new, on a tab or anywhere else: nothing tracks
 what the user has already seen.
 
+The raised pill is one indicator that moves between the tabs. A sideways drag of the content moves
+the content and the indicator with the finger, and lands on the tab its momentum projects; a drag
+that starts on a control in the content never moves the tabs. Every tab bar shares this behaviour
+through its shared component.
+
 ### Sheets
 
 A choice that is quick and reversible (a duration, a filter, a clip's actions) opens a **sheet** from
@@ -214,6 +238,18 @@ camera, person, type and day) lists each axis as its own group under a quiet hea
 `Toutes`/`Tous` clearing it, the current choice checked. There, a tap checks or unchecks a row, an
 axis holding several values at once, or one for the day; the list follows at each tap, so the sheet
 stays open and closes with `Fermer` in place of `Annuler`. A chosen day is a date field in its row.
+
+Every sheet rises from the bottom edge and is held by the finger: dragged down, it follows and closes
+or comes back as its momentum decides; dragged up, it meets a rubber band. However it closes, it
+leaves downwards, without a bounce. One shared component draws every sheet.
+
+### Toasts
+
+A toast rises at the bottom and leaves downwards; raised again while it leaves, it comes back rather
+than showing twice. Every toast, one carrying a diagnostic line included, follows a finger dragging
+it down and closes when its momentum carries it away: a deliberate gesture closes it like its close
+button ([SPECS](SPECS.md) UI-03). Only its top edge takes that drag: a scroll or a selection
+starting on its text never closes it. How long it stays is § Errors.
 
 ### State pills
 

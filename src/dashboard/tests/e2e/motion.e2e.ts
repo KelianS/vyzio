@@ -41,7 +41,7 @@ async function pressed(control: Locator) {
   }))
 }
 
-/** Records the transitions each toast starts with: its entrance is over before a locator could look. */
+/** Records how each toast starts: its entrance is over before a locator could look. */
 async function recordToastEntrances(page: Page) {
   await page.evaluate(() => {
     const record = window as unknown as { toastEntrances: string[][] }
@@ -49,11 +49,12 @@ async function recordToastEntrances(page: Page) {
     new MutationObserver((mutations) => {
       for (const node of mutations.flatMap((mutation) => [...mutation.addedNodes])) {
         if (node instanceof HTMLElement && node.parentElement?.ariaLabel === 'Notifications') {
-          record.toastEntrances.push(
-            node
+          record.toastEntrances.push([
+            ...node
               .getAnimations()
               .map((animation) => (animation as CSSTransition).transitionProperty),
-          )
+            ...(node.style.transform ? [node.style.transform] : []),
+          ])
         }
       }
     }).observe(document.body, { childList: true, subtree: true })
@@ -81,6 +82,8 @@ async function sendATestMessage(page: Page) {
 }
 
 test.describe('Press feedback', () => {
+  test.use({ reducedMotion: 'no-preference' })
+
   test.beforeEach(async ({ page }) => {
     const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
     await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
@@ -90,7 +93,7 @@ test.describe('Press feedback', () => {
     await page.goto('/')
 
     expect(await pressed(page.getByRole('button', { name: 'Couper les caméras' }))).toEqual({
-      scale: '0.97',
+      scale: '0.96',
       opacity: '1',
     })
   })
@@ -99,7 +102,7 @@ test.describe('Press feedback', () => {
     await page.goto('/cameras/camera-1')
 
     expect(await pressed(page.getByRole('button', { name: 'Plein écran' }))).toEqual({
-      scale: '0.97',
+      scale: '0.96',
       opacity: '1',
     })
   })
@@ -109,7 +112,7 @@ test.describe('Press feedback', () => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
     await page.goto('/cameras/camera-1')
 
-    expect(await pressed(page.getByTitle('Haut'))).toEqual({ scale: '0.97', opacity: '1' })
+    expect(await pressed(page.getByTitle('Haut'))).toEqual({ scale: '0.96', opacity: '1' })
   })
 
   test('Button_ShouldDimInsteadOfShrinking_WhenThePhoneAsksForLessMotion', async ({ page }) => {
@@ -125,6 +128,8 @@ test.describe('Press feedback', () => {
 
 // Held with the pointer: headless Chromium sets no `:active` under an emulated finger.
 test.describe('Press feedback on links and rows', () => {
+  test.use({ reducedMotion: 'no-preference' })
+
   test.use({ viewport: { width: 390, height: 844 } })
 
   test.beforeEach(async ({ page }) => {
@@ -145,7 +150,7 @@ test.describe('Press feedback on links and rows', () => {
     await page.goto('/')
 
     expect(await pressed(page.getByRole('banner').getByRole('link', { name: 'Réglages' }))).toEqual(
-      { scale: '0.97', opacity: '1' },
+      { scale: '0.96', opacity: '1' },
     )
   })
 
@@ -161,6 +166,8 @@ test.describe('Press feedback on links and rows', () => {
 
 // Every kind of row is the registry `item`: each one dims, links and buttons alike.
 test.describe('Press feedback on every kind of row', () => {
+  test.use({ reducedMotion: 'no-preference' })
+
   test.use({ viewport: { width: 390, height: 844 } })
 
   const DIMMED = { scale: 'none', opacity: '0.7' }
@@ -232,11 +239,16 @@ test.describe('Press feedback on every kind of row', () => {
 
 // Every kind of control drawn without the button primitive presses like a button.
 test.describe('Press feedback on every kind of control', () => {
-  const SHRUNK = { scale: '0.97', opacity: '1' }
+  test.use({ reducedMotion: 'no-preference' })
+
+  const SHRUNK = { scale: '0.96', opacity: '1' }
 
   test('ToastClose_ShouldShrinkSlightly_WhenItIsPressed', async ({ page }) => {
     await openTheChannel(page)
     await sendATestMessage(page)
+    // Pressed once it has risen into place, so the finger stays on its close button.
+    const toast = page.getByRole('region', { name: 'Notifications' }).getByRole('status')
+    await expect.poll(() => toast.evaluate((el) => el.style.transform)).toBe('')
 
     expect(
       await pressed(
@@ -293,6 +305,8 @@ test.describe('Press feedback on every kind of control', () => {
 })
 
 test.describe('Layers', () => {
+  test.use({ reducedMotion: 'no-preference' })
+
   test('ConfirmModal_ShouldFadeInGrowingSlightly_WhenItOpens', async ({ page }) => {
     await openTheChannel(page)
     await slowDownMotion(page)
@@ -379,16 +393,20 @@ test.describe('Layers', () => {
 })
 
 test.describe('Toasts', () => {
+  test.use({ reducedMotion: 'no-preference' })
+
   test.beforeEach(async ({ page }) => {
     await openTheChannel(page)
   })
 
-  test('Toast_ShouldFadeInRisingSlightly_WhenItAppears', async ({ page }) => {
+  test('Toast_ShouldRiseFromBelowItsPlace_WhenItAppears', async ({ page }) => {
     await recordToastEntrances(page)
 
     await sendATestMessage(page)
 
-    expect(await toastEntrances(page)).toEqual([expect.arrayContaining(['opacity', 'translate'])])
+    expect(await toastEntrances(page)).toEqual([
+      [expect.stringMatching(/^translate3d\(0px, [1-9]/)],
+    ])
   })
 
   test('Toast_ShouldOnlyFadeIn_WhenThePhoneAsksForLessMotion', async ({ page }) => {
@@ -400,18 +418,88 @@ test.describe('Toasts', () => {
     expect(await toastEntrances(page)).toEqual([['opacity']])
   })
 
-  test('Toast_ShouldFadeOut_WhenTheUserClosesIt', async ({ page }) => {
+  test('Toast_ShouldLeaveDownwards_WhenTheUserClosesIt', async ({ page }) => {
     await sendATestMessage(page)
     const toast = page.getByRole('region', { name: 'Notifications' }).getByRole('status')
-    await expect.poll(() => toast.evaluate((el) => el.getAnimations().length)).toBe(0)
-    await slowDownMotion(page)
+    await expect.poll(() => toast.evaluate((el) => el.style.transform)).toBe('')
 
     await toast.getByRole('button', { name: 'Fermer' }).click()
 
-    expect(
-      await toast.evaluate((el) =>
-        el.getAnimations().map((animation) => (animation as CSSTransition).transitionProperty),
-      ),
-    ).toEqual(['opacity'])
+    await expect
+      .poll(() => toast.evaluate((el) => el.style.transform))
+      .toMatch(/^translate3d\(0px, [1-9]/)
+  })
+})
+
+test.describe('Page transition', () => {
+  test.use({ reducedMotion: 'no-preference', viewport: { width: 390, height: 844 } })
+
+  test('PageTransition_ShouldNeverLetTheScreenScrollSideways_WhenAPageSlidesIn', async ({
+    page,
+  }) => {
+    await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
+    await page.goto('/')
+    const gear = page.getByRole('banner').getByRole('link', { name: 'Réglages' })
+    await expect(gear).toBeVisible()
+
+    await gear.click()
+    // Measured while the new page is still on its way in.
+    const stage = page.getByRole('banner').locator('xpath=following-sibling::div[1]')
+    await expect.poll(() => stage.evaluate((el) => el.style.transform)).toMatch(/^translate3d\(/)
+
+    const widths = await page.evaluate(() => ({
+      scroll: document.documentElement.scrollWidth,
+      client: document.documentElement.clientWidth,
+    }))
+    expect(widths.scroll).toBe(widths.client)
+  })
+})
+
+test.describe('Sheet', () => {
+  test.use({ reducedMotion: 'no-preference', viewport: { width: 390, height: 844 } })
+
+  /** From the tap on, frame by frame: where the sheet first shows, and how far the drawn sheet ever trails its spring. */
+  async function sampleTheSheet(page: Page) {
+    await page.evaluate(() => {
+      const record = window as unknown as { firstTop: number | null; largestLag: number }
+      record.firstTop = null
+      record.largestLag = 0
+      const start = performance.now()
+      const tick = () => {
+        const sheet = document.querySelector<HTMLElement>('[role="dialog"]')
+        if (sheet) {
+          record.firstTop ??= sheet.getBoundingClientRect().top
+          const spring = Number(/, (-?[\d.]+)px/.exec(sheet.style.transform)?.[1] ?? 0)
+          const drawn = new DOMMatrix(getComputedStyle(sheet).transform).m42
+          record.largestLag = Math.max(record.largestLag, Math.abs(drawn - spring))
+        }
+        if (performance.now() - start < 1500) requestAnimationFrame(tick)
+      }
+      requestAnimationFrame(tick)
+    })
+    await page.waitForTimeout(1600)
+    return page.evaluate(() => {
+      const { firstTop, largestLag } = window as unknown as {
+        firstTop: number | null
+        largestLag: number
+      }
+      return { firstTop, largestLag }
+    })
+  }
+
+  test('Sheet_ShouldStartBelowTheEdgeAndBeDrawnWhereItsSpringStands_WhenItOpens', async ({
+    page,
+  }) => {
+    await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
+    await page.goto('/')
+    const cut = page.getByRole('button', { name: 'Couper les caméras' })
+    await cut.waitFor()
+
+    const sampling = sampleTheSheet(page)
+    await cut.click()
+    const { firstTop, largestLag } = await sampling
+
+    expect(firstTop).toBeGreaterThanOrEqual(843)
+    expect(largestLag).toBeLessThan(1)
   })
 })

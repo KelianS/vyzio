@@ -88,9 +88,9 @@ export function PersonView() {
           to: `${PEOPLE_PATH}/${found.id}/${page.slug}`,
           label: page.label,
         }))}
-      />
-
-      <Outlet context={context} />
+      >
+        <Outlet context={context} />
+      </TabBar>
     </div>
   )
 }

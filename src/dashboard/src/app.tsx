@@ -1,6 +1,7 @@
-import { lazy } from 'react'
+import { lazy, useEffect } from 'react'
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router'
 import { ToastProvider } from './common/components/toast'
+import { installPressFeedback } from './common/motion/press'
 import { AppContainerProvider } from './infrastructure/providers/app_container.context'
 import { OWN_HEADER, SUB_PAGE } from './presentation/settings/settings.rubrics'
 import { AccessGate } from './presentation/access/access_gate.component'
@@ -144,6 +145,8 @@ const ExpertView = lazy(() =>
 )
 
 function Root() {
+  useEffect(() => installPressFeedback(document), [])
+
   return (
     <AppContainerProvider>
       <ToastProvider>
