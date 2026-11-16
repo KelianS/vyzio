@@ -75,9 +75,9 @@ export function CameraPage({
           to: `/settings/cameras/${camera.id}/${page.slug}`,
           label: page.label,
         }))}
-      />
-
-      <Outlet context={camera} />
+      >
+        <Outlet context={camera} />
+      </TabBar>
     </div>
   )
 }
