@@ -1,9 +1,10 @@
 import { useEffect, useReducer } from 'react'
-import { Link, Navigate } from 'react-router'
-import { Bell, ChevronRight, Eye, EyeOff, History } from 'lucide-react'
+import { Link } from 'react-router'
+import { Bell, ChevronRight, Eye, EyeOff, History, Plus } from 'lucide-react'
 import type { AppError } from '../../common/errors/app_error'
 import { ReadFailure } from '../../common/components/error_message'
 import { SecondaryButton } from '../../common/components/secondary_button'
+import { Button } from '../../common/ui/button'
 import { Surface } from '../../common/components/surface'
 import { Loading } from '../../common/components/loading'
 import { Skeleton } from '../../common/ui/skeleton'
@@ -28,7 +29,7 @@ import { HomeTile } from './components/home_tile'
 /** From this many cameras, the home shows the first four as a grid (UI-32). */
 const GRID_FROM = 4
 
-/** Where the first run lands: there is no welcome screen of its own (UI-33). */
+/** Where the home's one action leads while no camera is added (UI-33). */
 const ADD_CAMERA_PATH = '/settings/cameras/add'
 
 export function HubView() {
@@ -73,7 +74,7 @@ export function HubView() {
     return <HubCamerasUnread error={camerasError} onRetry={presenter.onReloadCameras} />
   // A reload keeps the cards on screen; only the first read shows the home's shape.
   if ((camerasLoading && cameras.length === 0) || !uido.silenceSettled) return <HubLoading />
-  if (cameras.length === 0) return <Navigate to={ADD_CAMERA_PATH} replace />
+  if (cameras.length === 0) return <HubNoCamera />
 
   return (
     <HubOperational
@@ -113,6 +114,21 @@ function HubLoading() {
           <Skeleton className="h-30 rounded-card bg-card" />
         </div>
       </Loading>
+    </main>
+  )
+}
+
+/** No camera yet: the home is one way to add one, no welcome screen of its own (UI-33). */
+function HubNoCamera() {
+  return (
+    <main className="flex flex-col gap-3">
+      <h1 className="sr-only">Accueil</h1>
+      <Button asChild size="lg" className="w-full">
+        <Link to={ADD_CAMERA_PATH}>
+          <Plus aria-hidden="true" />
+          Ajouter une caméra
+        </Link>
+      </Button>
     </main>
   )
 }

@@ -304,7 +304,7 @@ describe('HubView', () => {
     expect(await screen.findByRole('link', { name: 'Notifications' })).toBeInTheDocument()
   })
 
-  it('render_ShouldOpenTheAddCameraPage_WhenNoCameraIsAddedYet', async () => {
+  it('render_ShouldOfferOnlyToAddACameraAndStayHome_WhenNoCameraIsAddedYet', async () => {
     // Arrange
     home({ 'GET /api/cameras': ok([]) })
 
@@ -312,7 +312,11 @@ describe('HubView', () => {
     const { router } = renderScreen(<HubView />, { path: '/', url: '/' })
 
     // Assert
-    await expect.poll(() => router.state.location.pathname).toBe('/settings/cameras/add')
+    expect(await screen.findByRole('link', { name: 'Ajouter une caméra' })).toHaveAttribute(
+      'href',
+      '/settings/cameras/add',
+    )
+    expect(router.state.location.pathname).toBe('/')
     expect(screen.queryByText('Bienvenue')).not.toBeInTheDocument()
   })
 

@@ -93,14 +93,18 @@ test.describe('Home', () => {
     await expect(page).toHaveURL(/\/detections$/)
   })
 
-  test('FirstRun_ShouldOpenOnAddingACamera_WhenNoCameraIsAddedYet', async ({ page }) => {
+  test('FirstRun_ShouldOfferAddingACameraFromTheHome_WhenNoCameraIsAddedYet', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [] }))
 
     await page.goto('/')
+    await expect(page).toHaveURL(/\/$/)
+    await expect(page.getByText('Bienvenue')).toHaveCount(0)
+    await page.getByRole('link', { name: 'Ajouter une caméra' }).click()
 
     await expect(page).toHaveURL(/\/settings\/cameras\/add$/)
     await expect(page.getByRole('heading', { name: 'Ajouter une caméra' })).toBeVisible()
-    await expect(page.getByText('Bienvenue')).toHaveCount(0)
+    await page.getByRole('button', { name: 'Retour' }).click()
+    await expect(page).toHaveURL(/\/$/)
   })
 
   test('HubUnreachable_ShouldFillTheScreenThenOpenByItself_WhenVyzioAnswersAgain', async ({

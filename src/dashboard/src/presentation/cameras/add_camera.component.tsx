@@ -51,8 +51,6 @@ export function AddCameraView() {
     toast,
   })
   const knownCameras = useRootStore((state) => state.cameras)
-  const camerasLoading = useRootStore((state) => state.camerasLoading)
-  const camerasError = useRootStore((state) => state.camerasError)
 
   const candidate =
     uido.selection.kind === 'candidate'
@@ -100,13 +98,10 @@ export function AddCameraView() {
     void presenter.onVendorAssistanceNeeded(vendorFamily)
   }, [presenter, vendorFamily])
 
-  // Nothing to go back to: the first run opens here (UI-29).
-  const firstRun = !camerasLoading && camerasError === null && knownCameras.length === 0
-
   if (!chosen || !onAccessStep)
     return (
       <>
-        <PageHeader title={PAGE_TITLE} back={!firstRun} />
+        <PageHeader title={PAGE_TITLE} />
         <SettingsPage>
           <GroupedList
             label="Sur votre réseau"

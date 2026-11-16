@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router'
 import { useGoBack } from '../navigation/use_go_back'
@@ -13,19 +13,6 @@ interface TopBarSlots {
 }
 
 const TopBarSlotsContext = createContext<TopBarSlots>({ title: null, action: null })
-
-/** Lets a page with nothing before it take the way back out of the bar. */
-const TopBarBackContext = createContext<(hidden: boolean) => void>(() => {})
-
-/** Drawn by a page that is the first thing to see, such as adding the first camera: the bar offers no way back. */
-export function TopBarNoBack() {
-  const setBackHidden = useContext(TopBarBackContext)
-  useEffect(() => {
-    setBackHidden(true)
-    return () => setBackHidden(false)
-  }, [setBackHidden])
-  return null
-}
 
 /** A page's title, drawn in the bar; outside the shell (a screen alone under test) in place. */
 export function TopBarTitle({ children }: { children: ReactNode }) {
@@ -117,37 +104,34 @@ export function TopBar({
 }) {
   const [title, setTitle] = useState<HTMLElement | null>(null)
   const [action, setAction] = useState<HTMLElement | null>(null)
-  const [backHidden, setBackHidden] = useState(false)
   const slots = useMemo(() => ({ title, action }), [title, action])
 
   return (
     <TopBarSlotsContext.Provider value={slots}>
-      <TopBarBackContext.Provider value={setBackHidden}>
-        <header
-          className={cn(
-            // Below the Radix layers (`z-50`): a dialog or a list opened near the top covers it.
-            'sticky top-0 z-40 rounded-b-panel bg-bar text-foreground',
-            'px-4 pt-[max(1.25rem,env(safe-area-inset-top))] pb-4',
+      <header
+        className={cn(
+          // Below the Radix layers (`z-50`): a dialog or a list opened near the top covers it.
+          'sticky top-0 z-40 rounded-b-panel bg-bar text-foreground',
+          'px-4 pt-[max(1.25rem,env(safe-area-inset-top))] pb-4',
+        )}
+      >
+        <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
+          {home ? (
+            <div className="flex min-h-11 items-center justify-between gap-3">
+              <span className="text-title font-bold">Vyzio</span>
+              {gear && <TopBarIconLink to="/settings" label="Réglages" icon={Settings} />}
+            </div>
+          ) : (
+            <div className="flex min-h-11 items-center gap-3">
+              <BackButton />
+              <div ref={setTitle} className="min-w-0 flex-1" />
+              <div ref={setAction} className="contents" />
+            </div>
           )}
-        >
-          <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
-            {home ? (
-              <div className="flex min-h-11 items-center justify-between gap-3">
-                <span className="text-title font-bold">Vyzio</span>
-                {gear && <TopBarIconLink to="/settings" label="Réglages" icon={Settings} />}
-              </div>
-            ) : (
-              <div className="flex min-h-11 items-center gap-3">
-                {!backHidden && <BackButton />}
-                <div ref={setTitle} className="min-w-0 flex-1" />
-                <div ref={setAction} className="contents" />
-              </div>
-            )}
-            {below}
-          </div>
-        </header>
-        {children}
-      </TopBarBackContext.Provider>
+          {below}
+        </div>
+      </header>
+      {children}
     </TopBarSlotsContext.Provider>
   )
 }

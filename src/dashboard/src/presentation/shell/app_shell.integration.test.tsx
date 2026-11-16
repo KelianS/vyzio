@@ -114,23 +114,6 @@ describe('AppShell', () => {
     expect(within(bar).getByRole('button', { name: 'Retour' })).toBeVisible()
   })
 
-  it('TopBar_ShouldOfferNoWayBack_WhenTheFirstCameraIsToAdd', async () => {
-    // Arrange
-    fakeNetwork({ 'GET /api/cameras': ok([]), 'GET /api/system/stats': ok(stats()) })
-
-    // Act
-    openShellAt('/settings/cameras/add')
-
-    // Assert
-    const bar = await screen.findByRole('banner')
-    expect(
-      await within(bar).findByRole('heading', { level: 1, name: 'Ajouter une caméra' }),
-    ).toBeVisible()
-    await waitFor(() =>
-      expect(within(bar).queryByRole('button', { name: 'Retour' })).not.toBeInTheDocument(),
-    )
-  })
-
   it('TopBar_ShouldOfferTheWayBack_WhenACameraIsAddedBesideOthers', async () => {
     // Arrange
     fakeNetwork({ 'GET /api/cameras': ok([makeCamera()]), 'GET /api/system/stats': ok(stats()) })
