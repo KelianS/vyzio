@@ -40,12 +40,8 @@ application, built statically and served by its own web server container.
   process runs in production and the API publishes no port.
 - **Component foundation**: shadcn/ui primitives copied into the repository, on Radix and Tailwind.
   Their tiers and the tokens are the [DESIGN SYSTEM](../DESIGN%20SYSTEM.md)'s.
-- **Spring and gesture engine**: the `motion` library (motion.dev), through its React entry
-  `motion/react`. Every value that moves is one of its motion values, retargeted by its springs from
-  the value and velocity on screen; a gesture feeds those values from the pointer and hands its
-  release velocity to the spring. The library is bundled with the interface, never loaded from a
-  host ([SPECS](../SPECS.md) SYS-03). The spring presets live in one motion module of the
-  interface, never in a screen.
+- **Spring and gesture engine**: the `motion` library (motion.dev) drives every movement of the
+  interface, bundled with it, never loaded from a host ([SPECS](../SPECS.md) SYS-03).
 - **Two anonymous probes.** Liveness says the process answers, nothing else, and is what the
   container healthcheck reads. Readiness checks the database, the Frigate subscription and Frigate,
   each within a bounded time, Frigate read by the same rule as the engine status (ADR-02). Both
