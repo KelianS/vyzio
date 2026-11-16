@@ -99,6 +99,7 @@ global restart the user triggers.
 | The screen author chooses the control | Two settings of one nature render differently on two pages. |
 | One schedule per entity, a table per type | A range cannot target several things, and each type repeats table, validation, loop and form. |
 | A generic automation engine | Complex automations are out of scope (SPECS § Hors perimetre), and this audience reads a week, not a rule language. |
+| A Silence always bounded, so a forgotten one cannot hold for good | With no per-channel pause (ADR-14), muting for good would mean deleting a channel; an open Silence stays in sight on the home instead. |
 | A notification range as an allowed window | The inverse of a privacy range: one calendar would show two opposite readings. |
 | Saving on leaving a field, no button | Keeps three states, hides what changed, and makes each keystroke costly when it touches the engine. |
 | Save and apply as two per-change steps | Exposes a state with no meaning for the user, one chore per change. |

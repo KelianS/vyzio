@@ -62,7 +62,7 @@
 
 ### A5 · Réactiver toutes les caméras
 
-1. Toutes les caméras sont coupées ; l'utilisateur touche « Réactiver les caméras », ou « Caméras coupées jusqu'à HH h » : elles reprennent toutes aussitôt, sans feuille ni confirmation (PRIV-21, PRIV-22).
+1. Toutes les caméras sont coupées ; l'utilisateur touche le bouton de l'accueil qui le dit : elles reprennent toutes aussitôt, sans feuille ni confirmation (PRIV-21, PRIV-22).
 2. Le chemin reprend à A2, pas 2, pour chaque caméra.
 
 ### E1 · La caméra ne suit pas

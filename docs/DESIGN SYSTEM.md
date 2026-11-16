@@ -188,8 +188,7 @@ Two kinds of action, no intermediate style:
   that names the action, then its label, or a row of a grouped list. The icon is part of how a neutral
   action is declared, never left out.
 - **A toggle** shows a state, not an action: the eye beside a camera's name is an icon button whose
-  icon says the state; `Silence` turns amber while it holds; `Couper les caméras` stays neutral grey
-  while every camera is cut, and says until when when they share an end. A toggle whose start needs a
+  icon says the state; `Silence` turns amber while it holds. A toggle whose start needs a
   duration opens a sheet (§ Sheets); its end is one tap on the toggle.
 - **A destructive action is quiet until confirmed**: a coral-tinted pill with coral ink, last on its
   page, after the `Avancé` row, alone on its line; solid only on its confirmation's button.
