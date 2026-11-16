@@ -1,7 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { ChevronRight, TriangleAlert, X } from 'lucide-react'
+import { motionValue } from 'motion/react'
 import { PressableControl, PressableSurface } from '../../../common/components/pressable'
+import { holdsItsOwnDrag, projection, useFingerDrag } from '../../../common/motion/gesture'
+import { paintOn, translation } from '../../../common/motion/ghost'
+import { prefersReducedMotion, springTo } from '../../../common/motion/springs'
 import { formatSince, stillDismissed, trackFirstSeen, type BarAlert } from '../bar_alerts'
 
 const SINCE_TICK_MS = 30_000
@@ -23,6 +27,67 @@ function saveDismissed(dismissed: readonly string[]): void {
   } catch {
     // A browser that keeps nothing forgets the dismissal at the next opening, nothing worse.
   }
+}
+
+// The share of its width an alert must be thrown past to leave, and how far beyond its edge it flies.
+const THROWN_PAST = 0.45
+const FLIGHT_MARGIN = 40
+
+/** One alert line; one that can be set aside also leaves by a sideways swipe, as its close button does (UI-30). */
+function AlertLine({
+  dismissible,
+  onDismiss,
+  children,
+}: {
+  dismissible: boolean
+  onDismiss: () => void
+  children: ReactNode
+}) {
+  const [line, setLine] = useState<HTMLLIElement | null>(null)
+  const [x] = useState(() => motionValue(0))
+  const [opacity] = useState(() => motionValue(1))
+  const grabbed = useRef(0)
+
+  useLayoutEffect(() => {
+    if (!line) return
+    return paintOn([x, opacity], () => {
+      line.style.transform = translation(x.get(), 0)
+      const thrown = Math.min(1, Math.abs(x.get()) / Math.max(1, line.offsetWidth))
+      line.style.opacity =
+        thrown === 0 && opacity.get() === 1 ? '' : String(opacity.get() * (1 - thrown))
+    })
+  }, [line, x, opacity])
+
+  const drag = useFingerDrag('x', {
+    canStart: (target) => dismissible && !holdsItsOwnDrag(target),
+    onStart: () => {
+      x.stop()
+      grabbed.current = x.get()
+    },
+    onMove: (offset) => x.set(grabbed.current + offset),
+    onEnd: (_offset, velocity) => {
+      const width = Math.max(1, line?.offsetWidth ?? 1)
+      const landing = x.get() + projection(velocity)
+      if (Math.abs(landing) <= width * THROWN_PAST) {
+        void springTo(x, 0, 'arrival', velocity)
+        return
+      }
+      const leaving = prefersReducedMotion()
+        ? springTo(opacity, 0, 'departure')
+        : springTo(x, Math.sign(landing) * (width + FLIGHT_MARGIN), 'departure', velocity)
+      void leaving.then(onDismiss)
+    },
+  })
+
+  return (
+    <li
+      ref={setLine}
+      {...(dismissible ? drag : {})}
+      className="flex touch-pan-y items-center rounded-inset bg-bar-plate"
+    >
+      {children}
+    </li>
+  )
 }
 
 /** The alerts the bar grows for, the most recent first (UI-30); `factsRead` once they come from a real read. */
@@ -74,7 +139,11 @@ export function BarAlertList({
         )
         const line = 'flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-inset p-3'
         return (
-          <li key={alert.key} className="flex items-center rounded-inset bg-bar-plate">
+          <AlertLine
+            key={alert.key}
+            dismissible={alert.dismissible}
+            onDismiss={() => setDismissed((previous) => [...previous, alert.key])}
+          >
             {alert.to ? (
               <PressableSurface>
                 <Link to={alert.to} className={line}>
@@ -96,7 +165,7 @@ export function BarAlertList({
                 </button>
               </PressableControl>
             )}
-          </li>
+          </AlertLine>
         )
       })}
     </ul>
