@@ -20,22 +20,22 @@ subtitle or a frame is added only when it carries something the user acts on.
 written in a screen. Each role is a token; the Tailwind theme realises them, and no component writes
 a colour.
 
-| Role        | Value                  | Use                                                              |
-| ----------- | ---------------------- | ---------------------------------------------------------------- |
-| Ground      | `#101412`              | The page background                                              |
-| Surface     | `#1b201d`              | A card, a grouped list, a sheet                                  |
-| Raised      | `#242a26`              | A neutral pill or button on a surface, a pressed or selected row |
-| Icon circle | `#2a312d`              | The round background of an icon button and of a row's icon       |
-| Line        | `#2c332f`              | The separator between rows, every border that names no other     |
-| Field line  | `#3a433d`              | The border of a field                                            |
-| Ink         | `#eef2ef`              | Primary text                                                     |
-| Ink soft    | `#9aa59e`              | Secondary text, a subtitle, a section label                      |
-| Ink muted   | `#c9d1cb`              | Text over the picture or inside the bar, a step below the ink    |
-| Bar         | `#1d4a3a`              | The top bar                                                      |
-| Action      | `#7fd1a8` on `#0e2a1f` | The one main action of a view, and the "running" mark            |
-| Silence     | `#f2c46d` on `#2b1f05` | Silence only                                                     |
-| Alert       | `#f29a8b`              | Offline, a failure, a warning, a destructive action              |
-| Mark off    | `#6f7a73`              | The "cut" and "not verified" mark                                |
+| Role        | Value                  | Use                                                                                |
+| ----------- | ---------------------- | ---------------------------------------------------------------------------------- |
+| Ground      | `#101412`              | The page background                                                                |
+| Surface     | `#1b201d`              | A card, a grouped list, a sheet                                                    |
+| Raised      | `#242a26`              | A neutral pill or button on a surface, a pressed or selected row                   |
+| Icon circle | `#2a312d`              | The round background of an icon button and of a row's icon                         |
+| Line        | `#2c332f`              | The separator between rows, every border that names no other                       |
+| Field line  | `#3a433d`              | The border of a field                                                              |
+| Ink         | `#eef2ef`              | Primary text                                                                       |
+| Ink soft    | `#9aa59e`              | Secondary text, a subtitle, a section label                                        |
+| Ink muted   | `#c9d1cb`              | Text over the picture or inside the bar, a value's open lock; a step below the ink |
+| Bar         | `#1d4a3a`              | The top bar                                                                        |
+| Action      | `#7fd1a8` on `#0e2a1f` | The one main action of a view, and the "running" mark                              |
+| Silence     | `#f2c46d` on `#2b1f05` | Silence only                                                                       |
+| Alert       | `#f29a8b`              | Offline, a failure, a warning, a destructive action                                |
+| Mark off    | `#6f7a73`              | The "cut" and "not verified" mark                                                  |
 
 Colour roles, each with one meaning:
 
@@ -87,7 +87,7 @@ Two tiers, never confused ([ADR-01](adr/0001-stack-and-runtime.md)):
 - **Primitives**: shadcn/ui code copied into the repository (accessibility, focus, keyboard), modified
   **only** for the theme, never with a business rule inside, outside the project's writing discipline.
 - **Vyzio components**, built **on top of** the primitives, carry the product vocabulary (the top
-  bar, a grouped list and its rows, the status mark, a setting field and its provenance, a sheet):
+  bar, a grouped list and its rows, the status mark, a setting field and its lock, a sheet):
   the project's code discipline applies there.
 
 **The tokens are the source; the Tailwind theme is their realisation.** One styling system, Tailwind
@@ -225,19 +225,24 @@ camera, a capability, a stream or a protocol is a mark, not a pill (§ Status ma
 
 ### Settings screens
 
-A setting **is declared, it is not drawn**: its nature determines its control, alignment, provenance
-and undo ([ADR-15](adr/0015-settings-model-schedules-and-edit-cycle.md); the table from a nature to
+A setting **is declared, it is not drawn**: its nature determines its control and alignment, and
+its declaration whether it inherits a value ([ADR-15](adr/0015-settings-model-schedules-and-edit-cycle.md); the table from a nature to
 its control is the settings renderer's, in code). A page **does not name itself in its content**: its
 title is in the bar.
 
-A settings row is always, in this order: **name, help trigger, control, provenance, undo**. The
+A settings row is always, in this order: **name, help trigger, control, lock**. The
 help trigger follows the name's last word. On a phone, the control's nature sets the layout: a
 short control (a switch, a number) stands beside the name, on one row of a grouped list, the
 number field sized to its value and unit; a long one (a list, a text, a slider) goes under the
-name. A value always reads in full ink: where the level above is one the user knows (a camera
-following the whole installation), the row's subtitle says it (`Comme l’ensemble`, `Propre à cette
-caméra`); undo appears only where there is something to undo and names the value it restores. A
-page lists its most common setting first; the rare ones go to `Avancé`.
+name. A value always reads in full ink. A page lists its most common setting first; the rare ones go
+to `Avancé`.
+
+**An inherited value reads by a lock beside its field**, never by a subtitle or a lede: a setting
+inherits from the level above (a camera from the whole installation, the installation from the
+product default). A **closed lock** in ink soft marks a value still inherited; it is a mark, not a
+button, named `Valeur de l’ensemble` or `Valeur par défaut`. An **open lock** in ink muted marks a
+value set here; it is the way back, a button named by what it restores (`Revenir à la valeur de
+l’ensemble (7 jours)`), and going back is a draft change like any other.
 
 **An option that cannot be chosen yet stays in the list**, greyed and not selectable, with the reason
 and the way out on a quieter second line: what is missing, and the screen where it is fixed. The saved
@@ -416,8 +421,8 @@ A setting is saved; surveillance is restarted separately
   one thing (a range, a camera's name, a channel) saves with its own green `Enregistrer`, its main
   action, at the end of the page. Never `Appliquer` for a save.
 - **`Annuler`** is the single verb of abandonment: back to the last saved state.
-- The draft is **per page**: leaving a modified page asks for confirmation. A value's **provenance**
-  (followed or its own) and its **edit state** (saved or in the draft) read separately.
+- The draft is **per page**: leaving a modified page asks for confirmation. A value's **lock**
+  (inherited or set here) and its **edit state** (saved or in the draft) read separately.
 - **`Appliquer les changements` is the exception**: the restart's trigger, where UI-28 and UI-14 put
   it. It names **the pending
   state**, with the count when it helps (`Appliquer 3 changements`); its question,
