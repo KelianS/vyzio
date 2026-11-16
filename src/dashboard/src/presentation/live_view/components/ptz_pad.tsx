@@ -9,10 +9,10 @@ export type PadVariant = 'solid' | 'glass'
 
 const PAD: Record<PadVariant, { ring: string; centre: string; vertical: string; side: string }> = {
   solid: {
-    ring: 'size-50 bg-card',
-    centre: 'size-14 bg-secondary',
-    vertical: 'h-16 w-15',
-    side: 'h-15 w-16',
+    ring: 'size-40 bg-card',
+    centre: 'size-11 bg-secondary',
+    vertical: 'h-13 w-12',
+    side: 'h-12 w-13',
   },
   glass: {
     ring: 'size-37.5 bg-glass',
