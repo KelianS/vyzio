@@ -139,11 +139,6 @@ const AccessView = lazy(() =>
 const SystemView = lazy(() =>
   import('./presentation/settings/system.component').then((m) => ({ default: m.SystemView })),
 )
-const SystemAdvancedView = lazy(() =>
-  import('./presentation/settings/system.component').then((m) => ({
-    default: m.SystemAdvancedView,
-  })),
-)
 const ExpertView = lazy(() =>
   import('./presentation/expert/expert.component').then((m) => ({ default: m.ExpertView })),
 )
@@ -253,8 +248,7 @@ const router = createBrowserRouter([
           { path: 'schedule/:ruleId', element: <ScheduleRuleView />, handle: OWN_HEADER },
           { path: 'access', element: <AccessView /> },
           { path: 'hardware', element: <SystemView /> },
-          { path: 'hardware/advanced', element: <SystemAdvancedView />, handle: OWN_HEADER },
-          { path: 'hardware/advanced/technical', element: <ExpertView />, handle: OWN_HEADER },
+          { path: 'hardware/advanced', element: <ExpertView />, handle: OWN_HEADER },
         ],
       },
     ],

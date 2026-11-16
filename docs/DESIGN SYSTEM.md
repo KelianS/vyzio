@@ -262,7 +262,7 @@ takes its place, naming as a link the page where it is fixed.
 | Fold | Where | Holds |
 | --- | --- | --- |
 | `Options` | Inside a card, closed | That card's settings |
-| `Avancé` | A row ending the page's settings, opening its own page titled `Avancé` | Rare settings: a position, not a mode (UI-09) |
+| `Avancé` | A row ending the page's settings, opening its own page titled `Avancé`, or straight the one screen that page would hold | Rare settings: a position, not a mode (UI-09) |
 | Help question | Last on the page, closed | Task help (§ Help) |
 | `Détails techniques` | The end of an error or a card, closed | Figures for support (§ Technical details) |
 

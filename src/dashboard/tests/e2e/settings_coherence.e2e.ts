@@ -156,7 +156,6 @@ test.describe('Settings screens coherence', () => {
   })
 
   const ADVANCED_ROUTES = [
-    { path: '/settings/hardware', advanced: '/settings/hardware/advanced' },
     {
       path: '/settings/face-recognition/profile-1/photos',
       advanced: '/settings/face-recognition/profile-1/photos/advanced',

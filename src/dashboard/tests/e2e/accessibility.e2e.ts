@@ -110,7 +110,6 @@ test.describe('Accessibility, WCAG 2.1 A/AA', () => {
     '/settings/face-recognition/profile-1/photos/advanced',
     '/settings/face-recognition/profile-1/cameras',
     '/settings/hardware',
-    '/settings/hardware/advanced',
   ]
 
   for (const path of routes) {

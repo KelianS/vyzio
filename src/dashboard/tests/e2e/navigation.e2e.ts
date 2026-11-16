@@ -45,11 +45,9 @@ test.describe('Navigation', () => {
     await rubrics.getByRole('link', { name: /Matériel/ }).click()
     await expect(page.getByRole('heading', { name: 'Matériel' })).toBeVisible()
 
-    // The niche one is put deep, not hidden: the technical interface is only
-    // reachable through the Avancé page, and it always is.
-    await expect(page.getByRole('link', { name: /interface technique/ })).toBeHidden()
-    await page.getByRole('link', { name: 'Avancé' }).click()
-    await page.getByRole('link', { name: /interface technique/ }).click()
+    // The niche one is put deep, not hidden: the technical interface is the Avancé row's destination.
+    await page.getByRole('link', { name: /Avancé/ }).click()
+    await expect(page).toHaveURL('/settings/hardware/advanced')
     await expect(
       page
         .getByRole('status', { name: 'Chargement de Frigate…' })

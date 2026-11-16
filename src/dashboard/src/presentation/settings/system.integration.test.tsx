@@ -48,6 +48,20 @@ describe('SystemView', () => {
     expect(card.getByText('Front Door')).toBeVisible()
   })
 
+  it('SystemView_ShouldOpenTheTechnicalInterfaceFromAvanceAndSayWhatItCosts_WhenRendered', async () => {
+    // Arrange
+    fakeNetwork({ 'GET /api/system/stats': ok(running), 'GET /api/cameras': ok([]) })
+
+    // Act
+    renderScreen(<SystemView />)
+    await pollTheSurveillance()
+
+    // Assert
+    const advanced = screen.getByRole('link', { name: /Avancé/ })
+    expect(advanced).toHaveAttribute('href', '/settings/hardware/advanced')
+    expect(advanced).toHaveTextContent('ce qu’on y modifie n’est pas repris par Vyzio')
+  })
+
   it('SystemView_ShouldWaitForTheNextReading_WhenTheStateCannotBeRead', async () => {
     // Arrange
     fakeNetwork({ 'GET /api/system/stats': failure(500), 'GET /api/cameras': ok([]) })
