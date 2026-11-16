@@ -1,6 +1,7 @@
 import { CalendarOff, ImageOff } from 'lucide-react'
 import { cn } from '../ui/utils'
 import { DetectionThumbnail } from '../components/detection_thumbnail'
+import { DetectionTypeIcon } from './detection_type_icon'
 import { PressableSurface } from '../components/pressable'
 import type { DetectionEvent } from '../../domain/entities/detection_event.entity'
 import type { DetectionLabel } from '../../domain/entities/detection_label.entity'
@@ -78,7 +79,10 @@ export function ClipList({
                         />
                       )}
                       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                        <span className="truncate text-row font-semibold">{title}</span>
+                        <span className="flex min-w-0 items-center gap-2">
+                          <DetectionTypeIcon label={event.label} />
+                          <span className="truncate text-row font-semibold">{title}</span>
+                        </span>
                         <span className="text-body text-muted-foreground">
                           {/* A row of a mixed list leaves how sure to the player, so it stays on one line. */}
                           {formatClipDetail(event, { camera: withCamera, howSure: !withCamera })}

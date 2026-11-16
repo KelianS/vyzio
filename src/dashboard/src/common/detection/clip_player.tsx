@@ -5,6 +5,7 @@ import { PressableControl } from '../components/pressable'
 import type { DetectionEvent } from '../../domain/entities/detection_event.entity'
 import type { DetectionLabel } from '../../domain/entities/detection_label.entity'
 import { clipUrl, formatClipDetail, formatEventTitle, snapshotUrl } from './detection_formatters'
+import { DetectionTypeIcon } from './detection_type_icon'
 
 /** Expiry is not a failure: nothing to retry, said the same in the list and in the player (HIST-17). */
 const MEDIA_EXPIRED = 'Aperçu et vidéo effacés : au-delà de la durée de conservation.'
@@ -77,11 +78,14 @@ export function ClipPlayer({
         </p>
       )}
 
-      <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-picture/80 to-transparent px-3 pt-8 pb-3">
-        <p className="text-row font-semibold">{formatEventTitle(event, labels)}</p>
-        <p className="text-label font-semibold text-ink-muted">
-          {formatClipDetail(event, { camera: withCamera })}
-        </p>
+      <div className="absolute inset-x-0 bottom-0 flex items-center gap-2.5 bg-linear-to-t from-picture/80 to-transparent px-3 pt-8 pb-3">
+        <DetectionTypeIcon label={event.label} className="size-9" />
+        <div className="min-w-0">
+          <p className="text-row font-semibold">{formatEventTitle(event, labels)}</p>
+          <p className="text-label font-semibold text-ink-muted">
+            {formatClipDetail(event, { camera: withCamera })}
+          </p>
+        </div>
       </div>
       {children}
     </div>
