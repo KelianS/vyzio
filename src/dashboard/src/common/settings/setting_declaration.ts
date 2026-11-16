@@ -80,6 +80,8 @@ interface SettingProvenance {
   /** Names the restored value rather than announcing a reset. */
   readonly revertLabel: string
   readonly onRevert: () => void
+  /** The row's subtitle, where the level above is one the user knows: one line per state. */
+  readonly subtitles?: { readonly following: string; readonly own: string }
 }
 
 export interface SettingDeclaration<T = unknown> {

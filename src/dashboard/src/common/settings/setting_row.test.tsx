@@ -176,6 +176,30 @@ describe('SettingRow control', () => {
 })
 
 describe('SettingRow anatomy', () => {
+  it.each([
+    { kind: 'number', nature: { kind: 'number', unit: 'jours' }, value: 7 },
+    { kind: 'toggle', nature: { kind: 'toggle' }, value: true },
+  ] as const)(
+    'SettingRow_ShouldPutTheControlBesideTheName_WhenTheControlIsShort ($kind)',
+    ({ nature, value }) => {
+      // Arrange & Act
+      const { container } = render(<SettingRow setting={declare({ nature, value })} />)
+
+      // Assert
+      expect(container.firstElementChild?.className).toContain('grid-cols-[minmax(0,1fr)_auto]')
+    },
+  )
+
+  it('SettingRow_ShouldPutTheControlUnderTheName_WhenTheControlIsLong', () => {
+    // Arrange & Act
+    const { container } = render(
+      <SettingRow setting={declare({ nature: { kind: 'text' }, value: 'Salon' })} />,
+    )
+
+    // Assert
+    expect(container.firstElementChild?.className).toContain('grid-cols-1')
+  })
+
   it('SettingRow_ShouldKeepTheHelpBehindATrigger_WhenHelpIsDeclared', () => {
     // Arrange & Act
     render(<SettingRow setting={declare({ help: 'Explication longue.' })} />)
@@ -222,9 +246,56 @@ describe('SettingRow anatomy', () => {
 
     // Assert
     expect(screen.queryByRole('button', { name: /revenir/i })).not.toBeInTheDocument()
-    // Dimmed for as long as it follows: provenance reads from how the value looks,
-    // not from a caption repeated under every row.
-    expect(screen.getByRole('spinbutton').className).toContain('text-muted-foreground')
+  })
+
+  it.each([
+    { following: true, subtitle: 'Comme l’ensemble' },
+    { following: false, subtitle: 'Propre à cette caméra' },
+  ])(
+    'SettingRow_ShouldSayWhereTheValueComesFrom_WhenTheLevelAboveIsNamed ($subtitle)',
+    ({ following, subtitle }) => {
+      // Arrange & Act
+      render(
+        <SettingRow
+          setting={declare({
+            nature: { kind: 'number', unit: 'jours' },
+            value: 7,
+            provenance: {
+              following,
+              fallbackLabel: '7 jours',
+              revertLabel: 'Suivre le réglage d’ensemble',
+              onRevert: vi.fn(),
+              subtitles: { following: 'Comme l’ensemble', own: 'Propre à cette caméra' },
+            },
+          })}
+        />,
+      )
+
+      // Assert
+      expect(screen.getByText(subtitle)).toBeInTheDocument()
+    },
+  )
+
+  it('SettingRow_ShouldReadTheValueInFullInk_WhenItFollowsTheLevelAbove', () => {
+    // Arrange & Act
+    render(
+      <SettingRow
+        setting={declare({
+          nature: { kind: 'number', unit: 'jours' },
+          value: 7,
+          provenance: {
+            following: true,
+            fallbackLabel: '7 jours',
+            revertLabel: 'Revenir à la valeur d’origine',
+            onRevert: vi.fn(),
+          },
+        })}
+      />,
+    )
+
+    // Assert
+    // A greyed value reads as a placeholder: the subtitle says the provenance, never the ink.
+    expect(screen.getByRole('spinbutton')).not.toHaveClass('text-muted-foreground')
   })
 
   it('SettingRow_ShouldNameWhatTheUndoRestores_WhenTheValueIsTheLevelsOwn', () => {

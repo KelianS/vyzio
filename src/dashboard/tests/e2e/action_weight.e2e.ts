@@ -163,12 +163,15 @@ test.describe('Action weight', () => {
     await installFakeBackend(page, createFakeBackendState())
     await page.goto('/settings/retention')
 
-    const field = page.getByRole('spinbutton').first()
+    // The drawn field holds the value and its unit; the row's name stands beside it.
+    const field = page.getByRole('spinbutton').first().locator('..')
     const unit = page.locator('[data-setting-control]').first().getByText('jours', { exact: true })
     const fieldBox = await field.boundingBox()
     const unitBox = await unit.boundingBox()
+    const nameBox = await page.getByText('Vidéo complète', { exact: true }).boundingBox()
 
-    expect(fieldBox?.width).toBeLessThanOrEqual(160)
+    expect(fieldBox?.width).toBeLessThanOrEqual(112)
+    expect(fieldBox!.y).toBeLessThan(nameBox!.y + nameBox!.height)
     expect(unitBox!.x).toBeGreaterThan(fieldBox!.x)
     expect(unitBox!.x + unitBox!.width).toBeLessThan(fieldBox!.x + fieldBox!.width)
   })

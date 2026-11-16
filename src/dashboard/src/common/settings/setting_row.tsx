@@ -3,40 +3,70 @@ import { Button } from '../ui/button'
 import { HelpTrigger } from '../components/help_trigger'
 import { cn } from '../ui/utils'
 import { SettingControl } from './setting_control'
-import type { SettingDeclaration } from './setting_declaration'
+import type { SettingDeclaration, SettingNature } from './setting_declaration'
+
+/** Whether the control sits beside the name on a phone: a short control does, a long one goes under it. */
+const BESIDE_THE_NAME: Record<SettingNature['kind'], boolean> = {
+  toggle: true,
+  number: true,
+  choice: false,
+  multiChoice: false,
+  range: false,
+  time: false,
+  text: false,
+  secret: false,
+}
+
+/** Five no-break spaces: the width of the help icon and its gap, at the name's size. */
+const HELP_ROOM = String.fromCharCode(0xa0).repeat(5)
 
 /** Fixed row anatomy (ADR-15): label · help · control · provenance · revert, control column shared app-wide. */
 export function SettingRow({ setting }: { setting: SettingDeclaration }) {
   const { provenance } = setting
   const revertLabel = provenance && `${provenance.revertLabel} : ${provenance.fallbackLabel}`
+  const subtitle =
+    provenance?.subtitles &&
+    (provenance.following ? provenance.subtitles.following : provenance.subtitles.own)
+  const beside = BESIDE_THE_NAME[setting.nature.kind]
 
   return (
     <div
       className={cn(
-        'grid grid-cols-1 items-center gap-x-4 gap-y-2 py-3.5',
+        'grid min-h-14 items-center gap-x-4 gap-y-2',
+        beside ? 'grid-cols-[minmax(0,1fr)_auto] py-2.5' : 'grid-cols-1 py-3.5',
         'sm:grid-cols-[minmax(0,1fr)_minmax(0,18rem)_2rem]',
       )}
     >
-      <div className="flex min-w-0 items-center gap-1.5">
-        <label
-          id={`${setting.id}-label`}
-          htmlFor={setting.id}
-          className="font-medium wrap-break-word"
-        >
-          {setting.label}
-        </label>
+      <div className="flex min-w-0 flex-col">
+        <div className="min-w-0 wrap-break-word">
+          {/* Inline and positioned: the trigger sits at the end of the name's last line, never alone on one. */}
+          <span className="relative">
+            <label id={`${setting.id}-label`} htmlFor={setting.id} className="text-row font-medium">
+              {setting.label}
+              {/* Unbreakable room for the trigger, glued to the last word. */}
+              {setting.help && <span aria-hidden="true">{HELP_ROOM}</span>}
+            </label>
 
-        {setting.help && (
-          <HelpTrigger question={`À quoi sert « ${setting.label} » ?`} help={setting.help} />
-        )}
+            {setting.help && (
+              <span className="absolute -right-3.5 -bottom-3 inline-flex">
+                <HelpTrigger question={`À quoi sert « ${setting.label} » ?`} help={setting.help} />
+              </span>
+            )}
+          </span>
+        </div>
+
+        {subtitle && <p className="text-body text-muted-foreground">{subtitle}</p>}
       </div>
 
       {/* Repere de la colonne de controle : son alignement est verifie d'un ecran a l'autre (ADR-15). */}
       <div
         data-setting-control
-        className="flex min-w-0 items-center gap-1.5 sm:justify-self-stretch"
+        className={cn(
+          'flex min-w-0 items-center gap-1.5 sm:justify-self-stretch',
+          beside && 'justify-self-end',
+        )}
       >
-        <div className="min-w-0 flex-1">
+        <div className={cn('min-w-0', !beside && 'flex-1', beside && 'sm:flex-1')}>
           <SettingControl setting={setting} />
         </div>
 
@@ -57,7 +87,7 @@ export function SettingRow({ setting }: { setting: SettingDeclaration }) {
       </div>
 
       {setting.consequence && (
-        <p className="text-body text-muted-foreground sm:col-span-3">{setting.consequence}</p>
+        <p className="col-span-full text-body text-muted-foreground">{setting.consequence}</p>
       )}
     </div>
   )
