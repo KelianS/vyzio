@@ -198,13 +198,16 @@ end, the confirmation last; on a phone they stack full width, the confirmation o
 ### Tabs
 
 Two or three tabs under a picture or a page head, as pills in one track: the selected one raised, the
-others in ink soft. A tab may carry a dot when something recent waits behind it.
+others in ink soft. No dot or badge marks something new, on a tab or anywhere else: nothing tracks
+what the user has already seen.
 
 ### Sheets
 
 A choice that is quick and reversible (a duration, a filter, a clip's actions) opens a **sheet** from
 the bottom: a title, one line saying the effect, the options as rows, `Annuler` last. One tap on an
-option applies it and closes the sheet; nothing to confirm.
+option applies it and closes the sheet; nothing to confirm. A choice along several axes (a filter by
+camera, person and type) lists each axis as its own group under a quiet heading, its first row
+`Toutes`/`Tous`, the current choice checked.
 
 ### State pills
 
