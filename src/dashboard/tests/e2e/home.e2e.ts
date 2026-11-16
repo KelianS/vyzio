@@ -147,4 +147,22 @@ test.describe('Home', () => {
       timeout: 10_000,
     })
   })
+
+  test('TopBar_ShouldFollowACameraGoingOfflineAndBack_WhenTheHomeStaysOpen', async ({ page }) => {
+    const state = createFakeBackendState({ cameras: [makeFakeCamera({ displayName: 'Jardin' })] })
+    await installFakeBackend(page, state)
+    // The page's clock is skipped forward so a poll passes without waiting it out.
+    await page.clock.install()
+    await page.goto('/')
+    await expect(page.getByRole('button', { name: 'Couper les caméras' })).toBeVisible()
+
+    state.cameras = state.cameras.map((camera) => ({ ...camera, status: 'offline' }))
+    await page.clock.fastForward(8000)
+    const alerts = page.getByRole('list', { name: 'Alertes' })
+    await expect(alerts.getByText('Jardin ne répond plus')).toBeVisible()
+
+    state.cameras = state.cameras.map((camera) => ({ ...camera, status: 'online' }))
+    await page.clock.fastForward(8000)
+    await expect(alerts).toHaveCount(0)
+  })
 })
