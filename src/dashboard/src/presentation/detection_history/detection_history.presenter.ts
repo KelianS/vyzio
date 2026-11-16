@@ -23,6 +23,8 @@ export function buildDetectionHistoryPresenter({
 }: DetectionHistoryPresenterContext) {
   // The filter sheet stays open while the list follows: an earlier filter's answer must not land last.
   const nextHistoryRead = latestOnly()
+  // The list on screen: an older page read for a list since replaced must not be added to the new one.
+  let shownList = 0
 
   return {
     onMount() {
@@ -39,6 +41,7 @@ export function buildDetectionHistoryPresenter({
 
     onLoadHistory(query: DetectionHistoryQuery) {
       const isLatest = nextHistoryRead()
+      shownList += 1
       dispatch({ type: 'HISTORY_LOAD_STARTED' })
       container.getDetectionHistory
         .execute(query)
@@ -51,11 +54,16 @@ export function buildDetectionHistoryPresenter({
     },
 
     onLoadMore(query: DetectionHistoryQuery, cursor: string) {
+      const listOfThisPage = shownList
+      const sameList = () => listOfThisPage === shownList
       dispatch({ type: 'HISTORY_MORE_STARTED' })
       container.getDetectionHistory
         .execute({ ...query, cursor })
-        .then((page) => dispatch({ type: 'HISTORY_MORE_SUCCEEDED', page }))
+        .then((page) => {
+          if (sameList()) dispatch({ type: 'HISTORY_MORE_SUCCEEDED', page })
+        })
         .catch((e: unknown) => {
+          if (!sameList()) return
           dispatch({ type: 'HISTORY_MORE_FAILED' })
           toastError(toast, toAppError(e))
         })

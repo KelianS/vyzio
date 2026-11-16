@@ -47,7 +47,8 @@ export function detectionHistoryReducer(
       return { ...state, detectionLabels: action.labels }
 
     case 'HISTORY_LOAD_STARTED':
-      return { ...state, error: null }
+      // A new list makes any older page still on its way moot.
+      return { ...state, error: null, loadingMore: false }
     case 'HISTORY_LOAD_SUCCEEDED':
       return {
         ...state,
