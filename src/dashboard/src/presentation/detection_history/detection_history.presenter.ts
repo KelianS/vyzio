@@ -8,6 +8,7 @@ import type { DetectionHistoryAction } from './detection_history.actions'
 import type { DayFilter } from './day_filter'
 import type { DetectionSheet, FilterAxis } from './detection_history.uido'
 import { explainVideoFailure } from '../../common/detection/explain_video_failure'
+import { latestOnly } from '../../common/presenter/latest_only'
 
 export interface DetectionHistoryPresenterContext {
   container: DetectionHistoryContainer
@@ -20,6 +21,9 @@ export function buildDetectionHistoryPresenter({
   dispatch,
   toast,
 }: DetectionHistoryPresenterContext) {
+  // The filter sheet stays open while the list follows: an earlier filter's answer must not land last.
+  const nextHistoryRead = latestOnly()
+
   return {
     onMount() {
       container.getProfiles
@@ -34,11 +38,16 @@ export function buildDetectionHistoryPresenter({
     },
 
     onLoadHistory(query: DetectionHistoryQuery) {
+      const isLatest = nextHistoryRead()
       dispatch({ type: 'HISTORY_LOAD_STARTED' })
       container.getDetectionHistory
         .execute(query)
-        .then((page) => dispatch({ type: 'HISTORY_LOAD_SUCCEEDED', page }))
-        .catch((e: unknown) => dispatch({ type: 'HISTORY_LOAD_FAILED', error: toAppError(e) }))
+        .then((page) => {
+          if (isLatest()) dispatch({ type: 'HISTORY_LOAD_SUCCEEDED', page })
+        })
+        .catch((e: unknown) => {
+          if (isLatest()) dispatch({ type: 'HISTORY_LOAD_FAILED', error: toAppError(e) })
+        })
     },
 
     onLoadMore(query: DetectionHistoryQuery, cursor: string) {

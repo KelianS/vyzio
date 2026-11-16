@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
-import { fireEvent, screen, within } from '@testing-library/react'
+import { act, fireEvent, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { makeCamera } from '../../testing/camera_fixture'
 import { makeDetectionEvent } from '../../testing/detection_fixture'
 import { makeProfile } from '../../testing/profile_fixture'
-import { failure, fakeNetwork, ok } from '../../testing/fake_network'
+import { failure, fakeNetwork, late, ok } from '../../testing/fake_network'
 import { renderScreen } from '../../testing/render_screen'
 import { readTheCameraList } from '../../testing/shared_reads'
 import { DetectionHistoryView } from './detection_history.component'
@@ -243,6 +243,33 @@ describe('DetectionHistoryView', () => {
       'aria-pressed',
       'false',
     )
+  })
+
+  it('onToggleFilter_ShouldKeepTheListOfTheLastFilter_WhenAnEarlierFiltersAnswerArrivesLast', async () => {
+    // Arrange
+    const network = fakeNetwork(twoClips)
+    renderScreen(<DetectionHistoryView />)
+    await userEvent.click(await screen.findByRole('button', { name: 'Filtrer' }))
+    const sheet = await screen.findByRole('dialog', { name: 'Filtrer' })
+    network.answer(
+      HISTORY,
+      late(ok({ items: [makeDetectionEvent({ label: 'car' })], nextCursor: null }), 50),
+    )
+    await userEvent.click(within(sheet).getByRole('button', { name: 'Voiture' }))
+    network.answer(HISTORY, ok({ items: [makeDetectionEvent({ label: 'cat' })], nextCursor: null }))
+
+    // Act
+    await userEvent.click(within(sheet).getByRole('button', { name: 'Chat' }))
+    await act(() => new Promise((resolve) => setTimeout(resolve, 100)))
+
+    // Assert
+    // The open sheet hides the page from the accessibility tree; the list behind it is what counts.
+    expect(
+      screen.getByRole('group', { name: 'Détection : Chat', hidden: true }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('group', { name: 'Détection : Voiture', hidden: true }),
+    ).not.toBeInTheDocument()
   })
 
   it('onToggleFilter_ShouldNameEveryValueCheckedAboveTheList_WhenTheSheetCloses', async () => {
