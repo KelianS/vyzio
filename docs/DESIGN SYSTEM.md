@@ -284,23 +284,35 @@ gets no line.
 A figure the user cannot act on stays in the `Détails techniques` fold
 (`common/components/technical_details`). Only the user opens it, and a figure is **never read as a
 fault**. It speaks the product's words, never an internal identifier or a technical name
-([SPECS](SPECS.md) UI-02). It never holds a setting, an explanation or an error's diagnostic line, except under a
-warning row that already says the consequence in one line and carries its fix (a privacy miss,
-[SPECS](SPECS.md) PRIV-05): there it keeps the full sentence and the diagnostic line.
+([SPECS](SPECS.md) UI-02). It never holds a setting, an explanation or an error's diagnostic line.
+
+### Where feedback goes
+
+Every piece of feedback has one place, chosen by what caused it, never by the screen it happens on:
+
+| Place | What goes there | What never does |
+| --- | --- | --- |
+| **Toast**, at the bottom | The answer to what the user just did: a success, a warning (a camera that did not follow), a failure with its diagnostic line; at most one action, `Réessayer`, when the fix is to do it again | A state that outlasts the act; anything the user did not just do |
+| **Bar alert** (UI-30) | A state that lasts and that no act of the user caused: a camera offline, a camera that did not follow a range or a restart, the disk almost full, Vyzio out of reach, surveillance stopped, a restart that failed | The answer to an act; a state of one page only |
+| **In place of the content** | A read that failed, where its data would have been, with `Réessayer` (§ Errors): there is nothing else to show | A failure under data already shown, which is a toast |
+| **A row's, tile's or card's subtitle** | A state to act on, in one line: `À configurer`, `Coupée jusqu'à 7 h`, `Hors ligne depuis 4 min`; a card's state line also gives the reason of its mark (§ Cards) | The outcome of an act, an error, a warning |
+
+Nothing else: no warning row, no error paragraph in a page. A form's own refusal (a field left
+invalid, a password refused) is not feedback from the system: it stays beside its field.
 
 ### Errors
 
-An error reads at two levels ([SPECS](SPECS.md) UI-01).
+An error reads at two levels ([SPECS](SPECS.md) UI-01); where it shows is § Where feedback goes.
 
 - **The sentence** names the effect in the product's words, and what to do when there is something to
   do. It is all the user needs.
 - **The diagnostic line** sits under it in a monospace `13px`, ink soft, selectable to be copied. Its
   content comes from the error pipeline ([DASHBOARD-18](rules/dashboard.md)). It never replaces the
   sentence.
-- **A toast carrying a diagnostic line stays until dismissed**, long enough to be photographed. Any
-  other toast closes by itself, and the same failure raised twice shows once.
-- **A read that fails shows where its data would have been**, with `Réessayer`, never an empty state
-  passing for a real answer. Under data already shown, the data stays and the failure goes to a toast.
+- **A toast carrying a diagnostic line or an action stays until dismissed**, long enough to be
+  photographed or acted on. Any other toast closes by itself, and the same failure raised twice shows
+  once.
+- **A read that fails** is never an empty state passing for a real answer.
 - **An answer that the thing no longer exists is not a failed read**: it is said as such, with the way
   back, never `Réessayer`.
 - **The hub out of reach** is the one error that fills the screen: the product name, a title, the

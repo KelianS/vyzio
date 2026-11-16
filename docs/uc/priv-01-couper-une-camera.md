@@ -68,12 +68,12 @@
 ### E1 · La caméra ne suit pas
 
 1. La caméra refuse, ne répond pas, ou ne peut pas suivre sa stratégie.
-2. L'enregistrement reste coupé ; la carte de la caméra le signale, et son écran vie privée dit ce qui n'a pas eu lieu, avec l'action qui y remédie (PRIV-05).
+2. L'enregistrement reste coupé ; l'interface dit en une ligne ce qui n'a pas eu lieu, en réponse au geste de l'utilisateur, ou en alerte quand une plage ou un redémarrage l'a demandé, avec « Réessayer » quand redemander à la caméra y remédie (PRIV-05). Une caméra hors ligne n'en dit rien de plus que son alerte hors ligne.
 
 ### E2 · La demande est interrompue
 
 1. La demande s'arrête avant la réponse de la caméra.
-2. L'interface dit que la caméra ne l'a peut-être pas suivie, sans prétendre qu'elle a refusé, et propose de lui redemander (PRIV-05).
+2. L'interface dit que la caméra ne l'a peut-être pas suivie, sans prétendre qu'elle a refusé, et propose « Réessayer » (PRIV-05).
 
 ## Règles locales
 
