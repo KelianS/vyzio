@@ -6,6 +6,8 @@ export interface AccessGateUido {
   session: CurrentSession | null
   loading: boolean
   error: AppError | null
+  /** A read again while Vyzio did not answer: the full screen stays, only its button waits. */
+  retrying: boolean
   /** A session ended while a screen was open: sign-in says so. */
   expired: boolean
   creating: boolean
@@ -20,6 +22,7 @@ export function buildInitialAccessGateUido(): AccessGateUido {
     session: null,
     loading: true,
     error: null,
+    retrying: false,
     expired: false,
     creating: false,
     signingIn: false,

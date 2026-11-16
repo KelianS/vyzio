@@ -3,6 +3,7 @@ import type { AccessState, CurrentSession } from '../../domain/entities/access.e
 
 export type AccessGateAction =
   | { type: 'LOAD_STARTED' }
+  | { type: 'RETRY_STARTED' }
   | { type: 'LOAD_SUCCEEDED'; state: AccessState; session: CurrentSession | null }
   | { type: 'LOAD_FAILED'; error: AppError }
   | { type: 'SESSION_LOST' }

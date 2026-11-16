@@ -56,10 +56,13 @@ function BackButton() {
  */
 export function TopBar({
   home,
+  gear = true,
   below,
   children,
 }: {
   home: boolean
+  /** Without Vyzio, the settings cannot open: the bar then carries the name alone (UI-34). */
+  gear?: boolean
   below?: ReactNode
   children: ReactNode
 }) {
@@ -76,9 +79,9 @@ export function TopBar({
       >
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
           {home ? (
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex min-h-11 items-center justify-between gap-3">
               <span className="text-title font-bold">Vyzio</span>
-              <TopBarIconLink to="/settings" label="Réglages" icon={Settings} />
+              {gear && <TopBarIconLink to="/settings" label="Réglages" icon={Settings} />}
             </div>
           ) : (
             <div className="flex items-center gap-3">

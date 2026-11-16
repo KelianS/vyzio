@@ -15,8 +15,8 @@ export function buildAccessGatePresenter({
   dispatch,
   toast,
 }: AccessGatePresenterContext) {
-  async function load() {
-    dispatch({ type: 'LOAD_STARTED' })
+  async function load(retry = false) {
+    dispatch({ type: retry ? 'RETRY_STARTED' : 'LOAD_STARTED' })
     try {
       const state = await container.getAccessState.execute()
       const session = state.installed ? await container.getCurrentSession.execute() : null
@@ -27,7 +27,10 @@ export function buildAccessGatePresenter({
   }
 
   return {
-    onLoad: load,
+    onLoad: () => load(),
+
+    /** Asks Vyzio again without leaving the screen that says it does not answer (UI-34). */
+    onRetry: () => load(true),
 
     /** Listens for a session ending on whichever call comes next; returns the unsubscribe. */
     onWatchSession() {

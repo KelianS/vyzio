@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { AppErrorKind } from '../../common/errors/app_error'
 import { accessGateReducer } from './access_gate.reducer'
 import { buildInitialAccessGateUido } from './access_gate.uido'
 
@@ -23,5 +24,17 @@ describe('accessGateReducer', () => {
 
     // Assert
     expect(next.refused).toBe(false)
+  })
+
+  it('accessGateReducer_ShouldKeepTheErrorOnScreen_WhenVyzioIsAskedAgain', () => {
+    // Arrange
+    const error = { kind: AppErrorKind.Network }
+    const state = { ...buildInitialAccessGateUido(), loading: false, error }
+
+    // Act
+    const next = accessGateReducer(state, { type: 'RETRY_STARTED' })
+
+    // Assert
+    expect(next).toEqual({ ...state, retrying: true })
   })
 })
