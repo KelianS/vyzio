@@ -1,9 +1,10 @@
-import { Link } from 'react-router'
+import { CalendarClock } from 'lucide-react'
 import type { AppError } from '../errors/app_error'
 import type { ScheduleRule, ScheduleRuleKind } from '../../domain/entities/schedule_rule.entity'
 import { ReadFailure } from '../components/error_message'
 import { appliesSentence, rulesTargeting, SCHEDULES_PATH } from './schedule_types'
 import { Loading } from '../components/loading'
+import { SecondaryButton } from '../components/secondary_button'
 
 export const SCHEDULES_UNREAD = 'La planification n’a pas pu être lue.'
 
@@ -30,11 +31,11 @@ export function ScheduleCountLine({
   if (rules === null) return <Loading lines={1} className="py-3" />
 
   return (
-    <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-3">
-      <span>{appliesSentence(kind, rulesTargeting(rules, kind, targetId))}</span>
-      <Link to={SCHEDULES_PATH} className="text-body underline underline-offset-2">
+    <div className="flex flex-col items-start gap-3">
+      <p className="mx-1">{appliesSentence(kind, rulesTargeting(rules, kind, targetId))}</p>
+      <SecondaryButton icon={CalendarClock} to={SCHEDULES_PATH}>
         Voir la planification
-      </Link>
-    </p>
+      </SecondaryButton>
+    </div>
   )
 }
