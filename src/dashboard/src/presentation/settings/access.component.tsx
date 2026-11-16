@@ -1,6 +1,6 @@
 import { LogOut } from 'lucide-react'
 import { useEffect, useReducer, useState } from 'react'
-import { HelpRow } from '../../common/components/help_panel'
+import { HelpNotes, HelpQuestion } from '../../common/components/help_notes'
 import { GroupedList, GroupedRow } from '../../common/components/grouped_list'
 import { ConfirmModal } from '../../common/components/confirm_modal'
 import { useToast } from '../../common/components/toast'
@@ -61,7 +61,10 @@ export function AccessView() {
           disabled={uido.leavingEverywhere}
           onClick={presenter.onAskSignOutEverywhere}
         />
-        <HelpRow title="Quand faut-il déconnecter tous les appareils ?">
+      </GroupedList>
+
+      <HelpNotes>
+        <HelpQuestion title="Quand faut-il déconnecter tous les appareils ?">
           <p>
             Quand un téléphone ou un ordinateur qui ouvrait Vyzio n’est plus entre vos mains :
             perdu, volé, revendu, ou simplement prêté. Tant qu’il reste connecté, il donne accès à
@@ -71,8 +74,8 @@ export function AccessView() {
             Si vous pensez que quelqu’un connaît votre mot de passe, cela ne suffit pas : il
             pourrait se reconnecter aussitôt. Changez-le plutôt, ci-dessus.
           </p>
-        </HelpRow>
-      </GroupedList>
+        </HelpQuestion>
+      </HelpNotes>
 
       {uido.confirmEverywhere && (
         <ConfirmModal

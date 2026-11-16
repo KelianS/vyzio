@@ -14,8 +14,7 @@ import { useAppContainer } from '../../infrastructure/providers/app_container.co
 import type { Camera } from '../../domain/entities/camera.entity'
 import type { SupportedProtocol } from '../../domain/entities/camera_capability_binding.entity'
 import { SettingsPage, SettingsSection } from '../../common/settings/settings_page'
-import { HelpPanel, HelpRow } from '../../common/components/help_panel'
-import { GroupedList } from '../../common/components/grouped_list'
+import { HelpNotes, HelpQuestion } from '../../common/components/help_notes'
 import { AdvancedFold } from '../../common/settings/advanced_fold'
 import { CapabilitySection } from './components/capability_section'
 import { AddProtocol } from './components/add_protocol_form'
@@ -206,8 +205,8 @@ export function CameraConnectionView() {
           />
         </SettingsSection>
 
-        <GroupedList label="Aide">
-          <HelpRow title="Une vérification échoue">
+        <HelpNotes>
+          <HelpQuestion title="Une vérification échoue">
             <p>
               Commencez par le flux vidéo : les autres capacités passent par lui. S’il échoue,
               corrigez l’adresse ou le compte de la caméra dans Avancé, en bas de page, ou la façon
@@ -222,9 +221,9 @@ export function CameraConnectionView() {
               Une capacité dont la vérification échoue n’est jamais proposée comme active, et la
               vérification se relance à tout moment.
             </p>
-          </HelpRow>
+          </HelpQuestion>
 
-          <HelpRow title="Une capacité est à confirmer">
+          <HelpQuestion title="Une capacité est à confirmer">
             <p>
               Certaines caméras ne permettent pas à Vyzio de lire la preuve d’une capacité. Vyzio ne
               la suppose pas : il vous la fait essayer une fois, et votre réponse décide.
@@ -238,8 +237,63 @@ export function CameraConnectionView() {
               Ensuite, « Essayer à nouveau » refait l’essai et repose la question, ses options
               permettent de la joindre autrement, et « Retirer » l’enlève si la caméra ne l’a pas.
             </p>
-          </HelpRow>
-        </GroupedList>
+          </HelpQuestion>
+
+          <HelpQuestion title="Quel rôle donner à chaque flux ?">
+            <p>
+              Par défaut, le flux le plus détaillé enregistre et le plus léger est analysé : Vyzio
+              réduit de toute façon l’image avant de l’analyser.
+            </p>
+            <p>
+              Sur une caméra large, jardin, garage, allée, gardez le flux le plus léger en
+              détection. Pour reconnaître les gens, entrée, couloir, salon, donnez « Enregistrement
+              et détection » au flux le plus détaillé, surtout si les visages y apparaissent à
+              plusieurs mètres. Si Vyzio devient lent, vérifiez qu’aucune caméra n’analyse son flux
+              le plus détaillé sans raison.
+            </p>
+            <p>
+              Un seul flux enregistre. Donner un rôle à un flux le retire à celui qui l’avait. Un
+              flux gardé sans servir a le rôle « Aucun ».
+            </p>
+            <p>
+              Changer de protocole remplace les flux par ceux que la caméra sert par ce protocole. «
+              Ajouter un flux » propose ceux qu’elle sert et qui ne sont pas dans la liste, y
+              compris un flux retiré.
+            </p>
+            <p>
+              Un chemin erroné se corrige en ajoutant le bon flux avec le rôle « Enregistrement »,
+              puis en retirant l’ancien.
+            </p>
+            <p>
+              Si la liste ne propose que « Autre chemin… », la caméra ne dit pas quels flux elle
+              sert, ou ne répond pas : saisissez le chemin donné par le fabricant.
+            </p>
+            <p>
+              Une caméra qui ne donne pas les dimensions de ses flux les voit nommés « Flux
+              principal » ou « Flux secondaire » plutôt qu’avec un chiffre faux.
+            </p>
+          </HelpQuestion>
+
+          <HelpQuestion title="Un protocole ne répond pas, que vérifier ?">
+            <p>
+              Chaque protocole passe par son propre port, affiché dans sa case. « Accessible » dit
+              que la caméra écoute sur ce port et accepte le compte ; « Accès refusé » dit qu’elle
+              écoute mais refuse le compte, ou le numéro de la caméra en V380.
+            </p>
+            <p>
+              Un protocole qui ne répond pas est souvent désactivé dans l’application du fabricant,
+              ou la caméra est endormie. Beaucoup de caméras parlent plusieurs protocoles, une ICSee
+              répond souvent en DVRIP et en ONVIF : choisissez l’autre dans les options de la
+              capacité.
+            </p>
+            <p>
+              Deux limites connues : sur les firmwares d’entrée de gamme, ONVIF répond parfois en
+              plusieurs secondes, ce qui rend le pilotage précis difficile ; et l’orientation à
+              l’écart, en vie privée, suppose que l’orientation soit déjà vérifiée sur la même
+              caméra.
+            </p>
+          </HelpQuestion>
+        </HelpNotes>
 
         <AdvancedFold lede="Comment Vyzio joint cette caméra.">
           <SettingsList settings={access} />
@@ -288,26 +342,6 @@ export function CameraConnectionView() {
               </div>
             )}
           </SettingsSection>
-
-          <HelpPanel title="Un protocole ne répond pas, que vérifier ?">
-            <p>
-              Chaque protocole passe par son propre port, affiché dans sa case. « Accessible » dit
-              que la caméra écoute sur ce port et accepte le compte ; « Accès refusé » dit qu’elle
-              écoute mais refuse le compte, ou le numéro de la caméra en V380.
-            </p>
-            <p>
-              Un protocole qui ne répond pas est souvent désactivé dans l’application du fabricant,
-              ou la caméra est endormie. Beaucoup de caméras parlent plusieurs protocoles, une ICSee
-              répond souvent en DVRIP et en ONVIF : choisissez l’autre dans les options de la
-              capacité.
-            </p>
-            <p>
-              Deux limites connues : sur les firmwares d’entrée de gamme, ONVIF répond parfois en
-              plusieurs secondes, ce qui rend le pilotage précis difficile ; et l’orientation à
-              l’écart, en vie privée, suppose que l’orientation soit déjà vérifiée sur la même
-              caméra.
-            </p>
-          </HelpPanel>
         </AdvancedFold>
 
         <DeleteAction

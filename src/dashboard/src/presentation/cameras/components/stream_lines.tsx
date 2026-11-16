@@ -4,7 +4,6 @@ import { StatusMark } from '../../../common/components/status_mark'
 import { markSubtitle } from '../../../common/components/status_mark_state'
 import { ConfirmModal } from '../../../common/components/confirm_modal'
 import { DiagnosticLine, ReadFailure } from '../../../common/components/error_message'
-import { HelpPanel } from '../../../common/components/help_panel'
 import { HelpTrigger } from '../../../common/components/help_trigger'
 import type { AppError } from '../../../common/errors/app_error'
 import { scrubSecrets } from '../../../common/errors/scrub_secrets'
@@ -118,40 +117,6 @@ export function StreamLines({
           intents={intents}
         />
       )}
-      <HelpPanel title="Quel rôle donner à chaque flux ?">
-        <p>
-          Par défaut, le flux le plus détaillé enregistre et le plus léger est analysé : Vyzio
-          réduit de toute façon l’image avant de l’analyser.
-        </p>
-        <p>
-          Sur une caméra large, jardin, garage, allée, gardez le flux le plus léger en détection.
-          Pour reconnaître les gens, entrée, couloir, salon, donnez « Enregistrement et détection »
-          au flux le plus détaillé, surtout si les visages y apparaissent à plusieurs mètres. Si
-          Vyzio devient lent, vérifiez qu’aucune caméra n’analyse son flux le plus détaillé sans
-          raison.
-        </p>
-        <p>
-          Un seul flux enregistre. Donner un rôle à un flux le retire à celui qui l’avait. Un flux
-          gardé sans servir a le rôle « Aucun ».
-        </p>
-        <p>
-          Changer de protocole remplace les flux par ceux que la caméra sert par ce protocole. «
-          Ajouter un flux » propose ceux qu’elle sert et qui ne sont pas dans la liste, y compris un
-          flux retiré.
-        </p>
-        <p>
-          Un chemin erroné se corrige en ajoutant le bon flux avec le rôle « Enregistrement », puis
-          en retirant l’ancien.
-        </p>
-        <p>
-          Si la liste ne propose que « Autre chemin… », la caméra ne dit pas quels flux elle sert,
-          ou ne répond pas : saisissez le chemin donné par le fabricant.
-        </p>
-        <p>
-          Une caméra qui ne donne pas les dimensions de ses flux les voit nommés « Flux principal »
-          ou « Flux secondaire » plutôt qu’avec un chiffre faux.
-        </p>
-      </HelpPanel>
     </div>
   )
 }

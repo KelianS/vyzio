@@ -2,7 +2,7 @@ import { useEffect, useMemo, useReducer } from 'react'
 import { useSearchParams } from 'react-router'
 import { ChevronDown, Ellipsis, ListFilter, X } from 'lucide-react'
 import { useToast } from '../../common/components/toast'
-import { HelpPanel } from '../../common/components/help_panel'
+import { HelpNotes, HelpQuestion } from '../../common/components/help_notes'
 import { ConfirmModal } from '../../common/components/confirm_modal'
 import { ReadFailure } from '../../common/components/error_message'
 import { PageHeader } from '../../common/components/page_header'
@@ -173,24 +173,27 @@ export function DetectionHistoryView() {
         </>
       )}
 
-      <HelpPanel title="Jusqu’où cette page remonte-t-elle ?">
-        <p>
-          Exactement aussi loin que votre durée de conservation : passez l’historique de détection à
-          trente jours dans <em>Réglages › Conservation</em> et cette page en montrera trente, dès
-          que la surveillance a redémarré. Une caméra peut s’en écarter depuis sa propre fiche.
-        </p>
-        <p>
-          Raccourcir la durée fait sortir les détections plus anciennes, avec leur aperçu et leur
-          vidéo ; comptez jusqu’à une heure avant que le ménage soit passé. Elle ne peut pas valoir
-          zéro : ce serait vider l’historique, pas le raccourcir. Pour ne plus rien enregistrer
-          d’une caméra, coupez-la&nbsp;: les vidéos déjà gardées restent jusqu’à la fin de leur
-          durée de conservation.
-        </p>
-        <p>
-          Un aperçu qui met quelques secondes à venir juste après une détection est normal : l’image
-          est encore en train d’être écrite, et Vyzio réessaie tout seul.
-        </p>
-      </HelpPanel>
+      <HelpNotes>
+        <HelpQuestion title="Jusqu’où cette page remonte-t-elle ?">
+          <p>
+            Exactement aussi loin que votre durée de conservation : passez l’historique de détection
+            à trente jours dans <em>Réglages › Conservation</em> et cette page en montrera trente,
+            dès que la surveillance a redémarré. Une caméra peut s’en écarter depuis sa propre
+            fiche.
+          </p>
+          <p>
+            Raccourcir la durée fait sortir les détections plus anciennes, avec leur aperçu et leur
+            vidéo ; comptez jusqu’à une heure avant que le ménage soit passé. Elle ne peut pas
+            valoir zéro : ce serait vider l’historique, pas le raccourcir. Pour ne plus rien
+            enregistrer d’une caméra, coupez-la&nbsp;: les vidéos déjà gardées restent jusqu’à la
+            fin de leur durée de conservation.
+          </p>
+          <p>
+            Un aperçu qui met quelques secondes à venir juste après une détection est normal :
+            l’image est encore en train d’être écrite, et Vyzio réessaie tout seul.
+          </p>
+        </HelpQuestion>
+      </HelpNotes>
 
       {uido.sheet === 'filter' && (
         <FilterSheet

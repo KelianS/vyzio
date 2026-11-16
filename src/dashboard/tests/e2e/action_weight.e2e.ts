@@ -99,6 +99,24 @@ test.describe('Action weight', () => {
     expect(green).toBeLessThanOrEqual(1)
   })
 
+  test('HelpQuestions_ShouldReadAsAFootnoteBeforeAvancé_WhenAPageCarriesHelp', async ({ page }) => {
+    await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
+    await page.setViewportSize(PHONE)
+    await page.goto('/settings/cameras/camera-1/connection')
+
+    const questions = page.getByRole('region', { name: 'Aide' }).locator('summary')
+    await expect(questions).toHaveCount(4)
+    await expect(page.locator('ul summary', { hasText: 'Une vérification échoue' })).toHaveCount(0)
+    await expect(questions.first()).toHaveCSS('font-size', '15px')
+    await expect(questions.first()).toHaveCSS('font-weight', '400')
+    await expect(questions.first()).toHaveCSS('background-color', TRANSPARENT)
+    expect(await heightOf(questions.first())).toBeGreaterThanOrEqual(44)
+
+    const lastTop = (await questions.last().boundingBox())?.y ?? 0
+    const advancedTop = (await page.locator('summary', { hasText: 'Avancé' }).boundingBox())?.y ?? 0
+    expect(advancedTop).toBeGreaterThan(lastTop)
+  })
+
   test('FoldAndSecondaryAction_ShouldShareTheNeutralTint_WhenTheySitOnOneCard', async ({
     page,
   }) => {

@@ -9,7 +9,7 @@ import { Button } from '../../common/ui/button'
 import { SecondaryButton } from '../../common/components/secondary_button'
 import { ConfirmModal } from '../../common/components/confirm_modal'
 import { GroupedList, GroupedRow } from '../../common/components/grouped_list'
-import { HelpRow } from '../../common/components/help_panel'
+import { HelpNotes, HelpQuestion } from '../../common/components/help_notes'
 import { useToast } from '../../common/components/toast'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { SettingsPage, SettingsSection } from '../../common/settings/settings_page'
@@ -156,7 +156,10 @@ export function AddCameraView() {
                 toAccessStep()
               }}
             />
-            <HelpRow title="Que vérifier">
+          </GroupedList>
+
+          <HelpNotes>
+            <HelpQuestion title="Elle n’apparaît pas, que vérifier ?">
               <p>
                 Vyzio ne parcourt que les plages d’adresses que sa confirmation annonce, et beaucoup
                 de caméras ne répondent qu’une fois réveillées depuis leur propre application : une
@@ -167,8 +170,8 @@ export function AddCameraView() {
                 de la caméra ou votre box indiquent. Une fois la caméra ajoutée, sa page cherche
                 comment la joindre et dit ce qui répond.
               </p>
-            </HelpRow>
-          </GroupedList>
+            </HelpQuestion>
+          </HelpNotes>
         </SettingsPage>
 
         {uido.confirmScan && (
@@ -299,16 +302,6 @@ export function AddCameraView() {
           <>
             <SettingsList settings={declarations} />
 
-            <GroupedList>
-              <HelpRow title="Où trouver ces identifiants">
-                {offersHelpList ? (
-                  <div className="flex flex-col gap-3 text-foreground">{vendorHelp}</div>
-                ) : (
-                  <p>{OTHER_BRAND_HELP}</p>
-                )}
-              </HelpRow>
-            </GroupedList>
-
             <Button
               type="button"
               size="lg"
@@ -318,6 +311,16 @@ export function AddCameraView() {
             >
               {uido.creating ? 'Ajout…' : 'Ajouter'}
             </Button>
+
+            <HelpNotes>
+              <HelpQuestion title="Où trouver ces identifiants">
+                {offersHelpList ? (
+                  <div className="flex flex-col gap-3 text-foreground">{vendorHelp}</div>
+                ) : (
+                  <p>{OTHER_BRAND_HELP}</p>
+                )}
+              </HelpQuestion>
+            </HelpNotes>
           </>
         )}
 

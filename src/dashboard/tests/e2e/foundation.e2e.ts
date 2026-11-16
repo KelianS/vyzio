@@ -87,7 +87,7 @@ test.describe('Redesign foundation', () => {
     )
   })
 
-  test('Row_ShouldRingWhereTheKeyboardStands_WhenAHelpRowOrAPositionTakesTheFocus', async ({
+  test('Row_ShouldRingWhereTheKeyboardStands_WhenAHelpQuestionOrAPositionTakesTheFocus', async ({
     page,
   }) => {
     await page.goto('/settings/retention')

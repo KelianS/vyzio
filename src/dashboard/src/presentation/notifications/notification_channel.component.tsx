@@ -4,7 +4,7 @@ import { Send } from 'lucide-react'
 import { SettingsPage, SettingsSection } from '../../common/settings/settings_page'
 import { SettingsList } from '../../common/settings/settings_list'
 import { AdvancedFold } from '../../common/settings/advanced_fold'
-import { HelpPanel } from '../../common/components/help_panel'
+import { HelpNotes, HelpQuestion } from '../../common/components/help_notes'
 import { SettingsDraftBar } from '../../common/settings/settings_draft_bar'
 import { useSettingsDraft } from '../../common/settings/use_settings_draft'
 import type { SettingDeclaration } from '../../common/settings/setting_declaration'
@@ -283,12 +283,14 @@ function ChannelForm({
             </div>
 
             {/* Unfolded while nothing is configured: the walkthrough is then the task, not a fallback. */}
-            <HelpPanel
-              title={`Où trouver ces informations dans ${config.displayName} ?`}
-              defaultOpen={!config.isConfigured}
-            >
-              <ChannelSetupSteps channel={config.channel} />
-            </HelpPanel>
+            <HelpNotes>
+              <HelpQuestion
+                title={`Où trouver ces informations dans ${config.displayName} ?`}
+                defaultOpen={!config.isConfigured}
+              >
+                <ChannelSetupSteps channel={config.channel} />
+              </HelpQuestion>
+            </HelpNotes>
           </SettingsSection>
 
           {config.acceptsCommands && (
@@ -318,19 +320,6 @@ function ChannelForm({
                   onRefresh={() => presenter.onRefreshPairing(channel, uido.listening !== null)}
                 />
               )}
-
-              <HelpPanel title="Que puis-je demander, une fois relié ?">
-                <p>
-                  Envoyez <code className="rounded bg-muted px-1 py-0.5 text-label">/aide</code>{' '}
-                  dans la conversation reliée : le bot répond lui-même la liste de ce qu’il sait
-                  faire, toujours à jour.
-                </p>
-                <p>
-                  Une seule conversation à la fois : en relier une nouvelle remplace la précédente.
-                  Un code cesse de valoir passé quelques minutes, ou après plusieurs essais
-                  infructueux : dans les deux cas, générez-en un autre ici.
-                </p>
-              </HelpPanel>
             </SettingsSection>
           )}
 
@@ -360,8 +349,25 @@ function ChannelForm({
                 onRetry={presenter.onRetryRules}
               />
             </GroupedList>
+          </SettingsSection>
 
-            <HelpPanel title="Pourquoi une notification n’est-elle pas partie ?">
+          <HelpNotes>
+            {config.acceptsCommands && (
+              <HelpQuestion title="Que puis-je demander, une fois relié ?">
+                <p>
+                  Envoyez <code className="rounded bg-muted px-1 py-0.5 text-label">/aide</code>{' '}
+                  dans la conversation reliée : le bot répond lui-même la liste de ce qu’il sait
+                  faire, toujours à jour.
+                </p>
+                <p>
+                  Une seule conversation à la fois : en relier une nouvelle remplace la précédente.
+                  Un code cesse de valoir passé quelques minutes, ou après plusieurs essais
+                  infructueux : dans les deux cas, générez-en un autre ici.
+                </p>
+              </HelpQuestion>
+            )}
+
+            <HelpQuestion title="Pourquoi une notification n’est-elle pas partie ?">
               <p>Une détection n’est envoyée sur ce canal que si tout est vrai à la fois :</p>
               <ul className="list-disc space-y-1 pl-5">
                 <li>le canal est entièrement renseigné ;</li>
@@ -377,8 +383,8 @@ function ChannelForm({
                 repli <em>Avancé</em>, montre ce qui est réellement parti et l’erreur en cas
                 d’échec.
               </p>
-            </HelpPanel>
-          </SettingsSection>
+            </HelpQuestion>
+          </HelpNotes>
 
           <AdvancedFold>
             <SettingsSection title="Contenu du message">

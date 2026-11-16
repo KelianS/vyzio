@@ -11,7 +11,7 @@ import { useAppContainer } from '../../infrastructure/providers/app_container.co
 import type { Camera, PrivacyStrategy } from '../../domain/entities/camera.entity'
 import { SettingsPage } from '../../common/settings/settings_page'
 import { GroupedList } from '../../common/components/grouped_list'
-import { HelpRow } from '../../common/components/help_panel'
+import { HelpNotes, HelpQuestion } from '../../common/components/help_notes'
 import { ScheduleCountLine } from '../../common/schedule/schedule_count_line'
 import { ScheduleRuleKind } from '../../domain/entities/schedule_rule.entity'
 import { PrivacyAnswerNotice } from './components/privacy_answer_notice'
@@ -79,20 +79,6 @@ export function CameraPrivacyView() {
               error={uido.rulesError}
               onRetry={presenter.onRetryRules}
             />
-            <HelpRow title="Comment les plages et la coupure manuelle s’articulent-elles ?">
-              <p>
-                Une plage coupe la caméra à son entrée et la rétablit à sa sortie. Si vous avez
-                coupé la caméra vous-même, la plage ne la rétablira pas : ce que vous avez décidé à
-                la main ne se défait qu’à la main. Si vous reprenez la surveillance pendant une
-                plage, la plage ne recoupe pas la caméra avant sa fin ; la plage suivante s’applique
-                normalement.
-              </p>
-              <p>
-                Un redémarrage de Vyzio ne réveille rien : une coupure manuelle est retrouvée telle
-                quelle, et les plages sont réévaluées : si l’heure courante tombe dans l’une
-                d’elles, la caméra repart coupée, même si vous aviez repris la surveillance.
-              </p>
-            </HelpRow>
           </GroupedList>
           {camera.privacyResume && (
             <p className="mx-1 text-body text-muted-foreground">
@@ -100,6 +86,23 @@ export function CameraPrivacyView() {
             </p>
           )}
         </div>
+
+        <HelpNotes>
+          <HelpQuestion title="Comment les plages et la coupure manuelle s’articulent-elles ?">
+            <p>
+              Une plage coupe la caméra à son entrée et la rétablit à sa sortie. Si vous avez coupé
+              la caméra vous-même, la plage ne la rétablira pas : ce que vous avez décidé à la main
+              ne se défait qu’à la main. Si vous reprenez la surveillance pendant une plage, la
+              plage ne recoupe pas la caméra avant sa fin ; la plage suivante s’applique
+              normalement.
+            </p>
+            <p>
+              Un redémarrage de Vyzio ne réveille rien : une coupure manuelle est retrouvée telle
+              quelle, et les plages sont réévaluées : si l’heure courante tombe dans l’une d’elles,
+              la caméra repart coupée, même si vous aviez repris la surveillance.
+            </p>
+          </HelpQuestion>
+        </HelpNotes>
       </SettingsPage>
 
       <SettingsDraftBar

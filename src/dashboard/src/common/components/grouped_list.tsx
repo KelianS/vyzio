@@ -76,7 +76,7 @@ type GroupedRowProps = RowDestination & {
   trailing?: ReactNode | 'none'
   current?: boolean
   disabled?: boolean
-  /** The row's title weight: medium for a help or a way in, semibold for a thing's name. */
+  /** The row's title weight: medium for a way in, semibold for a thing's name. */
   weight?: 'name' | 'action'
 }
 

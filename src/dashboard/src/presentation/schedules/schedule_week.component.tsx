@@ -4,7 +4,7 @@ import { Plus } from 'lucide-react'
 import { GroupedList, GroupedRow } from '../../common/components/grouped_list'
 import { cn } from '../../common/ui/utils'
 import { SettingsPage } from '../../common/settings/settings_page'
-import { HelpPanel } from '../../common/components/help_panel'
+import { HelpNotes, HelpQuestion } from '../../common/components/help_notes'
 import { ReadFailure } from '../../common/components/error_message'
 import { SCHEDULES_UNREAD } from '../../common/schedule/schedule_count_line'
 import {
@@ -164,20 +164,22 @@ export function ScheduleWeekView() {
         </GroupedList>
       ))}
 
-      <HelpPanel title="Que fait chaque plage, et quand ?">
-        <p>
-          Une plage « Caméras coupées » coupe les caméras qu’elle vise : rien n’est enregistré ni
-          détecté, et aucune notification ne part. Une plage « Silence » laisse les caméras filmer
-          et enregistrer : seuls les canaux visés n’envoient rien, et les détections restent dans
-          l’historique.
-        </p>
-        <p>
-          Une plage peut passer minuit : 22 h – 6 h commence le soir des jours choisis et se termine
-          le lendemain à 6 h. Les heures sont celles de la maison, même quand vous consultez Vyzio
-          depuis un autre fuseau horaire.
-        </p>
-        <p>Une plage enregistrée s’applique dans la minute, même si elle est déjà commencée.</p>
-      </HelpPanel>
+      <HelpNotes>
+        <HelpQuestion title="Que fait chaque plage, et quand ?">
+          <p>
+            Une plage « Caméras coupées » coupe les caméras qu’elle vise : rien n’est enregistré ni
+            détecté, et aucune notification ne part. Une plage « Silence » laisse les caméras filmer
+            et enregistrer : seuls les canaux visés n’envoient rien, et les détections restent dans
+            l’historique.
+          </p>
+          <p>
+            Une plage peut passer minuit : 22 h – 6 h commence le soir des jours choisis et se
+            termine le lendemain à 6 h. Les heures sont celles de la maison, même quand vous
+            consultez Vyzio depuis un autre fuseau horaire.
+          </p>
+          <p>Une plage enregistrée s’applique dans la minute, même si elle est déjà commencée.</p>
+        </HelpQuestion>
+      </HelpNotes>
     </SettingsPage>
   )
 }
