@@ -16,7 +16,7 @@ import { CameraConnectionView } from './camera_connection.component'
 import { CameraConnectionAdvancedView } from './camera_connection_advanced.component'
 import { CameraProtocolView } from './camera_protocol.component'
 import { TESTS_SUSPENDED } from './cameras.formatters'
-import { NO_PROTOCOL_FOR_ANOTHER_CAPABILITY, NO_PROTOCOL_YET } from './protocol_labels'
+import { NO_PROTOCOL_YET } from './protocol_labels'
 import {
   DETECTION_FALLS_BACK,
   RECORDING_STREAM_KEPT,
@@ -954,12 +954,9 @@ describe('CameraConnectionView', () => {
     renderScreen(<CameraConnectionView />, connectionTab(cameraThatTurns))
 
     // Assert
-    expect(
-      await screen.findByText(
-        'Chaque capacité a déjà sa carte : pour en joindre une autrement, ouvrez ses options.',
-      ),
-    ).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Coupure matérielle' })).toBeVisible()
     expect(screen.queryByRole('button', { name: 'Ajouter une capacité' })).not.toBeInTheDocument()
+    expect(screen.queryByText(/Chaque capacité a déjà sa carte/)).toBeNull()
   })
 
   it('onAddProtocol_ShouldAddTheProtocolAndCheckItAtOnce_WhenTheUserFillsTheForm', async () => {
@@ -1183,7 +1180,6 @@ describe('CameraConnectionView', () => {
     // Assert
     expect(await screen.findByRole('heading', { name: 'Coupure matérielle' })).toBeVisible()
     expect(screen.queryByText(NO_PROTOCOL_YET)).toBeNull()
-    expect(screen.queryByText(NO_PROTOCOL_FOR_ANOTHER_CAPABILITY)).toBeNull()
   })
 
   it('onLoad_ShouldOfferOnlyTheCameraProtocols_WhenTheStreamOptionsOpen', async () => {
@@ -1227,7 +1223,7 @@ describe('CameraConnectionView', () => {
     )
   })
 
-  it('onLoad_ShouldPointAtDetectionInsteadOfAddingACapability_WhenNoProtocolOfTheCameraCarriesOne', async () => {
+  it('onLoad_ShouldOfferNoWayToAddACapabilityNorExplainWhy_WhenNoProtocolOfTheCameraCarriesOne', async () => {
     // Arrange
     connectionNetwork({ [BINDINGS]: ok([rtspStream]) })
 
@@ -1235,8 +1231,9 @@ describe('CameraConnectionView', () => {
     renderScreen(<CameraConnectionView />, connectionTab())
 
     // Assert
-    expect(await screen.findByText(NO_PROTOCOL_FOR_ANOTHER_CAPABILITY)).toBeVisible()
+    expect(await screen.findByRole('heading', { name: 'Flux vidéo' })).toBeVisible()
     expect(screen.queryByRole('button', { name: 'Ajouter une capacité' })).toBeNull()
+    expect(screen.queryByText(/ne permet d’ajouter une autre capacité/)).toBeNull()
   })
 
   it('onSearchProtocols_ShouldShowTheProtocolsFound_WhenTheSearchFinishes', async () => {

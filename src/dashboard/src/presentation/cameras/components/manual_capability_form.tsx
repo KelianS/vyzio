@@ -9,11 +9,7 @@ import type { CameraProtocol } from '../../../domain/entities/camera_protocol.en
 import { Button } from '../../../common/ui/button'
 import { SecondaryButton } from '../../../common/components/secondary_button'
 import { CAPABILITY_LABELS } from '../cameras.formatters'
-import {
-  NO_PROTOCOL_FOR_ANOTHER_CAPABILITY,
-  protocolOptions,
-  type ProtocolOption,
-} from '../protocol_labels'
+import { protocolOptions, type ProtocolOption } from '../protocol_labels'
 import { Picker } from './protocol_choice'
 import { Field } from '../../../common/components/field'
 
@@ -48,18 +44,8 @@ export function ManualCapability({
   const choices = new Map(unbound.map((c) => [c, protocolOptions(c, protocols, null)]))
   const available = unbound.filter((c) => (choices.get(c) ?? []).length > 0)
   if (!bindingsRead) return null
-  // A capability that already has its card changes its protocol there, failing or not.
-  if (unbound.length === 0)
-    return (
-      <p className="text-body text-muted-foreground">
-        Chaque capacité a déjà sa carte : pour en joindre une autrement, ouvrez ses options.
-      </p>
-    )
-  // With no protocol at all, the stream card already says the way out.
-  if (available.length === 0)
-    return protocols.length === 0 ? null : (
-      <p className="text-body text-muted-foreground">{NO_PROTOCOL_FOR_ANOTHER_CAPABILITY}</p>
-    )
+  // Nothing left to add: the page offers no way to add one rather than a sentence on why.
+  if (available.length === 0) return null
 
   return open ? (
     <ManualCapabilityForm

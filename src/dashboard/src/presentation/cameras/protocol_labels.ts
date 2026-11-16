@@ -24,9 +24,6 @@ const WAYS_TO_A_PROTOCOL =
 /** On a card whose capability has no protocol of the camera to go through. */
 export const NO_PROTOCOL_YET = `Aucun protocole de cette caméra ne convient encore : ${WAYS_TO_A_PROTOCOL}.`
 
-/** Where a capability is added, when no protocol of the camera can carry one that is left. */
-export const NO_PROTOCOL_FOR_ANOTHER_CAPABILITY = `Aucun protocole de cette caméra ne permet d’ajouter une autre capacité : ${WAYS_TO_A_PROTOCOL}.`
-
 /** The protocols that can carry each capability, in the order they are offered. */
 const CARRIERS: Record<Capability, readonly SupportedProtocol[]> = {
   stream: ['rtsp', 'dvrip'],
