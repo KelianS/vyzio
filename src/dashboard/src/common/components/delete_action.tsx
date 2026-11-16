@@ -26,8 +26,8 @@ export function DeleteAction({
   onCancel,
 }: DeleteActionProps) {
   return (
-    <div className="mt-8 border-t border-border pt-6">
-      <Button type="button" variant="destructive-outline" onClick={onAsk}>
+    <div className="flex flex-col">
+      <Button type="button" variant="destructive-outline" className="w-full" onClick={onAsk}>
         {label}
       </Button>
 

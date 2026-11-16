@@ -1,19 +1,19 @@
 import type { ReactNode } from 'react'
 import { ChevronRight } from 'lucide-react'
 
-/** `Avance` is a position at the end of the page, not a mode (UI-09): one fold, the same everywhere. */
+/** `Avancé` is a position at the end of the page, not a mode (UI-09): one row, the same everywhere, its content below it. */
 export function AdvancedFold({ lede, children }: { lede?: string; children: ReactNode }) {
   return (
-    <details className="group mt-8 rounded-lg border border-border">
-      <summary className="flex cursor-pointer list-none items-center gap-2 rounded-lg px-4 py-3 font-medium hover:bg-secondary">
+    <details className="group">
+      <summary className="flex min-h-14 cursor-pointer list-none items-center gap-3.5 rounded-card bg-card px-4 py-2 text-row font-medium outline-none hover:bg-secondary focus-visible:bg-secondary">
+        <span className="flex-1">Avancé</span>
         <ChevronRight
-          className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-90"
+          className="size-5 shrink-0 text-mark-off transition-transform group-open:rotate-90"
           aria-hidden="true"
         />
-        Avancé
       </summary>
-      <div className="border-t border-border px-4 py-4">
-        {lede && <p className="mb-3 text-body text-muted-foreground">{lede}</p>}
+      <div className="mt-6 flex flex-col gap-6">
+        {lede && <p className="mx-1 text-body text-muted-foreground">{lede}</p>}
         {children}
       </div>
     </details>
