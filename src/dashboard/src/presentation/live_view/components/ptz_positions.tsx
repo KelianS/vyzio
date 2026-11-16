@@ -44,6 +44,13 @@ function tileTitle(preset: PtzPreset): string {
     : `${preset.label} (appui : y aller et prendre sa miniature, appui long : redéfinir ici)`
 }
 
+/** The question opens under the finger: the menu the release then asks for lands on it, not on the tile. */
+function swallowNextContextMenu() {
+  const swallow = (e: Event) => e.preventDefault()
+  document.addEventListener('contextmenu', swallow, { capture: true, once: true })
+  setTimeout(() => document.removeEventListener('contextmenu', swallow, { capture: true }), 2_000)
+}
+
 /** A press that tells a tap from a long press, each with its own effect. */
 function usePress(onTap: () => void, onLongPress: (() => void) | null) {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -59,6 +66,7 @@ function usePress(onTap: () => void, onLongPress: (() => void) | null) {
     if (timer.current) clearTimeout(timer.current)
     timer.current = null
     longPressed.current = true
+    swallowNextContextMenu()
     onLongPress?.()
   }
 

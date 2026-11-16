@@ -585,6 +585,22 @@ describe('LiveView', () => {
     expect(screen.getByText('Redéfinir cette position ?')).toBeInTheDocument()
   })
 
+  it('onAskOverride_ShouldKeepTheBrowserMenuShut_WhenTheFingerLiftsOverTheQuestion', async () => {
+    // Arrange
+    fakeNetwork({ [PRESETS]: presetsRead({ presets: [makePreset()] }) })
+    renderLiveView()
+    fireEvent.pointerDown(await screen.findByTitle(SURVEILLANCE), { pointerType: 'touch' })
+    const question = await screen.findByText('Redéfinir cette position ?', undefined, {
+      timeout: 2000,
+    })
+
+    // Act
+    const shown = fireEvent.contextMenu(question)
+
+    // Assert
+    expect(shown).toBe(false)
+  })
+
   it('onGoTo_ShouldNotGo_WhenALongPressOnAPositionEndsWithTheEmulatedMouse', async () => {
     // Arrange
     const network = fakeNetwork({ [PRESETS]: presetsRead({ presets: [makePreset()] }) })
