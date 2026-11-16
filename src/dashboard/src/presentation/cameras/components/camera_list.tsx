@@ -1,18 +1,14 @@
-import { Link } from 'react-router'
-import { ChevronRight, Plus } from 'lucide-react'
-import { StatusMark } from '../../../common/components/status_mark'
+import { Plus, Video } from 'lucide-react'
 import { markSubtitle } from '../../../common/components/status_mark_state'
-import { ListRow } from '../../../common/components/list_row'
-import { Button } from '../../../common/ui/button'
-import { SettingsPage } from '../../../common/settings/settings_page'
+import { GroupedList, GroupedRow } from '../../../common/components/grouped_list'
 import { ReadFailure } from '../../../common/components/error_message'
 import type { AppError } from '../../../common/errors/app_error'
 import type { Camera } from '../../../domain/entities/camera.entity'
 import { cameraMark } from '../../../common/camera/camera_status'
 import { Loading } from '../../../common/components/loading'
-import { EmptyState } from '../../../common/components/empty_state'
+import { Surface } from '../../../common/components/surface'
 
-/** The rubric with no camera chosen: the list. Adding a camera is its own task/page. */
+/** The rubric with no camera chosen: the list, each camera with its mark, adding one as its last row. */
 export function CameraList({
   cameras,
   loading,
@@ -25,64 +21,44 @@ export function CameraList({
   onRetry: () => void
 }) {
   // An unread list is not an empty one: adding would invite duplicating cameras that exist.
-  const unread = error !== null && cameras.length === 0
-
-  return (
-    <SettingsPage>
-      {cameras.length > 0 ? (
-        <ul className="divide-y divide-border">
-          {cameras.map((camera) => {
-            const mark = cameraMark(camera)
-            const exception = markSubtitle(mark)
-            return (
-              <li key={camera.id}>
-                <ListRow>
-                  <Link to={`/settings/cameras/${camera.id}`}>
-                    <span className="min-w-0">
-                      <span className="flex items-center gap-2 font-medium">
-                        {camera.displayName}
-                        <StatusMark {...mark} />
-                      </span>
-                      <span className="block text-body text-muted-foreground">
-                        {exception && <span>{exception}</span>}
-                        {exception && ' · '}
-                        {/* Tells apart two cameras sharing a name, or the lenses of one device (CAM-02). */}
-                        {camera.host}
-                      </span>
-                    </span>
-                    <ChevronRight
-                      className="size-4 shrink-0 text-muted-foreground"
-                      aria-hidden="true"
-                    />
-                  </Link>
-                </ListRow>
-              </li>
-            )
-          })}
-        </ul>
-      ) : unread ? (
+  if (error !== null && cameras.length === 0)
+    return (
+      <Surface>
         <ReadFailure
           error={error}
           onRetry={onRetry}
           subject="La liste de vos caméras n’a pas pu être lue."
-          className="py-3"
         />
-      ) : loading ? (
+      </Surface>
+    )
+  if (loading && cameras.length === 0)
+    return (
+      <Surface>
         <Loading />
-      ) : (
-        <EmptyState>Aucune caméra pour l’instant.</EmptyState>
-      )}
+      </Surface>
+    )
 
-      {!unread && (
-        <div className="mt-5">
-          <Button asChild>
-            <Link to="/settings/cameras/add">
-              <Plus aria-hidden="true" />
-              Ajouter une caméra
-            </Link>
-          </Button>
-        </div>
-      )}
-    </SettingsPage>
+  return (
+    <GroupedList>
+      {cameras.map((camera) => {
+        const mark = cameraMark(camera)
+        return (
+          <GroupedRow
+            key={camera.id}
+            to={`/settings/cameras/${camera.id}`}
+            icon={Video}
+            title={camera.displayName}
+            mark={mark}
+            subtitle={markSubtitle(mark)}
+          />
+        )
+      })}
+      <GroupedRow
+        to="/settings/cameras/add"
+        icon={Plus}
+        title="Ajouter une caméra"
+        trailing="none"
+      />
+    </GroupedList>
   )
 }

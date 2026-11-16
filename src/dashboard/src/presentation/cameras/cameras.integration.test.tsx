@@ -43,7 +43,7 @@ describe('CamerasView', () => {
     },
   )
 
-  it('render_ShouldSayThereIsNoCameraYet_WhenTheListIsEmpty', async () => {
+  it('render_ShouldOfferOnlyAddingACamera_WhenTheListIsEmpty', async () => {
     // Arrange
     fakeNetwork({ 'GET /api/cameras': ok([]) })
     renderScreen(<CamerasView />, LIST)
@@ -52,7 +52,22 @@ describe('CamerasView', () => {
     await readTheCameraList()
 
     // Assert
-    expect(screen.getByText('Aucune caméra pour l’instant.')).toBeInTheDocument()
+    expect(screen.getAllByRole('link')).toHaveLength(1)
+    expect(screen.getByRole('link', { name: 'Ajouter une caméra' })).toBeInTheDocument()
+  })
+
+  it('render_ShouldShowARunningCameraByItsMarkAlone_WhenTheListIsRead', async () => {
+    // Arrange
+    fakeNetwork({ 'GET /api/cameras': ok([makeCamera()]) })
+    renderScreen(<CamerasView />, LIST)
+
+    // Act
+    await readTheCameraList()
+
+    // Assert
+    const row = screen.getByRole('link', { name: /Front Door/ })
+    expect(within(row).getByRole('img', { name: 'En marche' })).toBeInTheDocument()
+    expect(row).toHaveTextContent(/^Front Door$/)
   })
 
   it('render_ShouldSayWhyAndWithholdAdding_WhenTheListCannotBeRead', async () => {
