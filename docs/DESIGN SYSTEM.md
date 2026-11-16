@@ -147,7 +147,7 @@ is no navigation bar** ([SPECS](SPECS.md) UI-29).
   one thing (a camera) adds the thing's status mark beside its title, and may carry one icon button
   on the right for that thing (a camera's gear, the filter of `Détections`).
 - **The alert slot** (UI-30): the bar grows downwards, each alert a line in ink with a quieter
-  second line.
+  second line, and a round close button at its end except for Vyzio out of reach.
 - **The settings apply** (UI-28) is the bar's main action, drawn as one (§ Editing cycle).
 
 ### Page header
