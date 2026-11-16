@@ -211,11 +211,11 @@ camera, person and type) lists each axis as its own group under a quiet heading,
 
 ### State pills
 
-Where a word must say a state beside a value (a channel, a protocol), a pill speaks **one vocabulary
+Where a word must say a state beside a value (a channel), a pill speaks **one vocabulary
 per level**: one set of words, the same for every item of that level, each word one state, never two.
 Four tones: `ok`, `warn` (the user has something to do), `danger` (a failure), `neutral` (nothing
-wrong, an answer the user gave included). Each feature's words are its use case's. A camera's or a
-capability's state is a mark, not a pill (§ Status mark).
+wrong, an answer the user gave included). Each feature's words are its use case's. The state of a
+camera, a capability, a stream or a protocol is a mark, not a pill (§ Status mark).
 
 ### Settings screens
 
