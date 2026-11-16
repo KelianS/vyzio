@@ -44,7 +44,7 @@ export function CapabilityCard({
         onToggle={(event) => setOpen(event.currentTarget.open)}
         className="group/card"
       >
-        <summary className="flex min-h-16 cursor-pointer list-none items-center gap-3.5 px-4 py-2 outline-none hover:bg-secondary focus-visible:bg-secondary">
+        <summary className="flex min-h-16 cursor-pointer list-none items-center gap-3.5 px-4 py-2 outline-none hover:bg-secondary focus-visible:bg-secondary focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset">
           <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-icon-circle text-ink-muted">
             <Icon className="size-5" aria-hidden="true" />
           </span>

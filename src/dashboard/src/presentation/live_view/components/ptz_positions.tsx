@@ -107,13 +107,13 @@ function PositionTile({
         title={tileTitle(preset)}
         {...press}
         className={cn(
-          'flex shrink-0 snap-start touch-pan-x flex-col gap-1.5 text-left outline-none disabled:opacity-60',
+          'group flex shrink-0 snap-start touch-pan-x flex-col gap-1.5 text-left outline-none disabled:opacity-60',
           look.tile,
         )}
       >
         <span
           className={cn(
-            'relative flex items-center justify-center overflow-hidden rounded-md',
+            'relative flex items-center justify-center overflow-hidden rounded-md group-focus-visible:ring-[3px] group-focus-visible:ring-ring/50',
             look.frame,
             active && 'outline-2 -outline-offset-2 outline-foreground',
           )}
@@ -161,9 +161,9 @@ function AddTile({ busy, onSave }: { busy: boolean; onSave: () => void }) {
         disabled={busy}
         title={ADD_TITLE}
         {...press}
-        className="flex w-26 shrink-0 snap-start touch-pan-x flex-col gap-1.5 text-left outline-none disabled:opacity-60"
+        className="group flex w-26 shrink-0 snap-start touch-pan-x flex-col gap-1.5 text-left outline-none disabled:opacity-60"
       >
-        <span className="flex h-16 items-center justify-center rounded-md border-[1.5px] border-dashed border-input bg-card text-muted-foreground">
+        <span className="flex h-16 items-center justify-center rounded-md border-[1.5px] border-dashed border-input bg-card text-muted-foreground group-focus-visible:ring-[3px] group-focus-visible:ring-ring/50">
           {busy ? '…' : <Plus className="size-5" aria-hidden="true" />}
         </span>
         <span className="text-label font-medium text-muted-foreground">Ajouter</span>

@@ -81,7 +81,7 @@ type GroupedRowProps = RowDestination & {
 }
 
 const ROW_CLASS =
-  'flex w-full items-center gap-3.5 px-4 py-2 text-left outline-none hover:bg-secondary focus-visible:bg-secondary disabled:pointer-events-none disabled:opacity-50'
+  'flex w-full items-center gap-3.5 px-4 py-2 text-left outline-none hover:bg-secondary focus-visible:bg-secondary focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset disabled:pointer-events-none disabled:opacity-50'
 
 /** A row of a grouped list that leads somewhere or does something: icon, title with its mark, subtitle, chevron. */
 export function GroupedRow({

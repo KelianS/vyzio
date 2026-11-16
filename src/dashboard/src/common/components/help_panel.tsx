@@ -13,7 +13,7 @@ interface HelpProps {
 function HelpDetails({ title, defaultOpen, children }: HelpProps) {
   return (
     <details open={defaultOpen} className="group">
-      <summary className="flex min-h-14 cursor-pointer list-none items-center gap-3.5 px-4 py-2 text-row font-medium outline-none hover:bg-secondary focus-visible:bg-secondary">
+      <summary className="flex min-h-14 cursor-pointer list-none items-center gap-3.5 px-4 py-2 text-row font-medium outline-none hover:bg-secondary focus-visible:bg-secondary focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset">
         <span className="min-w-0 flex-1">{title}</span>
         <ChevronRight
           className="size-5 shrink-0 text-mark-off transition-transform group-open:rotate-90"
