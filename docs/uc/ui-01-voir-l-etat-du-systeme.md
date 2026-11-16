@@ -11,7 +11,7 @@
 
 - l'utilisateur est connecté (UC-ACCESS-02), depuis un navigateur sur téléphone ou ordinateur (UI-10).
 
-**Résultat en succès** : l'accueil montre chaque caméra avec son état, les détections récentes et l'état des notifications (UI-32).
+**Résultat en succès** : l'accueil montre chaque caméra avec son état, le nombre de détections de la dernière heure et l'état des notifications (UI-32).
 
 **Résultats en échec** : Vyzio ne répond pas, et un écran entier le dit (E1) ; un état dégradé se lit dans la barre du haut (A3).
 
@@ -30,7 +30,7 @@
 
 ### N1 · Lire l'état du système à l'accueil
 
-1. L'utilisateur ouvre l'interface : pendant la lecture, l'accueil montre la forme de ce qui arrive (UI-34).
+1. L'utilisateur ouvre l'interface : pendant la lecture, l'accueil montre la forme de ce qui arrive.
 2. L'accueil montre chaque caméra avec sa marque (UI-31) et son œil, puis le Silence et les tuiles (UI-32).
 3. Il coupe ou réactive une caméra d'un toucher sur son œil (PRIV-21, UC-PRIV-01), lance un Silence (UC-NOTIF-06), ou touche une caméra pour ouvrir sa vue (UC-LIVE-01).
 4. Il gère ses caméras, ses profils et ses notifications depuis les réglages, chaque réglage à son emplacement prévisible (UI-04, UI-06, UI-07, UI-29).

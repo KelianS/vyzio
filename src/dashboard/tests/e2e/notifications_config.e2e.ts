@@ -26,7 +26,7 @@ test.describe('NotificationChannelView', () => {
     // beforehand, not after.
     const dialog = page.getByRole('alertdialog')
     await expect(dialog).toContainText('serveurs de Telegram')
-    await dialog.getByRole('button', { name: 'Activer' }).click()
+    await dialog.getByRole('button', { name: 'Envoyer' }).click()
 
     await page.getByRole('button', { name: 'Envoyer un message de test' }).click()
     await expect(page.getByText('Message envoyé : le canal fonctionne.')).toBeVisible()
@@ -47,7 +47,7 @@ test.describe('NotificationChannelView', () => {
     await page.getByRole('textbox', { name: 'Token du bot' }).fill('discord-bot-token')
     await page.getByRole('textbox', { name: 'Identifiant du salon' }).fill('4242')
     await page.getByRole('button', { name: 'Enregistrer' }).click()
-    await page.getByRole('alertdialog').getByRole('button', { name: 'Activer' }).click()
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Envoyer' }).click()
 
     // The how-to does not disappear once the channel is in place: it folds
     // (ADR-17), to still be there the day a token has to be made again.

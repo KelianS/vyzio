@@ -162,7 +162,7 @@ describe('NotificationChannelView', () => {
     })
 
     // Act
-    await userEvent.click(within(question).getByRole('button', { name: 'Activer' }))
+    await userEvent.click(within(question).getByRole('button', { name: 'Envoyer' }))
 
     // Assert
     expect(await screen.findByText('Notifications enregistrées.')).toBeInTheDocument()

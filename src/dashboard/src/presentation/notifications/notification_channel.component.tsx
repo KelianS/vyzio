@@ -364,7 +364,7 @@ function ChannelForm({
                 <li>le canal est entièrement renseigné ;</li>
                 <li>la catégorie détectée fait partie de celles qu’il notifie ;</li>
                 <li>la certitude atteint le seuil ;</li>
-                <li>aucune plage « Silence » ne s’applique à ce moment ;</li>
+                <li>aucun Silence n’est en cours, lancé depuis l’accueil ou par une plage ;</li>
                 <li>aucun envoi récent ne le fait taire ;</li>
                 <li>l’événement ne lui a pas déjà été envoyé.</li>
               </ul>
@@ -442,7 +442,7 @@ function ChannelForm({
         <ConfirmModal
           title={`Envoyer les notifications par ${config.displayName} ?`}
           body={`Les photos, vidéos et noms de caméras seront transmis aux serveurs de ${config.displayName}, qui en aura connaissance. Vos données ne resteront plus strictement chez vous.`}
-          confirmLabel="Activer"
+          confirmLabel="Envoyer"
           cancelLabel="Annuler"
           tone="warn"
           loading={uido.saving}

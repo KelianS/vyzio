@@ -11,7 +11,7 @@
 
 - au moins un canal est configuré (UC-NOTIF-02).
 
-**Résultat en succès** : les notifications suivent les destinations, catégories, certitude, plages et format choisis (NOTIF-21, NOTIF-22).
+**Résultat en succès** : les notifications suivent, pour chaque canal, les catégories, certitude, plages et format choisis (NOTIF-21, NOTIF-22).
 
 **Résultats en échec** : aucun propre à ce cas.
 
