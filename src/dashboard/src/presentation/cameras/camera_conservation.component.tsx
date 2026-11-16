@@ -136,13 +136,14 @@ function ConservationForm({
         fallbackLabel: formatDays(inherited),
         revertLabel: 'Suivre le réglage d’ensemble',
         onRevert: () => draft.set(field, null),
+        subtitles: { following: 'Comme l’ensemble', own: 'Propre à cette caméra' },
       },
     }
   })
 
   return (
     <>
-      <SettingsPage lede="Cette caméra suit les durées d’ensemble tant qu’elle n’en fixe pas une à elle. Chaque durée est indépendante.">
+      <SettingsPage>
         <SettingsList settings={declarations} />
 
         <RetentionHelp />

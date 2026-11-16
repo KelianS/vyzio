@@ -46,6 +46,38 @@ describe('CameraConservationView', () => {
     )
   })
 
+  it('CameraConservation_ShouldSayADurationIsItsOwn_WhenTheUserSetsIt', async () => {
+    // Arrange
+    fakeNetwork({ 'GET /api/cameras/camera-1/detection-config': ok(makeDetectionConfig()) })
+    renderScreen(<CameraConservationView />, CONSERVATION_TAB)
+    await screen.findByLabelText('Séquences de mouvement')
+
+    // Act
+    await setMotionToTenDays()
+
+    // Assert
+    // The fixture already sets the detection history apart; the motion clips now join it.
+    expect(screen.getAllByText('Comme l’ensemble')).toHaveLength(1)
+    expect(screen.getAllByText('Propre à cette caméra')).toHaveLength(2)
+  })
+
+  it('CameraConservation_ShouldFollowTheWholeInstallationAgain_WhenTheUserRevertsADuration', async () => {
+    // Arrange
+    fakeNetwork({ 'GET /api/cameras/camera-1/detection-config': ok(makeDetectionConfig()) })
+    renderScreen(<CameraConservationView />, CONSERVATION_TAB)
+    await setMotionToTenDays()
+    const [revert] = screen.getAllByRole('button', {
+      name: 'Suivre le réglage d’ensemble : 7 jours',
+    })
+
+    // Act
+    await userEvent.click(revert)
+
+    // Assert
+    expect(screen.getAllByText('Comme l’ensemble')).toHaveLength(2)
+    expect(screen.getByLabelText('Séquences de mouvement')).toHaveValue(7)
+  })
+
   it('onSave_ShouldKeepTheDraftAndSayWhy_WhenTheSaveFails', async () => {
     // Arrange
     fakeNetwork({
