@@ -12,8 +12,6 @@ export interface ScheduleRuleUido {
   /** The rule was deleted meanwhile: said as such, never as a failed read. */
   gone: boolean
   saving: boolean
-  /** What stopped the last save or delete, shown where the user acts. */
-  failure: AppError | null
   confirmDelete: boolean
   deleting: boolean
 }
@@ -26,7 +24,6 @@ export function buildInitialScheduleRuleUido(): ScheduleRuleUido {
     readError: null,
     gone: false,
     saving: false,
-    failure: null,
     confirmDelete: false,
     deleting: false,
   }

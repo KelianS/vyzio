@@ -1,5 +1,5 @@
-import type { ToastTone } from '../../common/components/toast'
-import { AppErrorKind, type AppError } from '../../common/errors/app_error'
+import type { Toast } from '../../common/components/toast'
+import { AppErrorKind, toastError, type AppError } from '../../common/errors/app_error'
 import { toAppError } from '../../common/errors/to_app_error'
 import type { NewScheduleRule, ScheduleRuleInput } from '../../domain/entities/schedule_rule.entity'
 import type { CamerasContainer } from '../../infrastructure/providers/cameras.container'
@@ -13,7 +13,7 @@ export interface ScheduleRulePresenterContext {
   notificationsContainer: NotificationsContainer
   camerasContainer: CamerasContainer
   dispatch: (action: ScheduleRuleAction) => void
-  toast: (message: string, tone?: ToastTone, diagnostic?: string) => void
+  toast: Toast
 }
 
 export function buildScheduleRulePresenter({
@@ -24,8 +24,13 @@ export function buildScheduleRulePresenter({
   toast,
 }: ScheduleRulePresenterContext) {
   // A rule deleted elsewhere answers "not found": the page says it is gone, not that it failed.
-  function fail(error: AppError, failed: (error: AppError) => ScheduleRuleAction) {
-    dispatch(error.kind === AppErrorKind.NotFound ? { type: 'RULE_GONE' } : failed(error))
+  function fail(error: AppError, failed: ScheduleRuleAction) {
+    if (error.kind === AppErrorKind.NotFound) {
+      dispatch({ type: 'RULE_GONE' })
+      return
+    }
+    dispatch(failed)
+    toastError(toast, error)
   }
 
   return {
@@ -54,7 +59,8 @@ export function buildScheduleRulePresenter({
         toast('Plage ajoutée.', 'success')
         return true
       } catch (e) {
-        dispatch({ type: 'SAVE_FAILED', error: toAppError(e) })
+        dispatch({ type: 'SAVE_FAILED' })
+        toastError(toast, toAppError(e))
         return false
       }
     },
@@ -68,7 +74,7 @@ export function buildScheduleRulePresenter({
         toast('Plage enregistrée.', 'success')
         return true
       } catch (e) {
-        fail(toAppError(e), (error) => ({ type: 'SAVE_FAILED', error }))
+        fail(toAppError(e), { type: 'SAVE_FAILED' })
         return false
       }
     },
@@ -88,7 +94,7 @@ export function buildScheduleRulePresenter({
         toast('Plage supprimée.', 'success')
         return true
       } catch (e) {
-        fail(toAppError(e), (error) => ({ type: 'DELETE_FAILED', error }))
+        fail(toAppError(e), { type: 'DELETE_FAILED' })
         return false
       }
     },

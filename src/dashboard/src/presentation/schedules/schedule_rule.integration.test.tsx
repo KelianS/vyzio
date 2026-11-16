@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ScheduleRuleKind, type ScheduleRule } from '../../domain/entities/schedule_rule.entity'
 import { makeCamera } from '../../testing/camera_fixture'
@@ -131,7 +131,7 @@ describe('ScheduleRuleView', () => {
     expect(screen.getByRole('checkbox', { name: 'Telegram' })).toBeInTheDocument()
   })
 
-  it('onCreate_ShouldSayWhatToChange_WhenTheServerRefusesARangeWithoutTarget', async () => {
+  it('onCreate_ShouldSayWhatToChangeInAToast_WhenTheServerRefusesARangeWithoutTarget', async () => {
     // Arrange
     fakeNetwork({ ...houseRoutes(), [CREATE]: failure(400, 'schedule_no_target') })
     const { router } = await openAt(ADD)
@@ -141,9 +141,13 @@ describe('ScheduleRuleView', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
 
     // Assert
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Choisissez au moins une caméra ou un canal pour cette plage',
-    )
+    const toasts = screen.getByRole('region', { name: 'Notifications' })
+    expect(
+      await within(toasts).findByText(
+        /Choisissez au moins une caméra ou un canal pour cette plage/,
+      ),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     expect(router.state.location.pathname).toBe('/settings/schedule/add')
   })
 
@@ -219,7 +223,7 @@ describe('ScheduleRuleView', () => {
     ).toBeVisible()
   })
 
-  it('onDelete_ShouldSayWhyAndStayOnTheRange_WhenTheServerFails', async () => {
+  it('onDelete_ShouldSayWhyInAToastAndStayOnTheRange_WhenTheServerFails', async () => {
     // Arrange
     fakeNetwork({ ...houseRoutes(), [RULE]: ok(makeRule()), [DELETE]: failure(500) })
     const { router } = await openAt(EDIT)
@@ -229,7 +233,11 @@ describe('ScheduleRuleView', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Supprimer' }))
 
     // Assert
-    expect(await screen.findByRole('alert')).toHaveTextContent('DELETE /api/schedules/rule-1 · 500')
+    const toasts = screen.getByRole('region', { name: 'Notifications' })
+    expect(
+      await within(toasts).findByText(/DELETE \/api\/schedules\/rule-1 · 500/),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     expect(router.state.location.pathname).toBe('/settings/schedule/rule-1')
   })
 

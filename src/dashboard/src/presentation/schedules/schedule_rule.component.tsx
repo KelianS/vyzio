@@ -9,7 +9,7 @@ import { SettingsPage, SettingsSection } from '../../common/settings/settings_pa
 import { useSettingsDraft } from '../../common/settings/use_settings_draft'
 import type { SettingOption } from '../../common/settings/setting_declaration'
 import { DeleteAction } from '../../common/components/delete_action'
-import { ErrorMessage, ReadFailure } from '../../common/components/error_message'
+import { ReadFailure } from '../../common/components/error_message'
 import { useToast } from '../../common/components/toast'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import {
@@ -293,8 +293,6 @@ function RuleForm({
             )
           }
         />
-
-        {uido.failure && <ErrorMessage error={uido.failure} />}
 
         <Button
           type="button"
