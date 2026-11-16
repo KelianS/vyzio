@@ -5,7 +5,12 @@ import { privacyMissLabel } from '../privacy/privacy_status'
 import { cn } from '../ui/utils'
 import { liveFrameUrl, liveWaitMessage } from './live_frame'
 import { LiveWaitVeil } from './live_wait_veil'
-import { SurveillanceEntry, cameraMark, surveillanceEntryOf } from '../camera/camera_status'
+import {
+  SurveillanceEntry,
+  cameraMark,
+  cutLine,
+  surveillanceEntryOf,
+} from '../camera/camera_status'
 import type { Camera } from '../../domain/entities/camera.entity'
 import type { FrigateStatus } from '../../domain/entities/system_stats.entity'
 import { PressableControl, PressableSurface } from './pressable'
@@ -50,46 +55,47 @@ export function CameraCard({
     live ? 'aspect-video' : compact ? 'h-25' : 'h-30',
   )
 
+  // The word in place of the picture is part of the link's name, as the eye reads it (WCAG 2.5.3).
+  const word = compact
+    ? null
+    : cut
+      ? cutLine(camera, new Date())
+      : deviceOffline
+        ? 'Hors ligne'
+        : null
+
   const picture = cut ? (
     // In place of its picture, what a cut camera is (PRIV-20); no stream is tried.
-    <PictureState icon={<EyeOff className="size-6" aria-hidden="true" />}>
-      {compact ? null : 'Coupée'}
-    </PictureState>
+    <PictureState icon={<EyeOff className="size-6" aria-hidden="true" />}>{word}</PictureState>
   ) : deviceOffline ? (
-    <PictureState icon={<WifiOff className="size-6" aria-hidden="true" />}>
-      {compact ? null : 'Hors ligne'}
-    </PictureState>
+    <PictureState icon={<WifiOff className="size-6" aria-hidden="true" />}>{word}</PictureState>
   ) : (
     <LiveFrame camera={camera} apiBaseUrl={apiBaseUrl} frigateStatus={frigateStatus} />
   )
-  // An offline camera opens no view: it would only wait for a stream that cannot come (CAM-08).
-  const to = unwatched ? `/settings/cameras/${camera.id}` : !deviceOffline || cut ? liveTo : null
+  // An offline camera opens its view all the same: it says why there is no picture (LIVE-23).
+  const to = unwatched ? `/settings/cameras/${camera.id}` : liveTo
 
   return (
     // The card's one link covers it whole; the eye and the miss line sit above it.
     <article className="relative flex flex-col overflow-hidden rounded-card bg-card text-card-foreground">
-      {to ? (
-        <PressableSurface>
-          <Link
-            to={to}
-            aria-label={unwatched ? `À configurer : ${name}` : name}
-            className={cn(frame, "after:absolute after:inset-0 after:content-['']", FOCUS)}
-          >
-            <span className="relative flex size-full items-center justify-center">
-              {unwatched ? (
-                <span className="flex items-center gap-1 text-body font-medium text-ink-muted">
-                  À configurer
-                  <ChevronRight className="size-4" aria-hidden="true" />
-                </span>
-              ) : (
-                picture
-              )}
-            </span>
-          </Link>
-        </PressableSurface>
-      ) : (
-        <div className={cn(frame, 'relative')}>{picture}</div>
-      )}
+      <PressableSurface>
+        <Link
+          to={to}
+          aria-label={unwatched ? `À configurer : ${name}` : word ? `${name} : ${word}` : name}
+          className={cn(frame, "after:absolute after:inset-0 after:content-['']", FOCUS)}
+        >
+          <span className="relative flex size-full items-center justify-center">
+            {unwatched ? (
+              <span className="flex items-center gap-1 text-body font-medium text-ink-muted">
+                À configurer
+                <ChevronRight className="size-4" aria-hidden="true" />
+              </span>
+            ) : (
+              picture
+            )}
+          </span>
+        </Link>
+      </PressableSurface>
 
       <div
         className={cn(

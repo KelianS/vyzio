@@ -1,5 +1,6 @@
 import { CameraState, CameraValidation, type Camera } from '../../domain/entities/camera.entity'
 import { StatusMarkKind, type StatusMarkState } from '../components/status_mark_state'
+import { formatHouseEnd } from '../schedule/house_moment'
 
 type CameraStatusFacts = Pick<
   Camera,
@@ -53,4 +54,11 @@ export function surveillanceEntryOf(camera: Pick<Camera, 'validationState'>): Su
     default:
       return SurveillanceEntry.Watched
   }
+}
+
+/** What a cut camera shows in place of its picture: until when, when a range sets its end (PRIV-20). */
+export function cutLine(camera: Pick<Camera, 'privacyCutUntil'>, now: Date): string {
+  return camera.privacyCutUntil
+    ? `Coupée jusqu’à ${formatHouseEnd(camera.privacyCutUntil, now)}`
+    : 'Coupée'
 }

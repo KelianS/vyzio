@@ -30,6 +30,7 @@ export interface FakeCamera {
   privacyStrategy: string
   /** Surveillance resumed by hand inside a Privacy range, and when the ranges end (PRIV-07). */
   privacyResume: { until: { dayOfWeek: number; time: string } | null } | null
+  privacyCutUntil: FakeHouseMoment | null
   verifiedCapabilities: string[]
   /** The live view's qualities (ADR-07). */
   liveQualities: string[]
@@ -168,6 +169,7 @@ export function makeFakeCamera(overrides: Partial<FakeCamera> = {}): FakeCamera 
     ptzSupported: false,
     privacyStrategy: 'software_blur',
     privacyResume: null,
+    privacyCutUntil: null,
     verifiedCapabilities: [],
     liveQualities: ['low', 'high'],
     detectedAt: '2026-01-01T00:00:00Z',
@@ -1540,6 +1542,10 @@ export async function installFakeBackend(
     const clipMatch = path.match(/^\/api\/detection-events\/([^/]+)\/clip$/)
     if (clipMatch && method === 'GET' && state.clipsGone.includes(clipMatch[1])) {
       return problem(route, 404, 'not_found')
+    }
+    // Any other clip plays the entrance scene, the one the live picture shows.
+    if (clipMatch && method === 'GET') {
+      return route.fulfill({ status: 200, contentType: 'video/mp4', body: LIVE_CLIP })
     }
     const mediaMatch = path.match(/^\/api\/detection-events\/([^/]+)\/(thumbnail|snapshot)$/)
     if (mediaMatch && method === 'GET') {

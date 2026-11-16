@@ -87,17 +87,31 @@ describe('CameraCard', () => {
   )
 
   it.each([
-    { connected: true, status: 'online', links: 1, mark: 'En marche' },
-    { connected: false, status: 'offline', links: 0, mark: 'Hors ligne' },
+    { connected: true, status: 'online', link: 'Front Door', mark: 'En marche' },
+    { connected: false, status: 'offline', link: 'Front Door : Hors ligne', mark: 'Hors ligne' },
   ])(
-    'CameraCard_ShouldOpenTheViewOnlyWhenTheCameraAnswers_WhenItIs $status',
-    ({ connected, status, links, mark }) => {
+    'CameraCard_ShouldOpenTheCameraView_WhenTheCameraIs $status',
+    ({ connected, status, link, mark }) => {
       // Arrange & Act
       renderCard(makeCamera({ connected, status }))
 
       // Assert
-      expect(screen.queryAllByRole('link', { name: 'Front Door' })).toHaveLength(links)
+      expect(screen.getByRole('link', { name: link })).toHaveAttribute('href', '/cameras/camera-1')
       expect(screen.getByRole('img', { name: mark })).toBeInTheDocument()
     },
   )
+
+  it('CameraCard_ShouldSayUntilWhenTheCameraStaysCut_WhenARangeCutIt', () => {
+    // Arrange & Act
+    renderCard(
+      makeCamera({
+        privacyModeActive: true,
+        privacyModeSource: 'schedule',
+        privacyCutUntil: { at: '2099-01-05T07:00:00+01:00', dayOfWeek: 1, time: '07:00' },
+      }),
+    )
+
+    // Assert
+    expect(screen.getByText('Coupée jusqu’à lundi 7 h')).toBeInTheDocument()
+  })
 })
