@@ -51,7 +51,7 @@ describe('CameraCard', () => {
     },
   )
 
-  it('CameraCard_ShouldLinkToThePrivacyScreen_WhenTheCameraDidNotFollow', () => {
+  it('CameraCard_ShouldCarryNoMissLine_WhenTheCameraDidNotFollow', () => {
     // Arrange & Act
     renderCard(
       makeCamera({
@@ -62,10 +62,7 @@ describe('CameraCard', () => {
     )
 
     // Assert
-    expect(screen.getByRole('link', { name: 'La caméra ne s’est pas tournée' })).toHaveAttribute(
-      'href',
-      '/settings/cameras/camera-1/privacy',
-    )
+    expect(screen.queryByText(/ne s’est pas tournée/)).not.toBeInTheDocument()
   })
 
   it.each([

@@ -3,7 +3,6 @@ import { toastError } from '../../common/errors/app_error'
 import { toAppError } from '../../common/errors/to_app_error'
 import { latestOnly } from '../../common/presenter/latest_only'
 import type { PrivacyStrategy } from '../../domain/entities/camera.entity'
-import { privacyMissLabel } from '../../common/privacy/privacy_status'
 import type { CamerasContainer } from '../../infrastructure/providers/cameras.container'
 import type { SchedulesContainer } from '../../infrastructure/providers/schedules.container'
 import type { CameraPrivacyAction } from './camera_privacy.actions'
@@ -65,22 +64,6 @@ export function buildCameraPrivacyPresenter({
     onRetryPresets: readPresets,
 
     onRetryRules: readRules,
-
-    /** Asks the camera again; the shared list then carries its answer, the miss cleared or the new one. */
-    async onRetryPrivacy(cameraId: string) {
-      dispatch({ type: 'RETRY_STARTED' })
-      try {
-        const camera = await container.retryCameraPrivacy.execute(cameraId)
-        const missed = privacyMissLabel(camera)
-        if (missed) toast(`${missed}.`, 'error', camera.privacyMissDetail ?? undefined)
-        else toast('La caméra a suivi.', 'success')
-        reloadCameraList(container)
-      } catch (e) {
-        toastError(toast, toAppError(e))
-      } finally {
-        dispatch({ type: 'RETRY_FINISHED' })
-      }
-    },
 
     /** Resolves true once saved, so the view clears its draft. */
     async onSaveStrategy(cameraId: string, strategy: PrivacyStrategy) {

@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router'
+import { PrivacyMiss, PrivacyStrategy } from '../../domain/entities/camera.entity'
 import { makeCamera } from '../../testing/camera_fixture'
 import { failure, fakeNetwork, ok } from '../../testing/fake_network'
 import { renderScreen } from '../../testing/render_screen'
@@ -189,6 +190,67 @@ describe('AppShell', () => {
       '/cameras/camera-1',
     )
     expect(within(alerts).getByText('Hors ligne depuis moins d’une minute')).toBeVisible()
+  })
+
+  it('TopBar_ShouldSayWhichCameraDidNotTurn_WhenARangeCutItAndItDidNotFollow', async () => {
+    // Arrange
+    fakeNetwork({
+      'GET /api/cameras': ok([
+        makeCamera({
+          displayName: 'Salon',
+          privacyModeActive: true,
+          privacyModeSource: 'schedule',
+          privacyStrategy: PrivacyStrategy.PtzParking,
+          privacyMiss: PrivacyMiss.CameraFailed,
+        }),
+      ]),
+      'GET /api/system/stats': ok(stats()),
+    })
+
+    // Act
+    openShellAt('/')
+
+    // Assert
+    const alerts = await screen.findByRole('list', { name: 'Alertes' })
+    expect(
+      within(alerts).getByRole('link', { name: /Salon : la caméra ne s’est pas tournée/ }),
+    ).toHaveAttribute('href', '/cameras/camera-1')
+    expect(within(alerts).getByText('Enregistrement désactivé')).toBeVisible()
+    expect(
+      within(alerts).getByRole('button', {
+        name: 'Masquer : Salon : la caméra ne s’est pas tournée',
+      }),
+    ).toBeEnabled()
+  })
+
+  it('cameraList_ShouldRaiseTheMissAgain_WhenItEndedThenCameBack', async () => {
+    // Arrange
+    const missed = makeCamera({
+      privacyModeActive: true,
+      privacyStrategy: PrivacyStrategy.PtzParking,
+      privacyMiss: PrivacyMiss.CameraFailed,
+    })
+    const network = fakeNetwork({
+      'GET /api/cameras': ok([makeCamera()]),
+      'GET /api/system/stats': ok(stats()),
+    })
+    openShellAt('/')
+    await screen.findByText('Accueil')
+    act(() =>
+      useRootStore.setState({ privacyMissesTold: ['privacy-miss:camera-1:on:camera_failed'] }),
+    )
+    await act(() => useRootStore.getState().loadCameras(appContainer.cameras.getCameras))
+    network.answer('GET /api/cameras', ok([missed]))
+
+    // Act
+    await act(() => useRootStore.getState().loadCameras(appContainer.cameras.getCameras))
+
+    // Assert
+    expect(
+      within(screen.getByRole('list', { name: 'Alertes' })).getByText(
+        'Front Door : la caméra ne s’est pas tournée',
+      ),
+    ).toBeVisible()
   })
 
   it('TopBar_ShouldDropTheAlert_WhenTheUserSetsItAside', async () => {

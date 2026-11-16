@@ -22,6 +22,31 @@ function showToast(tone: ToastTone, diagnostic?: string) {
 }
 
 /** jsdom plays no animation: the toast's fade is stood in for by one that ends with `finished`. */
+function showToastWithRetry(onRetry: () => void) {
+  function RetryTrigger() {
+    const { toast } = useToast()
+    return (
+      <button
+        type="button"
+        onClick={() =>
+          toast('Salon : la caméra ne s’est pas tournée.', 'error', undefined, {
+            label: 'Réessayer',
+            onClick: onRetry,
+          })
+        }
+      >
+        go
+      </button>
+    )
+  }
+  render(
+    <ToastProvider>
+      <RetryTrigger />
+    </ToastProvider>,
+  )
+  act(() => screen.getByRole('button', { name: 'go' }).click())
+}
+
 function playFadesUntil(finished: Promise<unknown>) {
   Object.defineProperty(Element.prototype, 'getAnimations', {
     configurable: true,
@@ -56,6 +81,29 @@ describe('Toast', () => {
 
     // Assert
     expect(screen.getByText('La caméra a refusé la commande')).toBeInTheDocument()
+  })
+
+  it('toast_ShouldStayUntilDismissed_WhenItOffersToRetry', () => {
+    // Arrange
+    showToastWithRetry(vi.fn())
+
+    // Act
+    act(() => vi.advanceTimersByTime(60_000))
+
+    // Assert
+    expect(screen.getByRole('button', { name: 'Réessayer' })).toBeInTheDocument()
+  })
+
+  it('toast_ShouldDoTheActAgain_WhenTheUserTapsRetry', () => {
+    // Arrange
+    const onRetry = vi.fn()
+    showToastWithRetry(onRetry)
+
+    // Act
+    act(() => screen.getByRole('button', { name: 'Réessayer' }).click())
+
+    // Assert
+    expect(onRetry).toHaveBeenCalledOnce()
   })
 
   it('toast_ShouldCloseByItself_WhenItCarriesNoDiagnosticLine', () => {

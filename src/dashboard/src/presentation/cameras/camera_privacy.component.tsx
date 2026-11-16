@@ -60,11 +60,7 @@ export function CameraPrivacyView() {
   return (
     <>
       <SettingsPage>
-        <PrivacyAnswerNotice
-          camera={camera}
-          retrying={uido.retrying}
-          onRetry={() => presenter.onRetryPrivacy(camera.id)}
-        />
+        <PrivacyAnswerNotice camera={camera} />
         <SettingsList settings={settings} />
         {uido.presetsError && (
           <ReadFailure

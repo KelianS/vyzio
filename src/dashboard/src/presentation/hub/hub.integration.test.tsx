@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { PrivacyMiss, PrivacyStrategy } from '../../domain/entities/camera.entity'
 import { makeCamera } from '../../testing/camera_fixture'
 import { makeDetectionEvent } from '../../testing/detection_fixture'
 import { failure, fakeNetwork, ok } from '../../testing/fake_network'
@@ -225,6 +226,128 @@ describe('HubView', () => {
     // Assert
     expect(await screen.findByText(/La caméra ne répond pas/)).toBeInTheDocument()
     expect(await screen.findByRole('button', { name: 'Couper Front Door' })).toBeEnabled()
+  })
+
+  it('onTogglePrivacy_ShouldSayInAToastThatTheCameraDidNotTurnWithItsDetail_WhenItDidNotFollow', async () => {
+    // Arrange
+    const missed = makeCamera({
+      privacyModeActive: true,
+      privacyStrategy: PrivacyStrategy.PtzParking,
+      privacyMiss: PrivacyMiss.CameraFailed,
+      privacyMissDetail: 'privacy on, ptz_parking: ONVIF Ptz: no answer',
+    })
+    const network = home({ 'POST /api/cameras/privacy/batch-toggle': ok([missed]) })
+    renderScreen(<HubView />)
+    const eye = await screen.findByRole('button', { name: 'Couper Front Door' })
+    network.answer('GET /api/cameras', ok([missed]))
+
+    // Act
+    await userEvent.click(eye)
+
+    // Assert
+    const toast = within(await screen.findByRole('region', { name: 'Notifications' }))
+    expect(
+      await toast.findByText('Front Door : la caméra ne s’est pas tournée.'),
+    ).toBeInTheDocument()
+    expect(toast.getByText('privacy on, ptz_parking: ONVIF Ptz: no answer')).toBeInTheDocument()
+    expect(toast.getByRole('button', { name: 'Réessayer' })).toBeEnabled()
+  })
+
+  it('onTogglePrivacy_ShouldAskTheCameraAgainAndSaySoWhenItFollows_WhenTheUserRetriesFromTheToast', async () => {
+    // Arrange
+    const missed = makeCamera({
+      privacyModeActive: true,
+      privacyStrategy: PrivacyStrategy.PtzParking,
+      privacyMiss: PrivacyMiss.Unconfirmed,
+    })
+    const followed = { ...missed, privacyMiss: null }
+    const network = home({
+      'POST /api/cameras/privacy/batch-toggle': ok([missed]),
+      'POST /api/cameras/camera-1/privacy/retry': ok(followed),
+    })
+    renderScreen(<HubView />)
+    const eye = await screen.findByRole('button', { name: 'Couper Front Door' })
+    network.answer('GET /api/cameras', ok([missed]))
+    await userEvent.click(eye)
+    await screen.findByText('Front Door : la caméra ne s’est peut-être pas tournée.')
+    network.answer('GET /api/cameras', ok([followed]))
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Réessayer' }))
+
+    // Assert
+    expect(await screen.findByText('Front Door : la caméra a suivi.')).toBeInTheDocument()
+    expect(network.sent).toContainEqual(
+      expect.objectContaining({ route: 'POST /api/cameras/camera-1/privacy/retry' }),
+    )
+  })
+
+  it('onTogglePrivacy_ShouldSayWhatIsMissingWithoutARetry_WhenNoParkingPositionIsSaved', async () => {
+    // Arrange
+    const missed = makeCamera({
+      privacyModeActive: true,
+      privacyStrategy: PrivacyStrategy.PtzParking,
+      privacyMiss: PrivacyMiss.PositionMissing,
+    })
+    const network = home({ 'POST /api/cameras/privacy/batch-toggle': ok([missed]) })
+    renderScreen(<HubView />)
+    const eye = await screen.findByRole('button', { name: 'Couper Front Door' })
+    network.answer('GET /api/cameras', ok([missed]))
+
+    // Act
+    await userEvent.click(eye)
+
+    // Assert
+    expect(
+      await screen.findByText(
+        'Front Door : la caméra ne s’est pas tournée, sa position Parking n’est pas enregistrée.',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Réessayer' })).not.toBeInTheDocument()
+  })
+
+  it('onTogglePrivacy_ShouldTellNoMiss_WhenTheCameraIsOffline', async () => {
+    // Arrange
+    const offline = makeCamera({
+      status: 'offline',
+      connected: false,
+      privacyModeActive: true,
+      privacyStrategy: PrivacyStrategy.PtzParking,
+      privacyMiss: PrivacyMiss.CameraFailed,
+    })
+    const network = home({ 'POST /api/cameras/privacy/batch-toggle': ok([offline]) })
+    renderScreen(<HubView />)
+    const eye = await screen.findByRole('button', { name: 'Couper Front Door' })
+    network.answer('GET /api/cameras', ok([offline]))
+
+    // Act
+    await userEvent.click(eye)
+
+    // Assert
+    expect(await screen.findByRole('button', { name: 'Réactiver Front Door' })).toBeEnabled()
+    expect(screen.queryByText(/ne s’est pas tournée/)).not.toBeInTheDocument()
+  })
+
+  it('onCutCameras_ShouldSayEachCameraThatDidNotTurn_WhenTheUserCutsThemAll', async () => {
+    // Arrange
+    const missed = makeCamera({
+      privacyModeActive: true,
+      privacyStrategy: PrivacyStrategy.PtzParking,
+      privacyMiss: PrivacyMiss.CameraFailed,
+    })
+    const network = home({ [`PUT ${CUT}`]: ok([]) })
+    renderScreen(<HubView />)
+    await userEvent.click(await screen.findByRole('button', { name: 'Couper les caméras' }))
+    const sheet = await screen.findByRole('dialog', { name: 'Couper les caméras' })
+    network.answer('GET /api/cameras', ok([missed]))
+
+    // Act
+    await userEvent.click(within(sheet).getByRole('button', { name: 'Jusqu’à réactivation' }))
+
+    // Assert
+    expect(
+      await screen.findByText('Front Door : la caméra ne s’est pas tournée.'),
+    ).toBeInTheDocument()
   })
 
   it('onStartSilence_ShouldOfferTheScheduleChangeFirstThenStartAndClose_WhenAMuteRangeExists', async () => {

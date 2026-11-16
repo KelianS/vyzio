@@ -1,4 +1,4 @@
-import type { ToastTone } from '../../common/components/toast'
+import type { Toast } from '../../common/components/toast'
 import type { CamerasContainer } from '../../infrastructure/providers/cameras.container'
 import { reloadCameraList } from '../cameras/camera_list_reload'
 import { setCamerasPrivacy } from '../hub/privacy_toggle'
@@ -7,7 +7,7 @@ import type { CameraWallAction } from './camera_wall.actions'
 export interface CameraWallPresenterContext {
   camerasContainer: CamerasContainer
   dispatch: (action: CameraWallAction) => void
-  toast: (message: string, tone?: ToastTone, diagnostic?: string) => void
+  toast: Toast
 }
 
 export function buildCameraWallPresenter({

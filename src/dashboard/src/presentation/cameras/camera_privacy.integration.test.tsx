@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { PrivacyMiss, PrivacyStrategy } from '../../domain/entities/camera.entity'
+import { PrivacyStrategy } from '../../domain/entities/camera.entity'
 import { ScheduleRuleKind, type ScheduleRule } from '../../domain/entities/schedule_rule.entity'
 import { makeCamera } from '../../testing/camera_fixture'
 import { failure, fakeNetwork, ok } from '../../testing/fake_network'
@@ -204,85 +204,6 @@ describe('CameraPrivacyView', () => {
     expect(screen.getByRole('combobox', { name: 'En mode vie privée' })).toHaveTextContent(
       'Orientation à l’écart',
     )
-  })
-
-  it('onRetryPrivacy_ShouldAskTheCameraAgainAndSaySoWhenItFollows_WhenTheRequestWasInterrupted', async () => {
-    // Arrange
-    const missed = makeCamera({
-      privacyModeActive: true,
-      privacyStrategy: PrivacyStrategy.PtzParking,
-      privacyMiss: PrivacyMiss.Unconfirmed,
-    })
-    const followed = { ...missed, privacyMiss: null }
-    const network = fakeNetwork({
-      [RULES]: ok([]),
-      'POST /api/cameras/camera-1/privacy/retry': ok(followed),
-      'GET /api/cameras': ok([followed]),
-    })
-    renderScreen(<CameraPrivacyView />, { ...PRIVACY_TAB, outletContext: missed })
-    await screen.findByText('La caméra ne s’est peut-être pas tournée')
-
-    // Act
-    await userEvent.click(screen.getByRole('button', { name: 'Réessayer' }))
-
-    // Assert
-    expect(await screen.findByText('La caméra a suivi.')).toBeInTheDocument()
-    expect(network.sent).toContainEqual(
-      expect.objectContaining({ route: 'POST /api/cameras/camera-1/privacy/retry' }),
-    )
-  })
-
-  it('onRetryPrivacy_ShouldSayTheNewMissAndItsDetail_WhenTheCameraStillDoesNotFollow', async () => {
-    // Arrange
-    const missed = makeCamera({
-      privacyModeActive: true,
-      privacyStrategy: PrivacyStrategy.PtzParking,
-      privacyMiss: PrivacyMiss.Unconfirmed,
-    })
-    const failed = {
-      ...missed,
-      privacyMiss: PrivacyMiss.CameraFailed,
-      privacyMissDetail:
-        'privacy on, ptz_parking: CameraUnreachableException: ONVIF Ptz: no answer',
-    }
-    fakeNetwork({
-      [RULES]: ok([]),
-      'POST /api/cameras/camera-1/privacy/retry': ok(failed),
-      'GET /api/cameras': ok([failed]),
-    })
-    renderScreen(<CameraPrivacyView />, { ...PRIVACY_TAB, outletContext: missed })
-    await screen.findByText('La caméra ne s’est peut-être pas tournée')
-
-    // Act
-    await userEvent.click(screen.getByRole('button', { name: 'Réessayer' }))
-
-    // Assert
-    expect(await screen.findByText('La caméra ne s’est pas tournée.')).toBeInTheDocument()
-    expect(screen.getAllByText(/ONVIF Ptz: no answer/).length).toBeGreaterThan(0)
-  })
-
-  it('onRetryPrivacy_ShouldSayTheRequestFailed_WhenTheHubRefusesIt', async () => {
-    // Arrange
-    const missed = makeCamera({
-      privacyModeActive: true,
-      privacyStrategy: PrivacyStrategy.PtzParking,
-      privacyMiss: PrivacyMiss.CameraFailed,
-    })
-    fakeNetwork({
-      [RULES]: ok([]),
-      'POST /api/cameras/camera-1/privacy/retry': failure(500),
-    })
-    renderScreen(<CameraPrivacyView />, { ...PRIVACY_TAB, outletContext: missed })
-    await screen.findByText('La caméra ne s’est pas tournée')
-
-    // Act
-    await userEvent.click(screen.getByRole('button', { name: 'Réessayer' }))
-
-    // Assert
-    expect(
-      await screen.findByText(/POST \/api\/cameras\/camera-1\/privacy\/retry · 500/),
-    ).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Réessayer' })).toBeEnabled()
   })
 
   it('onSaveStrategy_ShouldSaveTheChosenMode_WhenTheUserSaves', async () => {

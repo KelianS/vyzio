@@ -105,53 +105,60 @@ test.describe('HubView privacy', () => {
     ).toBeVisible()
   })
 
-  test('CameraCard_ShouldLeadToWhy_WhenTheCameraDidNotFollowPrivacy', async ({ page }) => {
+  test('CameraEye_ShouldSayInAToastThatTheCameraDidNotTurnAndOfferARetry_WhenItDidNotFollow', async ({
+    page,
+  }) => {
+    const salon = makeFakeCamera({
+      id: 'camera-1',
+      displayName: 'Salon',
+      privacyStrategy: 'ptz_parking',
+      ptzSupported: true,
+    })
+    await installFakeBackend(
+      page,
+      createFakeBackendState({
+        cameras: [salon],
+        privacyMissOnToggle: {
+          miss: 'camera_failed',
+          detail: 'privacy on, ptz_parking: ONVIF Ptz: no answer',
+        },
+      }),
+    )
+
+    await page.goto('/')
+    await page.getByRole('button', { name: 'Couper Salon' }).click()
+
+    // The answer to the user's own act is a toast, never a line on the card nor a bar alert.
+    const toasts = page.getByRole('region', { name: 'Notifications' })
+    await expect(toasts.getByText('Salon : la caméra ne s’est pas tournée.')).toBeVisible()
+    await expect(toasts.getByText('privacy on, ptz_parking: ONVIF Ptz: no answer')).toBeVisible()
+    await expect(page.getByRole('list', { name: 'Alertes' })).toHaveCount(0)
+    await expect(page.getByRole('article').getByText(/ne s’est pas tournée/)).toHaveCount(0)
+
+    await toasts.getByRole('button', { name: 'Réessayer' }).click()
+    await expect(toasts.getByText('Salon : la caméra a suivi.')).toBeVisible()
+  })
+
+  test('TopBar_ShouldSayWhichCameraDidNotTurnAndLeadToIt_WhenARangeCutIt', async ({ page }) => {
     const parked = makeFakeCamera({
       id: 'camera-1',
       displayName: 'Salon',
       privacyModeActive: true,
-      privacyModeSource: 'manual',
+      privacyModeSource: 'schedule',
       privacyStrategy: 'ptz_parking',
       ptzSupported: true,
       privacyMiss: 'camera_failed',
-      privacyMissDetail:
-        'privacy on, ptz_parking: CameraUnreachableException: ONVIF Ptz: no answer',
+      privacyMissDetail: 'privacy on, ptz_parking: ONVIF Ptz: no answer',
     })
-    const watching = makeFakeCamera({ id: 'camera-2', slug: 'jardin', displayName: 'Jardin' })
-    await installFakeBackend(page, createFakeBackendState({ cameras: [parked, watching] }))
-
-    await page.goto('/')
-    await page.getByRole('link', { name: 'La caméra ne s’est pas tournée' }).click()
-
-    await expect(page).toHaveURL(/\/settings\/cameras\/camera-1\/privacy$/)
-    // The page's own loading state is a status too: read the one that explains the miss.
-    const why = page.getByRole('status').filter({ hasText: 'ne s’est pas tournée' })
-    await expect(why.getByText('La caméra ne s’est pas tournée', { exact: true })).toBeVisible()
-    await expect(why.getByRole('button', { name: 'Réessayer' })).toBeVisible()
-    await expect(why.getByText('Enregistrement désactivé')).toBeVisible()
-    await why.getByText('Détails techniques').click()
-    await expect(why.getByText(/ne s’est pas tournée vers sa position Parking/)).toBeVisible()
-    await expect(why.getByText(/ONVIF Ptz: no answer/)).toBeVisible()
-  })
-
-  test('CameraPrivacyView_ShouldClearTheMiss_WhenTheUserRetriesAndTheCameraFollows', async ({
-    page,
-  }) => {
-    const interrupted = makeFakeCamera({
-      id: 'camera-1',
-      displayName: 'Salon',
-      privacyStrategy: 'ptz_parking',
-      ptzSupported: true,
-      privacyMiss: 'unconfirmed',
-      privacyMissDetail: 'privacy off, ptz_parking: interrupted before the camera answered',
-    })
-    await installFakeBackend(page, createFakeBackendState({ cameras: [interrupted] }))
+    await installFakeBackend(page, createFakeBackendState({ cameras: [parked] }))
 
     await page.goto('/settings/cameras/camera-1/privacy')
-    await expect(page.getByText('La caméra n’a peut-être pas repris sa position')).toBeVisible()
-    await page.getByRole('button', { name: 'Réessayer' }).click()
 
-    await expect(page.getByText('La caméra a suivi.')).toBeVisible()
-    await expect(page.getByText('La caméra n’a peut-être pas repris sa position')).toHaveCount(0)
+    // A state no act caused lasts in the bar; the page itself carries no warning row.
+    const alerts = page.getByRole('list', { name: 'Alertes' })
+    await expect(alerts.getByText('Salon : la caméra ne s’est pas tournée')).toBeVisible()
+    await expect(page.getByText(/ne s’est pas tournée/)).toHaveCount(1)
+    await alerts.getByRole('link', { name: /Salon : la caméra ne s’est pas tournée/ }).click()
+    await expect(page).toHaveURL(/\/cameras\/camera-1$/)
   })
 })

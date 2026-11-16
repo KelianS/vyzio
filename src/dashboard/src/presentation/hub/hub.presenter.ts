@@ -1,15 +1,14 @@
 import { toastError } from '../../common/errors/app_error'
 import { toAppError } from '../../common/errors/to_app_error'
-import type { ToastTone } from '../../common/components/toast'
+import type { Toast } from '../../common/components/toast'
 import type { ChosenEnd } from '../../domain/entities/chosen_end.entity'
 import type { Silence } from '../../domain/entities/silence.entity'
-import { useRootStore } from '../../infrastructure/store/root.store'
 import type { CamerasContainer } from '../../infrastructure/providers/cameras.container'
 import type { HubContainer } from '../../infrastructure/providers/hub.container'
 import type { NotificationsContainer } from '../../infrastructure/providers/notifications.container'
 import { reloadCameraList } from '../cameras/camera_list_reload'
 import type { HubAction } from './hub.actions'
-import { setCamerasPrivacy } from './privacy_toggle'
+import { actOnPrivacy, setCamerasPrivacy } from './privacy_toggle'
 
 /** The Détections tile counts a time window, never what the user has seen (UI-32). */
 const RECENT_WINDOW_MS = 60 * 60 * 1000
@@ -21,7 +20,7 @@ export interface HubPresenterContext {
   camerasContainer: CamerasContainer
   notificationsContainer: NotificationsContainer
   dispatch: (action: HubAction) => void
-  toast: (message: string, tone?: ToastTone, diagnostic?: string) => void
+  toast: Toast
   now?: () => Date
 }
 
@@ -107,15 +106,10 @@ export function buildHubPresenter({
     /** Every camera, until the end picked in the sheet; the cards say the result (PRIV-22). */
     async onCutCameras(cameraIds: readonly string[], end: ChosenEnd): Promise<void> {
       dispatch({ type: 'PRIVACY_STARTED', cameraIds })
-      try {
-        await container.cutCameras.execute(end)
-      } catch (e) {
-        reportFailure(e)
-      } finally {
-        // A cut that stopped part way has still cut the cameras before the failing one.
-        await useRootStore.getState().loadCameras(camerasContainer.getCameras)
-        dispatch({ type: 'PRIVACY_FINISHED', cameraIds })
-      }
+      await actOnPrivacy(camerasContainer, toast, cameraIds, () =>
+        container.cutCameras.execute(end),
+      )
+      dispatch({ type: 'PRIVACY_FINISHED', cameraIds })
     },
 
     /** A cut's end has come: the scheduler resumed the cameras, the cards follow without a reload. */

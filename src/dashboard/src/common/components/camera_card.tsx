@@ -1,7 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
-import { ChevronRight, Eye, EyeOff, TriangleAlert, WifiOff } from 'lucide-react'
-import { privacyMissLabel } from '../privacy/privacy_status'
+import { ChevronRight, Eye, EyeOff, WifiOff } from 'lucide-react'
 import { cn } from '../ui/utils'
 import { liveFrameUrl, liveWaitMessage } from './live_frame'
 import { LiveWaitVeil } from './live_wait_veil'
@@ -47,7 +46,6 @@ export function CameraCard({
   const unwatched = surveillanceEntryOf(camera) !== SurveillanceEntry.Watched
   const cut = camera.privacyModeActive
   const live = !cut && !unwatched && !deviceOffline
-  const missLabel = privacyMissLabel(camera)
   const name = camera.displayName
 
   const frame = cn(
@@ -76,7 +74,7 @@ export function CameraCard({
   const to = unwatched ? `/settings/cameras/${camera.id}` : liveTo
 
   return (
-    // The card's one link covers it whole; the eye and the miss line sit above it.
+    // The card's one link covers it whole; the eye sits above it.
     <article className="relative flex flex-col overflow-hidden rounded-card bg-card text-card-foreground">
       <PressableSurface>
         <Link
@@ -133,17 +131,6 @@ export function CameraCard({
           </button>
         </PressableControl>
       </div>
-
-      {/* A camera that did not follow says so on its card; its privacy screen says why (PRIV-05). */}
-      {missLabel && (
-        <Link
-          to={`/settings/cameras/${camera.id}/privacy`}
-          className="relative z-10 flex items-center gap-1.5 px-4 pb-3 text-label text-muted-foreground underline underline-offset-2"
-        >
-          <TriangleAlert className="size-3.5 shrink-0" aria-hidden="true" />
-          {missLabel}
-        </Link>
-      )}
     </article>
   )
 }

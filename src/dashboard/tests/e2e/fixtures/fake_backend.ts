@@ -350,6 +350,8 @@ export interface FakeBackendState {
   /** Saved settings that surveillance has not picked up yet (ADR-15). */
   pendingChanges: boolean
   restartFails: boolean
+  /** Set, every camera the user cuts or resumes misses as told, until asked again (PRIV-05). */
+  privacyMissOnToggle?: { miss: string; detail: string }
   /** The API itself breaks on the restart, instead of reporting a restart that did not take. */
   restartBreaks: boolean
   scheduleRules: FakeScheduleRule[]
@@ -937,7 +939,15 @@ export async function installFakeBackend(
       const ids = (postData?.cameraIds as string[]) ?? []
       const active = Boolean(postData?.active)
       state.cameras = state.cameras.map((c) =>
-        ids.includes(c.id) ? { ...c, privacyModeActive: active, privacyCutUntil: null } : c,
+        ids.includes(c.id)
+          ? {
+              ...c,
+              privacyModeActive: active,
+              privacyCutUntil: null,
+              privacyMiss: state.privacyMissOnToggle?.miss ?? null,
+              privacyMissDetail: state.privacyMissOnToggle?.detail ?? null,
+            }
+          : c,
       )
       return json(
         route,

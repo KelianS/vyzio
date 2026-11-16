@@ -1,4 +1,4 @@
-import type { ToastTone } from '../../common/components/toast'
+import type { Toast } from '../../common/components/toast'
 import { ApiErrorCode, toastError } from '../../common/errors/app_error'
 import { toAppError } from '../../common/errors/to_app_error'
 import { latestOnly } from '../../common/presenter/latest_only'
@@ -23,7 +23,7 @@ export interface LiveViewPresenterContext {
   container: CamerasContainer
   history: DetectionHistoryContainer
   dispatch: (action: LiveViewAction) => void
-  toast: (message: string, tone?: ToastTone, diagnostic?: string) => void
+  toast: Toast
 }
 
 interface Hold {

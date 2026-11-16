@@ -1,7 +1,7 @@
-import { EyeOff, Lock, TriangleAlert } from 'lucide-react'
+import { EyeOff, Lock } from 'lucide-react'
 import type { PrivacyBadgeKind } from './privacy_status'
 
-/** One drawing per privacy state, shared by the badge and the tile. */
+/** One drawing per privacy state the camera confirmed (PRIV-04). */
 export function PrivacyStateIcon({
   kind,
   className,
@@ -12,8 +12,6 @@ export function PrivacyStateIcon({
   switch (kind) {
     case 'cut':
       return <Lock className={className} aria-hidden="true" />
-    case 'missed':
-      return <TriangleAlert className={className} aria-hidden="true" />
     case 'off':
       return <EyeOff className={className} aria-hidden="true" />
     default: {

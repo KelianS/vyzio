@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { makeCamera } from '../../testing/camera_fixture'
 import type { SystemStats } from '../../domain/entities/system_stats.entity'
+import { PrivacyMiss, PrivacyStrategy } from '../../domain/entities/camera.entity'
 import { barAlerts, formatSince, stillDismissed, trackFirstSeen } from './bar_alerts'
 
 function stats(overrides: Partial<SystemStats> = {}): SystemStats {
@@ -14,7 +15,23 @@ function stats(overrides: Partial<SystemStats> = {}): SystemStats {
   }
 }
 
-const QUIET = { cameras: [], systemStats: stats(), hubLost: false, restartFailed: false }
+const QUIET = {
+  cameras: [],
+  systemStats: stats(),
+  hubLost: false,
+  restartFailed: false,
+  privacyActing: [],
+  privacyMissesTold: [],
+}
+
+const MISSED = {
+  id: 'c-3',
+  displayName: 'Salon',
+  privacyModeActive: true,
+  privacyModeSource: 'schedule' as const,
+  privacyStrategy: PrivacyStrategy.PtzParking,
+  privacyMiss: PrivacyMiss.CameraFailed,
+}
 
 describe('barAlerts', () => {
   it('barAlerts_ShouldRaiseNothing_WhenAllIsWell', () => {
@@ -42,6 +59,73 @@ describe('barAlerts', () => {
         dismissible: true,
       },
     ])
+  })
+
+  it('barAlerts_ShouldNameTheCameraAndTheConsequence_WhenARangeCutItAndItDidNotFollow', () => {
+    // Arrange
+    const cameras = [makeCamera(MISSED)]
+
+    // Act
+    const alerts = barAlerts({ ...QUIET, cameras })
+
+    // Assert
+    expect(alerts).toEqual([
+      {
+        key: 'privacy-miss:c-3:on:camera_failed',
+        title: 'Salon : la caméra ne s’est pas tournée',
+        detail: 'Enregistrement désactivé',
+        to: '/cameras/c-3',
+        dismissible: true,
+      },
+    ])
+  })
+
+  it('barAlerts_ShouldSayWhatIsMissing_WhenARangeCouldNotTurnTheCamera', () => {
+    // Arrange
+    const cameras = [makeCamera({ ...MISSED, privacyMiss: PrivacyMiss.PositionMissing })]
+
+    // Act
+    const [alert] = barAlerts({ ...QUIET, cameras })
+
+    // Assert
+    expect(alert.detail).toBe('Sa position Parking n’est pas enregistrée')
+  })
+
+  it('barAlerts_ShouldLeaveTheMissOut_WhenAToastAlreadyToldIt', () => {
+    // Arrange
+    const cameras = [makeCamera(MISSED)]
+
+    // Act
+    const alerts = barAlerts({
+      ...QUIET,
+      cameras,
+      privacyMissesTold: ['privacy-miss:c-3:on:camera_failed'],
+    })
+
+    // Assert
+    expect(alerts).toEqual([])
+  })
+
+  it('barAlerts_ShouldLeaveTheMissToTheAct_WhenTheUserIsCuttingTheCamera', () => {
+    // Arrange
+    const cameras = [makeCamera(MISSED)]
+
+    // Act
+    const alerts = barAlerts({ ...QUIET, cameras, privacyActing: ['c-3'] })
+
+    // Assert
+    expect(alerts).toEqual([])
+  })
+
+  it('barAlerts_ShouldOnlySayTheCameraIsOffline_WhenAnOfflineCameraDidNotFollow', () => {
+    // Arrange
+    const cameras = [makeCamera({ ...MISSED, status: 'offline' })]
+
+    // Act
+    const alerts = barAlerts({ ...QUIET, cameras })
+
+    // Assert
+    expect(alerts.map((alert) => alert.title)).toEqual(['Salon ne répond plus'])
   })
 
   it('barAlerts_ShouldStayQuiet_WhenTheOfflineCameraIsStillToSetUp', () => {
@@ -101,7 +185,7 @@ describe('barAlerts', () => {
     const cameras = [makeCamera({ status: 'offline' })]
 
     // Act
-    const alerts = barAlerts({ cameras, systemStats: stats(), hubLost: true, restartFailed: true })
+    const alerts = barAlerts({ ...QUIET, cameras, hubLost: true, restartFailed: true })
 
     // Assert
     expect(alerts).toEqual([

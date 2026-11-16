@@ -29,13 +29,24 @@ export function AppShell() {
   const systemStats = useRootStore((s) => s.systemStats)
   const hubLost = useRootStore((s) => s.hubLost)
   const restartFailed = useRootStore((s) => s.restartFailure !== null)
+  const privacyActing = useRootStore((s) => s.privacyActing)
+  const privacyMissesTold = useRootStore((s) => s.privacyMissesTold)
 
   return (
     <TopBar
       home={pathname === '/'}
       below={
         <>
-          <BarAlertList alerts={barAlerts({ cameras, systemStats, hubLost, restartFailed })} />
+          <BarAlertList
+            alerts={barAlerts({
+              cameras,
+              systemStats,
+              hubLost,
+              restartFailed,
+              privacyActing,
+              privacyMissesTold,
+            })}
+          />
           {/* The restart is asked for from the settings only (UI-28). */}
           {isSettingsPath(pathname) && <RestartSurveillanceTrigger />}
         </>

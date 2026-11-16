@@ -1,4 +1,5 @@
 import { SurveillanceEntry, surveillanceEntryOf } from '../../common/camera/camera_status'
+import { privacyMissNotice } from '../../common/privacy/privacy_status'
 import { isStorageCritical } from '../../common/surveillance/storage'
 import { CameraState, type Camera } from '../../domain/entities/camera.entity'
 import type { SystemStats } from '../../domain/entities/system_stats.entity'
@@ -23,6 +24,10 @@ interface BarAlertFacts {
   readonly systemStats: SystemStats | null
   readonly hubLost: boolean
   readonly restartFailed: boolean
+  /** Cameras the user is cutting or resuming right now: their act tells its own miss. */
+  readonly privacyActing: readonly string[]
+  /** Misses a toast already told this session. */
+  readonly privacyMissesTold: readonly string[]
 }
 
 /** What the bar carries, from the state every screen already reads (UI-30). */
@@ -31,6 +36,8 @@ export function barAlerts({
   systemStats,
   hubLost,
   restartFailed,
+  privacyActing,
+  privacyMissesTold,
 }: BarAlertFacts): BarAlert[] {
   // Out of reach, every other fact is stale: only the loss is certain.
   if (hubLost)
@@ -56,6 +63,27 @@ export function barAlerts({
       to: liveViewPath(camera.id),
       dismissible: true,
     }))
+
+  // A miss no act of the user caused: a range or a restart asked the camera (PRIV-05).
+  for (const camera of cameras) {
+    const notice = privacyMissNotice(camera)
+    if (!notice || privacyActing.includes(camera.id) || privacyMissesTold.includes(notice.key))
+      continue
+    alerts.push({
+      key: notice.key,
+      title: notice.title,
+      detail: notice.missing
+        ? `${notice.missing.charAt(0).toUpperCase()}${notice.missing.slice(1)}`
+        : camera.privacyModeActive
+          ? 'Enregistrement désactivé'
+          : 'Enregistrement repris',
+      to:
+        surveillanceEntryOf(camera) === SurveillanceEntry.Watched
+          ? liveViewPath(camera.id)
+          : `/settings/cameras/${camera.id}`,
+      dismissible: true,
+    })
+  }
 
   const engine = systemStats?.status
   switch (engine) {
