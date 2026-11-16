@@ -5,7 +5,6 @@ import { AppContainerProvider } from './infrastructure/providers/app_container.c
 import { OWN_HEADER } from './presentation/settings/settings.rubrics'
 import { AccessGate } from './presentation/access/access_gate.component'
 import { AppShell } from './presentation/shell/app_shell.component'
-import { FULL_SCREEN } from './presentation/shell/app_shell.handle'
 import { LIVE_VIEW_ROUTE } from './presentation/live_view/live_view.route'
 import { CAMERA_WALL_ROUTE } from './presentation/camera_wall/camera_wall.route'
 
@@ -152,8 +151,8 @@ const router = createBrowserRouter([
       { path: '/', element: <HubView /> },
       { path: CAMERA_WALL_ROUTE, element: <CameraWallView /> },
       { path: '/detections', element: <DetectionHistoryView /> },
-      // A screen of its own, without the header: the picture takes the whole viewport (LIVE-19).
-      { path: LIVE_VIEW_ROUTE, element: <LiveViewScreen />, handle: FULL_SCREEN },
+      // A screen of its own, never a layer over a page (LIVE-19).
+      { path: LIVE_VIEW_ROUTE, element: <LiveViewScreen /> },
 
       // Settings - a two-level tree (UI-25). The route carries the selection: it,
       // and not a screen-held state, is what says where one is.

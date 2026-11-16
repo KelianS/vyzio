@@ -31,7 +31,8 @@ export interface DetectionHistoryUido {
   clipGoneEventId: string | null
 }
 
-export function buildInitialDetectionHistoryUido(): DetectionHistoryUido {
+/** `camera`: the camera the page opens filtered on, from a camera view's « Toutes ses détections ». */
+export function buildInitialDetectionHistoryUido(camera = ''): DetectionHistoryUido {
   return {
     items: [],
     nextCursor: null,
@@ -44,7 +45,7 @@ export function buildInitialDetectionHistoryUido(): DetectionHistoryUido {
     media: null,
     filtersOpen: false,
 
-    filterCamera: '',
+    filterCamera: camera,
     filterLabel: '',
     filterProfileId: '',
     filterFrom: '',

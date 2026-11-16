@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { RefreshCw } from 'lucide-react'
+import { ImageOff, RefreshCw } from 'lucide-react'
 import { cn } from '../ui/utils'
 import { PressableControl } from './pressable'
 
@@ -14,10 +14,17 @@ interface DetectionThumbnailProps {
   /** Empty when the thumbnail sits beside a label that already says what it is. */
   alt?: string
   className?: string
+  /** False inside a row that is itself pressed: the row stays the one control, and a failed preview shows its sign. */
+  retryable?: boolean
 }
 
 /** The preview of a detection: never a broken image, never a final failure without recourse. */
-export function DetectionThumbnail({ src, alt = '', className }: DetectionThumbnailProps) {
+export function DetectionThumbnail({
+  src,
+  alt = '',
+  className,
+  retryable = true,
+}: DetectionThumbnailProps) {
   const [attempt, setAttempt] = useState(0)
   const [phase, setPhase] = useState<Phase>('loading')
 
@@ -71,7 +78,11 @@ export function DetectionThumbnail({ src, alt = '', className }: DetectionThumbn
         />
       )}
 
-      {phase === 'failed' && (
+      {phase === 'failed' && !retryable && (
+        <ImageOff className="size-5 text-muted-foreground" aria-hidden="true" />
+      )}
+
+      {phase === 'failed' && retryable && (
         <PressableControl>
           <button
             type="button"

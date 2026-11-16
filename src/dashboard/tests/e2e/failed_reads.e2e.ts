@@ -125,7 +125,7 @@ test.describe('Failed reads', () => {
     await page.unroute('**/api/cameras/camera-1/ptz/presets')
     await page.getByRole('button', { name: 'Réessayer' }).click()
 
-    await expect(page.getByTitle('Enregistrer la position actuelle ici')).toHaveCount(4)
+    await expect(page.getByTitle('Enregistrer la position actuelle ici')).toHaveCount(1)
   })
 
   test('ReadFailure_ShouldShowTheList_WhenRetriedOnceTheServerAnswers', async ({ page }) => {

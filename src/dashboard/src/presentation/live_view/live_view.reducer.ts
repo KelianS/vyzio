@@ -72,5 +72,31 @@ export function liveViewReducer(state: LiveViewUido, action: LiveViewAction): Li
       return { ...state, overridePresetId: action.presetId }
     case 'OVERRIDE_CLOSED':
       return { ...state, overridePresetId: null }
+
+    // A retry hides the failure while the list is read again, without showing it empty.
+    case 'CLIPS_STARTED':
+      return { ...state, clipsError: null }
+    case 'CLIPS_LOADED':
+      return {
+        ...state,
+        clips: action.clips,
+        clipLabels: action.labels,
+        clipsRecent: action.recent,
+        clipsError: null,
+      }
+    // Unread is not empty: the list gives way to the failure.
+    case 'CLIPS_FAILED':
+      return { ...state, clips: null, clipsError: action.error }
+    case 'CLIP_PLAYED':
+      return { ...state, playingId: action.eventId }
+    case 'LIVE_RESUMED':
+      return { ...state, playingId: null }
+    case 'CLIP_GONE':
+      return { ...state, clipGoneId: action.eventId }
+
+    case 'PRIVACY_STARTED':
+      return { ...state, privacyBusy: true }
+    case 'PRIVACY_FINISHED':
+      return { ...state, privacyBusy: false }
   }
 }

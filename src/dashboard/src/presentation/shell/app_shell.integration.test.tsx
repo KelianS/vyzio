@@ -12,7 +12,6 @@ import { ToastProvider } from '../../common/components/toast'
 import { PageHeader } from '../../common/components/page_header'
 import type { SystemStats } from '../../domain/entities/system_stats.entity'
 import { AppShell } from './app_shell.component'
-import { FULL_SCREEN } from './app_shell.handle'
 
 function stats(overrides: Partial<SystemStats> = {}): SystemStats {
   return {
@@ -42,7 +41,6 @@ function openShellAt(...entries: string[]) {
           { path: '/', element: <p>Accueil</p> },
           { path: '/detections', element: <PageHeader title="Détections" /> },
           { path: '/settings', element: <PageHeader title="Réglages" /> },
-          { path: '/direct', element: <p>Image</p>, handle: FULL_SCREEN },
         ],
       },
     ],
@@ -191,17 +189,5 @@ describe('AppShell', () => {
     // Assert
     const alerts = await screen.findByRole('list', { name: 'Alertes' })
     expect(within(alerts).getByText('Vyzio ne répond plus')).toBeVisible()
-  })
-
-  it('AppShell_ShouldDrawNoBar_WhenTheScreenTakesTheWholeViewport', async () => {
-    // Arrange
-    fakeNetwork({ 'GET /api/cameras': ok([]), 'GET /api/system/stats': ok(null) })
-
-    // Act
-    openShellAt('/direct')
-
-    // Assert
-    expect(await screen.findByText('Image')).toBeInTheDocument()
-    expect(screen.queryByRole('banner')).not.toBeInTheDocument()
   })
 })

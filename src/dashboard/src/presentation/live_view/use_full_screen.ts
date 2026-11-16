@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 
 // The whole document, not the screen alone: the confirmations and toasts it opens live outside it.
 function supported(): boolean {
@@ -6,11 +6,6 @@ function supported(): boolean {
     document.fullscreenEnabled === true &&
     typeof document.documentElement.requestFullscreen === 'function'
   )
-}
-
-function subscribe(onChange: () => void) {
-  document.addEventListener('fullscreenchange', onChange)
-  return () => document.removeEventListener('fullscreenchange', onChange)
 }
 
 function isActive(): boolean {
@@ -22,11 +17,18 @@ function leave() {
   if (isActive()) document.exitFullscreen().catch(() => undefined)
 }
 
-/** Asks the browser to hide its bars while `wanted`, on the first gesture or from a button (LIVE-10). */
-export function useFullScreen(wanted: boolean) {
-  const active = useSyncExternalStore(subscribe, isActive)
+/**
+ * Asks the browser to hide its bars while `wanted`, on the first gesture or from a button (LIVE-10);
+ * `onLeft` hears the browser giving them back on its own (LIVE-15).
+ */
+export function useFullScreen(wanted: boolean, onLeft: () => void) {
   const asked = useRef(false)
   const mounted = useRef(true)
+  const left = useRef(onLeft)
+
+  useEffect(() => {
+    left.current = onLeft
+  }, [onLeft])
 
   useEffect(() => {
     asked.current = false
@@ -35,13 +37,19 @@ export function useFullScreen(wanted: boolean) {
 
   useEffect(() => {
     mounted.current = true
+    const onChange = () => {
+      if (!isActive()) left.current()
+    }
+    document.addEventListener('fullscreenchange', onChange)
     return () => {
       mounted.current = false
+      document.removeEventListener('fullscreenchange', onChange)
       leave()
     }
   }, [])
 
   const enter = useCallback(() => {
+    if (!supported()) return
     asked.current = true
     document.documentElement
       .requestFullscreen()
@@ -49,19 +57,14 @@ export function useFullScreen(wanted: boolean) {
       .then(() => {
         if (!mounted.current) leave()
       })
-      // Refused when the browser does not count the gesture: the button stays offered.
+      // Refused when the browser does not count the gesture: the picture still fills the page.
       .catch(() => undefined)
   }, [])
 
-  const offered = wanted && !active && supported()
-
   return {
-    offered,
     enter,
-    /** Leaving is offered only while the browser hides its bars. */
-    leave: active ? leave : undefined,
     onGesture: () => {
-      if (offered && !asked.current) enter()
+      if (wanted && !asked.current && !isActive()) enter()
     },
   }
 }

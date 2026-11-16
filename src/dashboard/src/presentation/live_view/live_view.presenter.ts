@@ -5,17 +5,24 @@ import { latestOnly } from '../../common/presenter/latest_only'
 import type { LiveQuality } from '../../domain/entities/camera.entity'
 import type { LivePlayback } from '../../domain/entities/live_playback.entity'
 import type { CamerasContainer } from '../../infrastructure/providers/cameras.container'
+import type { DetectionHistoryContainer } from '../../infrastructure/providers/detection_history.container'
+import { explainVideoFailure } from '../../common/detection/explain_video_failure'
+import { setCamerasPrivacy } from '../hub/privacy_toggle'
 import type { LiveViewAction } from './live_view.actions'
 import type { PtzDirection } from './live_view.uido'
 
 // Well within the few seconds after which the server stops a hold it no longer hears about (ADR-09).
 const HOLD_SIGNAL_MS = 1000
 const MOVE_SPEED = 50
+// The clips the Détections tab lists: the page of all of them is one tap away (LIVE-20).
+const CLIPS_SHOWN = 20
+const HOUR_MS = 60 * 60 * 1000
 // A native preset move goes on after the camera acknowledges it: capture once a full move has had time to end (ADR-09).
 const CAPTURE_DELAY_MS = 6000
 
 export interface LiveViewPresenterContext {
   container: CamerasContainer
+  history: DetectionHistoryContainer
   dispatch: (action: LiveViewAction) => void
   toast: (message: string, tone?: ToastTone, diagnostic?: string) => void
 }
@@ -25,8 +32,14 @@ interface Hold {
   signal: ReturnType<typeof setInterval> | null
 }
 
-export function buildLiveViewPresenter({ container, dispatch, toast }: LiveViewPresenterContext) {
+export function buildLiveViewPresenter({
+  container,
+  history,
+  dispatch,
+  toast,
+}: LiveViewPresenterContext) {
   const nextPresetsRead = latestOnly()
+  const nextClipsRead = latestOnly()
 
   let hold: Hold | null = null
   // A press sends up to three calls: a failure is shown once per press, not once per call.
@@ -194,6 +207,49 @@ export function buildLiveViewPresenter({ container, dispatch, toast }: LiveViewP
     async onConfirmOverride(cameraId: string, presetId: number, label: string) {
       await save(cameraId, presetId, label)
       dispatch({ type: 'OVERRIDE_CLOSED' })
+    },
+
+    // Moving to another camera keeps the view mounted: only the latest read may answer.
+    onOpenClips(camera: string) {
+      const isLatest = nextClipsRead()
+      dispatch({ type: 'CLIPS_STARTED' })
+      Promise.all([
+        history.getDetectionHistory.execute({ camera, limit: CLIPS_SHOWN }),
+        history.getCameraLabels.execute(),
+      ])
+        .then(([page, labels]) => {
+          const recent = page.items.some(
+            (clip) => Date.now() - Date.parse(clip.occurredAt) < HOUR_MS,
+          )
+          if (isLatest()) dispatch({ type: 'CLIPS_LOADED', clips: page.items, labels, recent })
+        })
+        .catch((e: unknown) => {
+          if (isLatest()) dispatch({ type: 'CLIPS_FAILED', error: toAppError(e) })
+        })
+    },
+
+    onPlayClip(eventId: string) {
+      dispatch({ type: 'CLIP_PLAYED', eventId })
+    },
+
+    onBackToLive() {
+      dispatch({ type: 'LIVE_RESUMED' })
+    },
+
+    onClipFailed(eventId: string) {
+      return explainVideoFailure(
+        history.checkDetectionClip,
+        eventId,
+        () => dispatch({ type: 'CLIP_GONE', eventId }),
+        toast,
+      )
+    },
+
+    // No confirmation (PRIV-21): the view's own change is the answer.
+    async onSetPrivacy(cameraId: string, active: boolean) {
+      dispatch({ type: 'PRIVACY_STARTED' })
+      await setCamerasPrivacy(container, toast, [cameraId], active)
+      dispatch({ type: 'PRIVACY_FINISHED' })
     },
 
     async onCalibrate(cameraId: string) {

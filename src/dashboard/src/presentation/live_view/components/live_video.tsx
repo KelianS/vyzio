@@ -12,7 +12,6 @@ import {
 } from '../../../domain/entities/live_playback.entity'
 import type { FrigateStatus } from '../../../domain/entities/system_stats.entity'
 import { CAMERA_REMOVED, PRIVACY_STOPS_LIVE } from '../live_view.formatters'
-import { BAR_ABOVE, type LiveLayout } from '../live_layout'
 import { LiveImage } from './live_image'
 import { LIVE_CONTROL } from './live_control'
 import { PressableControl } from '../../../common/components/pressable'
@@ -144,22 +143,21 @@ function failureOf(playback: LivePlayback): { failure: LiveFailure; diagnostic: 
   }
 }
 
-// Landscape keeps the bottom for the positions: the reason goes under the bar, never faded.
-const NOTICE_PLACE: Record<LiveLayout, string> = {
-  portrait: 'inset-x-2 bottom-2',
-  landscape:
-    'top-16 left-[max(0.5rem,env(safe-area-inset-left))] max-w-md right-[max(0.5rem,env(safe-area-inset-right))]',
-  wide: 'inset-x-4 bottom-4 mx-auto max-w-2xl',
+// Upright the picture's controls hold its bottom; full screen keeps it for the positions and the pad.
+function noticePlace(immersive: boolean): string {
+  return immersive
+    ? 'top-18 left-[max(1rem,env(safe-area-inset-left))] max-w-md right-[max(1rem,env(safe-area-inset-right))]'
+    : 'inset-x-2 top-2'
 }
 
 /** The card that says why the picture does not play, with its way out. */
 function Notice({
-  layout,
+  immersive,
   sentence,
   diagnostic,
   children,
 }: {
-  layout: LiveLayout
+  immersive: boolean
   sentence: string
   diagnostic: string
   children?: ReactNode
@@ -168,7 +166,7 @@ function Notice({
     <div
       className={cn(
         'absolute flex items-start justify-between gap-3 rounded-card bg-card p-3 text-body text-card-foreground',
-        NOTICE_PLACE[layout],
+        noticePlace(immersive),
       )}
     >
       <div>
@@ -180,7 +178,7 @@ function Notice({
   )
 }
 
-/** The live video (ADR-07), filling its frame; its quality and sound go in the bar laid over it. */
+/** The live video (ADR-07) in its frame, the screen's controls laid over it, handed its quality and sound. */
 export function LiveVideo({
   cameraId,
   apiBaseUrl,
@@ -189,8 +187,8 @@ export function LiveVideo({
   quality,
   qualities,
   soundOn,
-  layout,
-  bar,
+  immersive,
+  overlay,
   onOpen,
   onChooseQuality,
   onToggleSound,
@@ -202,9 +200,10 @@ export function LiveVideo({
   quality: LiveQuality
   qualities: LiveQuality[]
   soundOn: boolean
-  layout: LiveLayout
-  /** The bar over the picture, handed the picture's own controls while it plays. */
-  bar: (controls: ReactNode) => ReactNode
+  /** Edge to edge rather than in the page, upright, in the stream's own shape (LIVE-14). */
+  immersive: boolean
+  /** What the screen lays over the picture, handed the picture's own controls while it plays. */
+  overlay: (controls: ReactNode) => ReactNode
   onOpen: (
     video: HTMLVideoElement,
     cameraId: string,
@@ -222,7 +221,7 @@ export function LiveVideo({
   })
   const { playback, lost } = watched
   const [attempt, setAttempt] = useState(0)
-  // The stream's own shape, once known: held upright, the frame takes it so the picture goes edge to edge.
+  // The stream's own shape, once known: in the page, the frame takes it so the picture fills the width.
   const [ratio, setRatio] = useState<string | null>(null)
 
   useEffect(() => {
@@ -278,13 +277,13 @@ export function LiveVideo({
     </PressableControl>
   )
 
-  const overlay = () => {
+  const veil = () => {
     if (lost) {
       const restarting = liveWaitMessage(frigateStatus, false)
       return restarting ? (
         <LiveWaitVeil message={restarting} />
       ) : (
-        <Notice layout={layout} sentence={CAMERA_LOST} diagnostic={lost.diagnostic} />
+        <Notice immersive={immersive} sentence={CAMERA_LOST} diagnostic={lost.diagnostic} />
       )
     }
     switch (playback.kind) {
@@ -313,7 +312,7 @@ export function LiveVideo({
             aria-label={soundOn ? 'Couper le son' : 'Activer le son'}
             onClick={onToggleSound}
           >
-            {soundOn ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
+            {soundOn ? <Volume2 className="size-5" /> : <VolumeX className="size-5" />}
           </button>
         </PressableControl>
       )}
@@ -334,7 +333,7 @@ export function LiveVideo({
         playsInline
         className={cn('block size-full object-contain', (!playing || failed) && 'invisible')}
       />
-      {overlay()}
+      {veil()}
       {failed && shown && (
         <>
           {shown.frame && (
@@ -345,7 +344,7 @@ export function LiveVideo({
               frigateStatus={frigateStatus}
             />
           )}
-          <Notice layout={layout} sentence={shown.sentence} diagnostic={failed.diagnostic}>
+          <Notice immersive={immersive} sentence={shown.sentence} diagnostic={failed.diagnostic}>
             {MAY_PASS[failed.failure] && (
               <SecondaryButton icon={RotateCw} size="sm" onClick={() => setAttempt((n) => n + 1)}>
                 Réessayer
@@ -358,22 +357,17 @@ export function LiveVideo({
     </>
   )
 
-  const above = BAR_ABOVE[layout]
-
-  // One tree for every layout: the video element the stream is attached to survives a turn.
+  // One tree in both framings: the video element the stream is attached to survives a turn.
   return (
-    <div className={above ? 'flex flex-col' : 'size-full'}>
-      {above && bar(controls)}
-      <div
-        className={cn(
-          'relative overflow-hidden bg-picture',
-          above ? 'aspect-video w-full' : 'size-full',
-        )}
-        style={above && ratio ? { aspectRatio: ratio } : undefined}
-      >
-        {media}
-        {!above && bar(controls)}
-      </div>
+    <div
+      className={cn(
+        'relative overflow-hidden bg-picture',
+        immersive ? 'size-full' : 'aspect-video w-full rounded-card',
+      )}
+      style={!immersive && ratio ? { aspectRatio: ratio } : undefined}
+    >
+      {media}
+      {overlay(controls)}
     </div>
   )
 }

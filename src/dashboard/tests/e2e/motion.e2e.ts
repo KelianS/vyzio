@@ -98,7 +98,7 @@ test.describe('Press feedback', () => {
   test('LiveControl_ShouldShrinkSlightly_WhenItIsPressed', async ({ page }) => {
     await page.goto('/cameras/camera-1')
 
-    expect(await pressed(page.getByRole('button', { name: 'Retour' }))).toEqual({
+    expect(await pressed(page.getByRole('button', { name: 'Plein écran' }))).toEqual({
       scale: '0.97',
       opacity: '1',
     })
@@ -275,7 +275,7 @@ test.describe('Press feedback on every kind of control', () => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
     await page.goto('/cameras/camera-1')
 
-    expect(await pressed(page.getByRole('button', { name: 'Retour' }))).toEqual({
+    expect(await pressed(page.getByRole('button', { name: 'Plein écran' }))).toEqual({
       scale: 'none',
       opacity: '0.8',
     })

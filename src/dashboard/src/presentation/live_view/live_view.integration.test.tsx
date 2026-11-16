@@ -3,17 +3,17 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import userEvent from '@testing-library/user-event'
 import type { PtzPreset } from '../../domain/entities/ptz_preset.entity'
+import type { DetectionEvent } from '../../domain/entities/detection_event.entity'
 import { failure, fakeNetwork, late, ok } from '../../testing/fake_network'
 import { renderScreen } from '../../testing/render_screen'
 import { FakeSocket, stubBrowserMse } from '../../testing/fake_mse'
-import type { LiveQuality } from '../../domain/entities/camera.entity'
+import type { Camera, LiveQuality } from '../../domain/entities/camera.entity'
 import { LiveView, LiveViewScreen } from './live_view.component'
 import { makeCamera } from '../../testing/camera_fixture'
 import { useRootStore } from '../../infrastructure/store/root.store'
 import { AppContainerProvider } from '../../infrastructure/providers/app_container.context'
 import { ToastProvider } from '../../common/components/toast'
 import { AppShell } from '../shell/app_shell.component'
-import { FULL_SCREEN } from '../shell/app_shell.handle'
 import { LIVE_VIEW_ROUTE } from './live_view.route'
 import { OrientationControl } from '../../common/orientation/orientation_control'
 
@@ -87,15 +87,19 @@ async function sentWithin(network: ReturnType<typeof fakeNetwork>, route: string
   })
 }
 
+// What the camera's Orientation is: switched off, in use but unverified, or verified (PTZ-19).
+const ORIENTATION_FACTS: Record<OrientationControl, Partial<Camera>> = {
+  off: { ptzSupported: false },
+  unusable: { ptzSupported: true, verifiedCapabilities: [] },
+  usable: { ptzSupported: true, verifiedCapabilities: ['ptz'] },
+}
+
+function cameraWith(orientation: OrientationControl, qualities: LiveQuality[] = ['low']): Camera {
+  return makeCamera({ ...ORIENTATION_FACTS[orientation], liveQualities: qualities })
+}
+
 function renderLiveView() {
-  return renderScreen(
-    <LiveView
-      cameraId="camera-1"
-      label="Front Door"
-      orientation={OrientationControl.Usable}
-      qualities={['low']}
-    />,
-  )
+  return renderScreen(<LiveView camera={cameraWith(OrientationControl.Usable)} />)
 }
 
 describe('LiveView', () => {
@@ -108,14 +112,7 @@ describe('LiveView', () => {
     const network = fakeNetwork({})
 
     // Act
-    renderScreen(
-      <LiveView
-        cameraId="camera-1"
-        label="Front Door"
-        orientation={OrientationControl.Unusable}
-        qualities={['low']}
-      />,
-    )
+    renderScreen(<LiveView camera={cameraWith(OrientationControl.Unusable)} />)
 
     // Assert
     expect(
@@ -126,7 +123,7 @@ describe('LiveView', () => {
       '/settings/cameras/camera-1/connection',
     )
     expect(screen.queryByTitle('Haut')).not.toBeInTheDocument()
-    expect(network.sent).toEqual([])
+    expect(network.sent).not.toContainEqual(expect.objectContaining({ route: PRESETS }))
   })
 
   it('LiveView_ShouldShowOnlyThePicture_WhenOrientationIsSwitchedOff', () => {
@@ -134,19 +131,12 @@ describe('LiveView', () => {
     const network = fakeNetwork({})
 
     // Act
-    renderScreen(
-      <LiveView
-        cameraId="camera-1"
-        label="Front Door"
-        orientation={OrientationControl.Off}
-        qualities={['low']}
-      />,
-    )
+    renderScreen(<LiveView camera={cameraWith(OrientationControl.Off)} />)
 
     // Assert
     expect(screen.queryByText(/L’orientation n’est pas disponible/)).not.toBeInTheDocument()
     expect(screen.queryByTitle('Haut')).not.toBeInTheDocument()
-    expect(network.sent).toEqual([])
+    expect(network.sent).not.toContainEqual(expect.objectContaining({ route: PRESETS }))
   })
 
   it('onSave_ShouldSaveTheEmptyPositionAndCaptureIt_WhenTheUserTapsIt', async () => {
@@ -440,7 +430,7 @@ describe('LiveView', () => {
         'Parking (appui : y aller et prendre sa miniature, appui long : redéfinir ici)',
       ),
     ).toBeInTheDocument()
-    expect(screen.getAllByTitle('Enregistrer la position actuelle ici')).toHaveLength(3)
+    expect(screen.getAllByTitle('Enregistrer la position actuelle ici')).toHaveLength(1)
   })
 
   it('onGoTo_ShouldMoveThereAndTakeTheThumbnail_WhenTheUserTapsAHeldSlotWithoutOne', async () => {
@@ -492,6 +482,22 @@ describe('LiveView', () => {
     expect(screen.getByText(/POST \/api\/cameras\/camera-1\/ptz\/move\/start · 502/)).toBeVisible()
   })
 
+  it('PtzPad_ShouldShowTheHeldDirection_WhenAFingerHoldsItUntilRelease', async () => {
+    // Arrange
+    fakeNetwork({ [PRESETS]: presetsRead(), [START]: ok(), [STOP]: ok() })
+    renderLiveView()
+    const up = await screen.findByRole('button', { name: 'Haut' })
+
+    // Act
+    fireEvent.pointerDown(up)
+    const held = up.getAttribute('aria-pressed')
+    fireEvent.pointerUp(up)
+
+    // Assert
+    expect(held).toBe('true')
+    expect(up).toHaveAttribute('aria-pressed', 'false')
+  })
+
   it('onPress_ShouldStartTheMoveAtOnce_WhenTheUserPressesADirection', async () => {
     // Arrange
     const network = fakeNetwork({ [PRESETS]: presetsRead(), [START]: ok() })
@@ -524,10 +530,9 @@ describe('LiveView', () => {
 
     // Assert
     await sentWithin(network, STOP, 300)
-    expect(network.sent.map(({ route }) => route).filter((route) => route !== PRESETS)).toEqual([
-      START,
-      STOP,
-    ])
+    expect(
+      network.sent.map(({ route }) => route).filter((route) => route.includes('/move/')),
+    ).toEqual([START, STOP])
   })
 
   it('onRelease_ShouldStopTheOneMoveOfThePress_WhenTheUserReleasesAHeldDirection', async () => {
@@ -788,14 +793,7 @@ describe('LiveView video', () => {
 
   function renderVideo(qualities: LiveQuality[] = ['low', 'high']) {
     fakeNetwork({})
-    return renderScreen(
-      <LiveView
-        cameraId="camera-1"
-        label="Front Door"
-        orientation={OrientationControl.Off}
-        qualities={qualities}
-      />,
-    )
+    return renderScreen(<LiveView camera={cameraWith(OrientationControl.Off, qualities)} />)
   }
 
   // go2rtc answers with H.264 and AAC, then sends a first segment.
@@ -1004,7 +1002,8 @@ describe('LiveViewScreen', () => {
           ),
           children: [
             { path: '/', element: <p>Accueil</p> },
-            { path: LIVE_VIEW_ROUTE, element: <LiveViewScreen />, handle: FULL_SCREEN },
+            { path: '/detections', element: <p>Toutes les détections</p> },
+            { path: LIVE_VIEW_ROUTE, element: <LiveViewScreen /> },
           ],
         },
       ],
@@ -1024,9 +1023,15 @@ describe('LiveViewScreen', () => {
     // Assert
     expect(await screen.findByRole('main', { name: 'Front Door' })).toBeInTheDocument()
     expect(screen.getByLabelText('Front Door', { selector: 'video' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Front Door' })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'En marche' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Réglages de la caméra' })).toHaveAttribute(
+      'href',
+      '/settings/cameras/camera-1',
+    )
   })
 
-  it('LiveViewScreen_ShouldSayItWithoutPictureNorStream_WhenTheCameraIsInPrivacyMode', async () => {
+  it('LiveViewScreen_ShouldSayItIsCutWithoutPictureNorStream_WhenTheCameraIsCut', async () => {
     // Arrange
     stubBrowserMse()
     fakeNetwork({ ...STATS, 'GET /api/cameras': ok([makeCamera({ privacyModeActive: true })]) })
@@ -1035,19 +1040,102 @@ describe('LiveViewScreen', () => {
     openTheAddress()
 
     // Assert
+    expect(await screen.findByText('Rien n’est filmé ni enregistré')).toBeInTheDocument()
+    expect(screen.getByText('Coupée')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Réactiver' })).toBeInTheDocument()
     expect(
-      await screen.findByText('Mode vie privée : la vue en direct est arrêtée.'),
+      screen.getByText('Les contrôles reviennent quand la caméra est réactivée.'),
     ).toBeInTheDocument()
-    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Front Door', { selector: 'video' })).not.toBeInTheDocument()
     expect(FakeSocket.opened).toEqual([])
   })
 
-  it.each([
-    { name: 'still to set up', camera: makeCamera({ validationState: 'draft' }) },
-    { name: 'offline', camera: makeCamera({ connected: false, status: 'offline' }) },
-  ])('LiveViewScreen_ShouldLeadToTheCameraPage_WhenTheCameraIs $name', async ({ camera }) => {
+  it('LiveViewScreen_ShouldSayUntilWhenTheCameraStaysCut_WhenARangeCutIt', async () => {
     // Arrange
+    const camera = makeCamera({
+      privacyModeActive: true,
+      privacyModeSource: 'schedule',
+      privacyCutUntil: { at: '2099-01-05T07:00:00+01:00', dayOfWeek: 1, time: '07:00' },
+    })
     fakeNetwork({ ...STATS, 'GET /api/cameras': ok([camera]) })
+
+    // Act
+    openTheAddress()
+
+    // Assert
+    expect(await screen.findByText('Coupée jusqu’à lundi 7 h')).toBeInTheDocument()
+  })
+
+  it('onSetPrivacy_ShouldResumeTheCameraWithoutAsking_WhenTheUserTapsReactivate', async () => {
+    // Arrange
+    const network = fakeNetwork({
+      ...STATS,
+      'GET /api/cameras': ok([makeCamera({ privacyModeActive: true })]),
+      'POST /api/cameras/privacy/batch-toggle': ok([makeCamera()]),
+    })
+    openTheAddress()
+    const reactivate = await screen.findByRole('button', { name: 'Réactiver' })
+    network.answer('GET /api/cameras', ok([makeCamera()]))
+
+    // Act
+    await userEvent.click(reactivate)
+
+    // Assert
+    expect(network.sent).toContainEqual(
+      expect.objectContaining({
+        route: 'POST /api/cameras/privacy/batch-toggle',
+        body: { cameraIds: ['camera-1'], active: false },
+      }),
+    )
+    expect(await screen.findByLabelText('Front Door', { selector: 'video' })).toBeInTheDocument()
+  })
+
+  it('onSetPrivacy_ShouldCutTheCameraWithoutAsking_WhenTheUserTapsCut', async () => {
+    // Arrange
+    const network = fakeNetwork({
+      ...STATS,
+      'GET /api/cameras': ok([makeCamera()]),
+      'POST /api/cameras/privacy/batch-toggle': ok([makeCamera({ privacyModeActive: true })]),
+    })
+    openTheAddress()
+    const cut = await screen.findByRole('button', { name: 'Couper la caméra' })
+    network.answer('GET /api/cameras', ok([makeCamera({ privacyModeActive: true })]))
+
+    // Act
+    await userEvent.click(cut)
+
+    // Assert
+    expect(network.sent).toContainEqual(
+      expect.objectContaining({
+        route: 'POST /api/cameras/privacy/batch-toggle',
+        body: { cameraIds: ['camera-1'], active: true },
+      }),
+    )
+    expect(await screen.findByText('Rien n’est filmé ni enregistré')).toBeInTheDocument()
+  })
+
+  it('LiveViewScreen_ShouldSayItDoesNotAnswerWithItsTechnicalDetail_WhenTheCameraIsOffline', async () => {
+    // Arrange
+    stubBrowserMse()
+    const camera = makeCamera({ connected: false, status: 'offline', host: '192.168.1.10' })
+    fakeNetwork({ ...STATS, 'GET /api/cameras': ok([camera]) })
+
+    // Act
+    openTheAddress()
+
+    // Assert
+    expect(await screen.findByText(/Cette caméra ne répond pas/)).toBeInTheDocument()
+    expect(screen.getByText('Détails techniques')).toBeInTheDocument()
+    expect(screen.getByText('Adresse : 192.168.1.10')).toBeInTheDocument()
+    expect(
+      screen.getByText('Les contrôles reviennent quand la caméra répond de nouveau.'),
+    ).toBeInTheDocument()
+    expect(FakeSocket.opened).toEqual([])
+  })
+
+  it('LiveViewScreen_ShouldLeadToTheCameraPage_WhenTheCameraIsStillToSetUp', async () => {
+    // Arrange
+    fakeNetwork({ ...STATS, 'GET /api/cameras': ok([makeCamera({ validationState: 'draft' })]) })
 
     // Act
     openTheAddress()
@@ -1132,8 +1220,111 @@ describe('LiveViewScreen', () => {
   })
 })
 
+describe('LiveView detections', () => {
+  const HISTORY = 'GET /api/detection-events/history'
+  const LABELS = 'GET /api/detection-labels/camera'
+  const PERSON = { value: 'person', displayName: 'Personne' }
+
+  function clip(overrides: Partial<DetectionEvent> = {}): DetectionEvent {
+    return {
+      eventId: 'event-1',
+      camera: 'front_door',
+      cameraName: 'Front Door',
+      label: 'person',
+      identity: 'Camille',
+      profileId: null,
+      confidence: 0.92,
+      occurredAt: '2026-11-16T16:46:00Z',
+      hasClip: true,
+      hasSnapshot: true,
+      mediaExpired: false,
+      ...overrides,
+    }
+  }
+
+  function renderOnDetections() {
+    return renderScreen(<LiveView camera={cameraWith(OrientationControl.Off)} />, {
+      path: '*',
+      url: '/cameras/camera-1?tab=detections',
+    })
+  }
+
+  it('onPlayClip_ShouldPlayTheDetectionInPlaceOfTheLiveThenGoBackToIt_WhenTheUserTapsItThenRevenirAuDirect', async () => {
+    // Arrange
+    fakeNetwork({
+      [HISTORY]: ok({ items: [clip()], nextCursor: null }),
+      [LABELS]: ok([PERSON]),
+    })
+    renderOnDetections()
+
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: /Camille/ }))
+    const played = screen.getByLabelText('Camille', { selector: 'video' })
+    const live = screen.queryByLabelText('Front Door', { selector: 'video' })
+    await userEvent.click(screen.getByRole('button', { name: 'Revenir au direct' }))
+
+    // Assert
+    expect(played).toHaveAttribute('src', '/api/detection-events/event-1/clip')
+    expect(live).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Front Door', { selector: 'video' })).toBeInTheDocument()
+    expect(screen.queryByLabelText('Camille', { selector: 'video' })).not.toBeInTheDocument()
+  })
+
+  it('onOpenClips_ShouldListOnlyThisCameraWithAWayToAllItsDetections_WhenTheTabOpens', async () => {
+    // Arrange
+    const network = fakeNetwork({
+      [HISTORY]: ok({ items: [clip()], nextCursor: null }),
+      [LABELS]: ok([PERSON]),
+    })
+
+    // Act
+    renderOnDetections()
+
+    // Assert
+    expect(await screen.findByRole('button', { name: /Camille/ })).toBeInTheDocument()
+    expect(network.sent).toContainEqual(
+      expect.objectContaining({ route: HISTORY, query: '?camera=front_door&limit=20' }),
+    )
+    expect(screen.getByRole('link', { name: 'Toutes ses détections' })).toHaveAttribute(
+      'href',
+      '/detections?camera=front_door',
+    )
+  })
+
+  it('onOpenClips_ShouldSayTheClipsWereNotRead_WhenTheHistoryCannotBeRead', async () => {
+    // Arrange
+    fakeNetwork({ [HISTORY]: failure(502), [LABELS]: ok([PERSON]) })
+
+    // Act
+    renderOnDetections()
+
+    // Assert
+    expect(
+      await screen.findByText('Les détections de cette caméra n’ont pas pu être lues.'),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Réessayer' })).toBeInTheDocument()
+  })
+
+  it('onClipFailed_ShouldSayTheVideoWasErased_WhenItWentWithAnotherDetection', async () => {
+    // Arrange
+    fakeNetwork({
+      [HISTORY]: ok({ items: [clip()], nextCursor: null }),
+      [LABELS]: ok([PERSON]),
+      'GET /api/detection-events/event-1/clip': failure(404, 'not_found'),
+    })
+    renderOnDetections()
+    await userEvent.click(await screen.findByRole('button', { name: /Camille/ }))
+
+    // Act
+    fireEvent.error(screen.getByLabelText('Camille', { selector: 'video' }))
+
+    // Assert
+    expect(await screen.findByText('La vidéo de ce moment a été supprimée.')).toBeInTheDocument()
+  })
+})
+
 describe('LiveView layouts', () => {
-  type Layout = 'portrait' | 'landscape' | 'wide'
+  type Layout = 'portrait' | 'landscape'
 
   // The device's shape as CSS reads it; returns how to turn the device.
   function holdTheDevice(initial: Layout) {
@@ -1142,7 +1333,6 @@ describe('LiveView layouts', () => {
     const MATCHES: Record<Layout, (query: string) => boolean> = {
       portrait: () => false,
       landscape: (query) => query.includes('orientation: landscape'),
-      wide: (query) => query.includes('min-width'),
     }
     vi.stubGlobal('matchMedia', (query: string) => ({
       get matches() {
@@ -1166,15 +1356,10 @@ describe('LiveView layouts', () => {
   }
 
   function renderOn(orientation: OrientationControl = OrientationControl.Off) {
-    return renderScreen(
-      <LiveView
-        cameraId="camera-1"
-        label="Front Door"
-        orientation={orientation}
-        qualities={['low']}
-      />,
-    )
+    return renderScreen(<LiveView camera={cameraWith(orientation)} />)
   }
+
+  const picture = () => screen.getByLabelText('Front Door', { selector: 'video' })
 
   // Three seconds without a gesture: the controls over the picture are gone.
   function letTheControlsFade() {
@@ -1201,7 +1386,7 @@ describe('LiveView layouts', () => {
     letTheControlsFade()
 
     // Assert
-    expect(screen.queryByRole('button', { name: 'Retour' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Quitter le plein écran' })).not.toBeInTheDocument()
   })
 
   it('LiveView_ShouldBringItsControlsBack_WhenTheUserTapsThePicture', () => {
@@ -1211,14 +1396,13 @@ describe('LiveView layouts', () => {
     fakeNetwork({})
     renderOn()
     letTheControlsFade()
-    const picture = screen.getByRole('main', { name: 'Front Door' })
 
     // Act
-    fireEvent.pointerDown(picture)
-    fireEvent.pointerUp(picture)
+    fireEvent.pointerDown(picture())
+    fireEvent.pointerUp(picture())
 
     // Assert
-    expect(screen.getByRole('button', { name: 'Retour' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Quitter le plein écran' })).toBeInTheDocument()
   })
 
   it('LiveView_ShouldBringItsControlsBack_WhenTheFocusEntersTheScreen', () => {
@@ -1233,7 +1417,7 @@ describe('LiveView layouts', () => {
     fireEvent.focusIn(screen.getByRole('link', { name: 'Connexion' }))
 
     // Assert
-    expect(screen.getByRole('button', { name: 'Retour' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Quitter le plein écran' })).toBeInTheDocument()
   })
 
   it('LiveView_ShouldBringItsControlsBack_WhenTheUserPressesAKey', () => {
@@ -1248,25 +1432,27 @@ describe('LiveView layouts', () => {
     fireEvent.keyDown(window, { key: 'Tab' })
 
     // Assert
-    expect(screen.getByRole('button', { name: 'Retour' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Quitter le plein écran' })).toBeInTheDocument()
   })
 
   it.each([
-    { layout: 'portrait' as const, over: false },
-    { layout: 'landscape' as const, over: true },
-    { layout: 'wide' as const, over: true },
-  ])('LiveView_ShouldKeepTheBarOffThePictureOnlyUpright_WhenHeld $layout', ({ layout, over }) => {
-    // Arrange
-    holdTheDevice(layout)
-    fakeNetwork({})
+    { layout: 'portrait' as const, over: 'Plein écran', away: 'Quitter le plein écran' },
+    { layout: 'landscape' as const, over: 'Quitter le plein écran', away: 'Plein écran' },
+  ])(
+    'LiveView_ShouldLayThePictureEdgeToEdgeOnlyOnItsSide_WhenHeld $layout',
+    ({ layout, over, away }) => {
+      // Arrange
+      holdTheDevice(layout)
+      fakeNetwork({})
 
-    // Act
-    renderOn()
+      // Act
+      renderOn()
 
-    // Assert
-    const picture = screen.getByLabelText('Front Door', { selector: 'video' }).parentElement
-    expect(picture?.contains(screen.getByRole('button', { name: 'Retour' }))).toBe(over)
-  })
+      // Assert
+      expect(screen.getByRole('button', { name: over })).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: away })).not.toBeInTheDocument()
+    },
+  )
 
   it('LiveView_ShouldKeepItsControls_WhenHeldUpright', () => {
     // Arrange
@@ -1279,10 +1465,10 @@ describe('LiveView layouts', () => {
     act(() => vi.advanceTimersByTime(10000))
 
     // Assert
-    expect(screen.getByRole('button', { name: 'Retour' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Plein écran' })).toBeInTheDocument()
   })
 
-  it('LiveView_ShouldNeverFadeTheJoystick_WhenAFingerHoldsIt', async () => {
+  it('LiveView_ShouldNeverFadeThePad_WhenAFingerHoldsIt', async () => {
     // Arrange
     vi.useFakeTimers({ shouldAdvanceTime: true })
     holdTheDevice('landscape')
@@ -1298,7 +1484,7 @@ describe('LiveView layouts', () => {
     expect(screen.getByRole('button', { name: 'Haut' })).toBeInTheDocument()
   })
 
-  it('LiveView_ShouldFadeTheJoystick_WhenTheFingerLetsGo', async () => {
+  it('LiveView_ShouldFadeThePad_WhenTheFingerLetsGo', async () => {
     // Arrange
     vi.useFakeTimers({ shouldAdvanceTime: true })
     holdTheDevice('landscape')
@@ -1338,32 +1524,58 @@ describe('LiveView layouts', () => {
     const { request } = offerFullScreen()
     fakeNetwork({})
     renderOn()
-    const picture = screen.getByRole('main', { name: 'Front Door' })
 
     // Act
-    fireEvent.click(picture)
-    fireEvent.click(picture)
+    fireEvent.click(picture())
+    fireEvent.click(picture())
 
     // Assert
     expect(request).toHaveBeenCalledTimes(1)
   })
 
-  it('onFullScreen_ShouldAskTheBrowserAgain_WhenTheUserPressesTheButton', async () => {
+  it('onGesture_ShouldNotAskTheBrowser_WhenHeldUpright', () => {
     // Arrange
-    holdTheDevice('landscape')
+    holdTheDevice('portrait')
     const { request } = offerFullScreen()
     fakeNetwork({})
     renderOn()
-    fireEvent.click(screen.getByRole('main', { name: 'Front Door' }))
+
+    // Act
+    fireEvent.click(picture())
+
+    // Assert
+    expect(request).not.toHaveBeenCalled()
+  })
+
+  it('onFullScreen_ShouldLayThePictureEdgeToEdgeAndAskTheBrowser_WhenTheUserPressesTheButtonUpright', async () => {
+    // Arrange
+    holdTheDevice('portrait')
+    const { request } = offerFullScreen()
+    fakeNetwork({})
+    renderOn()
 
     // Act
     await userEvent.click(screen.getByRole('button', { name: 'Plein écran' }))
 
     // Assert
-    expect(request).toHaveBeenCalledTimes(2)
+    expect(request).toHaveBeenCalledTimes(1)
+    expect(screen.getByRole('button', { name: 'Quitter le plein écran' })).toBeInTheDocument()
   })
 
-  it('onBack_ShouldNotAskForFullScreen_WhenTheFirstTapIsOnBack', async () => {
+  it('onFullScreen_ShouldStillLayThePictureEdgeToEdge_WhenTheBrowserCannotHideItsBars', async () => {
+    // Arrange
+    holdTheDevice('portrait')
+    fakeNetwork({})
+    renderOn()
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Plein écran' }))
+
+    // Assert
+    expect(screen.getByRole('button', { name: 'Quitter le plein écran' })).toBeInTheDocument()
+  })
+
+  it('onLeave_ShouldNotAskForFullScreen_WhenTheFirstTapIsOnLeave', async () => {
     // Arrange
     holdTheDevice('landscape')
     const { request } = offerFullScreen()
@@ -1371,7 +1583,7 @@ describe('LiveView layouts', () => {
     renderOn()
 
     // Act
-    await userEvent.click(screen.getByRole('button', { name: 'Retour' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Quitter le plein écran' }))
 
     // Assert
     expect(request).not.toHaveBeenCalled()
@@ -1390,7 +1602,7 @@ describe('LiveView layouts', () => {
     const { exit } = offerFullScreen(pending)
     fakeNetwork({})
     const { unmount } = renderOn()
-    fireEvent.click(screen.getByRole('main', { name: 'Front Door' }))
+    fireEvent.click(picture())
     unmount()
 
     // Act
@@ -1404,36 +1616,7 @@ describe('LiveView layouts', () => {
     expect(exit).toHaveBeenCalled()
   })
 
-  it('LiveView_ShouldOfferNoFullScreenButton_WhenTheBrowserCannotHideItsBars', () => {
-    // Arrange
-    holdTheDevice('landscape')
-    fakeNetwork({})
-    renderOn()
-
-    // Act
-    fireEvent.click(screen.getByRole('main', { name: 'Front Door' }))
-
-    // Assert
-    expect(screen.getByRole('button', { name: 'Retour' })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Plein écran' })).not.toBeInTheDocument()
-  })
-
-  it('LiveView_ShouldOfferNoFullScreenButton_WhenHeldUpright', () => {
-    // Arrange
-    holdTheDevice('portrait')
-    const { request } = offerFullScreen()
-    fakeNetwork({})
-    renderOn()
-
-    // Act
-    fireEvent.click(screen.getByRole('main', { name: 'Front Door' }))
-
-    // Assert
-    expect(request).not.toHaveBeenCalled()
-    expect(screen.queryByRole('button', { name: 'Plein écran' })).not.toBeInTheDocument()
-  })
-
-  it('LiveView_ShouldGiveTheBrowserBarsBackAndStayOpen_WhenTheUserLeavesFullScreen', async () => {
+  it('onLeave_ShouldGiveTheBrowserBarsBackAndKeepPlaying_WhenTheUserLeavesFullScreenOnItsSide', async () => {
     // Arrange
     holdTheDevice('landscape')
     const { exit } = offerFullScreen()
@@ -1443,27 +1626,32 @@ describe('LiveView layouts', () => {
     })
     fakeNetwork({})
     renderOn()
+    const playing = picture()
 
     // Act
     await userEvent.click(screen.getByRole('button', { name: 'Quitter le plein écran' }))
 
     // Assert
     expect(exit).toHaveBeenCalledTimes(1)
-    expect(screen.getByLabelText('Front Door', { selector: 'video' })).toBeInTheDocument()
+    expect(picture()).toBe(playing)
+    expect(screen.getByRole('button', { name: 'Plein écran' })).toBeInTheDocument()
   })
 
-  it('LiveView_ShouldOfferNoWayToLeaveFullScreen_WhenTheBrowserKeepsItsBars', () => {
+  it('useFullScreen_ShouldPutThePictureBackInThePage_WhenTheBrowserGivesItsBarsBack', async () => {
     // Arrange
-    holdTheDevice('landscape')
+    holdTheDevice('portrait')
     offerFullScreen()
     fakeNetwork({})
+    renderOn()
+    await userEvent.click(screen.getByRole('button', { name: 'Plein écran' }))
 
     // Act
-    renderOn()
+    act(() => {
+      document.dispatchEvent(new Event('fullscreenchange'))
+    })
 
     // Assert
     expect(screen.getByRole('button', { name: 'Plein écran' })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Quitter le plein écran' })).not.toBeInTheDocument()
   })
 
   it('LiveView_ShouldLeaveFullScreen_WhenTheDeviceTurnsUpright', () => {

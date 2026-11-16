@@ -17,7 +17,3 @@ export const PRESET_LABELS: Record<number, string> = {
   [SURVEILLANCE_PRESET_ID]: 'Surveillance',
   [PARKING_PRESET_ID]: 'Parking',
 }
-
-export function isReservedPreset(presetId: number): boolean {
-  return presetId === SURVEILLANCE_PRESET_ID || presetId === PARKING_PRESET_ID
-}

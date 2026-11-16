@@ -94,4 +94,31 @@ describe('liveViewReducer', () => {
     // Assert
     expect([state.soundOn, on.soundOn, off.soundOn]).toEqual([false, true, false])
   })
+
+  it('liveViewReducer_ShouldNeverShowTheClipsAsEmpty_WhenTheirReadFails', () => {
+    // Arrange
+    const state = { ...buildInitialLiveViewUido(), clips: [] }
+
+    // Act
+    const next = liveViewReducer(state, { type: 'CLIPS_FAILED', error: readError })
+
+    // Assert
+    expect(next.clips).toBeNull()
+    expect(next.clipsError).toBe(readError)
+  })
+
+  it('liveViewReducer_ShouldGiveThePictureBackToTheLive_WhenTheUserComesBackFromAClip', () => {
+    // Arrange
+    const playing = liveViewReducer(buildInitialLiveViewUido(), {
+      type: 'CLIP_PLAYED',
+      eventId: 'event-1',
+    })
+
+    // Act
+    const next = liveViewReducer(playing, { type: 'LIVE_RESUMED' })
+
+    // Assert
+    expect(playing.playingId).toBe('event-1')
+    expect(next.playingId).toBeNull()
+  })
 })

@@ -6,6 +6,7 @@ import { MEDIA_EXPIRED, type DetectionMedia } from './detection_preview'
 import type { DetectionEvent } from '../../domain/entities/detection_event.entity'
 import type { DetectionLabel } from '../../domain/entities/detection_label.entity'
 import {
+  clipUrl,
   formatEventDetail,
   formatEventTitle,
   snapshotUrl,
@@ -109,7 +110,7 @@ export function DetectionList({
               onClick={() =>
                 onOpenMedia({
                   type: 'video',
-                  url: `${apiBaseUrl}/api/detection-events/${event.eventId}/clip`,
+                  url: clipUrl(apiBaseUrl, event.eventId),
                   eventId: event.eventId,
                 })
               }

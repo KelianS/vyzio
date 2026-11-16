@@ -1,6 +1,8 @@
 import type { AppError } from '../../common/errors/app_error'
 import type { LiveQuality } from '../../domain/entities/camera.entity'
 import type { PtzPreset } from '../../domain/entities/ptz_preset.entity'
+import type { DetectionEvent } from '../../domain/entities/detection_event.entity'
+import type { DetectionLabel } from '../../domain/entities/detection_label.entity'
 
 export type LiveViewAction =
   | { type: 'QUALITY_CHOSEN'; quality: LiveQuality }
@@ -25,3 +27,16 @@ export type LiveViewAction =
   | { type: 'THUMBNAIL_CAPTURED'; presetId: number; version: number }
   | { type: 'OVERRIDE_ASKED'; presetId: number }
   | { type: 'OVERRIDE_CLOSED' }
+  | { type: 'CLIPS_STARTED' }
+  | {
+      type: 'CLIPS_LOADED'
+      clips: DetectionEvent[]
+      labels: DetectionLabel[]
+      recent: boolean
+    }
+  | { type: 'CLIPS_FAILED'; error: AppError }
+  | { type: 'CLIP_PLAYED'; eventId: string }
+  | { type: 'LIVE_RESUMED' }
+  | { type: 'CLIP_GONE'; eventId: string }
+  | { type: 'PRIVACY_STARTED' }
+  | { type: 'PRIVACY_FINISHED' }

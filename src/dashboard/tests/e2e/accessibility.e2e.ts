@@ -71,6 +71,8 @@ test.describe('Accessibility, WCAG 2.1 A/AA', () => {
     '/cameras',
     '/detections',
     '/cameras/camera-1',
+    '/cameras/camera-1?tab=detections',
+    '/cameras/camera-2',
     '/settings',
     '/settings/cameras',
     '/settings/cameras/add',

@@ -1,5 +1,5 @@
 import { Suspense, useEffect } from 'react'
-import { Outlet, useLocation, useMatches } from 'react-router'
+import { Outlet, useLocation } from 'react-router'
 import { TopBar } from '../../common/components/top_bar'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
@@ -9,7 +9,6 @@ import { NavigationGuard } from '../navigation/navigation_guard.component'
 import { isSettingsPath } from '../settings/settings.rubrics'
 import { RestartSurveillanceTrigger } from '../surveillance/restart_surveillance_trigger.component'
 import { buildAppShellPresenter } from './app_shell.presenter'
-import { isFullScreen } from './app_shell.handle'
 import { barAlerts } from './bar_alerts'
 import { BarAlertList } from './components/bar_alert_list'
 
@@ -26,21 +25,10 @@ export function AppShell() {
   useEffect(() => presenter.onWatchSystem(), [presenter])
 
   const { pathname } = useLocation()
-  const fullScreen = useMatches().some((match) => isFullScreen(match.handle))
   const cameras = useRootStore((s) => s.cameras)
   const systemStats = useRootStore((s) => s.systemStats)
   const hubLost = useRootStore((s) => s.hubLost)
   const restartFailed = useRootStore((s) => s.restartFailure !== null)
-
-  if (fullScreen)
-    return (
-      <>
-        <NavigationGuard />
-        <Suspense fallback={null}>
-          <Outlet />
-        </Suspense>
-      </>
-    )
 
   return (
     <TopBar

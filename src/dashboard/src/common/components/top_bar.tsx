@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from 'react'
+import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router'
 import { useGoBack } from '../navigation/use_go_back'
@@ -6,20 +6,31 @@ import { ArrowLeft, Settings } from 'lucide-react'
 import { cn } from '../ui/utils'
 import { PressableControl } from './pressable'
 
-/** Where a page puts its title: a place inside the bar, filled from the page. */
-const TopBarTitleContext = createContext<HTMLElement | null>(null)
+/** The places inside the bar a page fills: its title, and one action on its right. */
+interface TopBarSlots {
+  title: HTMLElement | null
+  action: HTMLElement | null
+}
+
+const TopBarSlotsContext = createContext<TopBarSlots>({ title: null, action: null })
 
 /** A page's title, drawn in the bar; outside the shell (a screen alone under test) in place. */
 export function TopBarTitle({ children }: { children: ReactNode }) {
-  const slot = useContext(TopBarTitleContext)
-  return slot ? createPortal(children, slot) : children
+  const { title } = useContext(TopBarSlotsContext)
+  return title ? createPortal(children, title) : children
+}
+
+/** The one icon button a page about one thing carries on the bar's right (DESIGN SYSTEM § Top bar). */
+export function TopBarAction({ children }: { children: ReactNode }) {
+  const { action } = useContext(TopBarSlotsContext)
+  return action ? createPortal(children, action) : children
 }
 
 const ROUND_BUTTON =
   'inline-flex size-11 shrink-0 items-center justify-center rounded-full bg-bar-control text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50'
 
 /** A round icon button of the bar. */
-function TopBarIconLink({
+export function TopBarIconLink({
   to,
   label,
   icon: Icon,
@@ -67,9 +78,11 @@ export function TopBar({
   children: ReactNode
 }) {
   const [title, setTitle] = useState<HTMLElement | null>(null)
+  const [action, setAction] = useState<HTMLElement | null>(null)
+  const slots = useMemo(() => ({ title, action }), [title, action])
 
   return (
-    <TopBarTitleContext.Provider value={title}>
+    <TopBarSlotsContext.Provider value={slots}>
       <header
         className={cn(
           // Below the Radix layers (`z-50`): a dialog or a list opened near the top covers it.
@@ -87,12 +100,13 @@ export function TopBar({
             <div className="flex items-center gap-3">
               <BackButton />
               <div ref={setTitle} className="min-w-0 flex-1" />
+              <div ref={setAction} className="contents" />
             </div>
           )}
           {below}
         </div>
       </header>
       {children}
-    </TopBarTitleContext.Provider>
+    </TopBarSlotsContext.Provider>
   )
 }

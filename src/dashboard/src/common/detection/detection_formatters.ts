@@ -19,6 +19,11 @@ export function thumbnailUrl(apiBaseUrl: string, eventId: string): string {
   return `${apiBaseUrl}/api/detection-events/${eventId}/thumbnail`
 }
 
+/** The detection's video, played in place of a picture. */
+export function clipUrl(apiBaseUrl: string, eventId: string): string {
+  return `${apiBaseUrl}/api/detection-events/${encodeURIComponent(eventId)}/clip`
+}
+
 const timeFormatter = new Intl.DateTimeFormat('fr-FR', {
   hour: '2-digit',
   minute: '2-digit',
@@ -62,4 +67,50 @@ export function formatEventDetail(event: DetectionEvent): string {
   ]
     .filter(Boolean)
     .join(' · ')
+}
+
+const dayFormatter = new Intl.DateTimeFormat('fr-FR', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+})
+
+function dayKey(date: Date): string {
+  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
+}
+
+/** "Aujourd’hui", "Hier", then the day itself: the label a group of clips sits under. */
+export function formatClipDay(occurredAt: string, now: Date): string {
+  const date = new Date(occurredAt)
+  const yesterday = new Date(now)
+  yesterday.setDate(now.getDate() - 1)
+  if (dayKey(date) === dayKey(now)) return 'Aujourd’hui'
+  if (dayKey(date) === dayKey(yesterday)) return 'Hier'
+  const day = dayFormatter.format(date)
+  return day.charAt(0).toUpperCase() + day.slice(1)
+}
+
+/** A clip's line under its name: its hour, and how sure the engine was when it said. */
+export function formatClipDetail(event: DetectionEvent): string {
+  const date = new Date(event.occurredAt)
+  const minutes = date.getMinutes()
+  const hour = `${date.getHours()} h${minutes === 0 ? '' : ` ${String(minutes).padStart(2, '0')}`}`
+  return event.confidence !== null
+    ? `${hour} · sûr à ${Math.round(event.confidence * 100)} %`
+    : hour
+}
+
+/** The clips in the order given, gathered under the day each happened. */
+export function groupClipsByDay(
+  events: readonly DetectionEvent[],
+  now: Date,
+): { day: string; events: DetectionEvent[] }[] {
+  const groups: { day: string; events: DetectionEvent[] }[] = []
+  for (const event of events) {
+    const day = formatClipDay(event.occurredAt, now)
+    const last = groups.at(-1)
+    if (last?.day === day) last.events.push(event)
+    else groups.push({ day, events: [event] })
+  }
+  return groups
 }

@@ -1,4 +1,5 @@
 import { useEffect, useReducer, useState } from 'react'
+import { useSearchParams } from 'react-router'
 import { ChevronDown, SlidersHorizontal, Trash2, UserRoundPen } from 'lucide-react'
 import { Button } from '../../common/ui/button'
 import { SecondaryButton } from '../../common/components/secondary_button'
@@ -31,9 +32,10 @@ const UNIDENTIFIED = 'Inconnu'
 export function DetectionHistoryView() {
   const { apiBaseUrl, detectionHistory: container } = useAppContainer()
   const { toast } = useToast()
+  const [params] = useSearchParams()
   const [uido, dispatch] = useReducer(
     detectionHistoryReducer,
-    undefined,
+    params.get('camera') ?? '',
     buildInitialDetectionHistoryUido,
   )
   const presenter = usePresenter(buildDetectionHistoryPresenter, { container, dispatch, toast })

@@ -12,7 +12,9 @@ import {
  */
 
 test.describe('LiveView', () => {
-  test('LiveView_ShouldOpenFullScreenAndGoBackHome_WhenTheUserTapsACamera', async ({ page }) => {
+  test('LiveView_ShouldOpenTheCameraViewUnderTheBarAndGoBackHome_WhenTheUserTapsACamera', async ({
+    page,
+  }) => {
     const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
     await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
 
@@ -21,7 +23,7 @@ test.describe('LiveView', () => {
 
     await expect(page).toHaveURL('/cameras/camera-1')
     await expect(page.getByRole('main', { name: 'Salon' })).toBeVisible()
-    await expect(page.getByRole('banner')).toBeHidden()
+    await expect(page.getByRole('banner').getByRole('heading', { name: 'Salon' })).toBeVisible()
 
     await page.getByRole('button', { name: 'Retour' }).click()
     await expect(page).toHaveURL('/')
@@ -37,10 +39,11 @@ test.describe('LiveView', () => {
     const picture = await page.locator('video[aria-label="Salon"]').boundingBox()
 
     expect(back!.y + back!.height).toBeLessThanOrEqual(picture!.y)
-    expect(picture!.width).toBe(390)
+    expect(picture!.width).toBe(390 - 32)
   })
 
-  test('LiveView_ShouldKeepThePadAComfortableSizeAboveThePositions_WhenThePhoneIsHeldUpright', async ({
+  // One round pad, its four directions each a finger's size (#389).
+  test('LiveView_ShouldDrawThePadAsOneRoundControlWithFingerSizedZones_WhenThePhoneIsHeldUpright', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 390, height: 844 })
@@ -50,28 +53,19 @@ test.describe('LiveView', () => {
     await installFakeBackend(page, state)
 
     await page.goto('/cameras/camera-1')
-    await expect(page.getByTitle('Enregistrer la position actuelle ici').first()).toBeVisible()
-    const pad = await page.getByTitle('Haut').locator('..').boundingBox()
-    const tile = await page.getByTitle('Enregistrer la position actuelle ici').first().boundingBox()
+    const pad = page.getByRole('group', { name: 'Orienter la caméra' })
+    await expect(pad).toBeVisible()
 
-    // Capped, not inflated by the free height; the positions follow right under it.
-    expect(pad!.width).toBeLessThanOrEqual(160)
-    expect(pad!.width).toBeGreaterThanOrEqual(112)
-    expect(tile!.y - (pad!.y + pad!.height)).toBeLessThan(40)
-  })
+    const reach = async (name: string) => {
+      const zone = await pad.getByRole('button', { name }).boundingBox()
+      return Math.min(zone!.width, zone!.height)
+    }
 
-  test('LiveView_ShouldFitWithoutScrolling_WhenAShortPhoneIsHeldUpright', async ({ page }) => {
-    await page.setViewportSize({ width: 360, height: 600 })
-    const state = createFakeBackendState({
-      cameras: [makeFakeCamera({ ptzSupported: true, verifiedCapabilities: ['ptz'] })],
-    })
-    await installFakeBackend(page, state)
-
-    await page.goto('/cameras/camera-1')
-    await expect(page.getByTitle('Enregistrer la position actuelle ici').first()).toBeVisible()
-    const screen = page.getByRole('main', { name: 'Porte d’entrée' })
-
-    expect(await screen.evaluate((main) => main.scrollHeight - main.clientHeight)).toBe(0)
+    await expect(pad).toHaveCSS('border-radius', '9999px')
+    expect(await reach('Haut')).toBeGreaterThanOrEqual(44)
+    expect(await reach('Bas')).toBeGreaterThanOrEqual(44)
+    expect(await reach('Gauche')).toBeGreaterThanOrEqual(44)
+    expect(await reach('Droite')).toBeGreaterThanOrEqual(44)
   })
 
   test('LiveView_ShouldGoBackHome_WhenTheBrowserGoesBack', async ({ page }) => {
@@ -95,12 +89,12 @@ test.describe('LiveView', () => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
 
     await page.goto('/cameras/camera-1')
-    const back = page.getByRole('button', { name: 'Retour' })
-    await expect(back).toBeVisible()
-    await expect(back).toBeHidden({ timeout: 6000 })
+    const leave = page.getByRole('button', { name: 'Quitter le plein écran' })
+    await expect(leave).toBeVisible()
+    await expect(leave).toBeHidden({ timeout: 6000 })
 
-    await page.getByRole('main', { name: 'Salon' }).click({ position: { x: 420, y: 200 } })
-    await expect(back).toBeVisible()
+    await page.mouse.click(420, 200)
+    await expect(leave).toBeVisible()
   })
 
   test('LiveView_ShouldShowAWaitNeverABrokenImage_WhenTheStreamIsUnavailable', async ({ page }) => {
@@ -164,7 +158,7 @@ test.describe('LiveView PTZ positions', () => {
     })
 
     const tile = page.getByTitle(/^Parking \(appui : y aller et prendre sa miniature/)
-    await expect(page.getByTitle('Enregistrer la position actuelle ici')).toHaveCount(3)
+    await expect(page.getByTitle('Enregistrer la position actuelle ici')).toHaveCount(1)
 
     await tile.click()
 
