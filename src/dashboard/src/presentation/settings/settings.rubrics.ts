@@ -24,9 +24,12 @@ export interface SettingsRubric {
   readonly icon: LucideIcon
 }
 
+/** The known people, whom face recognition names. */
+const PEOPLE_SLUG = 'face-recognition'
+
 export const SETTINGS_RUBRICS: readonly SettingsRubric[] = [
   { slug: 'cameras', label: 'Caméras', section: 'Surveillance', icon: Video },
-  { slug: 'detection', label: 'Détection', section: 'Surveillance', icon: ScanFace },
+  { slug: PEOPLE_SLUG, label: 'Personnes', section: 'Surveillance', icon: ScanFace },
   { slug: 'schedule', label: 'Planification', section: 'Surveillance', icon: CalendarClock },
   { slug: 'notifications', label: 'Notifications', section: 'Surveillance', icon: Bell },
   { slug: 'retention', label: 'Conservation', section: 'Système', icon: Archive },
@@ -35,6 +38,8 @@ export const SETTINGS_RUBRICS: readonly SettingsRubric[] = [
 ]
 
 export const SETTINGS_ROOT = '/settings'
+
+export const PEOPLE_PATH = `${SETTINGS_ROOT}/${PEOPLE_SLUG}`
 
 /** Whether an address is one of the settings' pages, their root included. */
 export function isSettingsPath(pathname: string): boolean {

@@ -175,7 +175,7 @@ test.describe('Press feedback on every kind of row', () => {
       createdAt: '2026-11-01T08:00:00Z',
     }
     await installFakeBackend(page, createFakeBackendState({ profiles: [alice] }))
-    await page.goto('/settings/detection/people')
+    await page.goto('/settings/face-recognition')
 
     expect(await pressed(page.getByRole('link', { name: /Alice/ }))).toEqual(DIMMED)
   })

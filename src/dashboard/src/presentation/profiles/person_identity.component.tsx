@@ -17,6 +17,7 @@ import { usePerson } from './person_context'
 import { buildPersonIdentityPresenter } from './person_identity.presenter'
 import { personIdentityReducer } from './person_identity.reducer'
 import { buildInitialPersonIdentityUido } from './person_identity.uido'
+import { PEOPLE_PATH } from '../settings/settings.rubrics'
 
 const DRAFT_LABELS: Record<keyof UpdateProfileRequest, string> = {
   name: 'Nom',
@@ -83,7 +84,7 @@ export function PersonIdentityView() {
           deleting={uido.deleting}
           onAsk={presenter.onAskDelete}
           onConfirm={async () => {
-            if (await presenter.onDelete(person)) void navigate('/settings/detection/people')
+            if (await presenter.onDelete(person)) void navigate(PEOPLE_PATH)
           }}
           onCancel={presenter.onCancelDelete}
         />

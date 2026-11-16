@@ -20,7 +20,7 @@ const SETTINGS_ROUTES = [
   // The settings are in the channel, not in the list leading to it.
   '/settings/notifications/telegram',
   '/settings/notifications/discord',
-  '/settings/detection/people/profile-1/identity',
+  '/settings/face-recognition/profile-1/identity',
 ]
 
 interface FieldMeasure {
@@ -158,8 +158,8 @@ test.describe('Settings screens coherence', () => {
   const ADVANCED_ROUTES = [
     { path: '/settings/hardware', advanced: '/settings/hardware/advanced' },
     {
-      path: '/settings/detection/people/profile-1/photos',
-      advanced: '/settings/detection/people/profile-1/photos/advanced',
+      path: '/settings/face-recognition/profile-1/photos',
+      advanced: '/settings/face-recognition/profile-1/photos/advanced',
     },
     {
       path: '/settings/cameras/camera-1/connection',
@@ -168,7 +168,7 @@ test.describe('Settings screens coherence', () => {
   ]
 
   for (const { path, advanced } of ADVANCED_ROUTES) {
-    test(`AdvancedRow_ShouldOpenItsOwnPageNamedAvancé_WhenTheUserFollowsIt (${path})`, async ({
+    test(`AdvancedRow_ShouldOpenItsOwnAdvancedPage_WhenTheUserFollowsIt (${path})`, async ({
       page,
     }) => {
       await page.goto(path)

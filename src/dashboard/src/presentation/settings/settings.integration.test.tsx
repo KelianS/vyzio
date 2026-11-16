@@ -37,7 +37,7 @@ describe('SettingsView', () => {
       within(surveillance)
         .getAllByRole('link')
         .map((link) => link.textContent),
-    ).toEqual(['Caméras', 'Détection', 'Planification', 'Notifications'])
+    ).toEqual(['Caméras', 'Personnes', 'Planification', 'Notifications'])
     expect(
       within(system)
         .getAllByRole('link')

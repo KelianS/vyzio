@@ -127,7 +127,7 @@ test.describe('Style foundations', () => {
         ],
       }),
     )
-    await page.goto('/settings/detection/people/profile-1/photos')
+    await page.goto('/settings/face-recognition/profile-1/photos')
 
     const state = page.getByText(/^Aucune photo/)
     const advice = page.getByText(/^Des photos nettes/)

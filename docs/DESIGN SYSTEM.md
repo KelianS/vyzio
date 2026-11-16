@@ -379,7 +379,7 @@ A label states the **nature** of a screen, viewing or configuring, never its aud
 
 - Viewing: `Accueil` (the product name in the bar), a camera's view, `Détections`.
 - Configuring: `Réglages`, its rubrics in the two sections of UI-36, each section a grouped list.
-- Known people (`Personnes`) sit under `Détection`, next to what names them.
+- Known people are their own rubric, `Personnes`; a camera's `Détection` tab keeps its name.
 - Banned as entries: `Expert` (an audience, not a content), `Alertes` for a settings screen, and
   `Historique` (the list of what was seen is `Détections`).
 - **A route is English** (`/settings/hardware`, `/settings/schedule`), whatever the French label it

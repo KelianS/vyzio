@@ -12,6 +12,7 @@ import { personReducer } from './person.reducer'
 import { buildInitialPersonUido } from './person.uido'
 import { Loading } from '../../common/components/loading'
 import { isSubPage } from '../settings/settings.rubrics'
+import { PEOPLE_PATH } from '../settings/settings.rubrics'
 
 const PERSON_PAGES = [
   { slug: 'identity', label: 'Identité' },
@@ -50,10 +51,7 @@ export function PersonView() {
           onRetry={() => presenter.onLoad(profileId!)}
           className="mt-3"
         />
-        <Link
-          to="/settings/detection/people"
-          className="mt-3 inline-block underline underline-offset-2"
-        >
+        <Link to={PEOPLE_PATH} className="mt-3 inline-block underline underline-offset-2">
           Revenir à la liste
         </Link>
       </SettingsPage>
@@ -65,10 +63,7 @@ export function PersonView() {
       // This route owns its header; with no person to name, it must do so itself.
       <SettingsPage>
         <h1 className="text-title">Personne introuvable</h1>
-        <Link
-          to="/settings/detection/people"
-          className="mt-3 inline-block underline underline-offset-2"
-        >
+        <Link to={PEOPLE_PATH} className="mt-3 inline-block underline underline-offset-2">
           Revenir à la liste
         </Link>
       </SettingsPage>
@@ -90,7 +85,7 @@ export function PersonView() {
       <TabBar
         label="Réglages de la personne"
         tabs={PERSON_PAGES.map((page) => ({
-          to: `/settings/detection/people/${found.id}/${page.slug}`,
+          to: `${PEOPLE_PATH}/${found.id}/${page.slug}`,
           label: page.label,
         }))}
       />

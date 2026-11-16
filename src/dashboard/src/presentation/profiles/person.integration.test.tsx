@@ -10,8 +10,8 @@ const PEOPLE = 'GET /api/profiles'
 
 function personAt(profileId: string) {
   return {
-    path: '/settings/detection/people/:profileId',
-    url: `/settings/detection/people/${profileId}`,
+    path: '/settings/face-recognition/:profileId',
+    url: `/settings/face-recognition/${profileId}`,
   }
 }
 
@@ -27,7 +27,7 @@ describe('PersonView', () => {
     expect(await screen.findByRole('heading', { name: 'Alice' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Photos' })).toHaveAttribute(
       'href',
-      '/settings/detection/people/person-1/photos',
+      '/settings/face-recognition/person-1/photos',
     )
   })
 

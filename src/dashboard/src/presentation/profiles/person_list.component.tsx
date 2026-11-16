@@ -12,6 +12,7 @@ import { personListReducer } from './person_list.reducer'
 import { buildInitialPersonListUido } from './person_list.uido'
 import { Loading } from '../../common/components/loading'
 import { EmptyState } from '../../common/components/empty_state'
+import { PEOPLE_PATH } from '../settings/settings.rubrics'
 
 // Notifying is the usual case: only a person kept quiet says so (UI-31).
 const ALERT_MODE_EXCEPTION: Record<ProfileAlertMode, string | undefined> = {
@@ -51,14 +52,14 @@ export function PersonListView() {
             {uido.people.map((person) => (
               <GroupedRow
                 key={person.id}
-                to={`/settings/detection/people/${person.id}`}
+                to={`${PEOPLE_PATH}/${person.id}`}
                 icon={UserRound}
                 title={person.name}
                 subtitle={ALERT_MODE_EXCEPTION[person.alertMode]}
               />
             ))}
             <GroupedRow
-              to="/settings/detection/people/add"
+              to={`${PEOPLE_PATH}/add`}
               icon={Plus}
               title="Ajouter une personne"
               trailing="none"

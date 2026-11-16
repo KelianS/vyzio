@@ -213,12 +213,11 @@ const router = createBrowserRouter([
               },
             ],
           },
-          { path: 'detection', element: <Navigate to="/settings/detection/people" replace /> },
-          { path: 'detection/people', element: <PersonListView /> },
+          { path: 'face-recognition', element: <PersonListView /> },
           // Names the task, not the section.
-          { path: 'detection/people/add', element: <AddPersonView />, handle: OWN_HEADER },
+          { path: 'face-recognition/add', element: <AddPersonView />, handle: OWN_HEADER },
           {
-            path: 'detection/people/:profileId',
+            path: 'face-recognition/:profileId',
             element: <PersonView />,
             // Carries the name of the open person, and their tabs.
             handle: OWN_HEADER,

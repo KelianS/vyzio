@@ -15,6 +15,7 @@ import { usePerson } from './person_context'
 import { buildPersonPhotosPresenter } from './person_photos.presenter'
 import { personPhotosReducer } from './person_photos.reducer'
 import { buildInitialPersonPhotosUido } from './person_photos.uido'
+import { PEOPLE_PATH } from '../settings/settings.rubrics'
 
 /** Below this, recognition misfires more than it recognizes. */
 const ADVISED_PHOTOS = 3
@@ -114,7 +115,7 @@ export function PersonPhotosView() {
           </ul>
         )}
 
-        <AdvancedRow to={`/settings/detection/people/${personId}/photos/advanced`} />
+        <AdvancedRow to={`${PEOPLE_PATH}/${personId}/photos/advanced`} />
       </SettingsPage>
 
       {uido.confirmRemoveId && (

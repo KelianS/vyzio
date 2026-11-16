@@ -99,7 +99,9 @@ test.describe('Action weight', () => {
     expect(green).toBeLessThanOrEqual(1)
   })
 
-  test('HelpQuestions_ShouldReadAsAFootnoteLastOnThePage_WhenAPageCarriesHelp', async ({ page }) => {
+  test('HelpQuestions_ShouldReadAsAFootnoteLastOnThePage_WhenAPageCarriesHelp', async ({
+    page,
+  }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
     await page.setViewportSize(PHONE)
     await page.goto('/settings/cameras/camera-1/connection')
@@ -221,7 +223,7 @@ test.describe('Touch size', () => {
       await heightOf(page.getByRole('combobox', { name: 'Ce qui déclenche une notification' })),
     ).toBeGreaterThanOrEqual(44)
 
-    await page.goto('/settings/detection/people/profile-1/identity')
+    await page.goto('/settings/face-recognition/profile-1/identity')
     expect(
       await heightOf(page.getByRole('combobox', { name: 'Lien avec vous' })),
     ).toBeGreaterThanOrEqual(44)

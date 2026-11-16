@@ -13,6 +13,7 @@ import { ALERT_MODE_FIELD_LABEL, ALERT_MODE_OPTIONS, CATEGORY_OPTIONS } from './
 import { buildAddPersonPresenter } from './add_person.presenter'
 import { addPersonReducer } from './add_person.reducer'
 import { buildInitialAddPersonUido } from './add_person.uido'
+import { PEOPLE_PATH } from '../settings/settings.rubrics'
 
 /** Adding a person is one task, one page. */
 export function AddPersonView() {
@@ -26,8 +27,7 @@ export function AddPersonView() {
   async function add() {
     const createdId = await presenter.onCreate(uido.form)
     // Photos are next: without them recognition can't do anything with this profile.
-    if (createdId)
-      void navigate(`/settings/detection/people/${createdId}/photos`, { replace: true })
+    if (createdId) void navigate(`${PEOPLE_PATH}/${createdId}/photos`, { replace: true })
   }
 
   const declarations: SettingDeclaration[] = [

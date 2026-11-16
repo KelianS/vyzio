@@ -7,7 +7,7 @@ import { renderScreen } from '../../testing/render_screen'
 import { PersonListView } from './person_list.component'
 
 const PEOPLE = 'GET /api/profiles'
-const LIST = { path: '/settings/detection/people', url: '/settings/detection/people' }
+const LIST = { path: '/settings/face-recognition', url: '/settings/face-recognition' }
 
 describe('PersonListView', () => {
   it('onLoad_ShouldSayAPersonIsKeptQuiet_WhenVyzioDoesNotNotifyThem', async () => {
@@ -20,7 +20,7 @@ describe('PersonListView', () => {
     // Assert
     const person = await screen.findByRole('link', { name: /Alice/ })
     expect(person).toHaveTextContent('Ne pas me notifier')
-    expect(person).toHaveAttribute('href', '/settings/detection/people/person-1')
+    expect(person).toHaveAttribute('href', '/settings/face-recognition/person-1')
   })
 
   it('onLoad_ShouldListAPersonByNameAlone_WhenVyzioNotifiesThem', async () => {

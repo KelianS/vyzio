@@ -13,14 +13,14 @@ const REMOVE = 'DELETE /api/profiles/person-1/photos/photo-1'
 const RESYNC = 'POST /api/profiles/resync-face-library'
 
 const PHOTOS_TAB = {
-  path: '/settings/detection/people/:profileId/photos',
-  url: '/settings/detection/people/person-1/photos',
+  path: '/settings/face-recognition/:profileId/photos',
+  url: '/settings/face-recognition/person-1/photos',
   outletContext: { person: makeProfile(), reload: () => undefined },
 }
 
 const PHOTOS_ADVANCED = {
-  path: '/settings/detection/people/:profileId/photos/advanced',
-  url: '/settings/detection/people/person-1/photos/advanced',
+  path: '/settings/face-recognition/:profileId/photos/advanced',
+  url: '/settings/face-recognition/person-1/photos/advanced',
 }
 
 /** The one photo of the gallery, apart from the page's other rows. */
