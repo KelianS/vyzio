@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { ChevronRight, type LucideIcon } from 'lucide-react'
+import { ChevronDown, type LucideIcon } from 'lucide-react'
 import { Fold } from '../../../common/components/fold'
 import { GroupedItem } from '../../../common/components/grouped_list'
 import { StatusMark } from '../../../common/components/status_mark'
@@ -56,8 +56,8 @@ export function CapabilityCard({
             {/* Only an exception is written in words, under the title (UI-31). */}
             {subtitle && <span className="text-body text-muted-foreground">{subtitle}</span>}
           </span>
-          <ChevronRight
-            className="size-5 shrink-0 text-mark-off transition-transform group-open/card:rotate-90"
+          <ChevronDown
+            className="size-5 shrink-0 text-mark-off transition-transform group-open/card:rotate-180"
             aria-hidden="true"
           />
         </summary>
