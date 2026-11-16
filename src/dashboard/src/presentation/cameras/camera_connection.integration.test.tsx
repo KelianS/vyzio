@@ -262,9 +262,8 @@ describe('CameraConnectionView', () => {
 
     // Assert
     const [stream, orientation] = await capabilityCards()
-    await waitFor(() => expect(stream).toHaveTextContent('Flux vidéoFonctionne'))
-    expect(stream).not.toHaveTextContent('Connectée')
-    expect(orientation).toHaveTextContent('OrientationFonctionne')
+    expect(await within(stream).findByRole('img', { name: 'Fonctionne' })).toBeInTheDocument()
+    expect(within(orientation).getByRole('img', { name: 'Fonctionne' })).toBeInTheDocument()
     expect(stream).not.toHaveTextContent('RTSP')
     expect(orientation).not.toHaveTextContent('ONVIF')
   })
@@ -1489,7 +1488,7 @@ describe('CameraConnectionView', () => {
     // Assert
     const card = await cardOf('Flux vidéo')
     const orientation = await cardOf('Orientation')
-    expect(await card.findByText('Fonctionne')).toBeInTheDocument()
+    expect(await card.findByRole('img', { name: 'Fonctionne' })).toBeInTheDocument()
     expect(orientation.getByRole('button', { name: 'Vérifier' })).toBeEnabled()
   })
 

@@ -33,7 +33,7 @@ import {
 import { CapabilityTask, type StreamTask } from '../camera_connection.uido'
 import { DETECTION_SENTENCES, DetectionOutcome, type DetectionResult } from '../detection_outcome'
 import {
-  CAPABILITY_STATE_PILLS,
+  capabilityMark,
   CapabilityState,
   IS_STREAM,
   SWITCHED_ON_AND_OFF,
@@ -329,7 +329,7 @@ function StreamCard({
   return (
     <CapabilityCard
       title={STREAM_LABEL}
-      pill={state && CAPABILITY_STATE_PILLS[state]}
+      mark={state && capabilityMark(state)}
       options={
         binding &&
         choices.length > 0 && (
@@ -691,7 +691,7 @@ function BindingCard({
     <>
       <CapabilityCard
         title={label}
-        pill={CAPABILITY_STATE_PILLS[state]}
+        mark={capabilityMark(state)}
         actions={actions()}
         options={
           choices.length > 0 && (

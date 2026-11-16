@@ -39,7 +39,7 @@ describe('CamerasView', () => {
       await readTheCameraList()
 
       // Assert
-      expect(screen.getByText('À configurer')).toBeInTheDocument()
+      expect(screen.getByRole('img', { name: 'À configurer' })).toBeInTheDocument()
     },
   )
 
@@ -101,7 +101,7 @@ describe('CamerasView', () => {
     )
   })
 
-  it('render_ShouldShowTheListPillBesideTheCameraName_WhenTheCameraIsOpened', async () => {
+  it('render_ShouldShowTheCameraMarkBesideItsName_WhenTheCameraIsOpened', async () => {
     // Arrange
     fakeNetwork({ 'GET /api/cameras': ok([makeCamera()]) })
     renderScreen(<CamerasView />, OPEN_CAMERA)
@@ -111,10 +111,7 @@ describe('CamerasView', () => {
 
     // Assert
     const title = screen.getByRole('heading', { level: 1, name: 'Front Door' })
-    expect(within(title.parentElement!).getByText('Connectée')).toHaveAttribute(
-      'data-slot',
-      'badge',
-    )
+    expect(within(title.parentElement!).getByRole('img', { name: 'En marche' })).toBeVisible()
   })
 
   it('render_ShouldSayTheCameraIsNotFound_WhenTheListHasNoSuchCamera', async () => {

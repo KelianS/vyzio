@@ -62,9 +62,9 @@ test.describe('AddCameraView', () => {
       .getByRole('list', { name: 'Capacités' })
       .getByRole('listitem')
       .filter({ hasText: 'Flux vidéo' })
-    await expect(stream.getByText('Fonctionne')).toBeVisible()
+    await expect(stream.getByRole('img', { name: 'Fonctionne' })).toBeVisible()
     // Its stream works, but it stays to set up until the restart takes it in (ADR-04).
-    await expect(page.getByText('À configurer')).toBeVisible()
+    await expect(page.getByRole('img', { name: 'À configurer' })).toBeVisible()
     await expect(page.getByRole('button', { name: /Appliquer les changements/ })).toBeVisible()
   })
 
@@ -89,7 +89,7 @@ test.describe('AddCameraView', () => {
     // Nothing answers at that address: the page says so, never that detection simply finished.
     await expect(page.getByText(/^Rien ne répond à cette adresse/)).toBeVisible()
     // The page header first, then the stream card, each saying it with its own meaning.
-    await expect(page.getByText('À configurer').first()).toBeVisible()
+    await expect(page.getByRole('img', { name: 'À configurer' }).first()).toBeVisible()
     // No restart: the camera stays out of surveillance until its stream works.
     await expect(page.getByRole('button', { name: /Appliquer les changements/ })).toHaveCount(0)
 

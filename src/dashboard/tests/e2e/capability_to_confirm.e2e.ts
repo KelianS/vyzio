@@ -20,7 +20,7 @@ test.describe('Capability to confirm', () => {
     await expect(orientation.getByText('La caméra a bougé ?')).toBeVisible()
     await orientation.getByRole('button', { name: 'Oui' }).click()
 
-    await expect(orientation.getByText('Fonctionne')).toBeVisible()
+    await expect(orientation.getByRole('img', { name: 'Fonctionne' })).toBeVisible()
     await expect(orientation.getByText(/^Confirmé par vous le/)).toBeVisible()
     expect(state.ptzBinding.status).toBe('verified')
   })
@@ -72,7 +72,7 @@ test.describe('Capability to confirm', () => {
       .filter({ hasText: 'Orientation' })
     await orientation.getByRole('button', { name: 'Essayer' }).click()
     await orientation.getByRole('button', { name: 'Oui' }).click()
-    await expect(orientation.getByText('Fonctionne')).toBeVisible()
+    await expect(orientation.getByRole('img', { name: 'Fonctionne' })).toBeVisible()
 
     // Back from the camera's settings to its view.
     await page.getByRole('banner').getByRole('button', { name: 'Retour' }).click()

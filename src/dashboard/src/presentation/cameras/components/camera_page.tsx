@@ -4,7 +4,7 @@ import { SettingsPage } from '../../../common/settings/settings_page'
 import { ReadFailure } from '../../../common/components/error_message'
 import type { AppError } from '../../../common/errors/app_error'
 import type { Camera } from '../../../domain/entities/camera.entity'
-import { formatCameraStatusLabel, formatStatusTone } from '../../../common/camera/camera_status'
+import { cameraMark } from '../../../common/camera/camera_status'
 import { PageHeader } from '../../../common/components/page_header'
 import { CameraNotFound } from './camera_not_found'
 import { Loading } from '../../../common/components/loading'
@@ -60,10 +60,7 @@ export function CameraPage({
 
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader
-        title={camera.displayName}
-        state={{ tone: formatStatusTone(camera), label: formatCameraStatusLabel(camera) }}
-      />
+      <PageHeader title={camera.displayName} mark={cameraMark(camera)} />
 
       {/* Tabs rather than a list: few pages at this level, and one moves between them. */}
       <TabBar

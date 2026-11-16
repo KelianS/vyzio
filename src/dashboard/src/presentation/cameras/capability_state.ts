@@ -1,4 +1,5 @@
 import type { BadgeTone } from '../../common/components/badge'
+import { StatusMarkKind, type StatusMarkState } from '../../common/components/status_mark_state'
 import { CameraState, type Camera } from '../../domain/entities/camera.entity'
 import type {
   CameraCapabilityBinding,
@@ -46,6 +47,22 @@ export const CAPABILITY_STATE_PILLS: Record<CapabilityState, StatePill> = {
   unchecked: NOT_CHECKED_YET,
   unconfigured: { label: 'À configurer', tone: 'neutral' },
   switched_off: { label: 'Désactivée', tone: 'neutral' },
+}
+
+// Only a working capability is green, only a failing one is the ring; every other word is grey (UI-31).
+const CAPABILITY_MARK_KIND: Record<CapabilityState, StatusMarkKind> = {
+  working: StatusMarkKind.On,
+  failed: StatusMarkKind.Alert,
+  to_confirm: StatusMarkKind.Off,
+  rejected: StatusMarkKind.Off,
+  unchecked: StatusMarkKind.Off,
+  unconfigured: StatusMarkKind.Off,
+  switched_off: StatusMarkKind.Off,
+}
+
+/** A capability card's mark, carrying the same word as its stream lines. */
+export function capabilityMark(state: CapabilityState): StatusMarkState {
+  return { kind: CAPABILITY_MARK_KIND[state], label: CAPABILITY_STATE_PILLS[state].label }
 }
 
 // Proven or confirmed works; to confirm waits for the user's try; the user's no is kept apart, the rest failed (ADR-04).

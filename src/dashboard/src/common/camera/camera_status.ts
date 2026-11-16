@@ -1,47 +1,32 @@
-import type { BadgeTone } from '../components/badge'
 import { CameraState, CameraValidation, type Camera } from '../../domain/entities/camera.entity'
+import { StatusMarkKind, type StatusMarkState } from '../components/status_mark_state'
 
-type CameraStatusFacts = Pick<Camera, 'status' | 'validationState'>
+type CameraStatusFacts = Pick<
+  Camera,
+  'status' | 'validationState' | 'privacyModeActive' | 'connected'
+>
 
-// Its stream works but surveillance has not taken it in: still in its setup phase, not « Connectée » (ADR-04).
-function waitsForRestart(camera: CameraStatusFacts): boolean {
-  return (
-    camera.status === CameraState.Online &&
-    surveillanceEntryOf(camera) === SurveillanceEntry.AwaitsRestart
-  )
-}
+const TO_SET_UP: StatusMarkState = { kind: StatusMarkKind.Off, label: 'À configurer' }
 
-/** The camera's own status, in the words of the camera list, its page header and its hub tile. */
-export function formatCameraStatusLabel(camera: CameraStatusFacts): string {
-  if (waitsForRestart(camera)) return 'À configurer'
+/** A camera's mark (UI-31): one not in surveillance yet or cut does not film; a trouble is the ring. */
+export function cameraMark(camera: CameraStatusFacts): StatusMarkState {
+  // Neither a camera to set up nor one waiting for the restart is watched yet (ADR-04).
+  if (surveillanceEntryOf(camera) !== SurveillanceEntry.Watched) return TO_SET_UP
+  if (camera.privacyModeActive) return { kind: StatusMarkKind.Off, label: 'Coupée' }
+  // Its stream never worked: not a camera that stopped answering.
+  if (camera.status === CameraState.ToSetUp) return TO_SET_UP
+  if (!camera.connected) return { kind: StatusMarkKind.Alert, label: 'Hors ligne' }
   switch (camera.status) {
     case CameraState.Online:
-      return 'Connectée'
+      return { kind: StatusMarkKind.On, label: 'En marche' }
     case CameraState.Offline:
-      return 'Hors ligne'
+      return { kind: StatusMarkKind.Alert, label: 'Hors ligne' }
     case CameraState.Degraded:
-      return 'Dégradée'
+      return { kind: StatusMarkKind.Alert, label: 'Dégradée' }
     case CameraState.ConfigError:
-      return 'Erreur de configuration'
-    case CameraState.ToSetUp:
-      return 'À configurer'
+      return { kind: StatusMarkKind.Alert, label: 'Erreur de configuration' }
     default:
-      return 'À vérifier'
-  }
-}
-
-/** Neither a camera to set up nor one waiting for the restart is a fault: neutral, whatever the attention flag says. */
-export function formatStatusTone(camera: Camera): BadgeTone {
-  if (waitsForRestart(camera)) return 'neutral'
-  switch (camera.status) {
-    case CameraState.ToSetUp:
-      return 'neutral'
-    case CameraState.Offline:
-      return 'danger'
-    case CameraState.Online:
-      return camera.needsAttention ? 'warn' : 'ok'
-    default:
-      return 'warn'
+      return { kind: StatusMarkKind.Off, label: 'À vérifier' }
   }
 }
 

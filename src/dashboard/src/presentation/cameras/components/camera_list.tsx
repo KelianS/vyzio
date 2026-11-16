@@ -1,13 +1,14 @@
 import { Link } from 'react-router'
 import { ChevronRight, Plus } from 'lucide-react'
-import { Badge } from '../../../common/components/badge'
+import { StatusMark } from '../../../common/components/status_mark'
+import { markSubtitle } from '../../../common/components/status_mark_state'
 import { ListRow } from '../../../common/components/list_row'
 import { Button } from '../../../common/ui/button'
 import { SettingsPage } from '../../../common/settings/settings_page'
 import { ReadFailure } from '../../../common/components/error_message'
 import type { AppError } from '../../../common/errors/app_error'
 import type { Camera } from '../../../domain/entities/camera.entity'
-import { formatCameraStatusLabel, formatStatusTone } from '../../../common/camera/camera_status'
+import { cameraMark } from '../../../common/camera/camera_status'
 import { Loading } from '../../../common/components/loading'
 import { EmptyState } from '../../../common/components/empty_state'
 
@@ -30,23 +31,34 @@ export function CameraList({
     <SettingsPage>
       {cameras.length > 0 ? (
         <ul className="divide-y divide-border">
-          {cameras.map((camera) => (
-            <li key={camera.id}>
-              <ListRow>
-                <Link to={`/settings/cameras/${camera.id}`}>
-                  <span className="min-w-0">
-                    <span className="block font-medium">{camera.displayName}</span>
-                    {/* Tells apart two cameras sharing a name, or the lenses of one device (CAM-02). */}
-                    <span className="block text-body text-muted-foreground">{camera.host}</span>
-                  </span>
-                  <span className="flex shrink-0 items-center gap-3">
-                    <Badge tone={formatStatusTone(camera)}>{formatCameraStatusLabel(camera)}</Badge>
-                    <ChevronRight className="size-4 text-muted-foreground" aria-hidden="true" />
-                  </span>
-                </Link>
-              </ListRow>
-            </li>
-          ))}
+          {cameras.map((camera) => {
+            const mark = cameraMark(camera)
+            const exception = markSubtitle(mark)
+            return (
+              <li key={camera.id}>
+                <ListRow>
+                  <Link to={`/settings/cameras/${camera.id}`}>
+                    <span className="min-w-0">
+                      <span className="flex items-center gap-2 font-medium">
+                        {camera.displayName}
+                        <StatusMark {...mark} />
+                      </span>
+                      <span className="block text-body text-muted-foreground">
+                        {exception && <span>{exception}</span>}
+                        {exception && ' · '}
+                        {/* Tells apart two cameras sharing a name, or the lenses of one device (CAM-02). */}
+                        {camera.host}
+                      </span>
+                    </span>
+                    <ChevronRight
+                      className="size-4 shrink-0 text-muted-foreground"
+                      aria-hidden="true"
+                    />
+                  </Link>
+                </ListRow>
+              </li>
+            )
+          })}
         </ul>
       ) : unread ? (
         <ReadFailure
