@@ -213,7 +213,7 @@ export function buildLiveViewPresenter({
       const isLatest = nextClipsRead()
       dispatch({ type: 'CLIPS_STARTED' })
       Promise.all([
-        history.getDetectionHistory.execute({ camera, limit: CLIPS_SHOWN }),
+        history.getDetectionHistory.execute({ cameras: [camera], limit: CLIPS_SHOWN }),
         history.getCameraLabels.execute(),
       ])
         .then(([page, labels]) => {

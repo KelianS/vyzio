@@ -6,20 +6,26 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from '../ui/dia
 import { useLayerExit } from './layer_exit'
 import { PressableSurface } from './pressable'
 
-/** One choice of a sheet: a tap applies it and closes the sheet, nothing to confirm. */
-export interface SheetOption {
+/** What a row does: a tap on it, or a field it holds (a chosen day). */
+type SheetOptionInput = { onPick: () => void; field?: never } | { field: ReactNode; onPick?: never }
+
+/** One choice of a sheet: a tap applies it, nothing to confirm. */
+export type SheetOption = SheetOptionInput & {
   key: string
   title: string
   /** A quieter second line, only when the title leaves something out. */
   detail?: string
+  /** What the option is, drawn before its title. */
+  icon?: ReactNode
   /** The axis it belongs to, for a choice along several (a filter): consecutive ones share a heading. */
   group?: string
   /** The current choice, checked. */
   selected?: boolean
   /** It destroys something, after its own confirmation: in coral ink. */
   destructive?: boolean
-  onPick: () => void
 }
+
+const ROW_CLASS = 'flex min-h-14 w-full items-center gap-3 px-4 py-2 text-left'
 
 /** Consecutive options of one axis, under its heading. */
 function groupsOf(options: readonly SheetOption[]): { group?: string; options: SheetOption[] }[] {
@@ -35,16 +41,19 @@ function groupsOf(options: readonly SheetOption[]): { group?: string; options: S
 /**
  * A quick, reversible choice rising from the bottom edge (DESIGN SYSTEM § Sheets): a title, the
  * effect in one line, the options as rows, `Annuler` last. Its caller mounts it while it shows.
+ * A sheet whose rows are checked and unchecked (`checkable`) stays open, closed by `Fermer`.
  */
 export function Sheet({
   title,
   effect,
   options,
+  checkable = false,
   onClose,
 }: {
   title: string
   effect: ReactNode
   options: readonly SheetOption[]
+  checkable?: boolean
   onClose: () => void
 }) {
   const { open, ref, close } = useLayerExit<HTMLDivElement>(onClose)
@@ -69,38 +78,62 @@ export function Sheet({
               <h3 className="ml-1 text-label font-semibold text-muted-foreground">{group}</h3>
             )}
             <ul className="divide-y divide-border overflow-hidden rounded-card bg-secondary">
-              {ofGroup.map((option) => (
-                <li key={option.key}>
-                  <PressableSurface>
-                    <button
-                      type="button"
-                      aria-current={option.selected ? 'true' : undefined}
-                      className="flex min-h-14 w-full items-center gap-3 px-4 py-2 text-left outline-none hover:bg-accent focus-visible:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset"
-                      onClick={option.onPick}
-                    >
-                      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                        <span
-                          className={cn(
-                            'text-row font-medium',
-                            option.destructive && 'text-destructive',
-                          )}
-                        >
-                          {option.title}
-                        </span>
-                        {option.detail && (
-                          <span className="text-body text-muted-foreground">{option.detail}</span>
+              {ofGroup.map((option) => {
+                const content = (
+                  <>
+                    {option.icon}
+                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span
+                        className={cn(
+                          'text-row font-medium',
+                          option.destructive && 'text-destructive',
                         )}
+                      >
+                        {option.title}
                       </span>
-                      {option.selected && <Check className="size-5 shrink-0" aria-hidden="true" />}
-                    </button>
-                  </PressableSurface>
-                </li>
-              ))}
+                      {option.detail && (
+                        <span className="text-body text-muted-foreground">{option.detail}</span>
+                      )}
+                    </span>
+                  </>
+                )
+                const check = option.selected && (
+                  <Check className="size-5 shrink-0" aria-hidden="true" />
+                )
+                return (
+                  <li key={option.key}>
+                    {option.field ? (
+                      // A field takes its own taps: the row is its label, not a button.
+                      <label className={cn(ROW_CLASS, 'focus-within:bg-accent')}>
+                        {content}
+                        {option.field}
+                        {check}
+                      </label>
+                    ) : (
+                      <PressableSurface>
+                        <button
+                          type="button"
+                          aria-current={!checkable && option.selected ? 'true' : undefined}
+                          aria-pressed={checkable ? Boolean(option.selected) : undefined}
+                          className={cn(
+                            ROW_CLASS,
+                            'outline-none hover:bg-accent focus-visible:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset',
+                          )}
+                          onClick={option.onPick}
+                        >
+                          {content}
+                          {check}
+                        </button>
+                      </PressableSurface>
+                    )}
+                  </li>
+                )
+              })}
             </ul>
           </section>
         ))}
         <Button type="button" variant="ghost" className="text-ink-muted" onClick={close}>
-          Annuler
+          {checkable ? 'Fermer' : 'Annuler'}
         </Button>
       </DialogContent>
     </Dialog>

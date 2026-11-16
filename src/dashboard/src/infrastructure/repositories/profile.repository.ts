@@ -106,9 +106,9 @@ export class HttpProfileRepository implements ProfileRepository {
 
   async getDetectionHistory(query: DetectionHistoryQuery): Promise<DetectionHistoryPage> {
     const params = new URLSearchParams()
-    if (query.camera) params.set('camera', query.camera)
-    if (query.label) params.set('label', query.label)
-    if (query.profileId) params.set('profileId', query.profileId)
+    query.cameras?.forEach((camera) => params.append('camera', camera))
+    query.labels?.forEach((label) => params.append('label', label))
+    query.profileIds?.forEach((profileId) => params.append('profileId', profileId))
     if (query.from) params.set('from', query.from)
     if (query.to) params.set('to', query.to)
     if (query.cursor) params.set('cursor', query.cursor)

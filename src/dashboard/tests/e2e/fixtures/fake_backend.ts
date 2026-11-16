@@ -1327,6 +1327,7 @@ export async function installFakeBackend(
       return json(route, [
         { value: 'person', displayName: 'Personne' },
         { value: 'car', displayName: 'Voiture' },
+        { value: 'dog', displayName: 'Chien' },
       ])
     }
 
@@ -1542,18 +1543,23 @@ export async function installFakeBackend(
     // --- Detection history ---
     if (path === '/api/detection-events/history' && method === 'GET') {
       const limit = Number(url.searchParams.get('limit') ?? '20')
-      const label = url.searchParams.get('label')
-      const camera = url.searchParams.get('camera')
-      const profileId = url.searchParams.get('profileId')
+      // Each axis repeats its parameter, one value at a time; an event matches any of them.
+      const labels = url.searchParams.getAll('label')
+      const cameras = url.searchParams.getAll('camera')
+      const profileIds = url.searchParams.getAll('profileId')
       const from = url.searchParams.get('from')
       const to = url.searchParams.get('to')
       // The cursor is the last returned detection's date, in milliseconds (ADR-12).
       const cursor = url.searchParams.get('cursor')
 
       const matching = state.detectionHistory
-        .filter((event) => !label || event.label === label)
-        .filter((event) => !camera || event.camera.includes(camera))
-        .filter((event) => !profileId || event.profileId === profileId)
+        .filter((event) => labels.length === 0 || labels.includes(event.label))
+        .filter((event) => cameras.length === 0 || cameras.includes(event.camera))
+        .filter(
+          (event) =>
+            profileIds.length === 0 ||
+            (event.profileId !== null && profileIds.includes(event.profileId)),
+        )
         .filter((event) => !from || Date.parse(event.occurredAt) >= Date.parse(from))
         .filter((event) => !to || Date.parse(event.occurredAt) <= Date.parse(to))
         .filter((event) => !cursor || Date.parse(event.occurredAt) < Number(cursor))

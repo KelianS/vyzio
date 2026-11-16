@@ -48,35 +48,80 @@ describe('detectionHistoryReducer', () => {
     expect(next.nextCursor).toBeNull()
   })
 
-  it('detectionHistoryReducer_ShouldReadAgainFromTheStartAndCloseTheSheet_WhenAFilterChanges', () => {
+  it('detectionHistoryReducer_ShouldReadAgainFromTheStartAndKeepTheSheetOpen_WhenAValueIsChecked', () => {
     // Arrange
-    const filtering = { ...read, sheet: 'filter' as const, playingId: 'e2' }
+    const filtering = {
+      ...read,
+      sheet: 'filter' as const,
+      playingId: 'e2',
+      filters: { camera: [], profile: [], label: ['cat'] },
+    }
 
     // Act
-    const next = detectionHistoryReducer(filtering, { type: 'FILTER_LABEL_SET', value: 'car' })
+    const next = detectionHistoryReducer(filtering, {
+      type: 'FILTER_TOGGLED',
+      axis: 'label',
+      value: 'car',
+    })
 
     // Assert
     expect(next).toMatchObject({
-      filterLabel: 'car',
+      filters: { camera: [], profile: [], label: ['cat', 'car'] },
       items: [],
       nextCursor: null,
       loaded: false,
       playingId: null,
-      sheet: null,
+      sheet: 'filter',
     })
   })
 
-  it('detectionHistoryReducer_ShouldClearEveryFilter_WhenTheFiltersAreReset', () => {
+  it('detectionHistoryReducer_ShouldUncheckTheValue_WhenItIsTappedAgain', () => {
     // Arrange
-    const filtered = { ...read, filterCameraId: 'camera-2', filterProfileId: 'profile-1' }
+    const filtering = {
+      ...read,
+      filters: { camera: ['camera-1', 'camera-2'], profile: [], label: [] },
+    }
+
+    // Act
+    const next = detectionHistoryReducer(filtering, {
+      type: 'FILTER_TOGGLED',
+      axis: 'camera',
+      value: 'camera-1',
+    })
+
+    // Assert
+    expect(next.filters.camera).toEqual(['camera-2'])
+  })
+
+  it('detectionHistoryReducer_ShouldShowEveryValueOfTheAxisOnly_WhenItsAllRowIsTapped', () => {
+    // Arrange
+    const filtering = {
+      ...read,
+      filters: { camera: ['camera-1'], profile: ['profile-1'], label: [] },
+    }
+
+    // Act
+    const next = detectionHistoryReducer(filtering, { type: 'FILTER_CLEARED', axis: 'camera' })
+
+    // Assert
+    expect(next.filters).toEqual({ camera: [], profile: ['profile-1'], label: [] })
+  })
+
+  it('detectionHistoryReducer_ShouldClearEveryFilterAndTheDay_WhenTheFiltersAreReset', () => {
+    // Arrange
+    const filtered = {
+      ...read,
+      filters: { camera: ['camera-2'], profile: ['profile-1'], label: ['car'] },
+      filterDay: { kind: 'yesterday' as const },
+    }
 
     // Act
     const next = detectionHistoryReducer(filtered, { type: 'FILTERS_RESET' })
 
     // Assert
     expect(next).toMatchObject({
-      filterCameraId: '',
-      filterProfileId: '',
+      filters: { camera: [], profile: [], label: [] },
+      filterDay: { kind: 'any' },
       items: [],
       loaded: false,
     })

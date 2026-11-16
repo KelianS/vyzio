@@ -2,9 +2,13 @@ import type { AppError } from '../../common/errors/app_error'
 import type { DetectionEvent } from '../../domain/entities/detection_event.entity'
 import type { DetectionLabel } from '../../domain/entities/detection_label.entity'
 import type { Profile } from '../../domain/entities/profile.entity'
+import { ANY_DAY, type DayFilter } from './day_filter'
 
 /** The sheet the page shows: its filter, the playing clip's actions, or who the clip shows. */
 export type DetectionSheet = 'filter' | 'actions' | 'identity'
+
+/** An axis of the filter that holds several values at once (HIST-03). */
+export type FilterAxis = 'camera' | 'profile' | 'label'
 
 export interface DetectionHistoryUido {
   items: DetectionEvent[]
@@ -20,10 +24,9 @@ export interface DetectionHistoryUido {
   playingId: string | null
   sheet: DetectionSheet | null
 
-  /** A camera's id, never the engine's name for it: the page names cameras as the user does. */
-  filterCameraId: string
-  filterLabel: string
-  filterProfileId: string
+  /** The values checked on each axis, none meaning all; a camera by its id, never the engine's name. */
+  filters: Record<FilterAxis, string[]>
+  filterDay: DayFilter
 
   /** The detection whose deletion waits for its confirmation. */
   deletingEventId: string | null
@@ -44,9 +47,8 @@ export function buildInitialDetectionHistoryUido(cameraId = ''): DetectionHistor
     playingId: null,
     sheet: null,
 
-    filterCameraId: cameraId,
-    filterLabel: '',
-    filterProfileId: '',
+    filters: { camera: cameraId ? [cameraId] : [], profile: [], label: [] },
+    filterDay: ANY_DAY,
 
     deletingEventId: null,
     clipGoneEventId: null,

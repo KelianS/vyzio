@@ -211,12 +211,12 @@ describe('DetectionHistoryView', () => {
     expect(network.sent.at(-1)?.query).toContain('cursor=older')
   })
 
-  it('onFilterCamera_ShouldOfferTheCamerasByTheirNameAndAskForThatOne_WhenTheUserPicksOne', async () => {
+  it('onToggleFilter_ShouldAskForEveryCameraChecked_WhenTheUserChecksSeveralByTheirName', async () => {
     // Arrange
     const network = fakeNetwork({
       ...twoClips,
       'GET /api/cameras': ok([
-        makeCamera(),
+        makeCamera({ displayName: 'Porte d’entrée', frigateCameraName: 'front_door' }),
         makeCamera({ id: 'camera-2', displayName: 'Garage', frigateCameraName: 'cam_garage' }),
       ]),
     })
@@ -228,14 +228,72 @@ describe('DetectionHistoryView', () => {
 
     // Act
     await userEvent.click(within(sheet).getByRole('button', { name: 'Garage' }))
+    await userEvent.click(within(sheet).getByRole('button', { name: 'Porte d’entrée' }))
 
     // Assert
     expect(network.sent.at(-1)).toMatchObject({
       route: HISTORY,
-      query: '?camera=cam_garage&limit=20',
+      query: '?camera=front_door&camera=cam_garage&limit=20',
     })
-    expect(await screen.findByText('Garage')).toBeInTheDocument()
-    expect(screen.queryByRole('dialog', { name: 'Filtrer' })).not.toBeInTheDocument()
+    expect(within(sheet).getByRole('button', { name: 'Garage' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    expect(within(sheet).getByRole('button', { name: 'Toutes les caméras' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+  })
+
+  it('onToggleFilter_ShouldNameEveryValueCheckedAboveTheList_WhenTheSheetCloses', async () => {
+    // Arrange
+    fakeNetwork(twoClips)
+    renderScreen(<DetectionHistoryView />)
+    await userEvent.click(await screen.findByRole('button', { name: 'Filtrer' }))
+    const sheet = await screen.findByRole('dialog', { name: 'Filtrer' })
+    await userEvent.click(within(sheet).getByRole('button', { name: 'Chat' }))
+    await userEvent.click(within(sheet).getByRole('button', { name: 'Voiture' }))
+    await userEvent.click(within(sheet).getByRole('button', { name: 'Hier' }))
+
+    // Act
+    await userEvent.click(within(sheet).getByRole('button', { name: 'Fermer' }))
+
+    // Assert
+    expect(await screen.findByText('Chat, Voiture · Hier')).toBeInTheDocument()
+  })
+
+  it('onFilterDay_ShouldReadOnlyThatDay_WhenTheUserChoosesADay', async () => {
+    // Arrange
+    const network = fakeNetwork(twoClips)
+    renderScreen(<DetectionHistoryView />)
+    await userEvent.click(await screen.findByRole('button', { name: 'Filtrer' }))
+    const sheet = await screen.findByRole('dialog', { name: 'Filtrer' })
+
+    // Act
+    fireEvent.change(within(sheet).getByLabelText('Un autre jour'), {
+      target: { value: '2026-11-02' },
+    })
+
+    // Assert
+    expect(network.sent.at(-1)?.query).toMatch(/^\?from=[^&]+&to=[^&]+&limit=20$/)
+    expect(within(sheet).getByRole('button', { name: 'Tous les jours' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+  })
+
+  it('ClipList_ShouldShowTheIconOfEachClipsType_WhenTheHistoryAnswers', async () => {
+    // Arrange
+    fakeNetwork(twoClips)
+
+    // Act
+    renderScreen(<DetectionHistoryView />)
+
+    // Assert
+    const rows = await screen.findAllByRole('listitem')
+    expect(rows[0].querySelector('svg.lucide-cat')).not.toBeNull()
+    expect(rows[1].querySelector('svg.lucide-car')).not.toBeNull()
+    expect(player().querySelector('svg.lucide-cat')).not.toBeNull()
   })
 
   it('onLoadHistory_ShouldOpenFilteredOnTheCameraOfTheAddress_WhenArrivingFromACameraView', async () => {
@@ -266,11 +324,9 @@ describe('DetectionHistoryView', () => {
     const network = fakeNetwork(twoClips)
     renderScreen(<DetectionHistoryView />)
     await userEvent.click(await screen.findByRole('button', { name: 'Filtrer' }))
-    await userEvent.click(
-      within(await screen.findByRole('dialog', { name: 'Filtrer' })).getByRole('button', {
-        name: 'Voiture',
-      }),
-    )
+    const sheet = await screen.findByRole('dialog', { name: 'Filtrer' })
+    await userEvent.click(within(sheet).getByRole('button', { name: 'Voiture' }))
+    await userEvent.click(within(sheet).getByRole('button', { name: 'Fermer' }))
 
     // Act
     await userEvent.click(await screen.findByRole('button', { name: 'Tout afficher' }))
@@ -288,11 +344,9 @@ describe('DetectionHistoryView', () => {
     network.answer(HISTORY, ok({ items: [], nextCursor: null }))
 
     // Act
-    await userEvent.click(
-      within(await screen.findByRole('dialog', { name: 'Filtrer' })).getByRole('button', {
-        name: 'Chat',
-      }),
-    )
+    const sheet = await screen.findByRole('dialog', { name: 'Filtrer' })
+    await userEvent.click(within(sheet).getByRole('button', { name: 'Chat' }))
+    await userEvent.click(within(sheet).getByRole('button', { name: 'Fermer' }))
 
     // Assert
     expect(await screen.findByText('Aucune détection avec ces filtres.')).toBeInTheDocument()

@@ -18,17 +18,37 @@ import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import { useRootStore } from '../../infrastructure/store/root.store'
 import type { DetectionEvent } from '../../domain/entities/detection_event.entity'
+import type { DetectionHistoryQuery } from '../../domain/entities/detection_history.entity'
 import { buildDetectionHistoryPresenter } from './detection_history.presenter'
 import {
   detectionHistoryReducer,
   historyFailureSubject,
   playingClip,
 } from './detection_history.reducer'
-import { buildInitialDetectionHistoryUido } from './detection_history.uido'
+import {
+  buildInitialDetectionHistoryUido,
+  type DetectionHistoryUido,
+} from './detection_history.uido'
 import { FilterSheet } from './components/filter_sheet'
+import { dayLabel, dayRange, type DayFilter } from './day_filter'
 import { ClipActionsSheet, IdentitySheet } from './components/clip_sheets'
 
 const PAGE_SIZE = 20
+
+/** What the page reads: `engineCameras` is the engine's names of the checked cameras, comma-separated. */
+function historyQuery(
+  engineCameras: string,
+  filters: DetectionHistoryUido['filters'],
+  day: DayFilter,
+): DetectionHistoryQuery {
+  return {
+    cameras: engineCameras ? engineCameras.split(',') : undefined,
+    labels: filters.label,
+    profileIds: filters.profile,
+    ...dayRange(day, new Date()),
+    limit: PAGE_SIZE,
+  }
+}
 
 /** Saved on this device by the browser, never through a third party (HIST-19). */
 function download(apiBaseUrl: string, event: DetectionEvent) {
@@ -52,19 +72,19 @@ export function DetectionHistoryView() {
   )
   const presenter = usePresenter(buildDetectionHistoryPresenter, { container, dispatch, toast })
 
-  const camera = cameras.find((known) => known.id === uido.filterCameraId) ?? null
-  // A camera named in the address waits for the list that says which one it is.
-  const cameraPending = uido.filterCameraId !== '' && camera === null && camerasLoading
-  const engineCamera = camera?.frigateCameraName
+  const { filters, filterDay } = uido
+  // A key, not the list: a camera list read again must not read the history again.
+  const engineCameras = cameras
+    .filter((known) => filters.camera.includes(known.id))
+    .map((known) => known.frigateCameraName)
+    .join(',')
   const query = useMemo(
-    () => ({
-      camera: engineCamera,
-      label: uido.filterLabel || undefined,
-      profileId: uido.filterProfileId || undefined,
-      limit: PAGE_SIZE,
-    }),
-    [engineCamera, uido.filterLabel, uido.filterProfileId],
+    () => historyQuery(engineCameras, filters, filterDay),
+    [engineCameras, filters, filterDay],
   )
+  const checkedCameras = cameras.filter((known) => filters.camera.includes(known.id))
+  // A camera named in the address waits for the list that says which one it is.
+  const cameraPending = checkedCameras.length < filters.camera.length && camerasLoading
 
   useEffect(() => {
     presenter.onMount()
@@ -74,14 +94,20 @@ export function DetectionHistoryView() {
     if (!cameraPending) presenter.onLoadHistory(query)
   }, [presenter, query, cameraPending])
 
-  const filters = [
-    camera?.displayName,
-    uido.profiles.find((profile) => profile.id === uido.filterProfileId)?.name,
-    uido.filterLabel &&
-      (uido.detectionLabels.find((label) => label.value === uido.filterLabel)?.displayName ??
-        uido.filterLabel),
-  ].filter((name): name is string => Boolean(name))
-  const filtered = filters.length > 0
+  const filterNames = [
+    checkedCameras.map((known) => known.displayName),
+    uido.profiles
+      .filter((profile) => filters.profile.includes(profile.id))
+      .map((profile) => profile.name),
+    filters.label.map(
+      (value) => uido.detectionLabels.find((label) => label.value === value)?.displayName ?? value,
+    ),
+    [dayLabel(filterDay)].filter((name): name is string => name !== null),
+  ]
+    .filter((names) => names.length > 0)
+    .map((names) => names.join(', '))
+  const filtered =
+    Object.values(filters).some((values) => values.length > 0) || filterDay.kind !== 'any'
   // Filtering an empty history finds nothing: the filter is offered once there is something to sift, or to take back.
   const offersFilter = filtered || uido.items.length > 0
   const playing = playingClip(uido)
@@ -103,7 +129,7 @@ export function DetectionHistoryView() {
 
       {filtered && (
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="ml-1 min-w-0 text-body text-muted-foreground">{filters.join(' · ')}</p>
+          <p className="ml-1 min-w-0 text-body text-muted-foreground">{filterNames.join(' · ')}</p>
           <SecondaryButton icon={X} type="button" size="sm" onClick={presenter.onResetFilters}>
             Tout afficher
           </SecondaryButton>
@@ -200,12 +226,11 @@ export function DetectionHistoryView() {
           cameras={cameras}
           profiles={uido.profiles}
           labels={uido.detectionLabels}
-          cameraId={uido.filterCameraId}
-          profileId={uido.filterProfileId}
-          label={uido.filterLabel}
-          onCamera={presenter.onFilterCamera}
-          onProfile={presenter.onFilterProfile}
-          onLabel={presenter.onFilterLabel}
+          filters={filters}
+          day={filterDay}
+          onToggle={presenter.onToggleFilter}
+          onClear={presenter.onClearFilter}
+          onDay={presenter.onFilterDay}
           onClose={presenter.onCloseSheet}
         />
       )}

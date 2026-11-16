@@ -1,6 +1,7 @@
 import { AppErrorKind, type AppError } from '../../common/errors/app_error'
 import type { DetectionEvent } from '../../domain/entities/detection_event.entity'
 import type { DetectionHistoryAction } from './detection_history.actions'
+import { ANY_DAY } from './day_filter'
 import type { DetectionHistoryUido } from './detection_history.uido'
 
 /**
@@ -24,16 +25,15 @@ function nextOf(items: readonly DetectionEvent[], eventId: string): DetectionEve
   return index < 0 ? null : (items[index + 1] ?? null)
 }
 
-/** Changing a filter reads again from the start: a cursor does not outlive the criteria that produced it. */
-const REFILTERED: Pick<
-  DetectionHistoryUido,
-  'items' | 'nextCursor' | 'loaded' | 'playingId' | 'sheet'
-> = {
+/**
+ * Changing a filter reads again from the start: a cursor does not outlive the criteria that produced
+ * it. The sheet stays open, several values being checked one after another.
+ */
+const REFILTERED: Pick<DetectionHistoryUido, 'items' | 'nextCursor' | 'loaded' | 'playingId'> = {
   items: [],
   nextCursor: null,
   loaded: false,
   playingId: null,
-  sheet: null,
 }
 
 export function detectionHistoryReducer(
@@ -70,19 +70,23 @@ export function detectionHistoryReducer(
     case 'HISTORY_MORE_FAILED':
       return { ...state, loadingMore: false }
 
-    case 'FILTER_CAMERA_SET':
-      return { ...state, ...REFILTERED, filterCameraId: action.cameraId }
-    case 'FILTER_LABEL_SET':
-      return { ...state, ...REFILTERED, filterLabel: action.value }
-    case 'FILTER_PROFILE_SET':
-      return { ...state, ...REFILTERED, filterProfileId: action.value }
+    case 'FILTER_TOGGLED': {
+      const checked = state.filters[action.axis]
+      const values = checked.includes(action.value)
+        ? checked.filter((value) => value !== action.value)
+        : [...checked, action.value]
+      return { ...state, ...REFILTERED, filters: { ...state.filters, [action.axis]: values } }
+    }
+    case 'FILTER_CLEARED':
+      return { ...state, ...REFILTERED, filters: { ...state.filters, [action.axis]: [] } }
+    case 'FILTER_DAY_SET':
+      return { ...state, ...REFILTERED, filterDay: action.day }
     case 'FILTERS_RESET':
       return {
         ...state,
         ...REFILTERED,
-        filterCameraId: '',
-        filterLabel: '',
-        filterProfileId: '',
+        filters: { camera: [], profile: [], label: [] },
+        filterDay: ANY_DAY,
       }
 
     case 'CLIP_PLAYED':

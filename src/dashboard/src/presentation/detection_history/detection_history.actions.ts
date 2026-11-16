@@ -2,7 +2,8 @@ import type { AppError } from '../../common/errors/app_error'
 import type { DetectionHistoryPage } from '../../domain/entities/detection_history.entity'
 import type { DetectionLabel } from '../../domain/entities/detection_label.entity'
 import type { Profile } from '../../domain/entities/profile.entity'
-import type { DetectionSheet } from './detection_history.uido'
+import type { DayFilter } from './day_filter'
+import type { DetectionSheet, FilterAxis } from './detection_history.uido'
 
 export type DetectionHistoryAction =
   | { type: 'PROFILES_LOADED'; profiles: Profile[] }
@@ -13,9 +14,9 @@ export type DetectionHistoryAction =
   | { type: 'HISTORY_MORE_STARTED' }
   | { type: 'HISTORY_MORE_SUCCEEDED'; page: DetectionHistoryPage }
   | { type: 'HISTORY_MORE_FAILED' }
-  | { type: 'FILTER_CAMERA_SET'; cameraId: string }
-  | { type: 'FILTER_LABEL_SET'; value: string }
-  | { type: 'FILTER_PROFILE_SET'; value: string }
+  | { type: 'FILTER_TOGGLED'; axis: FilterAxis; value: string }
+  | { type: 'FILTER_CLEARED'; axis: FilterAxis }
+  | { type: 'FILTER_DAY_SET'; day: DayFilter }
   | { type: 'FILTERS_RESET' }
   | { type: 'CLIP_PLAYED'; eventId: string }
   | { type: 'CLIP_ENDED'; eventId: string }

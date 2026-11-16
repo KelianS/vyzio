@@ -5,7 +5,8 @@ import type { DetectionHistoryQuery } from '../../domain/entities/detection_hist
 import type { Profile } from '../../domain/entities/profile.entity'
 import type { DetectionHistoryContainer } from '../../infrastructure/providers/detection_history.container'
 import type { DetectionHistoryAction } from './detection_history.actions'
-import type { DetectionSheet } from './detection_history.uido'
+import type { DayFilter } from './day_filter'
+import type { DetectionSheet, FilterAxis } from './detection_history.uido'
 import { explainVideoFailure } from '../../common/detection/explain_video_failure'
 
 export interface DetectionHistoryPresenterContext {
@@ -51,14 +52,14 @@ export function buildDetectionHistoryPresenter({
         })
     },
 
-    onFilterCamera(cameraId: string) {
-      dispatch({ type: 'FILTER_CAMERA_SET', cameraId })
+    onToggleFilter(axis: FilterAxis, value: string) {
+      dispatch({ type: 'FILTER_TOGGLED', axis, value })
     },
-    onFilterLabel(value: string) {
-      dispatch({ type: 'FILTER_LABEL_SET', value })
+    onClearFilter(axis: FilterAxis) {
+      dispatch({ type: 'FILTER_CLEARED', axis })
     },
-    onFilterProfile(value: string) {
-      dispatch({ type: 'FILTER_PROFILE_SET', value })
+    onFilterDay(day: DayFilter) {
+      dispatch({ type: 'FILTER_DAY_SET', day })
     },
     onResetFilters() {
       dispatch({ type: 'FILTERS_RESET' })
