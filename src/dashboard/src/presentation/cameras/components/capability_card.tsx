@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { ChevronRight, type LucideIcon } from 'lucide-react'
 import { Fold } from '../../../common/components/fold'
 import { GroupedItem } from '../../../common/components/grouped_list'
@@ -35,11 +35,7 @@ export function CapabilityCard({
   const subtitle = mark && markSubtitle(mark)
   // Decided once the state is first read, then left to the user: an answer never snaps it shut.
   const [open, setOpen] = useState<boolean | null>(null)
-  const known = mark !== undefined
-  const working = mark?.kind === StatusMarkKind.On
-  useEffect(() => {
-    if (open === null && known) setOpen(!working)
-  }, [open, known, working])
+  if (open === null && mark !== undefined) setOpen(mark.kind !== StatusMarkKind.On)
 
   return (
     <GroupedItem inset="icon">
