@@ -20,22 +20,22 @@ subtitle or a frame is added only when it carries something the user acts on.
 written in a screen. Each role is a token; the Tailwind theme realises them, and no component writes
 a colour.
 
-| Role | Value | Use |
-| --- | --- | --- |
-| Ground | `#101412` | The page background |
-| Surface | `#1b201d` | A card, a grouped list, a sheet |
-| Raised | `#242a26` | A neutral pill or button on a surface, a pressed or selected row |
-| Icon circle | `#2a312d` | The round background of an icon button and of a row's icon |
-| Line | `#2c332f` | The separator between rows, every border that names no other |
-| Field line | `#3a433d` | The border of a field |
-| Ink | `#eef2ef` | Primary text |
-| Ink soft | `#9aa59e` | Secondary text, a subtitle, a section label |
-| Ink muted | `#c9d1cb` | Text over the picture or inside the bar, a step below the ink |
-| Bar | `#1d4a3a` | The top bar |
-| Action | `#7fd1a8` on `#0e2a1f` | The one main action of a view, and the "running" mark |
-| Silence | `#f2c46d` on `#2b1f05` | Silence only |
-| Alert | `#f29a8b` | Offline, a failure, a warning, a destructive action |
-| Mark off | `#6f7a73` | The "cut" and "not verified" mark |
+| Role        | Value                  | Use                                                              |
+| ----------- | ---------------------- | ---------------------------------------------------------------- |
+| Ground      | `#101412`              | The page background                                              |
+| Surface     | `#1b201d`              | A card, a grouped list, a sheet                                  |
+| Raised      | `#242a26`              | A neutral pill or button on a surface, a pressed or selected row |
+| Icon circle | `#2a312d`              | The round background of an icon button and of a row's icon       |
+| Line        | `#2c332f`              | The separator between rows, every border that names no other     |
+| Field line  | `#3a433d`              | The border of a field                                            |
+| Ink         | `#eef2ef`              | Primary text                                                     |
+| Ink soft    | `#9aa59e`              | Secondary text, a subtitle, a section label                      |
+| Ink muted   | `#c9d1cb`              | Text over the picture or inside the bar, a step below the ink    |
+| Bar         | `#1d4a3a`              | The top bar                                                      |
+| Action      | `#7fd1a8` on `#0e2a1f` | The one main action of a view, and the "running" mark            |
+| Silence     | `#f2c46d` on `#2b1f05` | Silence only                                                     |
+| Alert       | `#f29a8b`              | Offline, a failure, a warning, a destructive action              |
+| Mark off    | `#6f7a73`              | The "cut" and "not verified" mark                                |
 
 Colour roles, each with one meaning:
 
@@ -52,12 +52,12 @@ Colour roles, each with one meaning:
 **One family, Inter, self-hosted**: the hub works offline, so no font is fetched from the network.
 **Four sizes**, never a fifth:
 
-| Size | Role | Weight |
-| --- | --- | --- |
-| `26px` | Page title | Bold, tracked slightly tighter |
-| `17px` | Row or card title, a field's value | Semibold for a title, regular for a value |
-| `15px` | Secondary text, a button label, a subtitle | Regular; semibold on a button |
-| `13px` | Section label above a grouped list, a caption over the picture | Semibold, ink soft |
+| Size   | Role                                                           | Weight                                    |
+| ------ | -------------------------------------------------------------- | ----------------------------------------- |
+| `26px` | Page title                                                     | Bold, tracked slightly tighter            |
+| `17px` | Row or card title, a field's value                             | Semibold for a title, regular for a value |
+| `15px` | Secondary text, a button label, a subtitle                     | Regular; semibold on a button             |
+| `13px` | Section label above a grouped list, a caption over the picture | Semibold, ink soft                        |
 
 Two levels are told apart by size, weight and colour together: one signal alone does not separate a
 title from its subtitle.
@@ -66,10 +66,10 @@ title from its subtitle.
 
 Radii, three shapes never confused (exact values in `src/index.css`, the single home):
 
-| Shape | Use |
-| --- | --- |
-| Pill (`999px`) | Every button, every pill, every tab |
-| Circle | An icon button, a row's icon, a status mark, a day toggle |
+| Shape             | Use                                                                 |
+| ----------------- | ------------------------------------------------------------------- |
+| Pill (`999px`)    | Every button, every pill, every tab                                 |
+| Circle            | An icon button, a row's icon, a status mark, a day toggle           |
 | Rounded rectangle | A surface (card, grouped list, sheet), a field, the picture's frame |
 
 **A control is a finger's size**: every control reaches `44px` to the touch, a list row is drawn at
@@ -111,12 +111,12 @@ Motion is short, calm and led by opacity: it confirms a gesture or bridges a cha
 otherwise jump, never decorates. One curve and three durations, never a value written in a component
 (exact values in `src/index.css`, the single home):
 
-| Token | Use |
-| --- | --- |
-| `--ease-calm` | **The one curve** of every transition and animation: a strong ease-out, fast at the start so the answer is immediate, long to settle. Never an ease-in |
-| `--duration-press` | Press feedback |
-| `--duration-short` | Small layers (popover, select, tooltip), a toast leaving, faded controls coming back on a tap |
-| `--duration-long` | Dialogs and sheets, a toast arriving, faded controls leaving by themselves |
+| Token              | Use                                                                                                                                                    |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `--ease-calm`      | **The one curve** of every transition and animation: a strong ease-out, fast at the start so the answer is immediate, long to settle. Never an ease-in |
+| `--duration-press` | Press feedback                                                                                                                                         |
+| `--duration-short` | Small layers (popover, select, tooltip), a toast leaving, faded controls coming back on a tap                                                          |
+| `--duration-long`  | Dialogs and sheets, a toast arriving, faded controls leaving by themselves                                                                             |
 
 - **Layers fade.** A dialog also grows slightly from the centre; a sheet rises from the bottom edge;
   a popover, a select or a tooltip grows from its trigger with a short slide. A full-screen picture
@@ -161,11 +161,11 @@ appears only to say what the title leaves out (a scope, a timing, a state).
 
 **One mark beside a name** ([SPECS](SPECS.md) UI-31, which says which state takes which mark), `8px`:
 
-| Mark | Camera | Capability |
-| --- | --- | --- |
-| Filled green dot | Running | Works |
-| Filled grey dot | Cut, to set up | Any state that is neither working nor failing |
-| Hollow coral ring | Offline | Fails |
+| Mark              | Camera         | Capability                                    |
+| ----------------- | -------------- | --------------------------------------------- |
+| Filled green dot  | Running        | Works                                         |
+| Filled grey dot   | Cut, to set up | Any state that is neither working nor failing |
+| Hollow coral ring | Offline        | Fails                                         |
 
 The subtitle UI-31 allows sits under the title in ink soft, `15px`. The mark carries its state as its
 accessible name.
@@ -230,11 +230,14 @@ and undo ([ADR-15](adr/0015-settings-model-schedules-and-edit-cycle.md); the tab
 its control is the settings renderer's, in code). A page **does not name itself in its content**: its
 title is in the bar.
 
-A settings row is always, in this order: **name, help trigger, control, provenance, undo**. On a
-phone the row folds into two lines, the name above, the control below. A followed value reads
-greyed, an own value reads normally, never with a caption; undo appears only where there is something
-to undo and names the value it restores. A page lists its most common setting first; the rare ones go
-to `Avancé`.
+A settings row is always, in this order: **name, help trigger, control, provenance, undo**. The
+help trigger follows the name's last word. On a phone, the control's nature sets the layout: a
+short control (a switch, a number) stands beside the name, on one row of a grouped list, the
+number field sized to its value and unit; a long one (a list, a text, a slider) goes under the
+name. A value always reads in full ink: where the level above is one the user knows (a camera
+following the whole installation), the row's subtitle says it (`Comme l’ensemble`, `Propre à cette
+caméra`); undo appears only where there is something to undo and names the value it restores. A
+page lists its most common setting first; the rare ones go to `Avancé`.
 
 **An option that cannot be chosen yet stays in the list**, greyed and not selectable, with the reason
 and the way out on a quieter second line: what is missing, and the screen where it is fixed. The saved
@@ -249,7 +252,7 @@ the reason.
 A thing the user checks or sets, opened from its row (a capability) or its page (a channel, a
 protocol), reads as **a card sharing one anatomy**; on a page of its own, the title and its mark sit
 in the bar:
-**title** with its mark · *state line* · *settings* · **actions**.
+**title** with its mark · _state line_ · _settings_ · **actions**.
 
 - **The title** is the plain name of the thing, never a protocol or a technical acronym.
 - **The state line** appears only for an exception: it justifies the mark (principle 4) and says what
@@ -262,12 +265,12 @@ takes its place, naming as a link the page where it is fixed.
 
 ### Folds
 
-| Fold | Where | Holds |
-| --- | --- | --- |
-| `Options` | Inside a card, closed | That card's settings |
-| `Avancé` | A row ending the page's settings, opening its own page titled `Avancé`, or straight the one screen that page would hold | Rare settings: a position, not a mode (UI-09) |
-| Help question | Last on the page, closed | Task help (§ Help) |
-| `Détails techniques` | The end of an error or a card, closed | Figures for support (§ Technical details) |
+| Fold                 | Where                                                                                                                   | Holds                                         |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| `Options`            | Inside a card, closed                                                                                                   | That card's settings                          |
+| `Avancé`             | A row ending the page's settings, opening its own page titled `Avancé`, or straight the one screen that page would hold | Rare settings: a position, not a mode (UI-09) |
+| Help question        | Last on the page, closed                                                                                                | Task help (§ Help)                            |
+| `Détails techniques` | The end of an error or a card, closed                                                                                   | Figures for support (§ Technical details)     |
 
 None stands in for another: no setting in help or technical details, no help in `Avancé`.
 
@@ -307,12 +310,12 @@ fault**. It speaks the product's words, never an internal identifier or a techni
 
 Every piece of feedback has one place, chosen by what caused it, never by the screen it happens on:
 
-| Place | What goes there | What never does |
-| --- | --- | --- |
-| **Toast**, at the bottom | The answer to what the user just did: a success, a warning (a camera that did not follow), a failure with its diagnostic line; at most one action, `Réessayer`, when the fix is to do it again | A state that outlasts the act; anything the user did not just do |
-| **Bar alert** (UI-30) | A state that lasts and that no act of the user caused: a camera offline, a camera that did not follow a range or a restart, the disk almost full, Vyzio out of reach, surveillance stopped, a restart that failed | The answer to an act; a state of one page only |
-| **In place of the content** | A read that failed, where its data would have been, with `Réessayer` (§ Errors): there is nothing else to show | A failure under data already shown, which is a toast |
-| **A row's, tile's or card's subtitle** | A state to act on, in one line: `À configurer`, `Coupée jusqu'à 7 h`, `Hors ligne depuis 4 min`; a card's state line also gives the reason of its mark (§ Cards) | The outcome of an act, an error, a warning |
+| Place                                  | What goes there                                                                                                                                                                                                   | What never does                                                  |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| **Toast**, at the bottom               | The answer to what the user just did: a success, a warning (a camera that did not follow), a failure with its diagnostic line; at most one action, `Réessayer`, when the fix is to do it again                    | A state that outlasts the act; anything the user did not just do |
+| **Bar alert** (UI-30)                  | A state that lasts and that no act of the user caused: a camera offline, a camera that did not follow a range or a restart, the disk almost full, Vyzio out of reach, surveillance stopped, a restart that failed | The answer to an act; a state of one page only                   |
+| **In place of the content**            | A read that failed, where its data would have been, with `Réessayer` (§ Errors): there is nothing else to show                                                                                                    | A failure under data already shown, which is a toast             |
+| **A row's, tile's or card's subtitle** | A state to act on, in one line: `À configurer`, `Coupée jusqu'à 7 h`, `Hors ligne depuis 4 min`; a card's state line also gives the reason of its mark (§ Cards)                                                  | The outcome of an act, an error, a warning                       |
 
 Nothing else: no warning row, no error paragraph in a page. A form's own refusal (a field left
 invalid, a password refused) is not feedback from the system: it stays beside its field.
