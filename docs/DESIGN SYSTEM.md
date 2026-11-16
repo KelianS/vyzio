@@ -237,12 +237,12 @@ number field sized to its value and unit; a long one (a list, a text, a slider) 
 name. A value always reads in full ink. A page lists its most common setting first; the rare ones go
 to `Avancé`.
 
-**An inherited value reads by a lock beside its field**, never by a subtitle or a lede: a setting
-inherits from the level above (a camera from the whole installation, the installation from the
-product default). A **closed lock** in ink soft marks a value still inherited; it is a mark, not a
-button, named `Valeur de l’ensemble` or `Valeur par défaut`. An **open lock** in ink muted marks a
-value set here; it is the way back, a button named by what it restores (`Revenir à la valeur de
-l’ensemble (7 jours)`), and going back is a draft change like any other.
+**An inherited value reads by a lock beside its field**, never by a subtitle: only a setting with a
+real parent value has one (a camera's duration follows the whole installation's); a setting with no
+level above, the installation's own included, is a plain field. A **closed lock** in ink soft marks a
+value that follows its parent; it is a mark, not a button, named `Valeur de l’ensemble`. An **open
+lock** in ink muted marks a value set here; it is the way back, a button named by what it restores
+(`Revenir à la valeur de l’ensemble (7 jours)`), and going back is a draft change like any other.
 
 **An option that cannot be chosen yet stays in the list**, greyed and not selectable, with the reason
 and the way out on a quieter second line: what is missing, and the screen where it is fixed. The saved
