@@ -138,7 +138,10 @@ test.describe('Action weight', () => {
       'background-color',
       tint,
     )
-    await expect(page.getByRole('link', { name: 'Connexion' })).toHaveCSS('background-color', tint)
+    // The selected tab is raised by the tab bar's one indicator, under its label.
+    await expect(
+      page.getByRole('navigation', { name: 'Réglages de la caméra' }).locator('[aria-hidden]'),
+    ).toHaveCSS('background-color', tint)
   })
 
   test('ApplyChanges_ShouldBeTheSettingsBarMainAction_WhenAChangeWaits', async ({ page }) => {
