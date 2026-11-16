@@ -81,7 +81,7 @@ export function CameraConnectionAdvancedView() {
               >
                 {uido.searchingProtocols ? 'Recherche…' : 'Rechercher les protocoles'}
               </SecondaryButton>
-              {/* Adding by hand is the way out when the search finds nothing (CAM-48). */}
+              {/* Adding by hand is the way out when the search finds nothing (CAM-64). */}
               <AddProtocol
                 protocols={uido.protocols}
                 open={uido.protocolFormOpen}
