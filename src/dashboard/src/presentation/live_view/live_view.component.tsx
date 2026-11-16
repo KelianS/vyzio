@@ -398,9 +398,7 @@ export function LiveView({ camera }: { camera: Camera }) {
       case PictureState.Cut:
         return (
           <PictureNotice icon={EyeOff} title={cutLine(camera, new Date())}>
-            <p className="-mt-2.5 text-body text-muted-foreground">
-              Vyzio n’enregistre plus rien
-            </p>
+            <p className="-mt-2.5 text-body text-muted-foreground">Vyzio n’enregistre plus rien</p>
             <Button
               type="button"
               disabled={uido.privacyBusy}
