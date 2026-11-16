@@ -15,7 +15,6 @@ import {
   CONTINUOUS_DISK_WARNING,
   RETENTION_LABEL,
   RETENTION_ORDER,
-  formatDays,
   retentionHelp,
   retentionMinDays,
   type RetentionWindow,
@@ -104,7 +103,6 @@ function ConservationForm({
   const declarations: SettingDeclaration[] = RETENTION_ORDER.map((window) => {
     const field = FIELD_OF[window]
     const current = draft.values[field]
-    const shipped = settings[window].default
 
     return {
       id: `retention-${window}`,
@@ -120,19 +118,12 @@ function ConservationForm({
       consequence: window === 'continuous' && current > 0 ? CONTINUOUS_DISK_WARNING : undefined,
       value: current,
       onChange: (days) => draft.set(field, days as number),
-      inherits: {
-        from: 'default',
-        // The level above the installation is the shipped value: matching it *is* inheriting it.
-        inherited: current === shipped,
-        valueLabel: formatDays(shipped),
-        onRevert: () => draft.set(field, shipped),
-      },
     }
   })
 
   return (
     <>
-      <SettingsPage>
+      <SettingsPage lede="Pour toutes vos caméras, sauf celles qui gardent leur propre durée.">
         <SettingsList settings={declarations} />
 
         <RetentionHelp />

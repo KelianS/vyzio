@@ -132,7 +132,6 @@ function ConservationForm({
       // Writing to the field is what creates the override.
       onChange: (days) => draft.set(field, days as number),
       inherits: {
-        from: 'installation',
         inherited: override === null,
         valueLabel: formatDays(inherited),
         onRevert: () => draft.set(field, null),

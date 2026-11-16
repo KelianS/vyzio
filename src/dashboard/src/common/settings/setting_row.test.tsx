@@ -227,51 +227,52 @@ describe('SettingRow anatomy', () => {
     expect(screen.getByText('Compter 1 à 3 Go par jour.')).toBeInTheDocument()
   })
 
-  it.each([
-    { from: 'installation', mark: 'Valeur de l’ensemble' },
-    { from: 'default', mark: 'Valeur par défaut' },
-  ] as const)(
-    'SettingRow_ShouldMarkTheValueWithAClosedLockAndOfferNoWayBack_WhenItIsInherited ($from)',
-    ({ from, mark }) => {
-      // Arrange & Act
-      render(
-        <SettingRow
-          setting={declare({
-            nature: { kind: 'number', unit: 'jours' },
-            value: 7,
-            inherits: { from, inherited: true, valueLabel: '7 jours', onRevert: vi.fn() },
-          })}
-        />,
-      )
+  it('SettingRow_ShouldMarkTheValueWithAClosedLockAndOfferNoWayBack_WhenItIsInherited', () => {
+    // Arrange & Act
+    render(
+      <SettingRow
+        setting={declare({
+          nature: { kind: 'number', unit: 'jours' },
+          value: 7,
+          inherits: { inherited: true, valueLabel: '7 jours', onRevert: vi.fn() },
+        })}
+      />,
+    )
 
-      // Assert
-      expect(screen.getByRole('img', { name: mark })).toBeInTheDocument()
-      expect(screen.queryByRole('button', { name: /revenir/i })).not.toBeInTheDocument()
-    },
-  )
+    // Assert
+    expect(screen.getByRole('img', { name: 'Valeur de l’ensemble' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /revenir/i })).not.toBeInTheDocument()
+  })
 
-  it.each([
-    { from: 'installation', revert: 'Revenir à la valeur de l’ensemble (7 jours)' },
-    { from: 'default', revert: 'Revenir à la valeur par défaut (7 jours)' },
-  ] as const)(
-    'SettingRow_ShouldOfferAnOpenLockNamingWhatItRestores_WhenTheValueIsSetHere ($from)',
-    ({ from, revert }) => {
-      // Arrange & Act
-      render(
-        <SettingRow
-          setting={declare({
-            nature: { kind: 'number', unit: 'jours' },
-            value: 30,
-            inherits: { from, inherited: false, valueLabel: '7 jours', onRevert: vi.fn() },
-          })}
-        />,
-      )
+  it('SettingRow_ShouldOfferAnOpenLockNamingWhatItRestores_WhenTheValueIsSetHere', () => {
+    // Arrange & Act
+    render(
+      <SettingRow
+        setting={declare({
+          nature: { kind: 'number', unit: 'jours' },
+          value: 30,
+          inherits: { inherited: false, valueLabel: '7 jours', onRevert: vi.fn() },
+        })}
+      />,
+    )
 
-      // Assert
-      expect(screen.getByRole('button', { name: revert })).toBeInTheDocument()
-      expect(screen.queryByRole('img', { name: /^Valeur/ })).not.toBeInTheDocument()
-    },
-  )
+    // Assert
+    expect(
+      screen.getByRole('button', { name: 'Revenir à la valeur de l’ensemble (7 jours)' }),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('img', { name: 'Valeur de l’ensemble' })).not.toBeInTheDocument()
+  })
+
+  it('SettingRow_ShouldShowNoLock_WhenTheValueHasNoParent', () => {
+    // Arrange & Act
+    render(
+      <SettingRow setting={declare({ nature: { kind: 'number', unit: 'jours' }, value: 7 })} />,
+    )
+
+    // Assert
+    expect(screen.queryByRole('img', { name: 'Valeur de l’ensemble' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /revenir/i })).not.toBeInTheDocument()
+  })
 
   it('SettingRow_ShouldSayNoProvenanceUnderTheName_WhenTheValueIsInherited', () => {
     // Arrange & Act
@@ -281,7 +282,6 @@ describe('SettingRow anatomy', () => {
           nature: { kind: 'number', unit: 'jours' },
           value: 7,
           inherits: {
-            from: 'installation',
             inherited: true,
             valueLabel: '7 jours',
             onRevert: vi.fn(),
@@ -302,7 +302,7 @@ describe('SettingRow anatomy', () => {
         setting={declare({
           nature: { kind: 'number', unit: 'jours' },
           value: 7,
-          inherits: { from: 'default', inherited: true, valueLabel: '7 jours', onRevert: vi.fn() },
+          inherits: { inherited: true, valueLabel: '7 jours', onRevert: vi.fn() },
         })}
       />,
     )
@@ -320,14 +320,14 @@ describe('SettingRow anatomy', () => {
         setting={declare({
           nature: { kind: 'number', unit: 'jours' },
           value: 30,
-          inherits: { from: 'default', inherited: false, valueLabel: '7 jours', onRevert },
+          inherits: { inherited: false, valueLabel: '7 jours', onRevert },
         })}
       />,
     )
 
     // Act
     await userEvent.click(
-      screen.getByRole('button', { name: 'Revenir à la valeur par défaut (7 jours)' }),
+      screen.getByRole('button', { name: 'Revenir à la valeur de l’ensemble (7 jours)' }),
     )
 
     // Assert

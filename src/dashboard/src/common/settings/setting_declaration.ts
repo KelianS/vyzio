@@ -68,15 +68,11 @@ export type SettingNature =
 /** Beyond that, a filter appears in the panel: a long list is searched, not scanned. */
 export const VISIBLE_CHOICES_MAX = 7
 
-/** The level a value is inherited from: a camera's from the whole installation, the installation's from the product. */
-export type InheritedFrom = 'installation' | 'default'
-
 /**
- * A value inherited from the level above, which the row reads by its lock (ADR-15).
- * Supplied by the declaration, never recomputed while rendering.
+ * A value inherited from a real parent level, a camera's from the whole installation, which the
+ * row reads by its lock (ADR-15). Supplied by the declaration, never recomputed while rendering.
  */
 interface SettingInheritance {
-  readonly from: InheritedFrom
   /** `true` for as long as the value is the inherited one. */
   readonly inherited: boolean
   /** The inherited value, already formatted to be read: what going back restores. */

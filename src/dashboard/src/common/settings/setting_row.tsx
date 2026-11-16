@@ -3,7 +3,7 @@ import { Button } from '../ui/button'
 import { HelpTrigger } from '../components/help_trigger'
 import { cn } from '../ui/utils'
 import { SettingControl } from './setting_control'
-import type { InheritedFrom, SettingDeclaration, SettingNature } from './setting_declaration'
+import type { SettingDeclaration, SettingNature } from './setting_declaration'
 
 /** Whether the control sits beside the name on a phone: a short control does, a long one goes under it. */
 const BESIDE_THE_NAME: Record<SettingNature['kind'], boolean> = {
@@ -20,14 +20,7 @@ const BESIDE_THE_NAME: Record<SettingNature['kind'], boolean> = {
 /** Five no-break spaces: the width of the help icon and its gap, at the name's size. */
 const HELP_ROOM = String.fromCharCode(0xa0).repeat(5)
 
-/** What a lock says, by the level the value is inherited from. */
-const INHERITED_FROM: Record<InheritedFrom, { mark: string; revert: string }> = {
-  installation: {
-    mark: 'Valeur de l’ensemble',
-    revert: 'Revenir à la valeur de l’ensemble',
-  },
-  default: { mark: 'Valeur par défaut', revert: 'Revenir à la valeur par défaut' },
-}
+const INHERITED_MARK = 'Valeur de l’ensemble'
 
 /** On a phone, the lock takes a column of its own beside the control, whichever row that is. */
 const PHONE_COLUMNS = {
@@ -94,7 +87,6 @@ export function SettingRow({ setting }: { setting: SettingDeclaration }) {
 
 /** Closed while the value is inherited, a mark; open once it is set here, the way back. */
 function InheritanceLock({ inherits }: { inherits: NonNullable<SettingDeclaration['inherits']> }) {
-  const words = INHERITED_FROM[inherits.from]
   // Pulled into the grid gap, so the lock reads as the field's own.
   const intoTheGap = '-ml-2.5'
 
@@ -102,8 +94,8 @@ function InheritanceLock({ inherits }: { inherits: NonNullable<SettingDeclaratio
     return (
       <span
         role="img"
-        aria-label={words.mark}
-        title={words.mark}
+        aria-label={INHERITED_MARK}
+        title={INHERITED_MARK}
         className={cn(
           'inline-flex size-11 items-center justify-center text-muted-foreground',
           intoTheGap,
@@ -113,7 +105,7 @@ function InheritanceLock({ inherits }: { inherits: NonNullable<SettingDeclaratio
       </span>
     )
 
-  const revert = `${words.revert} (${inherits.valueLabel})`
+  const revert = `Revenir à la valeur de l’ensemble (${inherits.valueLabel})`
   return (
     <Button
       type="button"
