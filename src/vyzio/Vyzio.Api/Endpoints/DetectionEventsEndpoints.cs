@@ -17,10 +17,11 @@ public static class DetectionEventsEndpoints
         group.MapGet("/profiles/{profileId}", async (string profileId, int? limit, GetProfileDetectionEventsUseCase useCase, CancellationToken ct) =>
             Results.Ok(await useCase.ExecuteAsync(profileId, limit ?? 20, ct)));
 
+        // A filter axis repeats its parameter for each value: ?camera=a&camera=b.
         group.MapGet("/history", async (
-            string? camera,
-            string? label,
-            string? profileId,
+            string[]? camera,
+            string[]? label,
+            string[]? profileId,
             DateTimeOffset? from,
             DateTimeOffset? to,
             string? cursor,
@@ -29,9 +30,9 @@ public static class DetectionEventsEndpoints
             CancellationToken ct) =>
         {
             var query = new DetectionHistoryQuery(
-                Camera: camera,
-                Label: label,
-                ProfileId: profileId,
+                Cameras: camera,
+                Labels: label,
+                ProfileIds: profileId,
                 From: from,
                 To: to,
                 Cursor: cursor,

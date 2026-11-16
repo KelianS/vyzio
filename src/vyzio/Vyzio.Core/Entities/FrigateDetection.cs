@@ -17,11 +17,12 @@ public sealed record FrigateDetection(
 /// <summary>
 /// Frigate paginates by time, not by page number — its `page=` parameter is inert (ADR-12).
 /// <paramref name="Before"/> is the cursor: the occurrence time of the last detection already read.
+/// Each list keeps a detection matching any of its values; an empty or missing one filters nothing.
 /// </summary>
 public sealed record FrigateDetectionQuery(
-    string? Camera = null,
-    string? Label = null,
-    string? Identity = null,
+    IReadOnlyList<string>? Cameras = null,
+    IReadOnlyList<string>? Labels = null,
+    IReadOnlyList<string>? Identities = null,
     DateTimeOffset? After = null,
     DateTimeOffset? Before = null,
     int Limit = 20);

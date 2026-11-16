@@ -39,14 +39,9 @@ public sealed class FrigateEventReader(HttpClient httpClient) : IFrigateEventRea
             "include_thumbnails=0"
         };
 
-        if (!string.IsNullOrWhiteSpace(query.Camera))
-            parameters.Add($"cameras={Uri.EscapeDataString(query.Camera)}");
-
-        if (!string.IsNullOrWhiteSpace(query.Label))
-            parameters.Add($"labels={Uri.EscapeDataString(query.Label)}");
-
-        if (!string.IsNullOrWhiteSpace(query.Identity))
-            parameters.Add($"sub_labels={Uri.EscapeDataString(query.Identity)}");
+        AddList(parameters, "cameras", query.Cameras);
+        AddList(parameters, "labels", query.Labels);
+        AddList(parameters, "sub_labels", query.Identities);
 
         if (query.After.HasValue)
             parameters.Add($"after={ToUnixSeconds(query.After.Value)}");
@@ -55,6 +50,14 @@ public sealed class FrigateEventReader(HttpClient httpClient) : IFrigateEventRea
             parameters.Add($"before={ToUnixSeconds(query.Before.Value)}");
 
         return $"api/events?{string.Join('&', parameters)}";
+    }
+
+    // Frigate reads one comma-separated list per filter and keeps an event matching any of its values.
+    private static void AddList(List<string> parameters, string name, IReadOnlyList<string>? values)
+    {
+        var kept = values?.Where(value => !string.IsNullOrWhiteSpace(value)).ToArray() ?? [];
+        if (kept.Length > 0)
+            parameters.Add($"{name}={string.Join(',', kept.Select(Uri.EscapeDataString))}");
     }
 
     private static string ToUnixSeconds(DateTimeOffset moment)

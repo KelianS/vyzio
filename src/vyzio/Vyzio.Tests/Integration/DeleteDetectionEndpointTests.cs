@@ -150,12 +150,36 @@ public class DetectionClipMalformedIdTests(DeleteDetectionApiFactory factory) : 
     }
 }
 
+public class DetectionHistoryEndpointTests(DeleteDetectionApiFactory factory) : IClassFixture<DeleteDetectionApiFactory>
+{
+    [Fact]
+    public async Task GetHistory_ShouldAskForEveryValueOfAnAxis_WhenItsParameterRepeats()
+    {
+        // Arrange
+        factory.Events.QueryAsync(Arg.Any<FrigateDetectionQuery>(), Arg.Any<CancellationToken>()).Returns([]);
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.GetAsync(
+            "/api/detection-events/history?camera=front_door&camera=garage&label=car&label=dog");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        await factory.Events.Received(1).QueryAsync(
+            Arg.Is<FrigateDetectionQuery>(query =>
+                string.Join(',', query.Cameras!) == "front_door,garage"
+                && string.Join(',', query.Labels!) == "car,dog"),
+            Arg.Any<CancellationToken>());
+    }
+}
+
 public sealed class DeleteDetectionApiFactory : WebApplicationFactory<Program>
 {
     private readonly SqliteConnection _connection = new("Data Source=:memory:");
 
     public IFrigateDetectionEraser Eraser { get; } = Substitute.For<IFrigateDetectionEraser>();
     public IFrigateClipProvider Clips { get; } = Substitute.For<IFrigateClipProvider>();
+    public IFrigateEventReader Events { get; } = Substitute.For<IFrigateEventReader>();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -170,6 +194,8 @@ public sealed class DeleteDetectionApiFactory : WebApplicationFactory<Program>
             services.AddSingleton(Eraser);
             services.RemoveAll<IFrigateClipProvider>();
             services.AddSingleton(Clips);
+            services.RemoveAll<IFrigateEventReader>();
+            services.AddSingleton(Events);
             services.RemoveAll<DbContextOptions<VyzioDbContext>>();
             services.RemoveAll<VyzioDbContext>();
             services.AddDbContext<VyzioDbContext>(options =>
