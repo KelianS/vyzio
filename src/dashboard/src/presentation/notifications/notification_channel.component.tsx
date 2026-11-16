@@ -361,7 +361,7 @@ function ChannelForm({
             <HelpPanel title="Pourquoi une notification n’est-elle pas partie ?">
               <p>Une détection n’est envoyée sur ce canal que si tout est vrai à la fois :</p>
               <ul className="list-disc space-y-1 pl-5">
-                <li>le canal est activé et entièrement renseigné ;</li>
+                <li>le canal est entièrement renseigné ;</li>
                 <li>la catégorie détectée fait partie de celles qu’il notifie ;</li>
                 <li>la certitude atteint le seuil ;</li>
                 <li>aucune plage « Silence » ne s’applique à ce moment ;</li>
