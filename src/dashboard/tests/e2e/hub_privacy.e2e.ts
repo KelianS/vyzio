@@ -1,5 +1,10 @@
 import { test, expect } from '@playwright/test'
-import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fixtures/fake_backend'
+import {
+  installFakeBackend,
+  createFakeBackendState,
+  fakeHouseMomentIn,
+  makeFakeCamera,
+} from './fixtures/fake_backend'
 
 test.describe('HubView privacy', () => {
   test('CameraEye_ShouldCutThenResumeTheCameraWithoutAsking_WhenTheUserTapsIt', async ({
@@ -21,7 +26,7 @@ test.describe('HubView privacy', () => {
     await expect(card.getByRole('img', { name: 'En marche' })).toBeVisible()
   })
 
-  test('CutCameras_ShouldCutEveryCameraThenOfferToResumeThem_WhenTheUserTapsIt', async ({
+  test('CutCameras_ShouldCutEveryCameraThenOfferToResumeThem_WhenTheUserPicksUntilReactivation', async ({
     page,
   }) => {
     const salon = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
@@ -30,9 +35,55 @@ test.describe('HubView privacy', () => {
 
     await page.goto('/')
     await page.getByRole('button', { name: 'Couper les caméras' }).click()
+    // The sheet is the confirmation: one tap cuts and closes it (PRIV-22).
+    const sheet = page.getByRole('dialog', { name: 'Couper les caméras' })
+    await sheet.getByRole('button', { name: 'Jusqu’à réactivation' }).click()
 
+    await expect(sheet).toHaveCount(0)
     await expect(page.getByRole('button', { name: 'Réactiver les caméras' })).toBeVisible()
     await expect(page.getByRole('img', { name: 'Coupée' })).toHaveCount(2)
+  })
+
+  test('CutCameras_ShouldSayUntilWhenThenResumeThemAllOnATap_WhenADurationIsPicked', async ({
+    page,
+  }) => {
+    const salon = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
+    const jardin = makeFakeCamera({ id: 'camera-2', slug: 'jardin', displayName: 'Jardin' })
+    await installFakeBackend(page, createFakeBackendState({ cameras: [salon, jardin] }))
+
+    await page.goto('/')
+    await page.getByRole('button', { name: 'Couper les caméras' }).click()
+    await page
+      .getByRole('dialog', { name: 'Couper les caméras' })
+      .getByRole('button', { name: '2 heures' })
+      .click()
+
+    // The pill and every card say until when (PRIV-20, PRIV-22).
+    const pill = page.getByRole('button', { name: /^Caméras coupées jusqu’à \d+ h/ })
+    await expect(pill).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.getByText(/^Coupée jusqu’à \d+ h/)).toHaveCount(2)
+
+    await pill.click()
+    await expect(page.getByRole('img', { name: 'En marche' })).toHaveCount(2)
+    await expect(page.getByRole('button', { name: 'Couper les caméras' })).toBeVisible()
+  })
+
+  test('CutCameras_ShouldOfferTheScheduleNextChange_WhenAPrivacyRangeExists', async ({ page }) => {
+    const nextChange = fakeHouseMomentIn(90)
+    const state = createFakeBackendState({
+      cameras: [makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })],
+      camerasCutNextChange: nextChange,
+    })
+    await installFakeBackend(page, state)
+
+    await page.goto('/')
+    await page.getByRole('button', { name: 'Couper les caméras' }).click()
+    const options = page.getByRole('dialog', { name: 'Couper les caméras' }).getByRole('button')
+    await expect(options.nth(1)).toContainText('Ensuite, la planification reprend')
+    await options.nth(1).click()
+
+    await expect(page.getByRole('button', { name: /^Caméras coupées jusqu’à/ })).toBeVisible()
+    expect(state.cameras[0].privacyCutUntil).toEqual(nextChange)
   })
 
   test('CameraPrivacyView_ShouldSayUntilWhenTheSurveillanceIsResumed_WhenItWasResumedInsideARange', async ({

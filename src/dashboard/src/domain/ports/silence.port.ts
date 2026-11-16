@@ -1,7 +1,8 @@
-import type { Silence, StartSilenceRequest } from '../entities/silence.entity'
+import type { ChosenEnd } from '../entities/chosen_end.entity'
+import type { Silence } from '../entities/silence.entity'
 
 export interface SilenceRepository {
   getSilence(): Promise<Silence>
-  startSilence(request: StartSilenceRequest): Promise<Silence>
+  startSilence(end: ChosenEnd): Promise<Silence>
   stopSilence(): Promise<Silence>
 }

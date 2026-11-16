@@ -1,9 +1,8 @@
 import { useEffect, useReducer } from 'react'
 import { Link } from 'react-router'
-import { Bell, ChevronRight, Eye, EyeOff, History, Plus } from 'lucide-react'
+import { Bell, ChevronRight, History, Plus } from 'lucide-react'
 import type { AppError } from '../../common/errors/app_error'
 import { ReadFailure } from '../../common/components/error_message'
-import { SecondaryButton } from '../../common/components/secondary_button'
 import { Button } from '../../common/ui/button'
 import { Surface } from '../../common/components/surface'
 import { Loading } from '../../common/components/loading'
@@ -24,6 +23,9 @@ import { recentDetectionsLine } from './home_wording'
 import { formatHouseEnd } from '../../common/schedule/house_moment'
 import { SilenceButton } from './components/silence_button'
 import { SilenceSheet } from './components/silence_sheet'
+import { CutCamerasButton } from './components/cut_cameras_button'
+import { CutSheet } from './components/cut_sheet'
+import type { ChosenEnd } from '../../domain/entities/chosen_end.entity'
 import { HomeTile } from './components/home_tile'
 
 /** From this many cameras, the home shows the first four as a grid (UI-32). */
@@ -31,6 +33,11 @@ const GRID_FROM = 4
 
 /** Where the home's one action leads while no camera is added (UI-33). */
 const ADD_CAMERA_PATH = '/settings/cameras/add'
+
+/** The scheduler lifts a cut on the minute: the cards are read again once it had time to. */
+const CUT_END_GRACE_MS = 5000
+/** A cut end older than this is not waited on any more: the cards keep what the server says. */
+const CUT_END_PATIENCE_MS = 2 * 60 * 1000
 
 export function HubView() {
   const {
@@ -69,6 +76,21 @@ export function HubView() {
     return () => clearTimeout(timer)
   }, [presenter, silenceEnd])
 
+  // A cut ends by itself at its hour (PRIV-20, PRIV-22): the cards follow, read again until the server lifted it.
+  useEffect(() => {
+    const now = Date.now()
+    const ends = cameras
+      .filter((camera) => camera.privacyModeActive && camera.privacyCutUntil)
+      .map((camera) => Date.parse(camera.privacyCutUntil!.at))
+      .filter((end) => end > now - CUT_END_PATIENCE_MS)
+    if (ends.length === 0) return
+    const timer = setTimeout(
+      () => presenter.onCutEnded(),
+      Math.max(0, Math.min(...ends) - now) + CUT_END_GRACE_MS,
+    )
+    return () => clearTimeout(timer)
+  }, [presenter, cameras])
+
   // An unread list is not an empty one: the first run would invite adding cameras that exist.
   if (camerasError && cameras.length === 0)
     return <HubCamerasUnread error={camerasError} onRetry={presenter.onReloadCameras} />
@@ -83,6 +105,9 @@ export function HubView() {
       apiBaseUrl={apiBaseUrl}
       frigateStatus={frigateStatus}
       onTogglePrivacy={(ids, active) => void presenter.onTogglePrivacy(ids, active)}
+      onOpenCut={presenter.onOpenCut}
+      onCloseCut={presenter.onCloseCut}
+      onCutCameras={(ids, end) => void presenter.onCutCameras(ids, end)}
       onOpenSilence={presenter.onOpenSilence}
       onCloseSilence={presenter.onCloseSilence}
       onStartSilence={(request) => void presenter.onStartSilence(request)}
@@ -155,6 +180,9 @@ interface HubOperationalProps {
   apiBaseUrl: string
   frigateStatus: 'active' | 'restarting' | 'unavailable'
   onTogglePrivacy: (cameraIds: readonly string[], active: boolean) => void
+  onOpenCut: () => void
+  onCloseCut: () => void
+  onCutCameras: (cameraIds: readonly string[], end: ChosenEnd) => void
   onOpenSilence: () => void
   onCloseSilence: () => void
   onStartSilence: Parameters<typeof SilenceSheet>[0]['onStart']
@@ -167,6 +195,9 @@ function HubOperational({
   apiBaseUrl,
   frigateStatus,
   onTogglePrivacy,
+  onOpenCut,
+  onCloseCut,
+  onCutCameras,
   onOpenSilence,
   onCloseSilence,
   onStartSilence,
@@ -178,23 +209,25 @@ function HubOperational({
   const grid = cameras.length >= GRID_FROM
   const shown = grid ? cameras.slice(0, GRID_FROM) : cameras
   const now = new Date()
+  const silenceActive = uido.silence?.active === true
   const silenceUntil =
-    uido.silence?.active && uido.silence.until ? formatHouseEnd(uido.silence.until, now) : null
+    silenceActive && uido.silence?.until ? formatHouseEnd(uido.silence.until, now) : null
+  const cutUntil = allCut ? sharedCutEnd(cameras) : null
 
   return (
     <main className="flex flex-col gap-5">
       <h1 className="sr-only">Accueil</h1>
       <div className="flex flex-wrap gap-2">
-        <SecondaryButton
-          icon={allCut ? Eye : EyeOff}
-          type="button"
-          disabled={allIds.some((id) => busy.has(id))}
-          onClick={() => onTogglePrivacy(allIds, !allCut)}
-        >
-          {allCut ? 'Réactiver les caméras' : 'Couper les caméras'}
-        </SecondaryButton>
+        <CutCamerasButton
+          allCut={allCut}
+          until={cutUntil ? formatHouseEnd(cutUntil, now) : null}
+          busy={allIds.some((id) => busy.has(id))}
+          onCut={onOpenCut}
+          onResume={() => onTogglePrivacy(allIds, false)}
+        />
         <SilenceButton
-          until={uido.silence?.active ? silenceUntil : null}
+          active={silenceActive}
+          until={silenceUntil}
           busy={uido.silenceBusy}
           onStart={onOpenSilence}
           onStop={onStopSilence}
@@ -241,14 +274,28 @@ function HubOperational({
           icon={Bell}
           title="Notifications"
           subtitle={
-            silenceUntil
-              ? { text: `En silence jusqu’à ${keepTogether(silenceUntil)}`, silence: true }
+            silenceActive
+              ? {
+                  text: silenceUntil
+                    ? `En silence jusqu’à ${keepTogether(silenceUntil)}`
+                    : 'En silence',
+                  silence: true,
+                }
               : uido.notificationsToConfigure
                 ? 'À configurer'
                 : null
           }
         />
       </nav>
+
+      {uido.cutSheetOpen && (
+        <CutSheet
+          scheduleNextChange={uido.cut?.scheduleNextChange ?? null}
+          now={now}
+          onCut={(end) => onCutCameras(allIds, end)}
+          onClose={onCloseCut}
+        />
+      )}
 
       {uido.silenceSheetOpen && (
         <SilenceSheet
@@ -260,6 +307,13 @@ function HubOperational({
       )}
     </main>
   )
+}
+
+/** The end every camera's cut shares, or null when one holds until resumed or they differ (PRIV-22). */
+function sharedCutEnd(cameras: readonly Camera[]): Camera['privacyCutUntil'] {
+  const [first, ...others] = cameras.map((camera) => camera.privacyCutUntil)
+  if (!first || others.some((end) => end?.at !== first.at)) return null
+  return first
 }
 
 const NBSP = ' '

@@ -1,4 +1,5 @@
-import type { Silence, StartSilenceRequest } from '../../domain/entities/silence.entity'
+import type { ChosenEnd } from '../../domain/entities/chosen_end.entity'
+import type { Silence } from '../../domain/entities/silence.entity'
 import type { SilenceRepository } from '../../domain/ports/silence.port'
 import { deleteJson, fetchJson, putJson } from '../http/fetch_json'
 
@@ -9,8 +10,8 @@ export class HttpSilenceRepository implements SilenceRepository {
     return fetchJson<Silence>(this.url())
   }
 
-  startSilence(request: StartSilenceRequest): Promise<Silence> {
-    return putJson<Silence>(this.url(), request)
+  startSilence(end: ChosenEnd): Promise<Silence> {
+    return putJson<Silence>(this.url(), end)
   }
 
   stopSilence(): Promise<Silence> {

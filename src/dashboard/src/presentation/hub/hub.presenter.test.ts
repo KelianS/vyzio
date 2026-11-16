@@ -54,6 +54,7 @@ describe('buildHubPresenter', () => {
     const presenter = buildHubPresenter({
       container: {
         getHubOverview: { execute: vi.fn().mockReturnValue(new Promise(() => undefined)) },
+        getCamerasCut: { execute: vi.fn().mockReturnValue(new Promise(() => undefined)) },
         getDetectionHistory,
       } as unknown as HubContainer,
       camerasContainer: {

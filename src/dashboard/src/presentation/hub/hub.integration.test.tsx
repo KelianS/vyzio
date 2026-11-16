@@ -9,6 +9,7 @@ import type { Silence } from '../../domain/entities/silence.entity'
 import { HubView } from './hub.component'
 
 const SILENCE = '/api/notifications/silence'
+const CUT = '/api/cameras/privacy/cut'
 
 const overview = {
   systemHealthy: true,
@@ -32,6 +33,7 @@ const home = (routes: Record<string, ReturnType<typeof ok>> = {}) =>
     'GET /api/hub/overview': ok(overview),
     'GET /api/detection-events/history': ok({ items: [], nextCursor: null }),
     [`GET ${SILENCE}`]: ok(NO_SILENCE),
+    [`GET ${CUT}`]: ok({ scheduleNextChange: null }),
     'GET /api/cameras': ok([makeCamera()]),
     ...routes,
   })
@@ -99,14 +101,15 @@ describe('HubView', () => {
     })
   })
 
-  it('onTogglePrivacy_ShouldCutEveryCameraAndOfferToResumeThem_WhenTheUserCutsTheCameras', async () => {
+  it('onCutCameras_ShouldCutEveryCameraUntilResumedAndClose_WhenTheUserPicksUntilReactivation', async () => {
     // Arrange
     const network = home({
       'GET /api/cameras': ok([makeCamera(), makeCamera({ id: 'camera-2', slug: 'garden' })]),
-      'POST /api/cameras/privacy/batch-toggle': ok([]),
+      [`PUT ${CUT}`]: ok([]),
     })
     renderScreen(<HubView />)
-    const cutAll = await screen.findByRole('button', { name: 'Couper les caméras' })
+    await userEvent.click(await screen.findByRole('button', { name: 'Couper les caméras' }))
+    const sheet = await screen.findByRole('dialog', { name: 'Couper les caméras' })
     network.answer(
       'GET /api/cameras',
       ok([
@@ -116,14 +119,92 @@ describe('HubView', () => {
     )
 
     // Act
-    await userEvent.click(cutAll)
+    await userEvent.click(within(sheet).getByRole('button', { name: 'Jusqu’à réactivation' }))
 
     // Assert
     expect(await screen.findByRole('button', { name: 'Réactiver les caméras' })).toBeVisible()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(network.sent).toContainEqual({ route: `PUT ${CUT}`, query: '', body: {} })
+  })
+
+  it('onOpenCut_ShouldOfferUntilResumedThenTheScheduleChangeThenTheDurations_WhenAPrivacyRangeExists', async () => {
+    // Arrange
+    home({ [`GET ${CUT}`]: ok({ scheduleNextChange: inTwoHours('23:00') }) })
+    renderScreen(<HubView />)
+
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: 'Couper les caméras' }))
+
+    // Assert
+    const sheet = await screen.findByRole('dialog', { name: 'Couper les caméras' })
+    expect(
+      within(sheet)
+        .getAllByRole('button')
+        .map((option) => option.textContent),
+    ).toEqual([
+      'Jusqu’à réactivation',
+      'Jusqu’à 23 hEnsuite, la planification reprend',
+      '30 minutes',
+      '1 heure',
+      '2 heures',
+      '4 heures',
+      'Annuler',
+    ])
+  })
+
+  it('onCutCameras_ShouldSayUntilWhenEveryCameraIsCut_WhenADurationIsPicked', async () => {
+    // Arrange
+    const until = inTwoHours('23:00')
+    const network = home({ [`PUT ${CUT}`]: ok([]) })
+    renderScreen(<HubView />)
+    await userEvent.click(await screen.findByRole('button', { name: 'Couper les caméras' }))
+    network.answer(
+      'GET /api/cameras',
+      ok([makeCamera({ privacyModeActive: true, privacyCutUntil: until })]),
+    )
+
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: '2 heures' }))
+
+    // Assert
+    expect(
+      await screen.findByRole('button', { name: 'Caméras coupées jusqu’à 23 h' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+    expect(network.sent).toContainEqual({ route: `PUT ${CUT}`, query: '', body: { minutes: 120 } })
+  })
+
+  it('onTogglePrivacy_ShouldResumeEveryCameraAtOnce_WhenTheUserTapsTheTimedCut', async () => {
+    // Arrange
+    const until = inTwoHours('23:00')
+    const network = home({
+      'GET /api/cameras': ok([
+        makeCamera({ privacyModeActive: true, privacyCutUntil: until }),
+        makeCamera({
+          id: 'camera-2',
+          slug: 'garden',
+          privacyModeActive: true,
+          privacyCutUntil: until,
+        }),
+      ]),
+      'POST /api/cameras/privacy/batch-toggle': ok([]),
+    })
+    renderScreen(<HubView />)
+    const pill = await screen.findByRole('button', { name: 'Caméras coupées jusqu’à 23 h' })
+    network.answer(
+      'GET /api/cameras',
+      ok([makeCamera(), makeCamera({ id: 'camera-2', slug: 'garden' })]),
+    )
+
+    // Act
+    await userEvent.click(pill)
+
+    // Assert
+    expect(await screen.findByRole('button', { name: 'Couper les caméras' })).toBeVisible()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(network.sent).toContainEqual({
       route: 'POST /api/cameras/privacy/batch-toggle',
       query: '',
-      body: { cameraIds: ['camera-1', 'camera-2'], active: true },
+      body: { cameraIds: ['camera-1', 'camera-2'], active: false },
     })
   })
 
@@ -158,6 +239,7 @@ describe('HubView', () => {
     const sheet = await screen.findByRole('dialog', { name: 'Silence' })
     const options = within(sheet).getAllByRole('button')
     expect(options.map((option) => option.textContent)).toEqual([
+      'Jusqu’à réactivation',
       'Jusqu’à 23 hEnsuite, la planification reprend',
       '30 minutes',
       '1 heure',
@@ -167,7 +249,7 @@ describe('HubView', () => {
     ])
 
     // Act
-    await userEvent.click(options[0])
+    await userEvent.click(options[1])
 
     // Assert
     expect(await screen.findByRole('button', { name: 'Silence jusqu’à 23 h' })).toHaveAttribute(
@@ -195,7 +277,7 @@ describe('HubView', () => {
     renderScreen(<HubView />)
     await userEvent.click(await screen.findByRole('button', { name: 'Silence' }))
     const sheet = await screen.findByRole('dialog', { name: 'Silence' })
-    expect(within(sheet).queryByText(/Jusqu’à/)).not.toBeInTheDocument()
+    expect(within(sheet).queryByText(/planification/)).not.toBeInTheDocument()
 
     // Act
     await userEvent.click(within(sheet).getByRole('button', { name: '30 minutes' }))
@@ -207,6 +289,26 @@ describe('HubView', () => {
       query: '',
       body: { minutes: 30 },
     })
+  })
+
+  it('onStartSilence_ShouldSayTheSilenceHoldsWithNoHour_WhenTheUserPicksUntilReactivation', async () => {
+    // Arrange
+    const network = home({
+      [`PUT ${SILENCE}`]: ok({ active: true, until: null, scheduleNextChange: null }),
+    })
+    renderScreen(<HubView />)
+    await userEvent.click(await screen.findByRole('button', { name: 'Silence' }))
+
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: 'Jusqu’à réactivation' }))
+
+    // Assert
+    expect(await screen.findByRole('button', { name: 'Silence activé' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    expect(screen.getByText('En silence')).toBeInTheDocument()
+    expect(network.sent).toContainEqual({ route: `PUT ${SILENCE}`, query: '', body: {} })
   })
 
   it('onStopSilence_ShouldEndTheSilenceAtOnce_WhenTheUserTapsTheAmberPill', async () => {

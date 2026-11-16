@@ -36,7 +36,27 @@ test.describe('Home', () => {
     )
   })
 
-  test('Silence_ShouldOfferTheScheduleNextChangeFirst_WhenAMuteRangeExists', async ({ page }) => {
+  test('Silence_ShouldHoldWithNoHour_WhenTheUserPicksUntilReactivation', async ({ page }) => {
+    const state = createFakeBackendState()
+    await installFakeBackend(page, state)
+
+    await page.goto('/')
+    await page.getByRole('button', { name: 'Silence', exact: true }).click()
+    const options = page.getByRole('dialog', { name: 'Silence' }).getByRole('button')
+    await expect(options.first()).toHaveText('Jusqu’à réactivation')
+    await options.first().click()
+
+    await expect(page.getByRole('button', { name: 'Silence activé' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    await expect(page.getByText('En silence', { exact: true })).toBeVisible()
+    expect(state.silence.until).toBeNull()
+  })
+
+  test('Silence_ShouldOfferTheScheduleNextChangeAfterUntilReactivation_WhenAMuteRangeExists', async ({
+    page,
+  }) => {
     const nextChange = fakeHouseMomentIn(90)
     const state = createFakeBackendState({
       silence: { active: false, until: null, scheduleNextChange: nextChange },
@@ -46,9 +66,9 @@ test.describe('Home', () => {
     await page.goto('/')
     await page.getByRole('button', { name: 'Silence', exact: true }).click()
     const options = page.getByRole('dialog', { name: 'Silence' }).getByRole('button')
-    await expect(options.first()).toContainText(/^Jusqu’à \d+ h/)
-    await expect(options.first()).toContainText('Ensuite, la planification reprend')
-    await options.first().click()
+    await expect(options.nth(1)).toContainText(/^Jusqu’à \d+ h/)
+    await expect(options.nth(1)).toContainText('Ensuite, la planification reprend')
+    await options.nth(1).click()
 
     await expect(page.getByRole('button', { name: /^Silence jusqu’à/ })).toBeVisible()
     expect(state.silence.until).toEqual(nextChange)

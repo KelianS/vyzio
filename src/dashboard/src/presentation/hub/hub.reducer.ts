@@ -20,12 +20,21 @@ export function hubReducer(state: HubUido, action: HubAction): HubUido {
       return { ...state, notificationsToConfigure: action.activeChannels === 0 }
     case 'DETECTIONS_COUNTED':
       return { ...state, recentDetections: action.recent }
+    // One tap cuts and closes the sheet: the option was the confirmation (PRIV-22).
     case 'PRIVACY_STARTED':
-      return { ...state, privacyBusyIds: [...state.privacyBusyIds, ...action.cameraIds] }
+      return {
+        ...state,
+        cutSheetOpen: false,
+        privacyBusyIds: [...state.privacyBusyIds, ...action.cameraIds],
+      }
     case 'PRIVACY_FINISHED':
       return {
         ...state,
         privacyBusyIds: state.privacyBusyIds.filter((id) => !action.cameraIds.includes(id)),
       }
+    case 'CUT_READ':
+      return { ...state, cut: action.cut }
+    case 'CUT_SHEET_SET':
+      return { ...state, cutSheetOpen: action.open }
   }
 }

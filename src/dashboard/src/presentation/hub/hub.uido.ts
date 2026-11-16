@@ -1,3 +1,4 @@
+import type { CamerasCut } from '../../domain/entities/cameras_cut.entity'
 import type { Silence } from '../../domain/entities/silence.entity'
 import type { RecentDetections } from './home_wording'
 
@@ -14,6 +15,9 @@ export interface HubUido {
   recentDetections: RecentDetections | null
   /** The cameras whose cut or resume is on its way: their eye waits. */
   privacyBusyIds: string[]
+  /** Null until read, or when the read failed: the cut sheet then offers its durations only. */
+  cut: CamerasCut | null
+  cutSheetOpen: boolean
 }
 
 export function buildInitialHubUido(): HubUido {
@@ -25,5 +29,7 @@ export function buildInitialHubUido(): HubUido {
     notificationsToConfigure: null,
     recentDetections: null,
     privacyBusyIds: [],
+    cut: null,
+    cutSheetOpen: false,
   }
 }

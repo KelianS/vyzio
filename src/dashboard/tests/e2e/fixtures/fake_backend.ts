@@ -373,6 +373,8 @@ export interface FakeBackendState {
   commandJournal: Record<string, FakeCommandJournalEntry[]>
   /** The household's Silence (NOTIF-33), and when the mute ranges next change; none by default. */
   silence: FakeSilence
+  /** When the privacy ranges next change, the cut sheet's « Jusqu'à » option (PRIV-22); none by default. */
+  camerasCutNextChange: FakeHouseMoment | null
   /** The cameras each person is restricted to, by profile id; none means every camera. */
   profileCameraLinks: Record<string, string[]>
   detectionHistory: FakeDetectionEvent[]
@@ -470,6 +472,7 @@ export function createFakeBackendState(
     channelPairing: {},
     commandJournal: {},
     silence: { active: false, until: null, scheduleNextChange: null },
+    camerasCutNextChange: null,
     profileCameraLinks: {},
     detectionHistory: [],
     clipsGone: [],
@@ -934,12 +937,31 @@ export async function installFakeBackend(
       const ids = (postData?.cameraIds as string[]) ?? []
       const active = Boolean(postData?.active)
       state.cameras = state.cameras.map((c) =>
-        ids.includes(c.id) ? { ...c, privacyModeActive: active } : c,
+        ids.includes(c.id) ? { ...c, privacyModeActive: active, privacyCutUntil: null } : c,
       )
       return json(
         route,
         state.cameras.filter((c) => ids.includes(c.id)),
       )
+    }
+    // Like the real one: every camera, until the chosen end or until resumed (PRIV-22).
+    if (path === '/api/cameras/privacy/cut') {
+      if (method === 'PUT') {
+        const until =
+          typeof postData?.until === 'string'
+            ? (state.camerasCutNextChange ?? fakeHouseMomentIn(60))
+            : postData?.minutes === undefined
+              ? null
+              : fakeHouseMomentIn(Number(postData.minutes))
+        state.cameras = state.cameras.map((c) => ({
+          ...c,
+          privacyModeActive: true,
+          privacyModeSource: 'manual',
+          privacyCutUntil: until,
+        }))
+        return json(route, state.cameras)
+      }
+      return json(route, { scheduleNextChange: state.camerasCutNextChange })
     }
 
     const cameraMatch = path.match(/^\/api\/cameras\/([^/]+)(\/.*)?$/)
@@ -1462,7 +1484,9 @@ export async function installFakeBackend(
         const until =
           typeof postData?.until === 'string'
             ? (state.silence.scheduleNextChange ?? fakeHouseMomentIn(60))
-            : fakeHouseMomentIn(Number(postData?.minutes ?? 0))
+            : postData?.minutes === undefined
+              ? null
+              : fakeHouseMomentIn(Number(postData.minutes))
         state.silence = { ...state.silence, active: true, until }
       }
       if (method === 'DELETE') state.silence = { ...state.silence, active: false, until: null }

@@ -1,3 +1,4 @@
+import type { CamerasCut } from '../../domain/entities/cameras_cut.entity'
 import type { Silence } from '../../domain/entities/silence.entity'
 import type { RecentDetections } from './home_wording'
 
@@ -12,3 +13,5 @@ export type HubAction =
   | { type: 'DETECTIONS_COUNTED'; recent: RecentDetections }
   | { type: 'PRIVACY_STARTED'; cameraIds: readonly string[] }
   | { type: 'PRIVACY_FINISHED'; cameraIds: readonly string[] }
+  | { type: 'CUT_READ'; cut: CamerasCut }
+  | { type: 'CUT_SHEET_SET'; open: boolean }

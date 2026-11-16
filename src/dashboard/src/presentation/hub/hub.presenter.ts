@@ -1,7 +1,9 @@
 import { toastError } from '../../common/errors/app_error'
 import { toAppError } from '../../common/errors/to_app_error'
 import type { ToastTone } from '../../common/components/toast'
-import type { Silence, StartSilenceRequest } from '../../domain/entities/silence.entity'
+import type { ChosenEnd } from '../../domain/entities/chosen_end.entity'
+import type { Silence } from '../../domain/entities/silence.entity'
+import { useRootStore } from '../../infrastructure/store/root.store'
 import type { CamerasContainer } from '../../infrastructure/providers/cameras.container'
 import type { HubContainer } from '../../infrastructure/providers/hub.container'
 import type { NotificationsContainer } from '../../infrastructure/providers/notifications.container'
@@ -56,6 +58,10 @@ export function buildHubPresenter({
     onMount() {
       reloadCameraList(camerasContainer)
       void readSilence()
+      container.getCamerasCut
+        .execute()
+        .then((cut) => dispatch({ type: 'CUT_READ', cut }))
+        .catch(reportFailure)
       container.getHubOverview
         .execute()
         .then((overview) =>
@@ -83,11 +89,38 @@ export function buildHubPresenter({
       reloadCameraList(camerasContainer)
     },
 
-    /** One camera's eye or « Couper les caméras »: the same immediate act (PRIV-21). */
+    /** One camera's eye, or resuming every camera: an immediate act (PRIV-21). */
     async onTogglePrivacy(cameraIds: readonly string[], active: boolean): Promise<void> {
       dispatch({ type: 'PRIVACY_STARTED', cameraIds })
       await setCamerasPrivacy(camerasContainer, toast, cameraIds, active)
       dispatch({ type: 'PRIVACY_FINISHED', cameraIds })
+    },
+
+    onOpenCut() {
+      dispatch({ type: 'CUT_SHEET_SET', open: true })
+    },
+
+    onCloseCut() {
+      dispatch({ type: 'CUT_SHEET_SET', open: false })
+    },
+
+    /** Every camera, until the end picked in the sheet; the cards say the result (PRIV-22). */
+    async onCutCameras(cameraIds: readonly string[], end: ChosenEnd): Promise<void> {
+      dispatch({ type: 'PRIVACY_STARTED', cameraIds })
+      try {
+        await container.cutCameras.execute(end)
+      } catch (e) {
+        reportFailure(e)
+      } finally {
+        // A cut that stopped part way has still cut the cameras before the failing one.
+        await useRootStore.getState().loadCameras(camerasContainer.getCameras)
+        dispatch({ type: 'PRIVACY_FINISHED', cameraIds })
+      }
+    },
+
+    /** A cut's end has come: the scheduler resumed the cameras, the cards follow without a reload. */
+    onCutEnded() {
+      reloadCameraList(camerasContainer)
     },
 
     onOpenSilence() {
@@ -98,8 +131,8 @@ export function buildHubPresenter({
       dispatch({ type: 'SILENCE_SHEET_SET', open: false })
     },
 
-    onStartSilence(request: StartSilenceRequest): Promise<void> {
-      return changeSilence(() => notificationsContainer.startSilence.execute(request))
+    onStartSilence(end: ChosenEnd): Promise<void> {
+      return changeSilence(() => notificationsContainer.startSilence.execute(end))
     },
 
     /** A tap on the amber pill ends it, without confirmation (NOTIF-34). */

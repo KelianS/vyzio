@@ -1,4 +1,5 @@
-import type { Silence, StartSilenceRequest } from '../entities/silence.entity'
+import type { ChosenEnd } from '../entities/chosen_end.entity'
+import type { Silence } from '../entities/silence.entity'
 import type { SilenceRepository } from '../ports/silence.port'
 
 export class GetSilence {
@@ -13,8 +14,8 @@ export class GetSilence {
 export class StartSilence {
   constructor(private readonly repository: SilenceRepository) {}
 
-  execute(request: StartSilenceRequest): Promise<Silence> {
-    return this.repository.startSilence(request)
+  execute(end: ChosenEnd): Promise<Silence> {
+    return this.repository.startSilence(end)
   }
 }
 
