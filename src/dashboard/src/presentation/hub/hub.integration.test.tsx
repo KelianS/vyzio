@@ -541,6 +541,8 @@ describe('HubView', () => {
       'href',
       '/settings/cameras/add',
     )
+    expect(screen.getAllByRole('link')).toHaveLength(1)
+    expect(screen.queryAllByRole('button')).toHaveLength(0)
     expect(router.state.location.pathname).toBe('/')
     expect(screen.queryByText('Bienvenue')).not.toBeInTheDocument()
   })
