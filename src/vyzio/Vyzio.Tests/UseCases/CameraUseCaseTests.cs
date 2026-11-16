@@ -41,6 +41,22 @@ public class GetCamerasUseCaseTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_ShouldSayUntilWhenTheCameraStaysCut_WhenARangeCutIt()
+    {
+        // Arrange
+        var morning = new ScheduleRule { Kind = ScheduleRuleKind.Privacy, DaysOfWeek = "[3]", StartTime = "08:00", EndTime = "12:00" };
+        morning.ReplaceTargets(["cam1"]);
+        _schedules.GetByKindAsync(ScheduleRuleKind.Privacy, Arg.Any<CancellationToken>()).Returns([morning]);
+        _repo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([new Camera { Id = "cam1", Slug = "cam1", FrigateCameraName = "cam1", DisplayName = "cam1", Host = "192.168.1.10", PrivacyModeActive = true, PrivacyModeSource = PrivacyModeSource.Schedule }]);
+
+        // Act
+        var result = await _sut.ExecuteAsync();
+
+        // Assert
+        Assert.Equal("12:00", result.Single().PrivacyCutUntil?.Time);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_ShouldProjectEachCameraWithItsStatus_WhenACameraIsValidatedAndOnline()
     {
         _repo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(

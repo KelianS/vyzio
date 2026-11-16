@@ -17,7 +17,7 @@ public sealed class GetCamerasUseCase(
         var all = await cameras.GetAllAsync(ct);
         var verified = await bindings.GetAllVerifiedAsync(ct);
         var privacyRules = await rules.GetByKindAsync(ScheduleRuleKind.Privacy, ct);
-        return all.Select(c => CameraDto.From(c, verified, resumes.StateOf(c.Id, privacyRules))).ToList();
+        return all.Select(c => CameraDto.From(c, verified, resumes.StateOf(c.Id, privacyRules), resumes.CutEndOf(c, privacyRules))).ToList();
     }
 }
 

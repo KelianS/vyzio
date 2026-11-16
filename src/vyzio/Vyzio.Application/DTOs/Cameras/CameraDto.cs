@@ -1,4 +1,5 @@
-﻿using Vyzio.Application.DTOs.Scheduling;
+﻿using Vyzio.Application.DTOs.Notifications;
+using Vyzio.Application.DTOs.Scheduling;
 using Vyzio.Core.Common;
 using Vyzio.Core.Entities;
 
@@ -29,12 +30,14 @@ public sealed record CameraDto(
     string PrivacyStrategy,
     IReadOnlyList<string> VerifiedCapabilities,
     IReadOnlyList<string> LiveQualities,
-    PrivacyResumeDto? PrivacyResume)
+    PrivacyResumeDto? PrivacyResume,
+    HouseMomentDto? PrivacyCutUntil)
 {
     public static CameraDto From(
         Camera camera,
         IEnumerable<CameraCapabilityBinding>? verifiedBindings = null,
-        PrivacyResumeDto? privacyResume = null) => new(
+        PrivacyResumeDto? privacyResume = null,
+        HouseMomentDto? privacyCutUntil = null) => new(
         camera.Id,
         camera.Slug,
         camera.DisplayName,
@@ -62,7 +65,8 @@ public sealed record CameraDto(
             .Select(b => SnakeCaseEnum.ToSnakeCase(b.Capability))
             .ToList() ?? [],
         camera.LiveQualities.Select(SnakeCaseEnum.ToSnakeCase).ToList(),
-        privacyResume);
+        privacyResume,
+        privacyCutUntil);
 }
 
 /// <summary>A surveillance resumed by hand inside a Privacy range and the house moment it ends (null: never); only the camera list fills it (PRIV-07).</summary>
