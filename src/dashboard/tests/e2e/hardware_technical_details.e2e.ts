@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fixtures/fake_backend'
 
-test.describe('HubView technical details', () => {
+test.describe('SystemView technical details', () => {
   test('SurveillanceCard_ShouldShowTheFiguresUnderTheCameraNames_WhenTheUserOpensTheDetails', async ({
     page,
   }) => {
@@ -9,7 +9,7 @@ test.describe('HubView technical details', () => {
     const jardin = makeFakeCamera({ id: 'camera-2', slug: 'jardin', displayName: 'Jardin' })
     await installFakeBackend(page, createFakeBackendState({ cameras: [salon, jardin] }))
 
-    await page.goto('/')
+    await page.goto('/settings/hardware')
     const card = page.getByRole('region', { name: 'Surveillance' })
 
     // The card says one state and one gauge; the figures for support wait behind the fold.
@@ -43,7 +43,7 @@ test.describe('HubView technical details', () => {
       }),
     )
 
-    await page.goto('/')
+    await page.goto('/settings/hardware')
     const card = page.getByRole('region', { name: 'Surveillance' })
 
     // A low rate is most often the machine, not the camera: the card reads nothing into it.

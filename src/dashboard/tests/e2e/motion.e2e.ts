@@ -64,12 +64,20 @@ async function toastEntrances(page: Page) {
   return page.evaluate(() => (window as unknown as { toastEntrances: string[][] }).toastEntrances)
 }
 
-async function pauseTheCamera(page: Page) {
-  await page.getByRole('button', { name: 'Pause' }).click()
-  await page.getByRole('alertdialog').getByRole('button', { name: 'Mettre en pause' }).click()
+/** A configured channel: its page sends a test message, and asks before removing it. */
+async function openTheChannel(page: Page) {
+  await installFakeBackend(
+    page,
+    createFakeBackendState({ notificationChannels: { telegram: makeFakeChannel('telegram') } }),
+  )
+  await page.goto('/settings/notifications/telegram')
+}
+
+async function sendATestMessage(page: Page) {
+  await page.getByRole('button', { name: 'Envoyer un message de test' }).click()
   await expect(
     page.getByRole('region', { name: 'Notifications' }).getByRole('status'),
-  ).toContainText('Salon est en pause.')
+  ).toContainText('Message envoyé')
 }
 
 test.describe('Press feedback', () => {
@@ -81,7 +89,7 @@ test.describe('Press feedback', () => {
   test('Button_ShouldShrinkSlightly_WhenItIsPressed', async ({ page }) => {
     await page.goto('/')
 
-    expect(await pressed(page.getByRole('button', { name: 'Pause' }))).toEqual({
+    expect(await pressed(page.getByRole('button', { name: 'Couper les caméras' }))).toEqual({
       scale: '0.97',
       opacity: '1',
     })
@@ -108,7 +116,7 @@ test.describe('Press feedback', () => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.goto('/')
 
-    expect(await pressed(page.getByRole('button', { name: 'Pause' }))).toEqual({
+    expect(await pressed(page.getByRole('button', { name: 'Couper les caméras' }))).toEqual({
       scale: 'none',
       opacity: '0.8',
     })
@@ -217,10 +225,8 @@ test.describe('Press feedback on every kind of control', () => {
   const SHRUNK = { scale: '0.97', opacity: '1' }
 
   test('ToastClose_ShouldShrinkSlightly_WhenItIsPressed', async ({ page }) => {
-    const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
-    await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
-    await page.goto('/')
-    await pauseTheCamera(page)
+    await openTheChannel(page)
+    await sendATestMessage(page)
 
     expect(
       await pressed(
@@ -278,11 +284,10 @@ test.describe('Press feedback on every kind of control', () => {
 
 test.describe('Layers', () => {
   test('ConfirmModal_ShouldFadeInGrowingSlightly_WhenItOpens', async ({ page }) => {
-    await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
-    await page.goto('/')
+    await openTheChannel(page)
     await slowDownMotion(page)
 
-    await page.getByRole('button', { name: 'Pause' }).click()
+    await page.getByRole('button', { name: 'Supprimer le canal' }).click()
 
     expect(await frameOf(page.getByRole('alertdialog'), 'first')).toEqual({
       opacity: 0,
@@ -291,9 +296,8 @@ test.describe('Layers', () => {
   })
 
   test('ConfirmModal_ShouldFadeOutShrinkingSlightly_WhenItCloses', async ({ page }) => {
-    await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
-    await page.goto('/')
-    await page.getByRole('button', { name: 'Pause' }).click()
+    await openTheChannel(page)
+    await page.getByRole('button', { name: 'Supprimer le canal' }).click()
     const dialog = page.getByRole('alertdialog')
     await expect(dialog).toBeVisible()
     await slowDownMotion(page)
@@ -306,18 +310,16 @@ test.describe('Layers', () => {
   test('ConfirmModal_ShouldFadeOutShrinkingSlightly_WhenTheConfirmedActionSettles', async ({
     page,
   }) => {
-    const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
-    await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
-    await page.goto('/')
-    await page.getByRole('button', { name: 'Pause' }).click()
+    await openTheChannel(page)
+    await page.getByRole('button', { name: 'Supprimer le canal' }).click()
     const dialog = page.getByRole('alertdialog')
     await expect(dialog).toBeVisible()
     await slowDownMotion(page)
 
-    await dialog.getByRole('button', { name: 'Mettre en pause' }).click()
+    await dialog.getByRole('button', { name: 'Supprimer' }).click()
     await expect(
       page.getByRole('region', { name: 'Notifications' }).getByRole('status'),
-    ).toContainText('Salon est en pause.')
+    ).toContainText('Canal supprimé.')
 
     // Leaving after its action, it is a copy hidden from assistive technologies.
     const leaving = page.locator('[data-slot="alert-dialog-content"][data-state="closed"]')
@@ -384,11 +386,10 @@ test.describe('Layers', () => {
 
   test('ConfirmModal_ShouldOnlyFade_WhenThePhoneAsksForLessMotion', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
-    await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
-    await page.goto('/')
+    await openTheChannel(page)
     await slowDownMotion(page)
 
-    await page.getByRole('button', { name: 'Pause' }).click()
+    await page.getByRole('button', { name: 'Supprimer le canal' }).click()
 
     expect(await frameOf(page.getByRole('alertdialog'), 'first')).toEqual({
       opacity: 0,
@@ -399,32 +400,28 @@ test.describe('Layers', () => {
 
 test.describe('Toasts', () => {
   test.beforeEach(async ({ page }) => {
-    const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
-    await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
+    await openTheChannel(page)
   })
 
   test('Toast_ShouldFadeInRisingSlightly_WhenItAppears', async ({ page }) => {
-    await page.goto('/')
     await recordToastEntrances(page)
 
-    await pauseTheCamera(page)
+    await sendATestMessage(page)
 
     expect(await toastEntrances(page)).toEqual([expect.arrayContaining(['opacity', 'translate'])])
   })
 
   test('Toast_ShouldOnlyFadeIn_WhenThePhoneAsksForLessMotion', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
-    await page.goto('/')
     await recordToastEntrances(page)
 
-    await pauseTheCamera(page)
+    await sendATestMessage(page)
 
     expect(await toastEntrances(page)).toEqual([['opacity']])
   })
 
   test('Toast_ShouldFadeOut_WhenTheUserClosesIt', async ({ page }) => {
-    await page.goto('/')
-    await pauseTheCamera(page)
+    await sendATestMessage(page)
     const toast = page.getByRole('region', { name: 'Notifications' }).getByRole('status')
     await expect.poll(() => toast.evaluate((el) => el.getAnimations().length)).toBe(0)
     await slowDownMotion(page)

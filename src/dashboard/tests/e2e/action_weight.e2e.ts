@@ -75,7 +75,7 @@ test.describe('Action weight', () => {
     await expect(onCard.locator('svg')).toBeVisible()
 
     await page.goto('/')
-    const onPage = page.getByRole('button', { name: 'Tout couper' })
+    const onPage = page.getByRole('button', { name: 'Couper les caméras' })
     await expect(onPage).toHaveCSS('color', INK)
     await expect(onPage).not.toHaveCSS('background-color', TRANSPARENT)
     await expect(onPage.locator('svg')).toBeVisible()
@@ -217,9 +217,9 @@ test.describe('Touch size', () => {
     ).toBeGreaterThanOrEqual(44)
 
     await page.goto('/')
-    const pause = page.getByRole('button', { name: 'Pause' })
-    expect(await heightOf(pause)).toBe(44)
-    expect(await reachesAFinger(pause)).toBe(true)
+    const eye = page.getByRole('button', { name: /^Couper / }).last()
+    expect(await heightOf(eye)).toBe(44)
+    expect(await reachesAFinger(eye)).toBe(true)
 
     await page.goto('/settings/cameras')
     expect(

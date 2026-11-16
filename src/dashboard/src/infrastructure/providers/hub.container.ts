@@ -5,12 +5,12 @@ import {
 } from '../../domain/usecases/get_system_stats.use_case'
 import type { HubRepository } from '../../domain/ports/hub.port'
 import type { ProfileRepository } from '../../domain/ports/profile.port'
-import { CheckDetectionClip } from '../../domain/usecases/check_detection_clip.use_case'
+import { GetDetectionHistory } from '../../domain/usecases/get_detection_history.use_case'
 
 export interface HubContainer {
   getHubOverview: GetHubOverview
   getSystemStats: GetSystemStats
-  checkDetectionClip: CheckDetectionClip
+  getDetectionHistory: GetDetectionHistory
 }
 
 export function makeHubContainer(
@@ -21,6 +21,6 @@ export function makeHubContainer(
   return {
     getHubOverview: new GetHubOverview(hubRepository),
     getSystemStats: new GetSystemStats(systemRepository),
-    checkDetectionClip: new CheckDetectionClip(profileRepository),
+    getDetectionHistory: new GetDetectionHistory(profileRepository),
   }
 }

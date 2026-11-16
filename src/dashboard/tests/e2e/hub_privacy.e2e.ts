@@ -2,27 +2,37 @@ import { test, expect } from '@playwright/test'
 import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fixtures/fake_backend'
 
 test.describe('HubView privacy', () => {
-  test('HubView_ShouldConfirmThenSaySurveillanceIsCut_WhenTheUserCutsEveryCamera', async ({
+  test('CameraEye_ShouldCutThenResumeTheCameraWithoutAsking_WhenTheUserTapsIt', async ({
     page,
   }) => {
-    const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon', isEnabled: true })
+    const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
     await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
 
     await page.goto('/')
+    await page.getByRole('button', { name: 'Couper Salon' }).click()
 
-    // Home says first what is being watched - that is what one comes to check.
-    await expect(page.getByRole('heading', { name: '1 caméra sous surveillance' })).toBeVisible()
-    await expect(page.getByRole('article').getByText('Salon')).toBeVisible()
+    // No question asked: the card itself says it at once (PRIV-21, PRIV-20).
+    await expect(page.getByRole('alertdialog')).toHaveCount(0)
+    const card = page.getByRole('article')
+    await expect(card.getByText('Coupée')).toBeVisible()
+    await expect(card.getByRole('img', { name: 'Coupée' })).toBeVisible()
 
-    await page.getByRole('button', { name: 'Tout couper' }).click()
+    await page.getByRole('button', { name: 'Réactiver Salon' }).click()
+    await expect(card.getByRole('img', { name: 'En marche' })).toBeVisible()
+  })
 
-    // The cost is said beforehand: nothing more is recorded nor reported.
-    const dialog = page.getByRole('alertdialog')
-    await expect(dialog).toContainText('Plus rien n’est enregistré, détecté ni notifié')
-    await dialog.getByRole('button', { name: 'Tout couper' }).click()
+  test('CutCameras_ShouldCutEveryCameraThenOfferToResumeThem_WhenTheUserTapsIt', async ({
+    page,
+  }) => {
+    const salon = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
+    const jardin = makeFakeCamera({ id: 'camera-2', slug: 'jardin', displayName: 'Jardin' })
+    await installFakeBackend(page, createFakeBackendState({ cameras: [salon, jardin] }))
 
-    await expect(page.getByRole('heading', { name: 'Surveillance coupée' })).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Reprendre la surveillance' })).toBeVisible()
+    await page.goto('/')
+    await page.getByRole('button', { name: 'Couper les caméras' }).click()
+
+    await expect(page.getByRole('button', { name: 'Réactiver les caméras' })).toBeVisible()
+    await expect(page.getByRole('img', { name: 'Coupée' })).toHaveCount(2)
   })
 
   test('CameraPrivacyView_ShouldSayUntilWhenTheSurveillanceIsResumed_WhenItWasResumedInsideARange', async ({
@@ -44,7 +54,7 @@ test.describe('HubView privacy', () => {
     ).toBeVisible()
   })
 
-  test('CameraLiveThumbnail_ShouldLeadToWhy_WhenTheCameraDidNotFollowPrivacy', async ({ page }) => {
+  test('CameraCard_ShouldLeadToWhy_WhenTheCameraDidNotFollowPrivacy', async ({ page }) => {
     const parked = makeFakeCamera({
       id: 'camera-1',
       displayName: 'Salon',

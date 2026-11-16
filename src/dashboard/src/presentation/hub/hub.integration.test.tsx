@@ -1,92 +1,49 @@
 import { describe, expect, it } from 'vitest'
-import { fireEvent, screen, within } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { makeCamera } from '../../testing/camera_fixture'
 import { makeDetectionEvent } from '../../testing/detection_fixture'
 import { failure, fakeNetwork, ok } from '../../testing/fake_network'
 import { renderScreen } from '../../testing/render_screen'
-import { pollTheSurveillance } from '../../testing/shared_reads'
-import type { SystemStats } from '../../domain/entities/system_stats.entity'
+import type { Silence } from '../../domain/entities/silence.entity'
 import { HubView } from './hub.component'
+
+const SILENCE = '/api/notifications/silence'
 
 const overview = {
   systemHealthy: true,
-  recentEvents: [makeDetectionEvent()],
+  recentEvents: [],
   profiles: [],
-  notifications: { activeChannels: 0, sentCount: 0, lastSentAt: null },
+  notifications: { activeChannels: 1, sentCount: 0, lastSentAt: null },
   warnings: [],
 }
 
-// An empty catalogue: a detection keeps its engine label.
-const reference = { 'GET /api/detection-labels/camera': ok([]) }
+const NO_SILENCE: Silence = { active: false, until: null, scheduleNextChange: null }
 
-const running: SystemStats = {
-  status: 'active',
-  storage: { totalGb: 100, usedGb: 40, freeGb: 60 },
-  cameras: [{ camera: 'front_door', fps: 10 }],
-  detection: { hardware: 'cpu', targetFps: 5 },
-  pendingChanges: false,
-}
+/** Two hours ahead, read as 23 h: within a day, so the hour alone. */
+const inTwoHours = (time: string) => ({
+  at: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+  dayOfWeek: 1,
+  time,
+})
+
+const home = (routes: Record<string, ReturnType<typeof ok>> = {}) =>
+  fakeNetwork({
+    'GET /api/hub/overview': ok(overview),
+    'GET /api/detection-events/history': ok({ items: [], nextCursor: null }),
+    [`GET ${SILENCE}`]: ok(NO_SILENCE),
+    'GET /api/cameras': ok([makeCamera()]),
+    ...routes,
+  })
+
+const fourCameras = ['Porte', 'Jardin', 'Garage', 'Salon', 'Cave'].map((name, index) =>
+  makeCamera({ id: `camera-${index + 1}`, slug: name.toLowerCase(), displayName: name }),
+)
 
 describe('HubView', () => {
-  it('onMount_ShouldSayHowManyCamerasAreWatched_WhenTheHubAndTheCamerasAnswer', async () => {
+  it('render_ShouldShowEachCameraLargeWithItsMarkAndEye_WhenThereAreFewerThanFour', async () => {
     // Arrange
-    fakeNetwork({
-      ...reference,
-      'GET /api/hub/overview': ok(overview),
-      'GET /api/cameras': ok([makeCamera(), makeCamera({ id: 'camera-2', slug: 'garden' })]),
-    })
-
-    // Act
-    renderScreen(<HubView />)
-
-    // Assert
-    expect(
-      await screen.findByRole('heading', { name: '2 caméras sous surveillance' }),
-    ).toBeInTheDocument()
-    expect(screen.getByText('Détection « person »')).toBeInTheDocument()
-  })
-
-  it('onMount_ShouldWarnAndKeepTheEngineLabel_WhenTheLabelCatalogueFails', async () => {
-    // Arrange
-    fakeNetwork({
-      ...reference,
-      'GET /api/hub/overview': ok(overview),
-      'GET /api/cameras': ok([makeCamera()]),
-      'GET /api/detection-labels/camera': failure(500),
-    })
-
-    // Act
-    renderScreen(<HubView />)
-
-    // Assert
-    expect(await screen.findByText(/Vyzio a rencontré une erreur/)).toBeInTheDocument()
-    expect(screen.getByText('Détection « person »')).toBeInTheDocument()
-  })
-
-  it('onMount_ShouldNameADetectionInFrench_WhenTheLabelCatalogueAnswers', async () => {
-    // Arrange
-    fakeNetwork({
-      ...reference,
-      'GET /api/hub/overview': ok(overview),
-      'GET /api/cameras': ok([makeCamera()]),
-      'GET /api/detection-labels/camera': ok([{ value: 'person', displayName: 'Personne' }]),
-    })
-
-    // Act
-    renderScreen(<HubView />)
-
-    // Assert
-    expect(await screen.findByText('Détection « Personne »')).toBeInTheDocument()
-  })
-
-  it('CameraLiveThumbnail_ShouldOpenTheLiveViewScreen_WhenTheUserTapsThePicture', async () => {
-    // Arrange
-    fakeNetwork({
-      ...reference,
-      'GET /api/hub/overview': ok(overview),
-      'GET /api/cameras': ok([makeCamera()]),
-    })
+    home()
 
     // Act
     renderScreen(<HubView />)
@@ -96,112 +53,45 @@ describe('HubView', () => {
       'href',
       '/cameras/camera-1',
     )
+    expect(screen.getByRole('img', { name: 'En marche' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Couper Front Door' })).toBeInTheDocument()
+    expect(screen.queryByText(/Voir les/)).not.toBeInTheDocument()
   })
-  it('onMount_ShouldSayVyzioDoesNotAnswer_WhenTheOverviewFails', async () => {
+
+  it('render_ShouldShowTheFirstFourAndLeadToTheOthers_WhenThereAreFourOrMore', async () => {
     // Arrange
-    fakeNetwork({
-      ...reference,
-      'GET /api/hub/overview': failure(500),
-      'GET /api/cameras': ok([makeCamera()]),
-    })
+    home({ 'GET /api/cameras': ok(fourCameras) })
 
     // Act
     renderScreen(<HubView />)
 
     // Assert
-    expect(await screen.findByRole('heading', { name: 'Vyzio ne répond pas' })).toBeInTheDocument()
-    expect(screen.getByText(/Vyzio a rencontré une erreur/)).toBeInTheDocument()
-    expect(screen.getByText(/GET \/api\/hub\/overview · 500/)).toBeInTheDocument()
-  })
-
-  it('onMount_ShouldOfferToRetry_WhenTheCameraListCannotBeRead', async () => {
-    // Arrange
-    fakeNetwork({
-      ...reference,
-      'GET /api/hub/overview': ok(overview),
-      'GET /api/cameras': failure(503),
-    })
-
-    // Act
-    renderScreen(<HubView />)
-
-    // Assert
-    expect(
-      await screen.findByRole('heading', { name: 'Vos caméras ne s’affichent pas' }),
-    ).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Réessayer' })).toBeInTheDocument()
-  })
-
-  it('onReloadCameras_ShouldShowTheCameras_WhenTheRetryReadsTheList', async () => {
-    // Arrange
-    const network = fakeNetwork({
-      ...reference,
-      'GET /api/hub/overview': ok(overview),
-      'GET /api/cameras': failure(503),
-    })
-    renderScreen(<HubView />)
-    await screen.findByRole('heading', { name: 'Vos caméras ne s’affichent pas' })
-    network.answer('GET /api/cameras', ok([makeCamera()]))
-
-    // Act
-    await userEvent.click(screen.getByRole('button', { name: 'Réessayer' }))
-
-    // Assert
-    expect(
-      await screen.findByRole('heading', { name: '1 caméra sous surveillance' }),
-    ).toBeInTheDocument()
-  })
-
-  it('render_ShouldLeaveOutOfTheCountAndLeadToItsPage_WhenACameraIsToSetUp', async () => {
-    // Arrange
-    fakeNetwork({
-      ...reference,
-      'GET /api/hub/overview': ok(overview),
-      'GET /api/cameras': ok([
-        makeCamera(),
-        makeCamera({
-          id: 'camera-2',
-          displayName: 'Garage',
-          status: 'to_set_up',
-          validationState: 'to_set_up',
-          connected: false,
-        }),
-      ]),
-    })
-
-    // Act
-    renderScreen(<HubView />)
-
-    // Assert
-    expect(
-      await screen.findByRole('heading', { name: '1 caméra sous surveillance' }),
-    ).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'À configurer : Garage' })).toHaveAttribute(
+    expect(await screen.findByRole('link', { name: 'Voir les 5 caméras' })).toHaveAttribute(
       'href',
-      '/settings/cameras/camera-2',
+      '/cameras',
     )
+    expect(screen.getAllByRole('article')).toHaveLength(4)
+    expect(screen.queryByText('Cave')).not.toBeInTheDocument()
   })
 
-  it('onTogglePrivacy_ShouldCutEveryCameraAndSaySo_WhenTheUserConfirms', async () => {
+  it('onTogglePrivacy_ShouldCutTheCameraWithoutAsking_WhenTheUserTapsItsEye', async () => {
     // Arrange
-    const network = fakeNetwork({
-      ...reference,
-      'GET /api/hub/overview': ok(overview),
-      'GET /api/cameras': ok([makeCamera()]),
+    const network = home({
       'POST /api/cameras/privacy/batch-toggle': ok([makeCamera({ privacyModeActive: true })]),
     })
     renderScreen(<HubView />)
-    await userEvent.click(await screen.findByRole('button', { name: 'Tout couper' }))
+    const eye = await screen.findByRole('button', { name: 'Couper Front Door' })
     network.answer('GET /api/cameras', ok([makeCamera({ privacyModeActive: true })]))
 
     // Act
-    await userEvent.click(
-      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Tout couper' }),
-    )
+    await userEvent.click(eye)
 
     // Assert
-    expect(await screen.findByText('Caméras coupées.')).toBeInTheDocument()
-    expect(await screen.findByRole('heading', { name: 'Surveillance coupée' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Réactiver Front Door' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
     expect(network.sent).toContainEqual({
       route: 'POST /api/cameras/privacy/batch-toggle',
       query: '',
@@ -209,12 +99,37 @@ describe('HubView', () => {
     })
   })
 
-  it('onTogglePrivacy_ShouldKeepTheRequestOpenAndSayWhy_WhenTheCameraDoesNotAnswer', async () => {
+  it('onTogglePrivacy_ShouldCutEveryCameraAndOfferToResumeThem_WhenTheUserCutsTheCameras', async () => {
     // Arrange
-    fakeNetwork({
-      ...reference,
-      'GET /api/hub/overview': ok(overview),
-      'GET /api/cameras': ok([makeCamera()]),
+    const network = home({
+      'GET /api/cameras': ok([makeCamera(), makeCamera({ id: 'camera-2', slug: 'garden' })]),
+      'POST /api/cameras/privacy/batch-toggle': ok([]),
+    })
+    renderScreen(<HubView />)
+    const cutAll = await screen.findByRole('button', { name: 'Couper les caméras' })
+    network.answer(
+      'GET /api/cameras',
+      ok([
+        makeCamera({ privacyModeActive: true }),
+        makeCamera({ id: 'camera-2', slug: 'garden', privacyModeActive: true }),
+      ]),
+    )
+
+    // Act
+    await userEvent.click(cutAll)
+
+    // Assert
+    expect(await screen.findByRole('button', { name: 'Réactiver les caméras' })).toBeVisible()
+    expect(network.sent).toContainEqual({
+      route: 'POST /api/cameras/privacy/batch-toggle',
+      query: '',
+      body: { cameraIds: ['camera-1', 'camera-2'], active: true },
+    })
+  })
+
+  it('onTogglePrivacy_ShouldKeepTheCameraAsItWasAndSayWhy_WhenTheCameraDoesNotAnswer', async () => {
+    // Arrange
+    home({
       'POST /api/cameras/privacy/batch-toggle': failure(
         502,
         'camera_unreachable',
@@ -222,114 +137,191 @@ describe('HubView', () => {
       ),
     })
     renderScreen(<HubView />)
-    await userEvent.click(await screen.findByRole('button', { name: 'Tout couper' }))
 
     // Act
-    await userEvent.click(
-      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Tout couper' }),
-    )
+    await userEvent.click(await screen.findByRole('button', { name: 'Couper Front Door' }))
 
     // Assert
     expect(await screen.findByText(/La caméra ne répond pas/)).toBeInTheDocument()
-    expect(screen.getByText(/camera_unreachable/)).toBeInTheDocument()
-    expect(
-      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Tout couper' }),
-    ).toBeEnabled()
+    expect(await screen.findByRole('button', { name: 'Couper Front Door' })).toBeEnabled()
   })
 
-  it('SurveillanceCard_ShouldShowOnlyTheStateAndTheDisk_WhenSurveillanceRuns', async () => {
+  it('onStartSilence_ShouldOfferTheScheduleChangeFirstThenStartAndClose_WhenAMuteRangeExists', async () => {
     // Arrange
-    fakeNetwork({
-      ...reference,
-      'GET /api/hub/overview': ok(overview),
-      'GET /api/cameras': ok([makeCamera()]),
-      'GET /api/system/stats': ok(running),
+    const nextChange = inTwoHours('23:00')
+    const network = home({
+      [`GET ${SILENCE}`]: ok({ ...NO_SILENCE, scheduleNextChange: nextChange }),
+      [`PUT ${SILENCE}`]: ok({ active: true, until: nextChange, scheduleNextChange: nextChange }),
     })
     renderScreen(<HubView />)
-    await screen.findByRole('heading', { name: '1 caméra sous surveillance' })
+    await userEvent.click(await screen.findByRole('button', { name: 'Silence' }))
+    const sheet = await screen.findByRole('dialog', { name: 'Silence' })
+    const options = within(sheet).getAllByRole('button')
+    expect(options.map((option) => option.textContent)).toEqual([
+      'Jusqu’à 23 hEnsuite, la planification reprend',
+      '30 minutes',
+      '1 heure',
+      '2 heures',
+      '4 heures',
+      'Annuler',
+    ])
 
     // Act
-    await pollTheSurveillance()
+    await userEvent.click(options[0])
 
     // Assert
-    const card = within(screen.getByRole('region', { name: 'Surveillance' }))
-    expect(card.getByText('En marche')).toBeVisible()
-    expect(card.getByText('60 Go libres sur 100 Go')).toBeVisible()
-    expect(card.getByText('Processeur · 5 images par seconde')).not.toBeVisible()
-    expect(card.getByText('Front Door')).not.toBeVisible()
-  })
-
-  it('SurveillanceCard_ShouldShowTheFiguresUnderTheCameraNames_WhenTheUserOpensTheDetails', async () => {
-    // Arrange
-    fakeNetwork({
-      ...reference,
-      'GET /api/hub/overview': ok(overview),
-      'GET /api/cameras': ok([makeCamera()]),
-      'GET /api/system/stats': ok(running),
+    expect(await screen.findByRole('button', { name: 'Silence jusqu’à 23 h' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    expect(screen.getByText('En silence jusqu’à 23 h')).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(network.sent).toContainEqual({
+      route: `PUT ${SILENCE}`,
+      query: '',
+      body: { until: nextChange.at },
     })
-    renderScreen(<HubView />)
-    await screen.findByRole('heading', { name: '1 caméra sous surveillance' })
-    await pollTheSurveillance()
-    const card = within(screen.getByRole('region', { name: 'Surveillance' }))
-
-    // Act
-    await userEvent.click(card.getByText('Détails techniques'))
-
-    // Assert
-    expect(card.getByText('Processeur · 5 images par seconde')).toBeVisible()
-    expect(card.getByText('Front Door')).toBeVisible()
-    expect(card.getByText('10,0')).toBeVisible()
   })
 
-  it('SurveillanceCard_ShouldKeepTheDetailsClosed_WhenACameraIsOfflineAndAnotherSendsFewImages', async () => {
+  it('onStartSilence_ShouldOfferTheDurationsOnly_WhenNoMuteRangeExists', async () => {
     // Arrange
-    fakeNetwork({
-      ...reference,
-      'GET /api/hub/overview': ok(overview),
-      'GET /api/cameras': ok([
-        makeCamera(),
-        makeCamera({ id: 'camera-2', frigateCameraName: 'garden', status: 'offline' }),
-      ]),
-      'GET /api/system/stats': ok({
-        ...running,
-        cameras: [
-          { camera: 'front_door', fps: 0.4 },
-          { camera: 'garden', fps: 0 },
-        ],
+    const network = home({
+      [`PUT ${SILENCE}`]: ok({
+        active: true,
+        until: inTwoHours('23:00'),
+        scheduleNextChange: null,
       }),
     })
     renderScreen(<HubView />)
-    await screen.findByRole('heading', { name: '2 caméras sous surveillance' })
+    await userEvent.click(await screen.findByRole('button', { name: 'Silence' }))
+    const sheet = await screen.findByRole('dialog', { name: 'Silence' })
+    expect(within(sheet).queryByText(/Jusqu’à/)).not.toBeInTheDocument()
 
     // Act
-    await pollTheSurveillance()
+    await userEvent.click(within(sheet).getByRole('button', { name: '30 minutes' }))
 
     // Assert
-    const card = within(screen.getByRole('region', { name: 'Surveillance' }))
-    expect(card.getByText('0,4')).not.toBeVisible()
-    expect(card.getByText('0,0')).not.toBeVisible()
+    expect(await screen.findByRole('button', { name: 'Silence jusqu’à 23 h' })).toBeVisible()
+    expect(network.sent).toContainEqual({
+      route: `PUT ${SILENCE}`,
+      query: '',
+      body: { minutes: 30 },
+    })
   })
 
-  it('onVideoFailed_ShouldSayTheVideoWasDeleted_WhenItWasErasedWithAnotherDetection', async () => {
+  it('onStopSilence_ShouldEndTheSilenceAtOnce_WhenTheUserTapsTheAmberPill', async () => {
     // Arrange
-    fakeNetwork({
-      ...reference,
+    const network = home({
+      [`GET ${SILENCE}`]: ok({
+        active: true,
+        until: inTwoHours('23:00'),
+        scheduleNextChange: null,
+      }),
+      [`DELETE ${SILENCE}`]: ok(NO_SILENCE),
+    })
+    renderScreen(<HubView />)
+
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: 'Silence jusqu’à 23 h' }))
+
+    // Assert
+    expect(await screen.findByRole('button', { name: 'Silence' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+    expect(network.sent.map((request) => request.route)).toContain(`DELETE ${SILENCE}`)
+  })
+
+  it('onStartSilence_ShouldLeaveTheSilenceOffAndSayWhy_WhenVyzioRefuses', async () => {
+    // Arrange
+    home({ [`PUT ${SILENCE}`]: failure(400, 'silence_too_long', 'At most 7 days.') })
+    renderScreen(<HubView />)
+    await userEvent.click(await screen.findByRole('button', { name: 'Silence' }))
+
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: '1 heure' }))
+
+    // Assert
+    expect(await screen.findByText(/silence_too_long/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Silence' })).toBeEnabled()
+  })
+
+  it('render_ShouldCountTheLastHourAndSayNotificationsAreToSetUp_WhenNoChannelIsConfigured', async () => {
+    // Arrange
+    home({
       'GET /api/hub/overview': ok({
         ...overview,
-        recentEvents: [makeDetectionEvent({ hasClip: true })],
+        notifications: { ...overview.notifications, activeChannels: 0 },
       }),
-      'GET /api/cameras': ok([makeCamera()]),
-      'GET /api/detection-events/event-1/clip': failure(404),
+      'GET /api/detection-events/history': ok({
+        items: [makeDetectionEvent(), makeDetectionEvent({ eventId: 'event-2' })],
+        nextCursor: null,
+      }),
     })
-    renderScreen(<HubView />)
-    await userEvent.click(await screen.findByRole('button', { name: 'Vidéo' }))
-    const preview = await screen.findByRole('dialog', { name: 'Aperçu' })
 
     // Act
-    fireEvent.error(preview.querySelector('video')!)
+    renderScreen(<HubView />)
 
     // Assert
-    expect(await screen.findByText('La vidéo de ce moment a été supprimée.')).toBeInTheDocument()
-    expect(within(preview).queryByRole('button', { name: 'Supprimer' })).not.toBeInTheDocument()
+    expect(await screen.findByText('2 depuis 1 h')).toBeInTheDocument()
+    expect(await screen.findByText('À configurer')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Détections/ })).toHaveAttribute('href', '/detections')
+    expect(screen.getByRole('link', { name: /Notifications/ })).toHaveAttribute(
+      'href',
+      '/settings/notifications',
+    )
+  })
+
+  it('render_ShouldLeaveTheTilesWithoutSubtitle_WhenNothingIsToKnow', async () => {
+    // Arrange
+    home()
+
+    // Act
+    renderScreen(<HubView />)
+
+    // Assert
+    expect(await screen.findByRole('link', { name: 'Détections' })).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: 'Notifications' })).toBeInTheDocument()
+  })
+
+  it('render_ShouldOpenTheAddCameraPage_WhenNoCameraIsAddedYet', async () => {
+    // Arrange
+    home({ 'GET /api/cameras': ok([]) })
+
+    // Act
+    const { router } = renderScreen(<HubView />, { path: '/', url: '/' })
+
+    // Assert
+    await expect.poll(() => router.state.location.pathname).toBe('/settings/cameras/add')
+    expect(screen.queryByText('Bienvenue')).not.toBeInTheDocument()
+  })
+
+  it('onReloadCameras_ShouldShowTheCameras_WhenTheRetryReadsTheList', async () => {
+    // Arrange
+    const network = home({ 'GET /api/cameras': failure(503) })
+    renderScreen(<HubView />)
+    expect(
+      await screen.findByText('La liste de vos caméras n’a pas pu être lue.'),
+    ).toBeInTheDocument()
+    network.answer('GET /api/cameras', ok([makeCamera()]))
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Réessayer' }))
+
+    // Assert
+    expect(await screen.findByRole('link', { name: 'Front Door' })).toBeInTheDocument()
+  })
+
+  it('render_ShouldStillShowTheCameras_WhenTheSilenceCannotBeRead', async () => {
+    // Arrange
+    home({ [`GET ${SILENCE}`]: failure(500) })
+
+    // Act
+    renderScreen(<HubView />)
+
+    // Assert
+    expect(await screen.findByRole('link', { name: 'Front Door' })).toBeInTheDocument()
+    expect(screen.getByText(/Vyzio a rencontré une erreur/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Silence' })).toBeEnabled()
   })
 })

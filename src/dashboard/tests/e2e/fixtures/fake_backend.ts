@@ -313,6 +313,26 @@ function scheduleRefusal(body: Pick<FakeScheduleRule, 'targetIds' | 'startTime' 
   return null
 }
 
+/** A moment in the house's clock, as the API sends it (SCHED-03). */
+interface FakeHouseMoment {
+  at: string
+  dayOfWeek: number
+  time: string
+}
+
+interface FakeSilence {
+  active: boolean
+  until: FakeHouseMoment | null
+  scheduleNextChange: FakeHouseMoment | null
+}
+
+/** A house moment `minutes` from now, the house being in this machine's zone. */
+export function fakeHouseMomentIn(minutes: number): FakeHouseMoment {
+  const at = new Date(Date.now() + minutes * 60 * 1000)
+  const time = `${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}`
+  return { at: at.toISOString(), dayOfWeek: at.getDay(), time }
+}
+
 export interface FakeBackendState {
   cameras: FakeCamera[]
   /** Every live socket the interface opened, by address (ADR-07). */
@@ -349,6 +369,8 @@ export interface FakeBackendState {
   /** A linked conversation, where a test needs one; none means nothing is linked. */
   channelPairing: Record<string, FakeChannelPairing>
   commandJournal: Record<string, FakeCommandJournalEntry[]>
+  /** The household's Silence (NOTIF-33), and when the mute ranges next change; none by default. */
+  silence: FakeSilence
   /** The cameras each person is restricted to, by profile id; none means every camera. */
   profileCameraLinks: Record<string, string[]>
   detectionHistory: FakeDetectionEvent[]
@@ -445,6 +467,7 @@ export function createFakeBackendState(
     channelListening: {},
     channelPairing: {},
     commandJournal: {},
+    silence: { active: false, until: null, scheduleNextChange: null },
     profileCameraLinks: {},
     detectionHistory: [],
     clipsGone: [],
@@ -1425,6 +1448,18 @@ export async function installFakeBackend(
         delete state.notificationChannels[channel]
         return json(route, true)
       }
+    }
+    // Like the real one: every answer is the whole state, the stop included (NOTIF-34).
+    if (path === '/api/notifications/silence') {
+      if (method === 'PUT') {
+        const until =
+          typeof postData?.until === 'string'
+            ? (state.silence.scheduleNextChange ?? fakeHouseMomentIn(60))
+            : fakeHouseMomentIn(Number(postData?.minutes ?? 0))
+        state.silence = { ...state.silence, active: true, until }
+      }
+      if (method === 'DELETE') state.silence = { ...state.silence, active: false, until: null }
+      return json(route, state.silence)
     }
     if (path.startsWith('/api/notifications/log/') && method === 'GET') {
       return json(route, [])

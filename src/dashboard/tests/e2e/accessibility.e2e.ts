@@ -68,6 +68,7 @@ test.describe('Accessibility, WCAG 2.1 A/AA', () => {
 
   const routes = [
     '/',
+    '/cameras',
     '/detections',
     '/cameras/camera-1',
     '/settings',

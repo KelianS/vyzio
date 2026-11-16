@@ -1,17 +1,17 @@
-import { Activity, Wrench } from 'lucide-react'
+import { Activity } from 'lucide-react'
 import { useId, type ReactNode } from 'react'
-import { Badge, type BadgeTone } from '../../common/components/badge'
-import { SecondaryButton } from '../../common/components/secondary_button'
-import { Surface } from '../../common/components/surface'
-import { cn } from '../../common/ui/utils'
-import { TechnicalDetails } from '../../common/components/technical_details'
-import { isStorageCritical, storageUsedRatio } from '../../common/surveillance/storage'
-import type { Camera } from '../../domain/entities/camera.entity'
+import { Badge, type BadgeTone } from '../../../common/components/badge'
+import { SecondaryButton } from '../../../common/components/secondary_button'
+import { Surface } from '../../../common/components/surface'
+import { cn } from '../../../common/ui/utils'
+import { TechnicalDetails } from '../../../common/components/technical_details'
+import { isStorageCritical, storageUsedRatio } from '../../../common/surveillance/storage'
+import type { Camera } from '../../../domain/entities/camera.entity'
 import type {
   FrigateDetectorKind,
   FrigateStatus,
   SystemStats,
-} from '../../domain/entities/system_stats.entity'
+} from '../../../domain/entities/system_stats.entity'
 
 const STATUS_LABEL: Record<FrigateStatus, string> = {
   active: 'En marche',
@@ -120,12 +120,6 @@ export function SystemMonitorPanel({ stats, cameras }: { stats: SystemStats; cam
           )}
         </dl>
       </TechnicalDetails>
-
-      <div className="mt-4">
-        <SecondaryButton icon={Wrench} to={ADVANCED_PATH} size="sm">
-          Ouvrir l’interface technique
-        </SecondaryButton>
-      </div>
     </Panel>
   )
 }

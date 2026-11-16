@@ -1,30 +1,59 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
-import { CameraLiveThumbnail } from './camera_live_thumbnail'
+import { CameraCard } from './camera_card'
 import { makeCamera } from '../../testing/camera_fixture'
 import { PrivacyMiss, PrivacyStrategy, type Camera } from '../../domain/entities/camera.entity'
 
-const renderTile = (camera: Camera) =>
+const renderCard = (camera: Camera, onTogglePrivacy = vi.fn()) =>
   render(
     <MemoryRouter>
-      <CameraLiveThumbnail camera={camera} apiBaseUrl="" />
+      <CameraCard
+        camera={camera}
+        apiBaseUrl=""
+        liveTo={`/cameras/${camera.id}`}
+        onTogglePrivacy={onTogglePrivacy}
+      />
     </MemoryRouter>,
   )
 
-describe('CameraLiveThumbnail', () => {
-  it('CameraLiveThumbnail_ShouldSayTheCameraTurned_WhenItAcceptedTheParkingMove', () => {
+describe('CameraCard', () => {
+  it('CameraCard_ShouldSayItIsCutInPlaceOfThePicture_WhenTheCameraIsCut', () => {
     // Arrange & Act
-    renderTile(makeCamera({ privacyModeActive: true, privacyStrategy: PrivacyStrategy.PtzParking }))
+    renderCard(makeCamera({ privacyModeActive: true, privacyStrategy: PrivacyStrategy.PtzParking }))
 
     // Assert
-    expect(screen.getByText('Caméra orientée, enregistrement désactivé')).toBeInTheDocument()
-    expect(screen.queryByRole('link')).not.toBeInTheDocument()
+    expect(screen.getByText('Coupée')).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'Coupée' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Réactiver Front Door' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
   })
 
-  it('CameraLiveThumbnail_ShouldLinkToThePrivacyScreen_WhenTheCameraDidNotFollow', () => {
+  it.each([
+    { cut: false, label: 'Couper Front Door', active: true },
+    { cut: true, label: 'Réactiver Front Door', active: false },
+  ])(
+    'CameraCard_ShouldAskTheOppositeStateAtOnce_WhenTheEyeIsTapped ($label)',
+    async ({ cut, label, active }) => {
+      // Arrange
+      const onTogglePrivacy = vi.fn()
+      const camera = makeCamera({ privacyModeActive: cut })
+      renderCard(camera, onTogglePrivacy)
+
+      // Act
+      await userEvent.click(screen.getByRole('button', { name: label }))
+
+      // Assert
+      expect(onTogglePrivacy).toHaveBeenCalledWith(camera, active)
+    },
+  )
+
+  it('CameraCard_ShouldLinkToThePrivacyScreen_WhenTheCameraDidNotFollow', () => {
     // Arrange & Act
-    renderTile(
+    renderCard(
       makeCamera({
         privacyModeActive: true,
         privacyStrategy: PrivacyStrategy.PtzParking,
@@ -33,71 +62,42 @@ describe('CameraLiveThumbnail', () => {
     )
 
     // Assert
-    expect(screen.getByText('Caméra non tournée, enregistrement désactivé')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'La caméra ne s’est pas tournée' })).toHaveAttribute(
       'href',
       '/settings/cameras/camera-1/privacy',
     )
   })
 
-  it('CameraLiveThumbnail_ShouldStillLinkToWhy_WhenTheCameraDidNotComeBackAfterPrivacy', () => {
-    // Arrange & Act
-    renderTile(
-      makeCamera({
-        privacyStrategy: PrivacyStrategy.PtzParking,
-        privacyMiss: PrivacyMiss.CameraFailed,
-      }),
-    )
+  it.each([
+    { status: 'to_set_up', validationState: 'to_set_up', connected: false },
+    { status: 'online', validationState: 'draft', connected: true },
+  ])(
+    'CameraCard_ShouldLeadToItsPageWithTheGreyMark_WhenSurveillanceHasNotTakenItIn ($validationState)',
+    ({ status, validationState, connected }) => {
+      // Arrange & Act
+      renderCard(makeCamera({ status, validationState, connected }))
 
-    // Assert
-    expect(screen.getByRole('link', { name: 'La caméra n’est pas revenue' })).toBeInTheDocument()
-  })
-
-  it('CameraLiveThumbnail_ShouldLeadToItsPageWithoutAnyImage_WhenTheCameraIsToSetUp', () => {
-    // Arrange & Act
-    renderTile(makeCamera({ status: 'to_set_up', validationState: 'to_set_up', connected: false }))
-
-    // Assert
-    expect(screen.getByRole('link', { name: 'À configurer : Front Door' })).toHaveAttribute(
-      'href',
-      '/settings/cameras/camera-1',
-    )
-    expect(screen.queryByRole('img')).not.toBeInTheDocument()
-    expect(screen.queryByText('Hors ligne')).not.toBeInTheDocument()
-  })
-
-  it('CameraLiveThumbnail_ShouldLeadToItsPageWithoutAnyImage_WhenTheCameraWaitsForTheRestart', () => {
-    // Arrange & Act
-    renderTile(makeCamera({ status: 'online', validationState: 'draft' }))
-
-    // Assert
-    expect(screen.getByRole('link', { name: 'À configurer : Front Door' })).toHaveAttribute(
-      'href',
-      '/settings/cameras/camera-1',
-    )
-    expect(screen.queryByRole('img')).not.toBeInTheDocument()
-    expect(document.querySelector('.bg-success')).toBeNull()
-  })
+      // Assert
+      expect(screen.getByRole('link', { name: 'À configurer : Front Door' })).toHaveAttribute(
+        'href',
+        '/settings/cameras/camera-1',
+      )
+      expect(screen.getByRole('img', { name: 'À configurer' })).toBeInTheDocument()
+    },
+  )
 
   it.each([
-    { connected: true, status: 'online', links: 1 },
-    { connected: false, status: 'offline', links: 0 },
+    { connected: true, status: 'online', links: 1, mark: 'En marche' },
+    { connected: false, status: 'offline', links: 0, mark: 'Hors ligne' },
   ])(
-    'CameraLiveThumbnail_ShouldOpenTheLiveViewOnlyWhenTheCameraAnswers_WhenItIs $status',
-    ({ connected, status, links }) => {
+    'CameraCard_ShouldOpenTheViewOnlyWhenTheCameraAnswers_WhenItIs $status',
+    ({ connected, status, links, mark }) => {
       // Arrange & Act
-      render(
-        <MemoryRouter>
-          <CameraLiveThumbnail
-            camera={makeCamera({ connected, status })}
-            apiBaseUrl=""
-            liveTo="/cameras/camera-1"
-          />
-        </MemoryRouter>,
-      )
+      renderCard(makeCamera({ connected, status }))
 
       // Assert
       expect(screen.queryAllByRole('link', { name: 'Front Door' })).toHaveLength(links)
+      expect(screen.getByRole('img', { name: mark })).toBeInTheDocument()
     },
   )
 })

@@ -17,10 +17,10 @@ test.describe('Navigation', () => {
     const rubrics = page.getByRole('navigation', { name: 'Rubriques de réglages' })
 
     await page.goto('/')
-    await expect(page.getByRole('heading', { name: /sous surveillance|Bienvenue/ })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Couper les caméras' })).toBeVisible()
 
     // No navigation bar: the home leads to the detections, the bar's gear to the settings.
-    await page.getByRole('link', { name: 'Toutes les détections' }).click()
+    await page.getByRole('link', { name: 'Détections' }).click()
     await expect(bar.getByRole('heading', { name: 'Détections' })).toBeVisible()
     await bar.getByRole('button', { name: 'Retour' }).click()
     await expect(page).toHaveURL('/')

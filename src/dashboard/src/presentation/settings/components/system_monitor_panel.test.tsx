@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
-import type { SystemStats } from '../../domain/entities/system_stats.entity'
-import { makeCamera } from '../../testing/camera_fixture'
+import type { SystemStats } from '../../../domain/entities/system_stats.entity'
+import { makeCamera } from '../../../testing/camera_fixture'
 import { SystemMonitorPanel } from './system_monitor_panel'
 
 const running: SystemStats = {
@@ -33,10 +33,6 @@ describe('SystemMonitorPanel', () => {
     expect(screen.getByText('5 Go libres sur 100 Go')).toBeVisible()
     expect(screen.getByText('Accélérateur dédié · 5 images par seconde')).not.toBeVisible()
     expect(screen.getByText('Porte d’entrée')).not.toBeVisible()
-    expect(screen.getByRole('link', { name: 'Ouvrir l’interface technique' })).toHaveAttribute(
-      'href',
-      '/settings/hardware/advanced',
-    )
   })
 
   it('SystemMonitorPanel_ShouldKeepTheDetailsClosedAndTheFigureNeutral_WhenACameraSendsFewImages', () => {

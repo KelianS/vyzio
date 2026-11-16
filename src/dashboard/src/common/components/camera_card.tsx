@@ -1,193 +1,187 @@
-import { useEffect, useRef, useState, type MouseEvent } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
-import { ChevronRight, Pause, Play, TriangleAlert, WifiOff } from 'lucide-react'
-import { privacyBadge, privacyMissLabel } from '../privacy/privacy_status'
-import { PrivacyStateIcon } from '../privacy/privacy_state_icon'
+import { ChevronRight, Eye, EyeOff, TriangleAlert, WifiOff } from 'lucide-react'
+import { privacyMissLabel } from '../privacy/privacy_status'
 import { cn } from '../ui/utils'
 import { liveFrameUrl, liveWaitMessage } from './live_frame'
 import { LiveWaitVeil } from './live_wait_veil'
-import {
-  SurveillanceEntry,
-  formatCameraStatusLabel,
-  surveillanceEntryOf,
-} from '../camera/camera_status'
+import { SurveillanceEntry, cameraMark, surveillanceEntryOf } from '../camera/camera_status'
 import type { Camera } from '../../domain/entities/camera.entity'
 import type { FrigateStatus } from '../../domain/entities/system_stats.entity'
-import { PressableSurface } from './pressable'
-import { SecondaryButton } from './secondary_button'
-import { Surface } from './surface'
+import { PressableControl, PressableSurface } from './pressable'
+import { StatusMark } from './status_mark'
 
-interface CameraLiveThumbnailProps {
+interface CameraCardProps {
   camera: Camera
   apiBaseUrl: string
   frigateStatus?: FrigateStatus
-  /** A privacy toggle is under way on this camera: the wait shows here, not only in the modal. */
+  /** Four cameras or more: the grid's smaller card (UI-32). */
+  compact?: boolean
+  /** A cut or a resume is under way on this camera: its eye waits. */
   busy?: boolean
-  /** Where a tap on the picture leads: the camera's live view. */
-  liveTo?: string
-  onTogglePrivacy?: (camera: Camera, active: boolean) => void
+  /** Where a tap on the picture leads: the camera's view. */
+  liveTo: string
+  onTogglePrivacy: (camera: Camera, active: boolean) => void
 }
 
-const FRAME = 'relative aspect-video bg-picture'
+const FOCUS =
+  'focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring'
 
-export function CameraLiveThumbnail({
+/** A camera on the home: its picture, then its name, its mark and its eye (UI-32, PRIV-20). */
+export function CameraCard({
   camera,
   apiBaseUrl,
   frigateStatus = 'active',
+  compact = false,
   busy = false,
   liveTo,
   onTogglePrivacy,
-}: CameraLiveThumbnailProps) {
-  const [imgSrc, setImgSrc] = useState(() => liveFrameUrl(apiBaseUrl, camera.id))
-  const [imageError, setImageError] = useState(false)
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+}: CameraCardProps) {
   const deviceOffline = !camera.connected
-  // Not in surveillance yet: no image to try nor live view to open, the tile leads to its page (ADR-04).
+  // Not in surveillance yet: no image to try nor view to open, the card leads to its page (ADR-04).
   const unwatched = surveillanceEntryOf(camera) !== SurveillanceEntry.Watched
-  const polling = !camera.privacyModeActive && camera.connected && !unwatched
-  // An offline camera opens no live view: it would only wait for a stream that cannot come (CAM-08).
-  const expandable = Boolean(liveTo) && !camera.privacyModeActive && !unwatched && !deviceOffline
-
-  // Resets the broken-image flag on identity/connectivity change without a setState-in-effect cascade.
-  const resetKey = `${camera.id}:${camera.privacyModeActive}:${camera.connected}:${apiBaseUrl}`
-  const [prevResetKey, setPrevResetKey] = useState(resetKey)
-  if (resetKey !== prevResetKey) {
-    setPrevResetKey(resetKey)
-    setImageError(false)
-  }
-
-  useEffect(() => {
-    if (polling) {
-      intervalRef.current = setInterval(() => {
-        setImgSrc(liveFrameUrl(apiBaseUrl, camera.id))
-      }, 1000)
-    }
-
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current)
-    }
-  }, [camera.id, polling, apiBaseUrl])
-
-  const waitMessage = liveWaitMessage(frigateStatus, imageError)
-  const privacy = privacyBadge(camera)
+  const cut = camera.privacyModeActive
+  const live = !cut && !unwatched && !deviceOffline
   const missLabel = privacyMissLabel(camera)
+  const name = camera.displayName
 
-  function handleTogglePrivacy(event: MouseEvent) {
-    event.stopPropagation()
-    onTogglePrivacy?.(camera, !camera.privacyModeActive)
-  }
-
-  const picture = (
-    <>
-      {camera.privacyModeActive && privacy ? (
-        // The same words as the privacy screen's badge: what the camera answered (PRIV-20).
-        <div className="flex h-full flex-col items-center justify-center gap-2 px-3 text-center text-ink-muted">
-          <PrivacyStateIcon kind={privacy.kind} className="size-5" />
-          <span className="text-body font-medium">{privacy.text}</span>
-        </div>
-      ) : unwatched ? (
-        <PressableSurface>
-          <Link
-            to={`/settings/cameras/${camera.id}`}
-            aria-label={`${formatCameraStatusLabel(camera)} : ${camera.displayName}`}
-            className="flex h-full items-center justify-center gap-1 text-body font-medium text-ink-muted underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring"
-          >
-            {formatCameraStatusLabel(camera)}
-            <ChevronRight className="size-4" aria-hidden="true" />
-          </Link>
-        </PressableSurface>
-      ) : deviceOffline ? (
-        <div className="flex h-full items-center justify-center gap-2 text-body font-medium text-ink-muted">
-          <WifiOff className="size-4" aria-hidden="true" />
-          Hors ligne
-        </div>
-      ) : (
-        <>
-          <img
-            src={imgSrc}
-            alt={camera.displayName}
-            // An image with no data shows the browser's broken icon: it shows through
-            // the waiting veil, so it stays hidden until it has something to show.
-            className={cn('size-full object-cover', imageError && 'invisible')}
-            onError={() => setImageError(true)}
-            onLoad={() => setImageError(false)}
-          />
-          {waitMessage && <LiveWaitVeil message={waitMessage} className="bg-picture/90" />}
-        </>
-      )}
-    </>
+  const frame = cn(
+    'flex w-full items-center justify-center bg-picture',
+    live ? 'aspect-video' : compact ? 'h-25' : 'h-30',
   )
 
-  return (
-    <Surface inset="none" asChild>
-      <article>
-        {/* Only the frame is the link: the footer's privacy toggle is a button, and nesting is invalid. */}
-        {expandable && liveTo ? (
-          <PressableSurface>
-            <Link
-              to={liveTo}
-              // Names the frame itself: the image, hidden during an outage, took its name along.
-              aria-label={camera.displayName}
-              className={cn(
-                FRAME,
-                'block focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring',
-              )}
-            >
-              {picture}
-            </Link>
-          </PressableSurface>
-        ) : (
-          <div className={FRAME}>{picture}</div>
-        )}
+  const picture = cut ? (
+    // In place of its picture, what a cut camera is (PRIV-20); no stream is tried.
+    <PictureState icon={<EyeOff className="size-6" aria-hidden="true" />}>
+      {compact ? null : 'Coupée'}
+    </PictureState>
+  ) : deviceOffline ? (
+    <PictureState icon={<WifiOff className="size-6" aria-hidden="true" />}>
+      {compact ? null : 'Hors ligne'}
+    </PictureState>
+  ) : (
+    <LiveFrame camera={camera} apiBaseUrl={apiBaseUrl} frigateStatus={frigateStatus} />
+  )
+  // An offline camera opens no view: it would only wait for a stream that cannot come (CAM-08).
+  const to = unwatched ? `/settings/cameras/${camera.id}` : !deviceOffline || cut ? liveTo : null
 
-        <div className="flex items-center gap-2 p-3">
-          <span
-            className={cn(
-              'size-2 shrink-0 rounded-full',
-              camera.privacyModeActive || deviceOffline || unwatched
-                ? 'bg-muted-foreground/40'
-                : 'bg-success',
-            )}
-            aria-hidden="true"
-          />
-          <span className="min-w-0 flex-1 truncate font-medium">{camera.displayName}</span>
-          {camera.privacyModeSource === 'schedule' && (
-            <span
-              className="rounded-full bg-muted px-2 py-0.5 text-label text-muted-foreground"
-              title="Activé par planification"
-            >
-              planifié
-            </span>
-          )}
-          {onTogglePrivacy && (
-            <SecondaryButton
-              icon={camera.privacyModeActive ? Play : Pause}
-              type="button"
-              active={camera.privacyModeActive}
-              size="sm"
-              disabled={busy}
-              onClick={handleTogglePrivacy}
-              title={
-                camera.privacyModeActive
-                  ? 'Désactiver le mode vie privée'
-                  : 'Activer le mode vie privée'
-              }
-            >
-              {busy ? 'En cours…' : camera.privacyModeActive ? 'Réactiver' : 'Pause'}
-            </SecondaryButton>
-          )}
-        </div>
-        {/* Outside the frame, which may be a button; the privacy screen says why (PRIV-05). */}
-        {missLabel && (
+  return (
+    // The card's one link covers it whole; the eye and the miss line sit above it.
+    <article className="relative flex flex-col overflow-hidden rounded-card bg-card text-card-foreground">
+      {to ? (
+        <PressableSurface>
           <Link
-            to={`/settings/cameras/${camera.id}/privacy`}
-            className="flex items-center gap-1.5 px-3 pb-3 text-label text-muted-foreground underline underline-offset-2"
+            to={to}
+            aria-label={unwatched ? `À configurer : ${name}` : name}
+            className={cn(frame, "after:absolute after:inset-0 after:content-['']", FOCUS)}
           >
-            <TriangleAlert className="size-3.5 shrink-0" aria-hidden="true" />
-            {missLabel}
+            <span className="relative flex size-full items-center justify-center">
+              {unwatched ? (
+                <span className="flex items-center gap-1 text-body font-medium text-ink-muted">
+                  À configurer
+                  <ChevronRight className="size-4" aria-hidden="true" />
+                </span>
+              ) : (
+                picture
+              )}
+            </span>
           </Link>
+        </PressableSurface>
+      ) : (
+        <div className={cn(frame, 'relative')}>{picture}</div>
+      )}
+
+      <div
+        className={cn(
+          'flex items-center justify-between gap-1',
+          compact ? 'h-12 pr-0.5 pl-3' : 'h-15 pr-2 pl-4',
         )}
-      </article>
-    </Surface>
+      >
+        <p
+          className={cn(
+            'flex min-w-0 items-center gap-2 font-semibold',
+            compact ? 'text-body' : 'text-row',
+          )}
+        >
+          <StatusMark {...cameraMark(camera)} />
+          <span className="truncate">{name}</span>
+        </p>
+        <PressableControl>
+          <button
+            type="button"
+            aria-label={cut ? `Réactiver ${name}` : `Couper ${name}`}
+            aria-pressed={cut}
+            aria-busy={busy}
+            disabled={busy}
+            onClick={() => onTogglePrivacy(camera, !cut)}
+            className={cn(
+              'relative z-10 inline-flex size-11 shrink-0 items-center justify-center rounded-full outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-50',
+              cut ? 'bg-icon-circle text-foreground' : 'text-ink-muted hover:bg-secondary',
+            )}
+          >
+            {cut ? (
+              <EyeOff className="size-5" aria-hidden="true" />
+            ) : (
+              <Eye className="size-5" aria-hidden="true" />
+            )}
+          </button>
+        </PressableControl>
+      </div>
+
+      {/* A camera that did not follow says so on its card; its privacy screen says why (PRIV-05). */}
+      {missLabel && (
+        <Link
+          to={`/settings/cameras/${camera.id}/privacy`}
+          className="relative z-10 flex items-center gap-1.5 px-4 pb-3 text-label text-muted-foreground underline underline-offset-2"
+        >
+          <TriangleAlert className="size-3.5 shrink-0" aria-hidden="true" />
+          {missLabel}
+        </Link>
+      )}
+    </article>
+  )
+}
+
+function PictureState({ icon, children }: { icon: ReactNode; children: ReactNode }) {
+  return (
+    <span className="flex flex-col items-center gap-2 text-body font-semibold text-ink-muted">
+      {icon}
+      {children}
+    </span>
+  )
+}
+
+/** The latest frame, fetched again each second while the card shows. */
+function LiveFrame({
+  camera,
+  apiBaseUrl,
+  frigateStatus,
+}: {
+  camera: Camera
+  apiBaseUrl: string
+  frigateStatus: FrigateStatus
+}) {
+  const [imgSrc, setImgSrc] = useState(() => liveFrameUrl(apiBaseUrl, camera.id))
+  const [imageError, setImageError] = useState(false)
+
+  useEffect(() => {
+    const interval = setInterval(() => setImgSrc(liveFrameUrl(apiBaseUrl, camera.id)), 1000)
+    return () => clearInterval(interval)
+  }, [camera.id, apiBaseUrl])
+
+  const waitMessage = liveWaitMessage(frigateStatus, imageError)
+
+  return (
+    <>
+      <img
+        src={imgSrc}
+        alt=""
+        // An image with no data shows the browser's broken icon: it stays hidden until it has something to show.
+        className={cn('absolute inset-0 size-full object-cover', imageError && 'invisible')}
+        onError={() => setImageError(true)}
+        onLoad={() => setImageError(false)}
+      />
+      {waitMessage && <LiveWaitVeil message={waitMessage} className="bg-picture/90" />}
+    </>
   )
 }

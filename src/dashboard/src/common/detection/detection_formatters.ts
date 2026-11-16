@@ -32,7 +32,7 @@ const dateTimeFormatter = new Intl.DateTimeFormat('fr-FR', {
 })
 
 /** Today, the time is enough; beyond that, the date places it. */
-export function formatEventTime(value: string): string {
+function formatEventTime(value: string): string {
   const date = new Date(value)
   const now = new Date()
   const isToday =

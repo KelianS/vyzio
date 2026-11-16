@@ -11,30 +11,6 @@ import {
  * being fixed.
  */
 
-test.describe('Camera pause', () => {
-  test('HubView_ShouldConfirmThenSayItHappened_WhenTheUserPausesACamera', async ({ page }) => {
-    const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
-    await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
-
-    await page.goto('/')
-    await page.getByRole('button', { name: 'Pause' }).click()
-
-    // Cutting one camera costs as much as all of them: the request announces itself alike.
-    const dialog = page.getByRole('alertdialog')
-    await expect(dialog).toContainText('Mettre « Salon » en pause ?')
-    await expect(dialog).toContainText(
-      'Plus rien n’est enregistré, détecté ni notifié par cette caméra',
-    )
-    await dialog.getByRole('button', { name: 'Mettre en pause' }).click()
-
-    // And the result is said: without that, nothing tells a long operation from a failed one.
-    await expect(
-      page.getByRole('region', { name: 'Notifications' }).getByRole('status'),
-    ).toContainText('Salon est en pause.')
-    await expect(page.getByRole('button', { name: 'Réactiver' })).toBeVisible()
-  })
-})
-
 test.describe('LiveView', () => {
   test('LiveView_ShouldOpenFullScreenAndGoBackHome_WhenTheUserTapsACamera', async ({ page }) => {
     const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
