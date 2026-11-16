@@ -1,18 +1,23 @@
 import { useEffect, useReducer } from 'react'
-import { Link } from 'react-router'
-import { ChevronRight, Plus } from 'lucide-react'
-import { Button } from '../../common/ui/button'
+import { Plus, UserRound } from 'lucide-react'
 import { ReadFailure } from '../../common/components/error_message'
-import { ListRow } from '../../common/components/list_row'
+import { GroupedList, GroupedRow } from '../../common/components/grouped_list'
 import { SettingsPage } from '../../common/settings/settings_page'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
-import { ALERT_MODE_LABELS, CATEGORY_LABELS } from './person_labels'
+import type { ProfileAlertMode } from '../../domain/entities/profile.entity'
+import { ALERT_MODE_LABELS } from './person_labels'
 import { buildPersonListPresenter } from './person_list.presenter'
 import { personListReducer } from './person_list.reducer'
 import { buildInitialPersonListUido } from './person_list.uido'
 import { Loading } from '../../common/components/loading'
 import { EmptyState } from '../../common/components/empty_state'
+
+// Notifying is the usual case: only a person kept quiet says so (UI-31).
+const ALERT_MODE_EXCEPTION: Record<ProfileAlertMode, string | undefined> = {
+  always: undefined,
+  never: ALERT_MODE_LABELS.never,
+}
 
 /** First level of the Persons rubric: the list (UI-25). Adding is its own task/page. */
 export function PersonListView() {
@@ -26,49 +31,41 @@ export function PersonListView() {
 
   return (
     <SettingsPage lede="Les personnes que Vyzio reconnaît, et ce qu’il en fait.">
-      {uido.error ? (
+      {uido.error && (
         // An unread list is not an empty one: "nobody yet" would be false.
         <ReadFailure
           error={uido.error}
           onRetry={presenter.onLoad}
           subject="La liste des personnes n’a pas pu être lue."
-          className="py-3"
         />
-      ) : uido.people.length > 0 ? (
-        <ul className="divide-y divide-border">
-          {uido.people.map((person) => (
-            <li key={person.id}>
-              <ListRow>
-                <Link to={`/settings/detection/people/${person.id}`}>
-                  <span className="min-w-0">
-                    <span className="block font-medium">{person.name}</span>
-                    <span className="block text-body text-muted-foreground">
-                      {CATEGORY_LABELS[person.category]} · {ALERT_MODE_LABELS[person.alertMode]}
-                    </span>
-                  </span>
-                  <ChevronRight
-                    className="size-4 shrink-0 text-muted-foreground"
-                    aria-hidden="true"
-                  />
-                </Link>
-              </ListRow>
-            </li>
-          ))}
-        </ul>
-      ) : uido.loading ? (
+      )}
+      {uido.loading && uido.people.length === 0 && !uido.error ? (
         <Loading />
       ) : (
-        <EmptyState>Personne d’enregistrée pour l’instant.</EmptyState>
+        <>
+          {uido.people.length === 0 && !uido.error && (
+            <EmptyState>Personne d’enregistrée pour l’instant.</EmptyState>
+          )}
+          {/* Adding someone never duplicates anyone: it stays offered even when the list is unread. */}
+          <GroupedList>
+            {uido.people.map((person) => (
+              <GroupedRow
+                key={person.id}
+                to={`/settings/detection/people/${person.id}`}
+                icon={UserRound}
+                title={person.name}
+                subtitle={ALERT_MODE_EXCEPTION[person.alertMode]}
+              />
+            ))}
+            <GroupedRow
+              to="/settings/detection/people/add"
+              icon={Plus}
+              title="Ajouter une personne"
+              trailing="none"
+            />
+          </GroupedList>
+        </>
       )}
-
-      <div className="mt-5">
-        <Button asChild>
-          <Link to="/settings/detection/people/add">
-            <Plus aria-hidden="true" />
-            Ajouter une personne
-          </Link>
-        </Button>
-      </div>
     </SettingsPage>
   )
 }

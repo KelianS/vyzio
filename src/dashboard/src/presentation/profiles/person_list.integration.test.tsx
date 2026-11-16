@@ -10,7 +10,7 @@ const PEOPLE = 'GET /api/profiles'
 const LIST = { path: '/settings/detection/people', url: '/settings/detection/people' }
 
 describe('PersonListView', () => {
-  it('onLoad_ShouldListEachPersonWithWhatVyzioDoes_WhenSomeAreKnown', async () => {
+  it('onLoad_ShouldSayAPersonIsKeptQuiet_WhenVyzioDoesNotNotifyThem', async () => {
     // Arrange
     fakeNetwork({ [PEOPLE]: ok([makeProfile({ alertMode: 'never' })]) })
 
@@ -19,8 +19,19 @@ describe('PersonListView', () => {
 
     // Assert
     const person = await screen.findByRole('link', { name: /Alice/ })
-    expect(person).toHaveTextContent('Famille · Ne pas me notifier')
+    expect(person).toHaveTextContent('Ne pas me notifier')
     expect(person).toHaveAttribute('href', '/settings/detection/people/person-1')
+  })
+
+  it('onLoad_ShouldListAPersonByNameAlone_WhenVyzioNotifiesThem', async () => {
+    // Arrange
+    fakeNetwork({ [PEOPLE]: ok([makeProfile({ alertMode: 'always' })]) })
+
+    // Act
+    renderScreen(<PersonListView />, LIST)
+
+    // Assert
+    expect(await screen.findByRole('link', { name: /Alice/ })).toHaveTextContent(/^Alice$/)
   })
 
   it('onLoad_ShouldSayNobodyIsKnown_WhenTheListIsEmpty', async () => {

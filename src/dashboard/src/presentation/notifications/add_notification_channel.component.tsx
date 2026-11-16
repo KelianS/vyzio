@@ -1,6 +1,6 @@
 import { useEffect, useReducer } from 'react'
-import { Link } from 'react-router'
-import { ChevronRight } from 'lucide-react'
+import { MessageCircle } from 'lucide-react'
+import { GroupedList, GroupedRow } from '../../common/components/grouped_list'
 import { PageHeader } from '../../common/components/page_header'
 import { ReadFailure } from '../../common/components/error_message'
 import { SettingsPage } from '../../common/settings/settings_page'
@@ -10,7 +10,6 @@ import { channelSetupLede } from './channel_setup'
 import { buildAddNotificationChannelPresenter } from './add_notification_channel.presenter'
 import { addNotificationChannelReducer } from './add_notification_channel.reducer'
 import { buildInitialAddNotificationChannelUido } from './add_notification_channel.uido'
-import { ListRow } from '../../common/components/list_row'
 import { Loading } from '../../common/components/loading'
 import { EmptyState } from '../../common/components/empty_state'
 
@@ -43,32 +42,24 @@ export function AddNotificationChannelView() {
             className="py-3"
           />
         ) : available.length > 0 ? (
-          <ul className="divide-y divide-border">
+          <GroupedList>
             {available.map((channel) => (
-              <li key={channel.channel}>
-                <ListRow>
-                  <Link to={`/settings/notifications/${channel.channel}`}>
-                    <span className="min-w-0">
-                      <span className="block font-medium">{channel.displayName}</span>
-                      <span className="block text-body text-muted-foreground">
-                        {channelSetupLede(channel.channel)}
-                      </span>
-                      {/* Dit avant l'activation, pour ne jamais laisser croire qu'on pourra lui parler (ADR-14). */}
-                      <span className="block text-body text-muted-foreground">
-                        {channel.acceptsCommands
-                          ? 'Vous pourrez aussi lui demander ce qui se passe chez vous.'
-                          : 'Ce canal envoie des notifications, mais ne répond pas aux questions.'}
-                      </span>
-                    </span>
-                    <ChevronRight
-                      className="size-4 shrink-0 text-muted-foreground"
-                      aria-hidden="true"
-                    />
-                  </Link>
-                </ListRow>
-              </li>
+              <GroupedRow
+                key={channel.channel}
+                to={`/settings/notifications/${channel.channel}`}
+                icon={MessageCircle}
+                title={channel.displayName}
+                subtitle={
+                  // Said before setting it up, never to let one believe it can be talked to (ADR-14).
+                  `${channelSetupLede(channel.channel)} ${
+                    channel.acceptsCommands
+                      ? 'Vous pourrez aussi lui demander ce qui se passe chez vous.'
+                      : 'Ce canal envoie des notifications, mais ne répond pas aux questions.'
+                  }`
+                }
+              />
             ))}
-          </ul>
+          </GroupedList>
         ) : uido.loading ? (
           <Loading />
         ) : (
