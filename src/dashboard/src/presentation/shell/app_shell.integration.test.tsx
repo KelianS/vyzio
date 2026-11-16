@@ -1,10 +1,10 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { PrivacyMiss, PrivacyStrategy } from '../../domain/entities/camera.entity'
 import { makeCamera } from '../../testing/camera_fixture'
-import { failure, fakeNetwork, ok } from '../../testing/fake_network'
+import { failure, fakeNetwork, late, ok } from '../../testing/fake_network'
 import { renderScreen } from '../../testing/render_screen'
 import { appContainer } from '../../infrastructure/providers/app.container'
 import { useRootStore } from '../../infrastructure/store/root.store'
@@ -53,7 +53,20 @@ function openShellAt(...entries: string[]) {
   return router
 }
 
+// The real clock still runs underneath, so the screen's own waits keep working.
+function usePollClock() {
+  vi.useFakeTimers({ shouldAdvanceTime: true })
+}
+
+async function aPollPasses() {
+  await act(() => vi.advanceTimersByTimeAsync(8000))
+}
+
 describe('AppShell', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('onMount_ShouldReadTheCamerasAndTheSystemForEveryScreen_WhenTheShellOpens', async () => {
     // Arrange
     const network = fakeNetwork({
@@ -310,5 +323,105 @@ describe('AppShell', () => {
     const alerts = await screen.findByRole('list', { name: 'Alertes' })
     expect(within(alerts).getByText('Vyzio ne répond plus')).toBeVisible()
     expect(within(alerts).queryByRole('button', { name: /Masquer/ })).not.toBeInTheDocument()
+  })
+
+  it('TopBar_ShouldSayACameraStoppedAnswering_WhenItGoesOfflineWhileTheHomeIsOpen', async () => {
+    // Arrange
+    usePollClock()
+    const network = fakeNetwork({
+      'GET /api/cameras': ok([makeCamera({ displayName: 'Jardin' })]),
+      'GET /api/system/stats': ok(stats()),
+    })
+    openShellAt('/')
+    await waitFor(() => expect(useRootStore.getState().cameras).toHaveLength(1))
+    network.answer(
+      'GET /api/cameras',
+      ok([makeCamera({ displayName: 'Jardin', status: 'offline' })]),
+    )
+
+    // Act
+    await aPollPasses()
+
+    // Assert
+    const alerts = await screen.findByRole('list', { name: 'Alertes' })
+    expect(within(alerts).getByText('Jardin ne répond plus')).toBeVisible()
+  })
+
+  it('TopBar_ShouldDropTheOfflineAlert_WhenTheCameraComesBackWhileTheHomeIsOpen', async () => {
+    // Arrange
+    usePollClock()
+    const network = fakeNetwork({
+      'GET /api/cameras': ok([makeCamera({ displayName: 'Jardin', status: 'offline' })]),
+      'GET /api/system/stats': ok(stats()),
+    })
+    openShellAt('/')
+    await screen.findByRole('list', { name: 'Alertes' })
+    network.answer('GET /api/cameras', ok([makeCamera({ displayName: 'Jardin' })]))
+
+    // Act
+    await aPollPasses()
+
+    // Assert
+    await waitFor(() =>
+      expect(screen.queryByRole('list', { name: 'Alertes' })).not.toBeInTheDocument(),
+    )
+  })
+
+  it('AppShell_ShouldKeepTheListWithoutAToast_WhenABackgroundReadFails', async () => {
+    // Arrange
+    usePollClock()
+    const network = fakeNetwork({
+      'GET /api/cameras': ok([makeCamera({ displayName: 'Jardin', status: 'offline' })]),
+      'GET /api/system/stats': ok(stats()),
+    })
+    openShellAt('/')
+    await screen.findByRole('list', { name: 'Alertes' })
+    network.answer('GET /api/cameras', failure(500))
+
+    // Act
+    await aPollPasses()
+    await aPollPasses()
+
+    // Assert
+    expect(network.sent.filter((r) => r.route === 'GET /api/cameras')).toHaveLength(3)
+    expect(screen.queryByText(/Vyzio a rencontré une erreur/)).not.toBeInTheDocument()
+    expect(useRootStore.getState().camerasLoading).toBe(false)
+    expect(
+      within(screen.getByRole('list', { name: 'Alertes' })).getByText('Jardin ne répond plus'),
+    ).toBeVisible()
+  })
+
+  it('AppShell_ShouldNotAskForTheListAgain_WhenTheLastBackgroundReadIsStillUnanswered', async () => {
+    // Arrange
+    usePollClock()
+    const network = fakeNetwork({
+      'GET /api/cameras': ok([makeCamera()]),
+      'GET /api/system/stats': ok(stats()),
+    })
+    openShellAt('/')
+    await waitFor(() => expect(useRootStore.getState().cameras).toHaveLength(1))
+    network.answer('GET /api/cameras', late(ok([makeCamera()]), 20_000))
+
+    // Act
+    await aPollPasses()
+    await aPollPasses()
+
+    // Assert
+    expect(network.sent.filter((r) => r.route === 'GET /api/cameras')).toHaveLength(2)
+  })
+
+  it('AppShell_ShouldKeepTheShownListAsItIs_WhenABackgroundReadBringsNothingNew', async () => {
+    // Arrange
+    usePollClock()
+    fakeNetwork({ 'GET /api/cameras': ok([makeCamera()]), 'GET /api/system/stats': ok(stats()) })
+    openShellAt('/')
+    await waitFor(() => expect(useRootStore.getState().cameras).toHaveLength(1))
+    const shown = useRootStore.getState().cameras
+
+    // Act
+    await aPollPasses()
+
+    // Assert
+    expect(useRootStore.getState().cameras).toBe(shown)
   })
 })

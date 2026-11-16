@@ -10,6 +10,8 @@ export interface CamerasSlice {
   camerasLoading: boolean
   camerasError: AppError | null
   loadCameras: (getCameras: GetCameras) => Promise<void>
+  /** A background read: no loading state, and a failure keeps what the screen shows. */
+  refreshCameras: (getCameras: GetCameras) => Promise<void>
   /** Cameras the user is cutting or resuming: their miss is the act's to tell (PRIV-05). */
   privacyActing: readonly string[]
   /** Misses a toast already told: the bar leaves them out while they last. */
@@ -18,8 +20,8 @@ export interface CamerasSlice {
   privacyActEnded: (cameraIds: readonly string[], toldKeys: readonly string[]) => void
 }
 
-/** Cross-screen camera list — shared by Hub, Cameras and the live view instead of each fetching its own copy. */
-export const createCamerasSlice: StateCreator<CamerasSlice> = (set) => ({
+/** Cross-screen camera list, shared by Hub, Cameras and the live view instead of each fetching its own copy. */
+export const createCamerasSlice: StateCreator<CamerasSlice> = (set, get) => ({
   cameras: [],
   camerasLoading: true,
   camerasError: null,
@@ -39,6 +41,28 @@ export const createCamerasSlice: StateCreator<CamerasSlice> = (set) => ({
     } catch (e) {
       set({ camerasError: toAppError(e), camerasLoading: false })
     }
+  },
+  refreshCameras: async (getCameras) => {
+    let cameras: Camera[]
+    try {
+      cameras = await getCameras.execute()
+    } catch {
+      // The list stays and the next poll tries again; a lost hub is the bar's to say (UI-30).
+      return
+    }
+    const state = get()
+    // A load started meanwhile carries a newer answer.
+    if (state.camerasLoading) return
+    const current = cameras.map((camera) => privacyMissNotice(camera)?.key)
+    const told = state.privacyMissesTold.filter((key) => current.includes(key))
+    // An unchanged answer leaves the state as it is, so no screen renders again for nothing.
+    if (
+      state.camerasError === null &&
+      told.length === state.privacyMissesTold.length &&
+      JSON.stringify(cameras) === JSON.stringify(state.cameras)
+    )
+      return
+    set({ cameras, camerasError: null, privacyMissesTold: told })
   },
   privacyActStarted: (cameraIds) =>
     set((state) => ({ privacyActing: [...state.privacyActing, ...cameraIds] })),

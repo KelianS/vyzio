@@ -27,5 +27,22 @@ export function buildAppShellPresenter({
       const interval = setInterval(poll, POLL_INTERVAL_MS)
       return () => clearInterval(interval)
     },
+
+    /** Reads the camera list again in the background, so a camera's state follows without a reload; returns the stop. */
+    onWatchCameras() {
+      let reading = false
+      const interval = setInterval(() => {
+        // One read at a time: a slow answer or a load in progress is not doubled.
+        if (reading || useRootStore.getState().camerasLoading) return
+        reading = true
+        void useRootStore
+          .getState()
+          .refreshCameras(camerasContainer.getCameras)
+          .finally(() => {
+            reading = false
+          })
+      }, POLL_INTERVAL_MS)
+      return () => clearInterval(interval)
+    },
   }
 }

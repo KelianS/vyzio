@@ -24,6 +24,8 @@ export function AppShell() {
 
   useEffect(() => presenter.onWatchSystem(), [presenter])
 
+  useEffect(() => presenter.onWatchCameras(), [presenter])
+
   const { pathname } = useLocation()
   const cameras = useRootStore((s) => s.cameras)
   const systemStats = useRootStore((s) => s.systemStats)
