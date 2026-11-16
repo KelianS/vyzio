@@ -31,8 +31,11 @@ export function formatEventTitle(event: DetectionEvent, labels: readonly Detecti
     return event.identity
   }
 
-  const name = labels.find((label) => label.value === event.label)?.displayName ?? event.label
-  return `Détection « ${name} »`
+  if (carriesIdentity(event)) {
+    return 'Personne inconnue'
+  }
+
+  return labels.find((label) => label.value === event.label)?.displayName ?? event.label
 }
 
 const dayFormatter = new Intl.DateTimeFormat('fr-FR', {

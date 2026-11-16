@@ -31,7 +31,7 @@ describe('formatEventTitle', () => {
     expect(title).toBe('Paul')
   })
 
-  it('formatEventTitle_ShouldNameTheDetectionInFrench_WhenTheCatalogueKnowsItsLabel', () => {
+  it('formatEventTitle_ShouldNameTheDetectedObjectInFrench_WhenTheCatalogueKnowsItsLabel', () => {
     // Arrange
     const labels = [{ value: 'car', displayName: 'Voiture' }]
 
@@ -39,7 +39,7 @@ describe('formatEventTitle', () => {
     const title = formatEventTitle(event({ identity: null, label: 'car' }), labels)
 
     // Assert
-    expect(title).toBe('Détection « Voiture »')
+    expect(title).toBe('Voiture')
   })
 
   it('formatEventTitle_ShouldKeepTheEngineLabel_WhenTheCatalogueDoesNotKnowIt', () => {
@@ -47,7 +47,18 @@ describe('formatEventTitle', () => {
     const title = formatEventTitle(event({ identity: null, label: 'car' }), [])
 
     // Assert
-    expect(title).toBe('Détection « car »')
+    expect(title).toBe('car')
+  })
+
+  it('formatEventTitle_ShouldSayAnUnknownPerson_WhenAPersonCarriesNoIdentity', () => {
+    // Arrange
+    const labels = [{ value: 'person', displayName: 'Personne' }]
+
+    // Act
+    const title = formatEventTitle(event({ identity: null, label: 'person' }), labels)
+
+    // Assert
+    expect(title).toBe('Personne inconnue')
   })
 })
 

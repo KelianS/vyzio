@@ -64,14 +64,9 @@ describe('DetectionHistoryView', () => {
     renderScreen(<DetectionHistoryView />)
 
     // Assert
-    expect(
-      await screen.findByRole('group', { name: 'Détection : Détection « Chat »' }),
-    ).toBeVisible()
-    expect(screen.getByRole('button', { name: /Détection « Voiture »/ })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Détection « Chat »/ })).toHaveAttribute(
-      'aria-current',
-      'true',
-    )
+    expect(await screen.findByRole('group', { name: 'Détection : Chat' })).toBeVisible()
+    expect(screen.getByRole('button', { name: /Voiture/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Chat/ })).toHaveAttribute('aria-current', 'true')
     expect(screen.queryByRole('button', { name: 'Voir plus ancien' })).not.toBeInTheDocument()
   })
 
@@ -100,10 +95,10 @@ describe('DetectionHistoryView', () => {
     renderScreen(<DetectionHistoryView />)
 
     // Act
-    await userEvent.click(await screen.findByRole('button', { name: /Détection « Voiture »/ }))
+    await userEvent.click(await screen.findByRole('button', { name: /Voiture/ }))
 
     // Assert
-    expect(player()).toHaveAccessibleName('Détection : Détection « Voiture »')
+    expect(player()).toHaveAccessibleName('Détection : Voiture')
     expect(player().querySelector('video')).toHaveAttribute(
       'src',
       expect.stringMatching(/\/api\/detection-events\/event-2\/clip$/),
@@ -114,17 +109,14 @@ describe('DetectionHistoryView', () => {
     // Arrange
     fakeNetwork(twoClips)
     renderScreen(<DetectionHistoryView />)
-    await screen.findByRole('group', { name: 'Détection : Détection « Chat »' })
+    await screen.findByRole('group', { name: 'Détection : Chat' })
 
     // Act
     fireEvent.ended(player().querySelector('video')!)
 
     // Assert
-    expect(player()).toHaveAccessibleName('Détection : Détection « Voiture »')
-    expect(screen.getByRole('button', { name: /Détection « Voiture »/ })).toHaveAttribute(
-      'aria-current',
-      'true',
-    )
+    expect(player()).toHaveAccessibleName('Détection : Voiture')
+    expect(screen.getByRole('button', { name: /Voiture/ })).toHaveAttribute('aria-current', 'true')
   })
 
   it('ClipPlayer_ShouldPauseTheClip_WhenTheUserTapsPauseWhileItPlays', async () => {
@@ -147,13 +139,13 @@ describe('DetectionHistoryView', () => {
     // Arrange
     fakeNetwork(twoClips)
     renderScreen(<DetectionHistoryView />)
-    await userEvent.click(await screen.findByRole('button', { name: /Détection « Voiture »/ }))
+    await userEvent.click(await screen.findByRole('button', { name: /Voiture/ }))
 
     // Act
     fireEvent.ended(player().querySelector('video')!)
 
     // Assert
-    expect(player()).toHaveAccessibleName('Détection : Détection « Voiture »')
+    expect(player()).toHaveAccessibleName('Détection : Voiture')
   })
 
   it('onLoadHistory_ShouldSayItIsEmptyAndOfferNoFilter_WhenNothingWasDetected', async () => {
@@ -211,8 +203,8 @@ describe('DetectionHistoryView', () => {
     await userEvent.click(more)
 
     // Assert
-    expect(await screen.findByRole('button', { name: /Détection « Voiture »/ })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Détection « Chat »/ })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /Voiture/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Chat/ })).toBeInTheDocument()
     expect(network.sent.at(-1)?.query).toContain('cursor=older')
   })
 
@@ -441,7 +433,7 @@ describe('DetectionHistoryView', () => {
 
     // Assert
     expect(await screen.findByText('Détection supprimée.')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /Détection « Chat »/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Chat/ })).not.toBeInTheDocument()
     expect(network.sent).toContainEqual(
       expect.objectContaining({ route: 'DELETE /api/detection-events/event-1' }),
     )
@@ -476,7 +468,7 @@ describe('DetectionHistoryView', () => {
 
     // Assert
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Détection « Chat »/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Chat/ })).toBeInTheDocument()
     expect(network.sent).not.toContainEqual(
       expect.objectContaining({ route: 'DELETE /api/detection-events/event-1' }),
     )
@@ -508,7 +500,7 @@ describe('DetectionHistoryView', () => {
       // Assert
       expect(await screen.findByText(sentence)).toBeInTheDocument()
       expect(screen.getByText(/DELETE \/api\/detection-events\/event-1 · 502/)).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: /Détection « Chat »/ })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /Chat/ })).toBeInTheDocument()
     },
   )
 
@@ -529,7 +521,7 @@ describe('DetectionHistoryView', () => {
         'L’enregistrement de ce moment est encore en cours. Réessayez dans quelques minutes.',
       ),
     ).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Détection « Chat »/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Chat/ })).toBeInTheDocument()
   })
 
   it('onDelete_ShouldDropTheRowAndSayItIsGone_WhenTheDetectionNoLongerExists', async () => {
@@ -545,7 +537,7 @@ describe('DetectionHistoryView', () => {
 
     // Assert
     expect(await screen.findByText('Cette détection n’existe plus.')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /Détection « Chat »/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Chat/ })).not.toBeInTheDocument()
   })
 
   it('onVideoFailed_ShouldSayTheVideoWasDeleted_WhenItsRecordingNoLongerExists', async () => {
