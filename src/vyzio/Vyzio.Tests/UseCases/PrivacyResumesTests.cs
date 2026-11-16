@@ -91,6 +91,20 @@ public class PrivacyResumesTests
     }
 
     [Fact]
+    public void CutEndOf_ShouldAnswerTheChosenEnd_WhenEveryCameraWasCutUntilAnHour()
+    {
+        // Arrange
+        var sut = new PrivacyResumes(TimeZoneInfo.Utc, _time);
+        var camera = new Camera { Id = "cam1", Slug = "cam1", DisplayName = "cam1", Host = "192.168.1.10", FrigateCameraName = "cam1", PrivacyModeActive = true, PrivacyModeSource = PrivacyModeSource.Manual, PrivacyModeUntil = new DateTimeOffset(2026, 9, 23, 14, 0, 0, TimeSpan.Zero) };
+
+        // Act
+        var end = sut.CutEndOf(camera, [WednesdayMorning()]);
+
+        // Assert
+        Assert.Equal("14:00", end?.Time);
+    }
+
+    [Fact]
     public void CutEndOf_ShouldAnswerNull_WhenTheCameraWasCutByHand()
     {
         // Arrange

@@ -47,7 +47,7 @@ public class SilenceEndpointsTests : IClassFixture<CamerasApiFactory>
     }
 
     [Fact]
-    public async Task StartSilence_ShouldAnswerARefusalWithItsCode_WhenNoEndIsGiven()
+    public async Task StartSilence_ShouldHoldUntilTheUserEndsIt_WhenNoEndIsGiven()
     {
         // Arrange
         using var client = _factory.CreateClient();
@@ -56,7 +56,22 @@ public class SilenceEndpointsTests : IClassFixture<CamerasApiFactory>
         var response = await client.PutAsJsonAsync("/api/notifications/silence", new { });
 
         // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var read = await client.GetFromJsonAsync<SilenceDto>("/api/notifications/silence");
+        Assert.Equal((true, (HouseMomentDto?)null), (read!.Active, read.Until));
+    }
+
+    [Fact]
+    public async Task StartSilence_ShouldAnswerARefusalWithItsCode_WhenBothAnEndAndADurationAreGiven()
+    {
+        // Arrange
+        using var client = _factory.CreateClient();
+
+        // Act
+        var response = await client.PutAsJsonAsync("/api/notifications/silence", new { until = DateTimeOffset.UtcNow.AddHours(1), minutes = 30 });
+
+        // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Contains("silence_no_single_end", await response.Content.ReadAsStringAsync());
+        Assert.Contains("silence_two_ends", await response.Content.ReadAsStringAsync());
     }
 }

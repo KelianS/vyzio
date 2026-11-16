@@ -30,6 +30,8 @@ public sealed class ToggleCameraPrivacyModeUseCase(
             camera, active, bindings, registry, presets, positions, logger ?? (ILogger)NullLogger.Instance, ct);
         camera.PrivacyModeActive = active;
         camera.PrivacyModeSource = active ? source : null;
+        // One camera's own cut never ends by itself; only a cut of every camera carries an end (PRIV-21, PRIV-22).
+        camera.PrivacyModeUntil = null;
         answer.ApplyTo(camera);
         // Before the save, so no scheduler pass sees the camera uncut without its resume.
         await TrackResumeAsync(camera.Id, active, source);
@@ -68,9 +70,14 @@ public sealed class BatchToggleCameraPrivacyModeUseCase(
     PrivacyResumes resumes,
     ILogger<BatchToggleCameraPrivacyModeUseCase>? logger = null)
 {
+    public Task<IReadOnlyList<CameraDto>> ExecuteAsync(IReadOnlyList<string> cameraIds, bool active, CancellationToken ct = default)
+        => ExecuteAsync(cameraIds, active, until: null, ct);
+
+    /// <param name="until">When a cut ends by itself, the cameras then following their ranges (PRIV-07); ignored on a resume.</param>
     public async Task<IReadOnlyList<CameraDto>> ExecuteAsync(
         IReadOnlyList<string> cameraIds,
         bool active,
+        DateTimeOffset? until,
         CancellationToken ct = default)
     {
         var allCameras = await cameras.GetAllAsync(ct);
@@ -87,6 +94,7 @@ public sealed class BatchToggleCameraPrivacyModeUseCase(
                     camera, active, bindings, registry, presets, positions, logger ?? (ILogger)NullLogger.Instance, ct);
                 camera.PrivacyModeActive = active;
                 camera.PrivacyModeSource = active ? PrivacyModeSource.Manual : null;
+                camera.PrivacyModeUntil = active ? until : null;
                 answer.ApplyTo(camera);
                 // The same rule as one camera, camera by camera, before the save (PRIV-07).
                 if (active) resumes.End(camera.Id); else resumes.Resume(camera.Id, privacyRules);

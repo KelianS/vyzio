@@ -1,4 +1,5 @@
 using Vyzio.Application.DTOs.Notifications;
+using Vyzio.Application.DTOs.Scheduling;
 using Vyzio.Application.UseCases.Commands;
 using Vyzio.Application.UseCases.Notifications;
 using Vyzio.Core.Common;
@@ -62,26 +63,18 @@ public static class NotificationEndpoints
         => Results.Ok(await useCase.ExecuteAsync(ct));
 
     private static async Task<IResult> StartSilence(
-        StartSilenceRequest request,
+        ChosenEndRequest request,
         StartSilenceUseCase useCase,
         CancellationToken ct)
     {
         var result = await useCase.ExecuteAsync(request, ct);
         return result.Refusal is { } refusal
-            ? ApiProblem.BadRequest($"silence_{SnakeCaseEnum.ToSnakeCase(refusal)}", SilenceRefusalDetail(refusal))
+            ? ChosenEndProblem.Of("silence", refusal)
             : Results.Ok(result.Silence);
     }
 
     private static async Task<IResult> StopSilence(StopSilenceUseCase useCase, CancellationToken ct)
         => Results.Ok(await useCase.ExecuteAsync(ct));
-
-    private static string SilenceRefusalDetail(SilenceRefusal refusal) => refusal switch
-    {
-        SilenceRefusal.NoSingleEnd => "Give either an end instant or a duration in minutes, not both.",
-        SilenceRefusal.EndNotAhead => "The Silence must end after now.",
-        SilenceRefusal.TooLong => "A Silence lasts a week at most.",
-        _ => throw new ArgumentOutOfRangeException(nameof(refusal), refusal, null),
-    };
 
     private static async Task<IResult> GetChannelConfig(
         string channel,

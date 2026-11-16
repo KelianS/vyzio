@@ -15,9 +15,6 @@ public sealed record HouseMomentDto(DateTimeOffset At, int DayOfWeek, string Tim
 }
 
 /// <param name="Active">Whether notifications are held right now; an expired Silence is not active.</param>
-/// <param name="Until">When the active Silence ends, or null when none is active.</param>
+/// <param name="Until">When the active Silence ends, or null when none is active or it holds until the user ends it.</param>
 /// <param name="ScheduleNextChange">When the mute ranges next start or stop, or null when there is none.</param>
 public sealed record SilenceDto(bool Active, HouseMomentDto? Until, HouseMomentDto? ScheduleNextChange);
-
-/// <summary>Exactly one of the two: an end instant, or a duration in minutes from now.</summary>
-public sealed record StartSilenceRequest(DateTimeOffset? Until = null, int? Minutes = null);

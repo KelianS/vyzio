@@ -253,7 +253,7 @@ public sealed class SendDetectionNotificationUseCase(
         if (!silence.Covers(detection.OccurredAt) && !silence.Covers(time.GetUtcNow())) return false;
 
         logger.LogInformation("Notification for event {EventId} dropped: Silence holds every channel until {Until}",
-            detection.EventId, silence.Until);
+            detection.EventId, (object?)silence.Until ?? "the user ends it");
         return true;
     }
 

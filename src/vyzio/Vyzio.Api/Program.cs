@@ -151,6 +151,7 @@ try
     app.MapDetectionLabels();
     app.MapCameras();
     app.MapCameraStreams();
+    app.MapCamerasCut();
     app.MapDetectionEvents();
     app.MapProfiles();
     app.MapNotifications();

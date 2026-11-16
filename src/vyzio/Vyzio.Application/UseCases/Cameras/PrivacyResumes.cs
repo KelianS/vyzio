@@ -42,10 +42,14 @@ public sealed class PrivacyResumes(TimeZoneInfo timeZone, TimeProvider time)
         return false;
     }
 
-    /// <summary>When the ranges that cut the camera let it out, or null when it was cut by hand or they never do (PRIV-20).</summary>
+    /// <summary>When the cut ends: the end chosen for every camera, or when the ranges that cut it let it out; null when it holds until resumed (PRIV-20).</summary>
     public HouseMomentDto? CutEndOf(Camera camera, IReadOnlyList<ScheduleRule> privacyRules)
     {
-        if (!camera.PrivacyModeActive || camera.PrivacyModeSource != PrivacyModeSource.Schedule)
+        if (!camera.PrivacyModeActive)
+            return null;
+        if (camera.PrivacyModeSource == PrivacyModeSource.Manual)
+            return camera.PrivacyModeUntil is { } until ? HouseMomentDto.Of(until, timeZone) : null;
+        if (camera.PrivacyModeSource != PrivacyModeSource.Schedule)
             return null;
         var now = HouseNow();
         if (!ScheduleRuleCoverage.Covers(privacyRules, camera.Id, now))

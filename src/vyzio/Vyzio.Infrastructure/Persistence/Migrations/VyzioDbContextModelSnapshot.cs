@@ -147,6 +147,10 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("privacy_mode_source");
 
+                    b.Property<DateTime?>("PrivacyModeUntil")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("privacy_mode_until");
+
                     b.Property<string>("PrivacyStrategy")
                         .IsRequired()
                         .HasColumnType("TEXT")
@@ -645,7 +649,7 @@ namespace Vyzio.Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("started_at");
 
-                    b.Property<DateTime>("Until")
+                    b.Property<DateTime?>("Until")
                         .HasColumnType("TEXT")
                         .HasColumnName("until");
 

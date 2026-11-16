@@ -134,6 +134,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<GetSilenceUseCase>();
         services.AddScoped<StartSilenceUseCase>();
         services.AddScoped<StopSilenceUseCase>();
+        services.AddScoped<GetCamerasCutUseCase>();
+        services.AddScoped<CutCamerasUseCase>();
+        services.AddScoped<ScheduleNextChange>();
 
         // Remote commands — one registration per command, nothing else to edit (ADR-14)
         services.AddScoped<IRemoteCommandHandler, Commands.SystemStateCommandHandler>();

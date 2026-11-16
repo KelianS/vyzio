@@ -1,4 +1,6 @@
+using Vyzio.Application.DTOs.Notifications;
 using Vyzio.Core.Entities;
+using Vyzio.Core.Interfaces;
 
 namespace Vyzio.Application.UseCases.Scheduling;
 
@@ -37,4 +39,13 @@ public static class ScheduleChanges
         var local = TimeZoneInfo.ConvertTime(moment, timeZone);
         return [.. rules.Where(rule => rule.Covers(local)).Select(rule => rule.Id)];
     }
+}
+
+/// <summary>The next change of one rule type as the house reads it: the first end a Silence or a cut of every camera offers (ADR-15).</summary>
+public sealed class ScheduleNextChange(IScheduleRuleRepository rules, TimeZoneInfo timeZone)
+{
+    public async Task<HouseMomentDto?> OfAsync(ScheduleRuleKind kind, DateTimeOffset now, CancellationToken ct = default)
+        => ScheduleChanges.Next(await rules.GetByKindAsync(kind, ct), now, timeZone) is { } change
+            ? HouseMomentDto.Of(change, timeZone)
+            : null;
 }

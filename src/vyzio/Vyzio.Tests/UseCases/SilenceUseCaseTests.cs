@@ -3,7 +3,9 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 using NSubstitute;
 using Vyzio.Application.DTOs.Notifications;
+using Vyzio.Application.DTOs.Scheduling;
 using Vyzio.Application.UseCases.Notifications;
+using Vyzio.Application.UseCases.Scheduling;
 using Vyzio.Core.Entities;
 using Vyzio.Core.Interfaces;
 
@@ -26,7 +28,7 @@ public class SilenceUseCaseTests
 
     private static DateTimeOffset At(string moment) => DateTimeOffset.Parse(moment, CultureInfo.InvariantCulture);
 
-    private GetSilenceUseCase State() => new(_silences, _scheduleRules, House, _time);
+    private GetSilenceUseCase State() => new(_silences, new ScheduleNextChange(_scheduleRules, House), House, _time);
 
     private StartSilenceUseCase Start() => new(_silences, State(), _time, NullLogger<StartSilenceUseCase>.Instance);
 
@@ -53,6 +55,20 @@ public class SilenceUseCaseTests
         // Assert
         Assert.True(silence.Active);
         Assert.Equal((At("2026-11-16T15:00Z"), 1, "16:00"), (silence.Until!.At, silence.Until.DayOfWeek, silence.Until.Time));
+    }
+
+    [Fact]
+    public async Task GetSilence_ShouldBeActiveWithNoEnd_WhenTheSilenceHoldsUntilTheUserEndsIt()
+    {
+        // Arrange
+        _silences.GetAsync(Arg.Any<CancellationToken>())
+            .Returns(new NotificationSilence { StartedAt = At("2026-11-09T12:30Z"), Until = null });
+
+        // Act
+        var silence = await State().ExecuteAsync();
+
+        // Assert
+        Assert.Equal((true, (HouseMomentDto?)null), (silence.Active, silence.Until));
     }
 
     [Fact]
@@ -99,7 +115,7 @@ public class SilenceUseCaseTests
             .Returns(new NotificationSilence { StartedAt = At("2026-11-16T13:00Z"), Until = At("2026-11-16T13:30Z") });
 
         // Act
-        var result = await Start().ExecuteAsync(new StartSilenceRequest(Minutes: 30));
+        var result = await Start().ExecuteAsync(new ChosenEndRequest(Minutes: 30));
 
         // Assert
         await _silences.Received(1).SaveAsync(
@@ -112,7 +128,7 @@ public class SilenceUseCaseTests
     public async Task StartSilence_ShouldHoldNotificationsUntilTheInstant_WhenAnEndIsGiven()
     {
         // Arrange & Act
-        await Start().ExecuteAsync(new StartSilenceRequest(Until: At("2026-11-16T21:00Z")));
+        await Start().ExecuteAsync(new ChosenEndRequest(Until: At("2026-11-16T21:00Z")));
 
         // Assert
         await _silences.Received(1).SaveAsync(
@@ -123,31 +139,43 @@ public class SilenceUseCaseTests
     public async Task StartSilence_ShouldRefuseAndKeepNothing_WhenBothAnEndAndADurationAreGiven()
     {
         // Arrange & Act
-        var result = await Start().ExecuteAsync(new StartSilenceRequest(At("2026-11-16T21:00Z"), 30));
+        var result = await Start().ExecuteAsync(new ChosenEndRequest(At("2026-11-16T21:00Z"), 30));
 
         // Assert
-        Assert.Equal(SilenceRefusal.NoSingleEnd, result.Refusal);
+        Assert.Equal(ChosenEndRefusal.TwoEnds, result.Refusal);
         await _silences.DidNotReceiveWithAnyArgs().SaveAsync(default!, default);
+    }
+
+    [Fact]
+    public async Task StartSilence_ShouldHoldNotificationsWithNoEnd_WhenNeitherAnEndNorADurationIsGiven()
+    {
+        // Arrange & Act
+        var result = await Start().ExecuteAsync(new ChosenEndRequest());
+
+        // Assert
+        Assert.Null(result.Refusal);
+        await _silences.Received(1).SaveAsync(
+            Arg.Is<NotificationSilence>(s => s.StartedAt == At("2026-11-16T13:00Z") && s.Until == null), Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task StartSilence_ShouldRefuse_WhenTheEndIsAlreadyPast()
     {
         // Arrange & Act
-        var result = await Start().ExecuteAsync(new StartSilenceRequest(Until: At("2026-11-16T12:00Z")));
+        var result = await Start().ExecuteAsync(new ChosenEndRequest(Until: At("2026-11-16T12:00Z")));
 
         // Assert
-        Assert.Equal(SilenceRefusal.EndNotAhead, result.Refusal);
+        Assert.Equal(ChosenEndRefusal.EndNotAhead, result.Refusal);
     }
 
     [Fact]
     public async Task StartSilence_ShouldRefuse_WhenTheDurationExceedsAWeek()
     {
         // Arrange & Act
-        var result = await Start().ExecuteAsync(new StartSilenceRequest(Minutes: int.MaxValue));
+        var result = await Start().ExecuteAsync(new ChosenEndRequest(Minutes: int.MaxValue));
 
         // Assert
-        Assert.Equal(SilenceRefusal.TooLong, result.Refusal);
+        Assert.Equal(ChosenEndRefusal.TooLong, result.Refusal);
     }
 
     [Fact]
