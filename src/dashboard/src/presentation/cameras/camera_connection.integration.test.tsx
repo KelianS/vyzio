@@ -1099,7 +1099,7 @@ describe('CameraConnectionView', () => {
     expect(box.getByText('Flux vidéo passe par ce protocole.')).toBeInTheDocument()
   })
 
-  it('onRemoveProtocol_ShouldRemoveTheProtocolAndReturnToAvancé_WhenNoCapabilityUsesItAndTheUserConfirms', async () => {
+  it('onRemoveProtocol_ShouldRemoveTheProtocolAndGoBackToItsList_WhenNoCapabilityUsesItAndTheUserConfirms', async () => {
     // Arrange
     const network = connectionNetwork({
       [BINDINGS]: ok([rtspStream]),
