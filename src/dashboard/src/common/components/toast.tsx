@@ -210,11 +210,11 @@ function ToastChip({
         item.leaving && 'pointer-events-none',
       )}
     >
-      {/* The edge a finger pulls it down by: finger-sized, over its top padding and just above it. */}
+      {/* The edge a finger pulls it down by: finger-sized, over its top padding and the gap above it. */}
       <span
         data-toast-handle
         aria-hidden="true"
-        className="absolute inset-x-0 -top-4 h-7 touch-none"
+        className="absolute inset-x-0 -top-2 h-5 touch-none"
       />
       <Icon
         className={cn('mt-0.5 size-4 shrink-0', TONE_ICON_CLASS[item.tone])}
