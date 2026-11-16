@@ -82,6 +82,32 @@ function commandRoutes(pairing = makePairing()) {
 }
 
 describe('NotificationChannelView', () => {
+  it('onOpen_ShouldLeadToItsAdvancedPage_WhenTheChannelIsConfigured', async () => {
+    // Arrange
+    fakeNetwork(channelRoutes())
+
+    // Act
+    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+
+    // Assert
+    expect(await screen.findByRole('link', { name: 'Avancé' })).toHaveAttribute(
+      'href',
+      '/settings/notifications/telegram/advanced',
+    )
+  })
+
+  it('onOpen_ShouldOfferNoAdvancedPage_WhenTheChannelIsNotConfiguredYet', async () => {
+    // Arrange
+    fakeNetwork(channelRoutes(makeChannelConfig({ isConfigured: false })))
+
+    // Act
+    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+
+    // Assert
+    expect(await screen.findByRole('button', { name: /Envoyer un message de test/ })).toBeVisible()
+    expect(screen.queryByRole('link', { name: 'Avancé' })).not.toBeInTheDocument()
+  })
+
   it('onOpen_ShouldCountTheRangesMutingThisChannelAndLinkToTheCalendar_WhenSomeTargetIt', async () => {
     // Arrange
     fakeNetwork({
