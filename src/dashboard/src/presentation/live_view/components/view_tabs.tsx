@@ -40,10 +40,7 @@ export function ViewTabs({
             data-tab
             aria-selected={tab === current}
             aria-controls={`panel-${tab}`}
-            onClick={() => {
-              pager.prepare(at)
-              onChoose(tab)
-            }}
+            onClick={() => pager.choose(at)}
             className={cn(
               'relative flex h-11 items-center justify-center rounded-full text-body outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
               tab === current

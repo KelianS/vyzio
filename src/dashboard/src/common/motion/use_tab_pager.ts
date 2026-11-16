@@ -19,8 +19,8 @@ type HandOff =
 /** A tab bar's shared motion: the tab shown, fractional while a finger or a spring moves between two. */
 export interface TabPager {
   readonly progress: MotionValue<number>
-  /** Readies the content to slide towards tab `next`, before the caller shows it. */
-  readonly prepare: (next: number) => void
+  /** Moves to tab `next`: the content slides there once it shows, and settles back if refused. */
+  readonly choose: (next: number) => void
   /** What the content's wrapper takes: its element, and the finger's handlers. */
   readonly panelProps: ReturnType<typeof useFingerDrag> & {
     ref: (element: HTMLDivElement | null) => void
@@ -34,13 +34,14 @@ export interface TabPager {
 export function useTabPager(
   index: number,
   count: number,
-  onChoose: (next: number) => void,
+  onChoose: (next: number) => void | Promise<void>,
 ): TabPager {
   const [progress] = useState(() => motionValue(index))
   const [offset] = useState(() => motionValue(0))
   const [opacity] = useState(() => motionValue(1))
   const [panel, setPanel] = useState<HTMLDivElement | null>(null)
   const handOff = useRef<HandOff | null>(null)
+  const shown = useRef(index)
 
   useLayoutEffect(() => {
     if (!panel) return
@@ -51,6 +52,7 @@ export function useTabPager(
   }, [panel, offset, opacity])
 
   useLayoutEffect(() => {
+    shown.current = index
     const pending = handOff.current
     handOff.current = null
     if (index < 0) return
@@ -66,6 +68,7 @@ export function useTabPager(
       return
     }
     void springTo(progress, index, 'arrival')
+    document.body.append(pending.copy)
     offset.jump(pending.from)
     void springTo(offset, 0, 'arrival')
     void springTo(pending.x, pending.to, 'arrival').then(() => {
@@ -82,7 +85,9 @@ export function useTabPager(
     }
     const width = panel.getBoundingClientRect().width || window.innerWidth
     const from = offset.get()
+    // Copied where it stands, but laid on the page only once the next tab shows.
     const copy = ghostOf(panel, 5, from)
+    copy.remove()
     const x = motionValue(from)
     const stop = paintOn([x], () => {
       copy.style.transform = translation(x.get(), 0)
@@ -90,6 +95,29 @@ export function useTabPager(
     // Towards a later tab the content leaves to the left and the next one comes from the right.
     const side = next > index ? -1 : 1
     handOff.current = { kind: 'slide', copy, x, stop, from: from - side * width, to: side * width }
+  }
+
+  /** A change refused (a page with unsaved edits kept) leaves everything as if nothing happened. */
+  const settleBack = (refused: HandOff) => {
+    if (handOff.current !== refused) return
+    handOff.current = null
+    if (refused.kind === 'slide') refused.stop()
+    void springTo(offset, 0, 'arrival')
+    void springTo(progress, shown.current, 'arrival')
+  }
+
+  const choose = (next: number) => {
+    if (next === index) return
+    prepare(next)
+    const pending = handOff.current
+    // Once the router answered and React had its frames to show the tab, a hand-off still waiting was refused.
+    void Promise.resolve(onChoose(next)).then(() =>
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          if (pending) settleBack(pending)
+        }),
+      ),
+    )
   }
 
   const widthOf = () => Math.max(1, panel?.getBoundingClientRect().width || window.innerWidth)
@@ -121,10 +149,9 @@ export function useTabPager(
         void springTo(progress, index, 'arrival')
         return
       }
-      prepare(target)
-      onChoose(target)
+      choose(target)
     },
   })
 
-  return { progress, prepare, panelProps: { ...panelHandlers, ref: setPanel } }
+  return { progress, choose, panelProps: { ...panelHandlers, ref: setPanel } }
 }

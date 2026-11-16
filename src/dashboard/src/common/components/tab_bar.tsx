@@ -93,7 +93,12 @@ export function TabBar({
             to={tab.to}
             replace
             data-tab
-            onClick={(event) => opensHere(event) && pager.prepare(at)}
+            onClick={(event) => {
+              // The pager navigates, so a change the navigation guard refuses settles back.
+              if (!opensHere(event)) return
+              event.preventDefault()
+              pager.choose(at)
+            }}
             className={({ isActive }) =>
               cn(
                 'relative inline-flex h-11 shrink-0 items-center rounded-full px-4 text-body font-semibold transition-colors',
