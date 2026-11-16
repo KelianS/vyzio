@@ -11,13 +11,12 @@ export function cameraConnectionReducer(
   action: CameraConnectionAction,
 ): CameraConnectionUido {
   switch (action.type) {
-    // Any later action on the connection makes the last detection's result line stale.
     case 'SAVE_STARTED':
-      return { ...state, saving: true, detection: null }
+      return { ...state, saving: true }
     case 'SAVE_FINISHED':
       return { ...state, saving: false }
     case 'VERIFY_STARTED':
-      return { ...state, verifying: true, detection: null }
+      return { ...state, verifying: true }
     case 'VERIFY_FINISHED':
       return { ...state, verifying: false }
 
@@ -39,7 +38,6 @@ export function cameraConnectionReducer(
         bindingsError: null,
         cameraGone: false,
         detected: false,
-        detection: null,
       }
     // A question stays only on a capability a try applies to: an answer or a check elsewhere closed it.
     case 'BINDINGS_LOADED':
@@ -55,18 +53,17 @@ export function cameraConnectionReducer(
     case 'CAMERA_GONE':
       return { ...state, bindingsLoading: false, bindings: [], cameraGone: true }
     case 'DETECT_STARTED':
-      return { ...state, detecting: true, detection: null }
+      return { ...state, detecting: true }
     case 'DETECT_FINISHED':
       return { ...state, detecting: false }
     // Only a detection that ran may say what it could not choose.
     case 'DETECT_SUCCEEDED':
-      return { ...state, detected: true, detection: action.result }
+      return { ...state, detected: true }
 
     case 'TASK_STARTED':
       return {
         ...state,
         pending: { ...state.pending, [action.capability]: action.task },
-        detection: null,
       }
     case 'TASK_FINISHED': {
       const pending = { ...state.pending }
@@ -99,7 +96,7 @@ export function cameraConnectionReducer(
     case 'PROTOCOLS_FAILED':
       return { ...state, protocolsLoading: false, protocols: [], protocolsError: action.error }
     case 'PROTOCOL_CHECK_STARTED':
-      return { ...state, checking: { ...state.checking, [action.protocol]: true }, detection: null }
+      return { ...state, checking: { ...state.checking, [action.protocol]: true } }
     // The answer replaces its own box and leaves the others as they were read.
     case 'PROTOCOL_CHECKED':
       return {
@@ -115,7 +112,7 @@ export function cameraConnectionReducer(
     }
 
     case 'PROTOCOL_SEARCH_STARTED':
-      return { ...state, searchingProtocols: true, detection: null }
+      return { ...state, searchingProtocols: true }
     case 'PROTOCOL_SEARCH_FINISHED':
       return { ...state, searchingProtocols: false }
 

@@ -1,3 +1,4 @@
+import type { ToastTone } from '../../common/components/toast'
 import { scrubSecrets } from '../../common/errors/scrub_secrets'
 import type { CameraCapabilityBinding } from '../../domain/entities/camera_capability_binding.entity'
 import { ProtocolStatus, type CameraProtocol } from '../../domain/entities/camera_protocol.entity'
@@ -28,6 +29,14 @@ export const DETECTION_SENTENCES: Record<DetectionOutcome, string> = {
     'La caméra répond, mais refuse le compte : vérifiez l’identifiant et le mot de passe dans Avancé.',
   [DetectionOutcome.NothingAnswers]:
     'Rien ne répond à cette adresse : la caméra est peut-être éteinte, endormie, ou à une autre adresse. Vérifiez-la dans Avancé, puis relancez « Détecter automatiquement ».',
+}
+
+/** A found stream reads as success, a refusal or silence as a failure, a stream to finish as neutral. */
+export const DETECTION_TONE: Record<DetectionOutcome, ToastTone> = {
+  [DetectionOutcome.StreamWorks]: 'success',
+  [DetectionOutcome.StreamNotWorking]: 'info',
+  [DetectionOutcome.AccountRefused]: 'error',
+  [DetectionOutcome.NothingAnswers]: 'error',
 }
 
 export function detectionResultOf(

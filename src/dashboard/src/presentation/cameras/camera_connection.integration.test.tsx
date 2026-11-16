@@ -621,7 +621,7 @@ describe('CameraConnectionView', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('onDetect_ShouldSayTheStreamWorks_WhenDetectionFoundIt', async () => {
+  it('onDetect_ShouldSayTheStreamWorksInAToast_WhenDetectionFoundIt', async () => {
     // Arrange
     connectionNetwork({ [BINDINGS]: ok([rtspStream]), [DETECT]: ok() })
     renderScreen(<CameraConnectionView />, connectionTab())
@@ -630,12 +630,15 @@ describe('CameraConnectionView', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Détecter automatiquement' }))
 
     // Assert
-    expect(await screen.findByRole('status')).toHaveTextContent(
-      'Détection terminée : le flux vidéo de la caméra fonctionne.',
-    )
+    const toasts = screen.getByRole('region', { name: 'Notifications' })
+    expect(
+      await within(toasts).findByText(
+        'Détection terminée : le flux vidéo de la caméra fonctionne.',
+      ),
+    ).toBeInTheDocument()
   })
 
-  it('onDetect_ShouldSayNothingAnswersWithWhatEachProtocolSaid_WhenNoProtocolAnswers', async () => {
+  it('onDetect_ShouldSayInAToastThatNothingAnswersWithWhatEachProtocolSaid_WhenNoProtocolAnswers', async () => {
     // Arrange
     connectionNetwork({
       [BINDINGS]: ok([]),
@@ -648,9 +651,9 @@ describe('CameraConnectionView', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Détecter automatiquement' }))
 
     // Assert
-    const result = await screen.findByRole('status')
-    expect(result).toHaveTextContent(/^Rien ne répond à cette adresse/)
-    expect(result).toHaveTextContent('RTSP : timeout')
+    const toasts = screen.getByRole('region', { name: 'Notifications' })
+    expect(await within(toasts).findByText(/^Rien ne répond à cette adresse/)).toBeInTheDocument()
+    expect(within(toasts).getByText('RTSP : timeout')).toBeInTheDocument()
     expect(screen.queryByText(/Détection terminée/)).not.toBeInTheDocument()
   })
 

@@ -43,7 +43,6 @@ import {
   formatStreamWorkingLine,
 } from '../cameras.formatters'
 import { CapabilityTask, type StreamTask } from '../camera_connection.uido'
-import { DETECTION_SENTENCES, DetectionOutcome, type DetectionResult } from '../detection_outcome'
 import {
   capabilityMark,
   CapabilityState,
@@ -72,13 +71,6 @@ import {
 import { Loading } from '../../../common/components/loading'
 
 /** A stream found reads as success; anything else is what the user has to act on. */
-const DETECTION_TONE: Record<DetectionOutcome, string> = {
-  [DetectionOutcome.StreamWorks]: 'text-success',
-  [DetectionOutcome.StreamNotWorking]: 'text-foreground',
-  [DetectionOutcome.AccountRefused]: 'text-destructive',
-  [DetectionOutcome.NothingAnswers]: 'text-destructive',
-}
-
 /** What the capability cards ask of their screen. */
 interface CapabilityIntents {
   onRetryRead: () => void
@@ -112,8 +104,6 @@ interface CapabilitySectionProps {
   detecting: boolean
   /** Detection ran since the page opened: a stream it left unchosen says why. */
   detected: boolean
-  /** What the last detection found, kept under its button to be read and photographed (UI-03). */
-  detection: DetectionResult | null
   verifyingStream: boolean
   /** Every other test goes through the stream's camera: while its check does not pass, they wait (CAM-08). */
   testsSuspended: boolean
@@ -159,7 +149,6 @@ export function CapabilitySection({
   readError,
   detecting,
   detected,
-  detection,
   verifyingStream,
   testsSuspended,
   pending,
@@ -240,13 +229,6 @@ export function CapabilitySection({
           {detecting ? 'Détection…' : 'Détecter automatiquement'}
         </SecondaryButton>
       </div>
-
-      {detection && (
-        <div role="status" className={cn('text-body', DETECTION_TONE[detection.outcome])}>
-          <p>{DETECTION_SENTENCES[detection.outcome]}</p>
-          {detection.diagnostic && <DiagnosticLine text={detection.diagnostic} />}
-        </div>
-      )}
 
       {/* A stream never chosen is not waited for: its card already says what to do. */}
       {testsSuspended && stream?.isConfigured !== false && (

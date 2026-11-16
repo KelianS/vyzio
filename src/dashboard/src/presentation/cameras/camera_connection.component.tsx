@@ -156,7 +156,6 @@ export function CameraConnectionView() {
             readError={uido.bindingsError}
             detecting={uido.detecting}
             detected={uido.detected}
-            detection={uido.detection}
             verifyingStream={uido.verifying}
             testsSuspended={testsSuspended}
             pending={uido.pending}
