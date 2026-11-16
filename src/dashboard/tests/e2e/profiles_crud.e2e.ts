@@ -14,7 +14,7 @@ test.describe('People', () => {
 
     // The rest of the task, and not the page: without a photo the profile recognises
     // nobody, and nothing else would say so.
-    await expect(page).toHaveURL(/\/settings\/detection\/people\/profile-\d+\/photos$/)
+    await expect(page).toHaveURL(/\/settings\/face-recognition\/profile-\d+\/photos$/)
     await expect(
       page.getByText('Aucune photo : la reconnaissance est inactive pour cette personne.'),
     ).toBeVisible()

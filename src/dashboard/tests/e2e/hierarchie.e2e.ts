@@ -12,7 +12,7 @@ import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fi
 const CAMERA_TABS = [
   ['connection', 'Connexion'],
   ['privacy', 'Vie privée'],
-  ['face-recognition', 'Personnes'],
+  ['detection', 'Détection'],
   ['image', 'Image et pilotage'],
   ['retention', 'Conservation'],
 ] as const
