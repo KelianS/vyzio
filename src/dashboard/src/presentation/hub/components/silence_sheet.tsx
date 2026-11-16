@@ -1,6 +1,6 @@
 import { Sheet, type SheetOption } from '../../../common/components/sheet'
 import type { Silence, StartSilenceRequest } from '../../../domain/entities/silence.entity'
-import { formatSilenceEnd } from '../home_wording'
+import { formatHouseEnd } from '../../../common/schedule/house_moment'
 
 /** The fixed durations, in this order (NOTIF-34). */
 const DURATIONS: readonly { minutes: number; title: string }[] = [
@@ -27,7 +27,7 @@ export function SilenceSheet({
       ? [
           {
             key: 'schedule',
-            title: `Jusqu’à ${formatSilenceEnd(scheduleNextChange, now)}`,
+            title: `Jusqu’à ${formatHouseEnd(scheduleNextChange, now)}`,
             detail: 'Ensuite, la planification reprend',
             onPick: () => onStart({ until: scheduleNextChange.at }),
           },

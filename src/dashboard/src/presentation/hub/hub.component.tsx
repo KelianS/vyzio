@@ -19,7 +19,8 @@ import { CAMERA_WALL_ROUTE } from '../camera_wall/camera_wall.route'
 import { buildHubPresenter } from './hub.presenter'
 import { hubReducer } from './hub.reducer'
 import { buildInitialHubUido, type HubUido } from './hub.uido'
-import { formatSilenceEnd, recentDetectionsLine } from './home_wording'
+import { recentDetectionsLine } from './home_wording'
+import { formatHouseEnd } from '../../common/schedule/house_moment'
 import { SilenceButton } from './components/silence_button'
 import { SilenceSheet } from './components/silence_sheet'
 import { HomeTile } from './components/home_tile'
@@ -162,7 +163,7 @@ function HubOperational({
   const shown = grid ? cameras.slice(0, GRID_FROM) : cameras
   const now = new Date()
   const silenceUntil =
-    uido.silence?.active && uido.silence.until ? formatSilenceEnd(uido.silence.until, now) : null
+    uido.silence?.active && uido.silence.until ? formatHouseEnd(uido.silence.until, now) : null
 
   return (
     <main className="flex flex-col gap-5">

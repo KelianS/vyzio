@@ -47,3 +47,13 @@ export interface HouseClock {
   /** "HH:mm". */
   time: string
 }
+
+/** A moment in the house's clock, never the consulting device's (SCHED-03). */
+export interface HouseMoment {
+  /** The instant, ISO 8601 with the house's offset. */
+  at: string
+  /** 0 = Sunday. */
+  dayOfWeek: number
+  /** "HH:mm". */
+  time: string
+}

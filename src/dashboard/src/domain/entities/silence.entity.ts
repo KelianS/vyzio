@@ -1,12 +1,4 @@
-/** A moment in the house's clock, never the consulting device's (SCHED-03). */
-interface HouseMoment {
-  /** The instant, ISO 8601 with the house's offset. */
-  at: string
-  /** 0 = Sunday. */
-  dayOfWeek: number
-  /** "HH:mm". */
-  time: string
-}
+import type { HouseMoment } from './schedule_rule.entity'
 
 /** Every channel holds its notifications until `until`; cameras keep filming and detecting. */
 export interface Silence {
