@@ -172,8 +172,9 @@ accessible name.
 
 Settings and lists of things read as **grouped lists**: a section label (`13px`, ink soft) above one
 surface holding rows split by a line. A row is, in order: an optional round icon, the title with its
-mark, an optional subtitle, then what it leads to (a chevron) or the control it holds (a switch, a
-check). A row that adds something (`Ajouter une caméra`, `Ajouter une plage`) is the last row of its
+mark, an optional subtitle, then what it leads to or the control it holds (a switch, a check). The
+chevron says where the row goes: right, to another page; down, a section that opens in place,
+turned up while open. A row that adds something (`Ajouter une caméra`, `Ajouter une plage`) is the last row of its
 list, neutral, with a `+` icon. No nominal subtitle: a list reads as names.
 
 ### Action weight
