@@ -88,7 +88,7 @@
 ### E2 · La caméra ne peut rien montrer
 
 1. La caméra est hors ligne, à configurer, ou n'existe plus.
-2. La vue le dit en une phrase, sans image ni tentative de flux, avec le chemin utile (LIVE-23).
+2. La vue le dit en une phrase à la place de l'image, sans tentative de flux : pour une caméra hors ligne avec le détail technique, pour une caméra à configurer avec le chemin vers sa page (LIVE-23).
 
 ### E3 · La caméra cesse de répondre pendant la lecture
 
@@ -111,7 +111,7 @@
 - **LIVE-20** · l'onglet « Détections » de la vue liste les clips de cette caméra, les plus récents d'abord, et porte une marque quand elle a détecté dans la dernière heure ; un toucher sur un clip le lit à la place du direct, avec son nom et son heure, et « Revenir au direct » ramène le direct ; à sa fin, le lecteur s'arrête sur sa dernière image ; la liste se termine par « Toutes ses détections », qui ouvre les détections filtrées sur elle (UC-HIST-01) ;
 - **LIVE-21** · la qualité, le son et le passage en plein écran se choisissent sur l'image, non dans la barre ;
 - **LIVE-22** · en plein écran, l'image va de bord à bord : le nom de la caméra avec sa marque en haut à gauche, la sortie du plein écran en haut à droite, les positions en bas à gauche, le pilotage translucide en bas à droite ; l'œil n'y figure pas ;
-- **LIVE-23** · toucher une caméra à l'accueil ouvre sa vue, sauf une caméra « À configurer », qui mène à sa page (CAM-05) ; atteinte par son adresse, la vue d'une caméra hors ligne, à configurer ou qui n'existe plus le dit en une phrase, sans image ni tentative de flux, avec le chemin utile (la page de la caméra pour une caméra à configurer ou hors ligne), et celle d'une caméra coupée montre ce que dit PRIV-20 ; l'adresse n'ouvre jamais ce qu'un toucher n'ouvrirait pas (CAM-08).
+- **LIVE-23** · toucher une caméra à l'accueil ouvre sa vue, même hors ligne, sauf une caméra « À configurer », qui mène à sa page (CAM-05) ; la vue d'une caméra hors ligne dit à la place de l'image qu'elle ne répond pas, en une phrase avec le détail technique (UI-01), sans tentative de flux, et ses contrôles attendent son retour (CAM-08) ; atteinte par son adresse, la vue d'une caméra à configurer ou qui n'existe plus le dit en une phrase, sans image ni tentative de flux, avec le chemin utile (la page de la caméra à configurer), et celle d'une caméra coupée montre ce que dit PRIV-20 ; l'adresse n'ouvre jamais ce qu'un toucher n'ouvrirait pas.
 
 ## Points ouverts
 

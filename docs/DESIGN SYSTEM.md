@@ -325,6 +325,15 @@ over a page: the back button returns to the previous page, home when there is no
 - **The browser's own bars**: in full screen, the screen asks the browser to hide them on a gesture,
   and keeps every control inside the device's safe areas.
 
+### Steering pad
+
+A camera that turns is steered by **one round pad**, never by separate arrow buttons: a circle on
+the surface colour with a quiet centre, the four directions as zones of its ring, each at least
+`44px` to the touch. The direction held lights up until the finger lifts. Over the picture it is the
+same component in its translucent variant, on the glass colour. The saved positions sit apart from
+it as named thumbnails, the one at which the camera stands outlined in ink; the empty slots gather
+behind a single `Ajouter` tile.
+
 ## UX vocabulary
 
 The single home of the interface's shared words. One gesture carries the same word **everywhere**, so

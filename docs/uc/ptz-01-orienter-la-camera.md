@@ -3,13 +3,13 @@
 | Champ | Valeur |
 | --- | --- |
 | **Acteur** | L'utilisateur ; ACCESS-01 dit ce que peut le résident |
-| **Objectif** | **En tant qu'utilisateur**, je veux pouvoir contrôler ma caméra PTZ directement depuis la vue live, sans passer par un menu de configuration, afin de réorienter la caméra facilement au quotidien. |
+| **Objectif** | **En tant qu'utilisateur**, je veux pouvoir contrôler ma caméra PTZ directement depuis la vue de la caméra, sans passer par un menu de configuration, afin de réorienter la caméra facilement au quotidien. |
 
 ## Conditions
 
 **Préalables** :
 
-- la vue en direct de la caméra est ouverte (UC-LIVE-01).
+- la vue de la caméra est ouverte, onglet « Contrôles » (UC-LIVE-01).
 
 **Résultat en succès** : la caméra tourne dans le sens de la flèche pressée.
 
@@ -22,7 +22,7 @@
 
 | ID | Libellé | Type | Déclencheur |
 | --- | --- | --- | --- |
-| N1 | Orienter la caméra depuis le direct | Nominal | L'utilisateur presse une flèche du pilotage |
+| N1 | Orienter la caméra depuis sa vue | Nominal | L'utilisateur presse une direction du pilotage rond |
 | A1 | Aller à une position enregistrée | Alternative | L'utilisateur touche une position |
 | A2 | Inverser gauche et droite | Alternative | La caméra tourne à l'envers de la flèche pressée |
 | E1 | L'orientation ne fonctionne pas | Échec | L'orientation n'est ni prouvée, ni confirmée, ou elle est désactivée |
@@ -30,10 +30,10 @@
 
 ## Détail des chemins
 
-### N1 · Orienter la caméra depuis le direct
+### N1 · Orienter la caméra depuis sa vue
 
-1. L'utilisateur trouve le pilotage dans la vue en direct (PTZ-01), parce que l'orientation fonctionne (PTZ-19).
-2. Il presse une flèche : la caméra tourne dans ce sens.
+1. L'utilisateur trouve le pilotage rond sous l'image, dans l'onglet « Contrôles » de la vue de la caméra (PTZ-01), parce que l'orientation fonctionne (PTZ-19).
+2. Il maintient une direction : la caméra tourne dans ce sens, la direction tenue s'allume, et la caméra s'arrête quand il relâche.
 
 ### A1 · Aller à une position enregistrée
 
@@ -55,7 +55,7 @@
 
 ## Règles locales
 
-- **PTZ-01** · les contrôles PTZ doivent être accessibles depuis la vue live de la caméra (pas seulement depuis les paramètres) : c'est le parcours d'usage quotidien ;
+- **PTZ-01** · les contrôles PTZ doivent être accessibles depuis la vue de la caméra (pas seulement depuis les paramètres) : c'est le parcours d'usage quotidien ;
 - **PTZ-03** · certaines caméras tournent à l'envers de la flèche pressée (leur firmware inverse le sens horizontal) : l'utilisateur peut inverser gauche et droite sur la capacité PTZ de la caméra ; Vyzio ne devine pas ce sens, et le réglage ne change ni le haut et le bas, ni les positions enregistrées.
 
 ## Points ouverts
