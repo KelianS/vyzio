@@ -1,6 +1,11 @@
 import { Activity } from 'lucide-react'
 import { useId, type ReactNode } from 'react'
-import { Badge, type BadgeTone } from '../../../common/components/badge'
+import { StatusMark } from '../../../common/components/status_mark'
+import {
+  markSubtitle,
+  StatusMarkKind,
+  type StatusMarkState,
+} from '../../../common/components/status_mark_state'
 import { SecondaryButton } from '../../../common/components/secondary_button'
 import { Surface } from '../../../common/components/surface'
 import { cn } from '../../../common/ui/utils'
@@ -13,16 +18,11 @@ import type {
   SystemStats,
 } from '../../../domain/entities/system_stats.entity'
 
-const STATUS_LABEL: Record<FrigateStatus, string> = {
-  active: 'En marche',
-  restarting: 'Redémarrage…',
-  unavailable: 'Arrêtée',
-}
-
-const STATUS_TONE: Record<FrigateStatus, BadgeTone> = {
-  active: 'ok',
-  restarting: 'neutral',
-  unavailable: 'danger',
+// Running is the nominal state, its mark alone; the two others carry their word (UI-31).
+const STATUS_MARK: Record<FrigateStatus, StatusMarkState> = {
+  active: { kind: StatusMarkKind.On, label: 'En marche' },
+  restarting: { kind: StatusMarkKind.Off, label: 'Redémarrage…' },
+  unavailable: { kind: StatusMarkKind.Alert, label: 'Arrêtée' },
 }
 
 const DETECTOR_HARDWARE_LABEL: Record<FrigateDetectorKind, string> = {
@@ -144,12 +144,15 @@ function Panel({ status, children }: { status: FrigateStatus; children: ReactNod
   return (
     <Surface asChild>
       <section aria-labelledby={titleId}>
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 id={titleId} className="text-row">
+        <div className="flex items-center gap-2">
+          <h2 id={titleId} className="text-row font-semibold">
             Surveillance
           </h2>
-          <Badge tone={STATUS_TONE[status]}>{STATUS_LABEL[status]}</Badge>
+          <StatusMark {...STATUS_MARK[status]} />
         </div>
+        {markSubtitle(STATUS_MARK[status]) && (
+          <p className="text-body text-muted-foreground">{markSubtitle(STATUS_MARK[status])}</p>
+        )}
         {children}
       </section>
     </Surface>

@@ -195,7 +195,7 @@ function HourMarks() {
           <span
             key={hour}
             className={cn(
-              'absolute top-0',
+              'absolute top-0 whitespace-nowrap',
               index === 0 && 'translate-x-0',
               index === HOUR_MARKS.length - 1 && '-translate-x-full',
               index > 0 && index < HOUR_MARKS.length - 1 && '-translate-x-1/2',

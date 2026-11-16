@@ -29,7 +29,7 @@ describe('SystemMonitorPanel', () => {
     renderPanel(running)
 
     // Assert
-    expect(screen.getByText('En marche')).toBeVisible()
+    expect(screen.getByRole('img', { name: 'En marche' })).toBeVisible()
     expect(screen.getByText('5 Go libres sur 100 Go')).toBeVisible()
     expect(screen.getByText('Accélérateur dédié · 5 images par seconde')).not.toBeVisible()
     expect(screen.getByText('Porte d’entrée')).not.toBeVisible()

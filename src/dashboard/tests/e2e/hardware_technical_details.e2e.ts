@@ -13,7 +13,7 @@ test.describe('SystemView technical details', () => {
     const card = page.getByRole('region', { name: 'Surveillance' })
 
     // The card says one state and one gauge; the figures for support wait behind the fold.
-    await expect(card.getByText('En marche')).toBeVisible()
+    await expect(card.getByRole('img', { name: 'En marche' })).toBeVisible()
     await expect(card.getByText('380 Go libres sur 500 Go')).toBeVisible()
     await expect(card.getByText('Images reçues par seconde')).toBeHidden()
 

@@ -27,7 +27,7 @@ describe('SystemView', () => {
 
     // Assert
     const card = within(screen.getByRole('region', { name: 'Surveillance' }))
-    expect(card.getByText('En marche')).toBeVisible()
+    expect(card.getByRole('img', { name: 'En marche' })).toBeVisible()
     expect(card.getByText('60 Go libres sur 100 Go')).toBeVisible()
     expect(card.getByText('Processeur · 5 images par seconde')).not.toBeVisible()
   })
