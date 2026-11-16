@@ -65,6 +65,8 @@ export function TabBar({ label, tabs }: { label: string; tabs: readonly Tab[] })
         <NavLink
           key={tab.to}
           to={tab.to}
+          // A tab is the same page seen another way: switching never adds a step for the back button (UI-29).
+          replace
           className={({ isActive }) =>
             cn(
               'inline-flex h-11 shrink-0 items-center rounded-full px-4 text-body font-semibold transition-colors',

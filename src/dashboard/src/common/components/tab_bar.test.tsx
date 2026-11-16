@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
-import { MemoryRouter } from 'react-router'
+import { createMemoryRouter, MemoryRouter, RouterProvider } from 'react-router'
 import { TabBar } from './tab_bar'
 
 const TABS = [
@@ -44,5 +44,24 @@ describe('TabBar', () => {
 
     // Assert
     expect(bar.style.maskImage).toBe('linear-gradient(to right, transparent, black 2rem)')
+  })
+
+  it('TabBar_ShouldLeaveTheBackStepToThePageBefore_WhenTheUserSwitchesTabs', async () => {
+    // Arrange
+    const router = createMemoryRouter(
+      [
+        { path: '/list', element: <p>Liste</p> },
+        { path: '/:tab', element: <TabBar label="Onglets" tabs={TABS} /> },
+      ],
+      { initialEntries: ['/list', '/a'], initialIndex: 1 },
+    )
+    render(<RouterProvider router={router} />)
+    fireEvent.click(screen.getByRole('link', { name: 'Conservation' }))
+
+    // Act
+    await router.navigate(-1)
+
+    // Assert
+    expect(router.state.location.pathname).toBe('/list')
   })
 })
