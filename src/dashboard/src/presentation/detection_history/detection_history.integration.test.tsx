@@ -90,7 +90,7 @@ describe('DetectionHistoryView', () => {
 
     // Assert
     expect(
-      await screen.findByRole('button', { name: /Front Door · 17 h 46 · sûr à 92 %/ }),
+      await screen.findByRole('button', { name: /Front Door · 17\sh\s46 · sûr\sà\s92\s%/ }),
     ).toBeInTheDocument()
   })
 

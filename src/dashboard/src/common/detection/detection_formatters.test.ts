@@ -67,8 +67,12 @@ describe('formatClipDay', () => {
 
 describe('formatClipDetail', () => {
   it.each([
-    { occurredAt: '2026-11-16T17:46:00', confidence: 0.92, said: '17 h 46 · sûr à 92 %' },
-    { occurredAt: '2026-11-16T08:00:00', confidence: null, said: '8 h' },
+    {
+      occurredAt: '2026-11-16T17:46:00',
+      confidence: 0.92,
+      said: '17\u00a0h\u00a046 · sûr\u00a0à\u00a092\u00a0%',
+    },
+    { occurredAt: '2026-11-16T08:00:00', confidence: null, said: '8\u00a0h' },
   ])(
     'formatClipDetail_ShouldSayTheHourAndHowSure_WhenTheEngineSaidIt ($said)',
     ({ occurredAt, confidence, said }) => {
@@ -90,7 +94,7 @@ describe('formatClipDetail with its camera', () => {
     )
 
     // Assert
-    expect(detail).toBe('Porte d’entrée · 17 h 46 · sûr à 92 %')
+    expect(detail).toBe('Porte d’entrée · 17\u00a0h\u00a046 · sûr\u00a0à\u00a092\u00a0%')
   })
 })
 

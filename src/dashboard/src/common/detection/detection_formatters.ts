@@ -56,6 +56,8 @@ export function formatClipDay(occurredAt: string, now: Date): string {
   return day.charAt(0).toUpperCase() + day.slice(1)
 }
 
+const NBSP = '\u00a0'
+
 /**
  * A clip's line under its name, the same on every screen: its camera when the list mixes them, its
  * hour, and how sure the engine was when it said.
@@ -63,11 +65,16 @@ export function formatClipDay(occurredAt: string, now: Date): string {
 export function formatClipDetail(event: DetectionEvent, withCamera = false): string {
   const date = new Date(event.occurredAt)
   const minutes = date.getMinutes()
-  const hour = `${date.getHours()} h${minutes === 0 ? '' : ` ${String(minutes).padStart(2, '0')}`}`
+  // Non-breaking inside each part: a narrow row wraps between them, never inside « 92 % ».
+  const hour = [date.getHours(), 'h', minutes === 0 ? null : String(minutes).padStart(2, '0')]
+    .filter((part) => part !== null)
+    .join(NBSP)
   return [
     withCamera ? event.cameraName : null,
     hour,
-    event.confidence !== null ? `sûr à ${Math.round(event.confidence * 100)} %` : null,
+    event.confidence !== null
+      ? ['sûr', 'à', Math.round(event.confidence * 100), '%'].join(NBSP)
+      : null,
   ]
     .filter(Boolean)
     .join(' · ')
