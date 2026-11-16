@@ -4,6 +4,7 @@ import {
   installFakeBackend,
   createFakeBackendState,
   makeFakeCamera,
+  makeFakeChannel,
   makeFakeDetectionEvent,
 } from './fixtures/fake_backend'
 
@@ -62,6 +63,18 @@ test.describe('Accessibility, WCAG 2.1 A/AA', () => {
             hasClip: true,
           }),
         ],
+        notificationChannels: { telegram: makeFakeChannel('telegram') },
+        scheduleRules: [
+          {
+            id: 'rule-1',
+            kind: 'privacy',
+            targetIds: ['camera-1'],
+            daysOfWeek: [1, 2],
+            startTime: '22:00',
+            endTime: '07:00',
+            createdAt: '2026-01-01T00:00:00Z',
+          },
+        ],
       }),
     )
   })
@@ -83,6 +96,10 @@ test.describe('Accessibility, WCAG 2.1 A/AA', () => {
     '/settings/cameras/camera-1/connection',
     '/settings/retention',
     '/settings/notifications',
+    '/settings/notifications/telegram',
+    '/settings/schedule',
+    '/settings/schedule/rule-1',
+    '/settings/access',
     '/settings/detection/people',
     '/settings/detection/people/add',
     '/settings/detection/people/profile-1/identity',

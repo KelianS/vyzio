@@ -238,6 +238,7 @@ function RuleForm({
     setLeaving(true)
   }
 
+  // Drawn, not declared (DASHBOARD-24 exception): a range has no installation value nor override, and its editor is its own anatomy.
   return (
     <Page title={type.name}>
       {/* The type's effect stays in view while the range is set (SCHED-02). */}

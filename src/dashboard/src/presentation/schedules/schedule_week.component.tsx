@@ -115,7 +115,7 @@ export function ScheduleWeekView() {
     <SettingsPage>
       <div className="flex flex-col gap-2">
         <HourMarks />
-        <ol className="flex flex-col gap-2">
+        <ol aria-label="Semaine" className="flex flex-col gap-2">
           {weekOf(uido.rules).map((day) => (
             <DayRow key={day.value} day={day} clock={uido.clock} targetsOf={targetsOf} />
           ))}
