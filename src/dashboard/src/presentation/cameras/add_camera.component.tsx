@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown'
 import { useNavigate, useSearchParams } from 'react-router'
 import { Keyboard, LoaderCircle, Radar, RotateCw, Video } from 'lucide-react'
 import { PageHeader } from '../../common/components/page_header'
+import { TechnicalDetails } from '../../common/components/technical_details'
 import { DiagnosticLine, ErrorMessage } from '../../common/components/error_message'
 import { Button } from '../../common/ui/button'
 import { SecondaryButton } from '../../common/components/secondary_button'
@@ -12,7 +13,6 @@ import { HelpRow } from '../../common/components/help_panel'
 import { useToast } from '../../common/components/toast'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { SettingsPage, SettingsSection } from '../../common/settings/settings_page'
-import { AdvancedFold } from '../../common/settings/advanced_fold'
 import { SettingsList } from '../../common/settings/settings_list'
 import type { SettingDeclaration } from '../../common/settings/setting_declaration'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
@@ -389,7 +389,7 @@ function Feedback({ message, error }: { message: string | null; error: AddCamera
   return null
 }
 
-/** Raw discovery facts, kept under the closing fold: only useful to diagnose a stuck add. */
+/** Raw discovery facts for support (UI-02): only useful to diagnose a stuck add. */
 function TechnicalFacts({ candidate }: { candidate: DiscoveredCamera }) {
   const details = candidate.technicalDetails
   const ports = details?.detectedPorts ?? []
@@ -419,7 +419,7 @@ function TechnicalFacts({ candidate }: { candidate: DiscoveredCamera }) {
   ]
 
   return (
-    <AdvancedFold>
+    <TechnicalDetails>
       <dl className="divide-y divide-border text-body">
         {facts.map(([term, value]) => (
           <div key={term} className="flex flex-wrap justify-between gap-x-4 py-2">
@@ -428,7 +428,7 @@ function TechnicalFacts({ candidate }: { candidate: DiscoveredCamera }) {
           </div>
         ))}
       </dl>
-    </AdvancedFold>
+    </TechnicalDetails>
   )
 }
 

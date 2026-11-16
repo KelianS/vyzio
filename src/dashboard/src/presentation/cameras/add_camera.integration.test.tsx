@@ -330,6 +330,35 @@ describe('AddCameraView', () => {
     expect(screen.queryByRole('combobox', { name: 'Marque' })).not.toBeInTheDocument()
   })
 
+  it('onSelectCandidate_ShouldKeepWhatDiscoveryReadUnderTechnicalDetails_WhenTheFoundCameraIsOpened', async () => {
+    // Arrange
+    fakeNetwork({
+      ...rangesToSweep,
+      'POST /api/cameras/discovery': ok([
+        {
+          ...discovered,
+          technicalDetails: {
+            resolvedHostName: null,
+            detectedPorts: [{ protocol: 'rtsp', port: 554, label: 'RTSP' }],
+            rtspPathsDetected: [],
+            capabilities: [],
+          },
+        },
+      ]),
+      'POST /api/cameras/vendor-assistance': ok(null),
+    })
+    renderScreen(<AddCameraView />)
+    await searchTheNetwork()
+
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: /Tapo C200/ }))
+
+    // Assert
+    const facts = screen.getByText('Ports ouverts').closest('details')
+    expect(facts).toHaveTextContent('Détails techniques')
+    expect(facts).not.toHaveTextContent('Avancé')
+  })
+
   it.each([[/Tapo C200/], [/ICSee salon/]])(
     'onDiscover_ShouldMarkTheCameraReady_WhenAProtocolServesItsStream: %s',
     async (name) => {
