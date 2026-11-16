@@ -152,7 +152,6 @@ export function ScheduleWeekView() {
                 to={`${SCHEDULES_PATH}/${rule.id}`}
                 title={rangeTimes(rule)}
                 subtitle={`${targetsOf(rule) ?? NO_TARGET[SCHEDULE_TYPES[kind].targetKind]} · ${daysSummary(rule.daysOfWeek)}`}
-                trailing="none"
               />
             ))}
           {/* A new range takes the type of the list it is added to (SCHED-10). */}
