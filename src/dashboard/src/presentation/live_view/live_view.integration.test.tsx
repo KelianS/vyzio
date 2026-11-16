@@ -1071,7 +1071,7 @@ describe('LiveViewScreen', () => {
     openTheAddress()
 
     // Assert
-    expect(await screen.findByText('Rien n’est filmé ni enregistré')).toBeInTheDocument()
+    expect(await screen.findByText('Vyzio n’enregistre plus rien')).toBeInTheDocument()
     expect(screen.getByText('Coupée')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Réactiver' })).toBeInTheDocument()
     expect(
@@ -1142,7 +1142,7 @@ describe('LiveViewScreen', () => {
         body: { cameraIds: ['camera-1'], active: true },
       }),
     )
-    expect(await screen.findByText('Rien n’est filmé ni enregistré')).toBeInTheDocument()
+    expect(await screen.findByText('Vyzio n’enregistre plus rien')).toBeInTheDocument()
   })
 
   it('LiveViewScreen_ShouldSayItDoesNotAnswerWithItsTechnicalDetail_WhenTheCameraIsOffline', async () => {

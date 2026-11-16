@@ -399,7 +399,7 @@ export function LiveView({ camera }: { camera: Camera }) {
         return (
           <PictureNotice icon={EyeOff} title={cutLine(camera, new Date())}>
             <p className="-mt-2.5 text-body text-muted-foreground">
-              Rien n’est filmé ni enregistré
+              Vyzio n’enregistre plus rien
             </p>
             <Button
               type="button"

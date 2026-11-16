@@ -18,7 +18,7 @@ export function CutSheet({
   return (
     <Sheet
       title="Couper les caméras"
-      effect="Toutes les caméras sont coupées : rien n’est filmé ni enregistré."
+      effect="Toutes les caméras sont coupées : Vyzio n’enregistre plus rien."
       options={endOptions(scheduleNextChange, now, onCut)}
       onClose={onClose}
     />

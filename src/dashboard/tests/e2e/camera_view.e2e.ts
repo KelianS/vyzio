@@ -77,7 +77,7 @@ test.describe('Camera view', () => {
       createFakeBackendState({ cameras: [makeFakeCamera({ privacyModeActive: true })] }),
     )
     await page.goto('/cameras/camera-1')
-    await expect(page.getByText('Rien n’est filmé ni enregistré')).toBeVisible()
+    await expect(page.getByText('Vyzio n’enregistre plus rien')).toBeVisible()
 
     await page.getByRole('button', { name: 'Réactiver' }).click()
 
