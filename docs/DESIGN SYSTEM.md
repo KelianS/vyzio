@@ -282,7 +282,9 @@ gets no line.
 A figure the user cannot act on stays in the `Détails techniques` fold
 (`common/components/technical_details`). Only the user opens it, and a figure is **never read as a
 fault**. It speaks the product's words, never an internal identifier or a technical name
-([SPECS](SPECS.md) UI-02). It never holds a setting, an explanation or an error's diagnostic line.
+([SPECS](SPECS.md) UI-02). It never holds a setting, an explanation or an error's diagnostic line, except under a
+warning row that already says the consequence in one line and carries its fix (a privacy miss,
+[SPECS](SPECS.md) PRIV-05): there it keeps the full sentence and the diagnostic line.
 
 ### Errors
 
