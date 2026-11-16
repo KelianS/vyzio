@@ -42,9 +42,11 @@ export function buildAddCameraPresenter({ container, dispatch, toast }: AddCamer
         const candidates = await container.discoverCameras.execute()
         dispatch({ type: 'DISCOVERY_SUCCEEDED', candidates })
         toast(
-          candidates.length > 0
-            ? `${candidates.length} caméra(s) trouvée(s).`
-            : 'Aucune caméra trouvée sur le réseau.',
+          candidates.length === 0
+            ? 'Aucune caméra trouvée sur le réseau.'
+            : candidates.length === 1
+              ? '1 caméra trouvée.'
+              : `${candidates.length} caméras trouvées.`,
         )
       } catch (e) {
         dispatch({ type: 'DISCOVERY_FAILED' })

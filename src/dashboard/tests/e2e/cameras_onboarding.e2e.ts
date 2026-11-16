@@ -185,7 +185,7 @@ test.describe('AddCameraView', () => {
     await page.getByRole('alertdialog').getByRole('button', { name: 'Rechercher' }).click()
 
     // The search did happen - it is its result that is set aside.
-    await expect(page.getByText('1 caméra(s) trouvée(s).')).toBeVisible()
+    await expect(page.getByText('1 caméra trouvée.')).toBeVisible()
     await expect(page.getByRole('button', { name: /Caméra détectée/ })).toHaveCount(0)
   })
 })
