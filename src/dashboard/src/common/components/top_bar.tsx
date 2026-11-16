@@ -160,51 +160,54 @@ export function TopBar({
         capture={() => (direction ? transition.capture(direction) : null)}
         play={(snapshot) => transition.play(snapshot)}
       >
-        <header
-          ref={header}
-          className={cn(
-            // Below the Radix layers (`z-50`): a dialog or a list opened near the top covers it.
-            'sticky top-0 z-40 text-foreground',
-            'px-4 pt-[max(1.25rem,env(safe-area-inset-top))] pb-4',
-          )}
-        >
-          {/* The bar's colour reaches above the screen, so its height springs by moving its bottom edge. */}
-          <div
-            ref={plate}
-            aria-hidden="true"
-            className="absolute inset-x-0 -top-[100vh] bottom-0 rounded-b-panel bg-bar"
-          />
-          <div className="relative mx-auto flex w-full max-w-5xl flex-col gap-4">
-            <div ref={row}>
-              {home ? (
-                <div className="flex min-h-11 items-center justify-between gap-3">
-                  <span className="text-title font-bold">Vyzio</span>
-                  {gear && <TopBarIconLink to="/settings" label="Réglages" icon={Settings} />}
+        {/* A page or a tab sliding past the screen's edge never lets the screen scroll sideways. */}
+        <div className="overflow-x-clip">
+          <header
+            ref={header}
+            className={cn(
+              // Below the Radix layers (`z-50`): a dialog or a list opened near the top covers it.
+              'sticky top-0 z-40 text-foreground',
+              'px-4 pt-[max(1.25rem,env(safe-area-inset-top))] pb-4',
+            )}
+          >
+            {/* The bar's colour reaches above the screen, so its height springs by moving its bottom edge. */}
+            <div
+              ref={plate}
+              aria-hidden="true"
+              className="absolute inset-x-0 -top-[100vh] bottom-0 rounded-b-panel bg-bar"
+            />
+            <div className="relative mx-auto flex w-full max-w-5xl flex-col gap-4">
+              <div ref={row}>
+                {home ? (
+                  <div className="flex min-h-11 items-center justify-between gap-3">
+                    <span className="text-title font-bold">Vyzio</span>
+                    {gear && <TopBarIconLink to="/settings" label="Réglages" icon={Settings} />}
+                  </div>
+                ) : (
+                  <div className="flex min-h-11 items-center gap-3">
+                    <BackButton />
+                    <div ref={setTitle} className="min-w-0 flex-1" />
+                    <div ref={setAction} className="contents" />
+                  </div>
+                )}
+              </div>
+              {/* An alert slides out from under the bar's contents, never over them. */}
+              <div className="overflow-hidden has-[>:empty]:hidden">
+                <div ref={belowSlot} className="flex flex-col gap-4">
+                  {below}
                 </div>
-              ) : (
-                <div className="flex min-h-11 items-center gap-3">
-                  <BackButton />
-                  <div ref={setTitle} className="min-w-0 flex-1" />
-                  <div ref={setAction} className="contents" />
-                </div>
-              )}
-            </div>
-            {/* An alert slides out from under the bar's contents, never over them. */}
-            <div className="overflow-hidden has-[>:empty]:hidden">
-              <div ref={belowSlot} className="flex flex-col gap-4">
-                {below}
               </div>
             </div>
+          </header>
+          <div ref={stage} className="relative bg-background">
+            {children}
+            <div
+              ref={veil}
+              data-page-veil
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 z-50 hidden bg-black"
+            />
           </div>
-        </header>
-        <div ref={stage} className="relative bg-background">
-          {children}
-          <div
-            ref={veil}
-            data-page-veil
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 z-50 hidden bg-black"
-          />
         </div>
       </SnapshotBeforeCommit>
     </TopBarSlotsContext.Provider>

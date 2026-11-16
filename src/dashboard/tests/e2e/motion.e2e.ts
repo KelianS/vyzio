@@ -430,3 +430,27 @@ test.describe('Toasts', () => {
       .toMatch(/^translate3d\(0px, [1-9]/)
   })
 })
+
+test.describe('Page transition', () => {
+  test.use({ reducedMotion: 'no-preference', viewport: { width: 390, height: 844 } })
+
+  test('PageTransition_ShouldNeverLetTheScreenScrollSideways_WhenAPageSlidesIn', async ({
+    page,
+  }) => {
+    await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
+    await page.goto('/')
+    const gear = page.getByRole('banner').getByRole('link', { name: 'Réglages' })
+    await expect(gear).toBeVisible()
+
+    await gear.click()
+    // Measured while the new page is still on its way in.
+    const stage = page.getByRole('banner').locator('xpath=following-sibling::div[1]')
+    await expect.poll(() => stage.evaluate((el) => el.style.transform)).toMatch(/^translate3d\(/)
+
+    const widths = await page.evaluate(() => ({
+      scroll: document.documentElement.scrollWidth,
+      client: document.documentElement.clientWidth,
+    }))
+    expect(widths.scroll).toBe(widths.client)
+  })
+})
