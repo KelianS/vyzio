@@ -570,6 +570,21 @@ describe('LiveView', () => {
     expect(network.sent.filter(({ route }) => route === START)).toHaveLength(1)
   })
 
+  it('onAskOverride_ShouldAskAtOnce_WhenTheBrowserSignalsTheLongPressOnAPicture', async () => {
+    // Arrange
+    fakeNetwork({ [PRESETS]: presetsRead({ presets: [makePreset()] }) })
+    renderLiveView()
+    const tile = await screen.findByTitle(SURVEILLANCE)
+    fireEvent.pointerDown(tile, { pointerType: 'touch' })
+
+    // Act
+    fireEvent.contextMenu(tile)
+    fireEvent.pointerCancel(tile, { pointerType: 'touch' })
+
+    // Assert
+    expect(screen.getByText('Redéfinir cette position ?')).toBeInTheDocument()
+  })
+
   it('onGoTo_ShouldNotGo_WhenALongPressOnAPositionEndsWithTheEmulatedMouse', async () => {
     // Arrange
     const network = fakeNetwork({ [PRESETS]: presetsRead({ presets: [makePreset()] }) })

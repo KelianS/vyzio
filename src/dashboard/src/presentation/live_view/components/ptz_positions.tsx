@@ -55,23 +55,30 @@ function usePress(onTap: () => void, onLongPress: (() => void) | null) {
     if (tap && !longPressed.current) onTap()
   }
 
+  const longPress = () => {
+    if (timer.current) clearTimeout(timer.current)
+    timer.current = null
+    longPressed.current = true
+    onLongPress?.()
+  }
+
   return {
     // Pointer events only: a touch also emulates mouse events, which would press the tile twice.
     onPointerDown: (e: { button: number }) => {
       if (e.button !== 0) return
       longPressed.current = false
       if (!onLongPress) return
-      timer.current = setTimeout(() => {
-        longPressed.current = true
-        onLongPress()
-      }, LONG_PRESS_MS)
+      timer.current = setTimeout(longPress, LONG_PRESS_MS)
     },
     onPointerUp: () => end(true),
     // A swipe along the row is the browser's: it cancels the press, so a scroll never saves.
     onPointerCancel: () => end(false),
     onPointerLeave: () => end(false),
-    // The long press is our gesture: without this the mobile browser opens its menu over it.
-    onContextMenu: (e: { preventDefault: () => void }) => e.preventDefault(),
+    // The browser's own long press on a picture comes first and cancels the touch: it is ours.
+    onContextMenu: (e: { preventDefault: () => void }) => {
+      e.preventDefault()
+      if (timer.current) longPress()
+    },
   }
 }
 
@@ -123,7 +130,8 @@ function PositionTile({
               key={thumbSrc}
               src={thumbSrc}
               alt=""
-              className="size-full object-cover"
+              draggable={false}
+              className="pointer-events-none size-full object-cover"
               style={loaded ? undefined : { visibility: 'hidden' }}
               onLoad={() => setLoaded(true)}
               // A missing thumbnail leaves the frame empty: the name still says where it goes.
