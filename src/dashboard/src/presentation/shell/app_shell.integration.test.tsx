@@ -424,4 +424,30 @@ describe('AppShell', () => {
     // Assert
     expect(useRootStore.getState().cameras).toBe(shown)
   })
+
+  it('AppShell_ShouldKeepTheNewerList_WhenAReloadAnswersBeforeAnOlderBackgroundRead', async () => {
+    // Arrange
+    usePollClock()
+    const network = fakeNetwork({
+      'GET /api/cameras': ok([makeCamera({ displayName: 'Jardin' })]),
+      'GET /api/system/stats': ok(stats()),
+    })
+    openShellAt('/')
+    await waitFor(() => expect(useRootStore.getState().cameras).toHaveLength(1))
+    network.answer('GET /api/cameras', late(ok([makeCamera({ displayName: 'Jardin' })]), 4000))
+    await aPollPasses()
+    network.answer(
+      'GET /api/cameras',
+      ok([makeCamera({ displayName: 'Jardin', status: 'offline' })]),
+    )
+    await act(() => useRootStore.getState().loadCameras(appContainer.cameras.getCameras))
+
+    // Act
+    await act(() => vi.advanceTimersByTimeAsync(4000))
+
+    // Assert
+    expect(
+      within(screen.getByRole('list', { name: 'Alertes' })).getByText('Jardin ne répond plus'),
+    ).toBeVisible()
+  })
 })
