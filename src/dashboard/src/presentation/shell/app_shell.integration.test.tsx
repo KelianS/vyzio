@@ -191,6 +191,24 @@ describe('AppShell', () => {
     expect(within(alerts).getByText('Hors ligne depuis moins d’une minute')).toBeVisible()
   })
 
+  it('TopBar_ShouldDropTheAlert_WhenTheUserSetsItAside', async () => {
+    // Arrange
+    fakeNetwork({
+      'GET /api/cameras': ok([makeCamera({ displayName: 'Jardin', status: 'offline' })]),
+      'GET /api/system/stats': ok(stats()),
+    })
+    openShellAt('/')
+    const alerts = await screen.findByRole('list', { name: 'Alertes' })
+
+    // Act
+    await userEvent.click(
+      within(alerts).getByRole('button', { name: 'Masquer : Jardin ne répond plus' }),
+    )
+
+    // Assert
+    expect(screen.queryByRole('list', { name: 'Alertes' })).not.toBeInTheDocument()
+  })
+
   it('TopBar_ShouldSayVyzioNoLongerAnswers_WhenTheSystemCannotBeReachedAnyMore', async () => {
     // Arrange
     fakeNetwork({ 'GET /api/cameras': ok([]), 'GET /api/system/stats': ok(stats()) })
@@ -204,5 +222,6 @@ describe('AppShell', () => {
     // Assert
     const alerts = await screen.findByRole('list', { name: 'Alertes' })
     expect(within(alerts).getByText('Vyzio ne répond plus')).toBeVisible()
+    expect(within(alerts).queryByRole('button', { name: /Masquer/ })).not.toBeInTheDocument()
   })
 })

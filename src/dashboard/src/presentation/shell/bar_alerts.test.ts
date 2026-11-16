@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { makeCamera } from '../../testing/camera_fixture'
 import type { SystemStats } from '../../domain/entities/system_stats.entity'
-import { barAlerts, formatSince, trackFirstSeen } from './bar_alerts'
+import { barAlerts, formatSince, stillDismissed, trackFirstSeen } from './bar_alerts'
 
 function stats(overrides: Partial<SystemStats> = {}): SystemStats {
   return {
@@ -39,6 +39,7 @@ describe('barAlerts', () => {
         title: 'Jardin ne répond plus',
         since: 'Hors ligne depuis',
         to: '/cameras/c-2',
+        dismissible: true,
       },
     ])
   })
@@ -82,6 +83,7 @@ describe('barAlerts', () => {
         title: 'Disque presque plein',
         detail: '5 Go libres',
         to: '/settings/retention',
+        dismissible: true,
       },
     ])
   })
@@ -103,7 +105,12 @@ describe('barAlerts', () => {
 
     // Assert
     expect(alerts).toEqual([
-      { key: 'hub-lost', title: 'Vyzio ne répond plus', since: 'Injoignable depuis' },
+      {
+        key: 'hub-lost',
+        title: 'Vyzio ne répond plus',
+        since: 'Injoignable depuis',
+        dismissible: false,
+      },
     ])
   })
 })
@@ -118,6 +125,16 @@ describe('trackFirstSeen', () => {
 
     // Assert
     expect(tracked).toEqual({ lasting: 1_000, new: 9_000 })
+  })
+})
+
+describe('stillDismissed', () => {
+  it('stillDismissed_ShouldForgetASetAsideAlert_WhenItsCauseHasEnded', () => {
+    // Arrange & Act
+    const kept = stillDismissed(['camera-offline:c-1', 'storage-critical'], ['storage-critical'])
+
+    // Assert
+    expect(kept).toEqual(['storage-critical'])
   })
 })
 

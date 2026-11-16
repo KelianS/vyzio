@@ -14,6 +14,8 @@ export interface BarAlert {
   /** A second line that says more than a time. */
   readonly detail?: string
   readonly to?: string
+  /** False for an alert that cannot be set aside: nothing works while it lasts (UI-30). */
+  readonly dismissible: boolean
 }
 
 interface BarAlertFacts {
@@ -32,7 +34,14 @@ export function barAlerts({
 }: BarAlertFacts): BarAlert[] {
   // Out of reach, every other fact is stale: only the loss is certain.
   if (hubLost)
-    return [{ key: 'hub-lost', title: 'Vyzio ne répond plus', since: 'Injoignable depuis' }]
+    return [
+      {
+        key: 'hub-lost',
+        title: 'Vyzio ne répond plus',
+        since: 'Injoignable depuis',
+        dismissible: false,
+      },
+    ]
 
   const alerts: BarAlert[] = cameras
     .filter(
@@ -45,18 +54,25 @@ export function barAlerts({
       title: `${camera.displayName} ne répond plus`,
       since: 'Hors ligne depuis',
       to: liveViewPath(camera.id),
+      dismissible: true,
     }))
 
   const engine = systemStats?.status
   switch (engine) {
     case 'restarting':
-      alerts.push({ key: 'engine-restarting', title: 'La surveillance redémarre', since: 'Depuis' })
+      alerts.push({
+        key: 'engine-restarting',
+        title: 'La surveillance redémarre',
+        since: 'Depuis',
+        dismissible: true,
+      })
       break
     case 'unavailable':
       alerts.push({
         key: 'engine-unavailable',
         title: 'La surveillance est arrêtée',
         since: 'Depuis',
+        dismissible: true,
       })
       break
     case 'active':
@@ -74,6 +90,7 @@ export function barAlerts({
       title: 'Disque presque plein',
       detail: `${systemStats.storage.freeGb} Go libres`,
       to: '/settings/retention',
+      dismissible: true,
     })
 
   if (restartFailed)
@@ -82,6 +99,7 @@ export function barAlerts({
       title: 'Les changements ne sont pas appliqués',
       detail: 'Réessayez depuis les réglages',
       to: '/settings',
+      dismissible: true,
     })
 
   return alerts
@@ -94,6 +112,14 @@ export function trackFirstSeen(
   now: number,
 ): Record<string, number> {
   return Object.fromEntries(keys.map((key) => [key, seen[key] ?? now]))
+}
+
+/** The alerts set aside that still last: one whose cause ended comes back if the cause returns. */
+export function stillDismissed(
+  dismissed: readonly string[],
+  keys: readonly string[],
+): readonly string[] {
+  return dismissed.filter((key) => keys.includes(key))
 }
 
 /** An elapsed time as the bar reads it: « 4 min », « 2 h ». */
