@@ -46,9 +46,9 @@ test.describe('Navigation', () => {
     await expect(page.getByRole('heading', { name: 'Matériel' })).toBeVisible()
 
     // The niche one is put deep, not hidden: the technical interface is only
-    // reachable by unfolding "Avance", and it always is.
+    // reachable through the Avancé page, and it always is.
     await expect(page.getByRole('link', { name: /interface technique/ })).toBeHidden()
-    await page.getByRole('group').filter({ hasText: 'Avancé' }).getByText('Avancé').click()
+    await page.getByRole('link', { name: 'Avancé' }).click()
     await page.getByRole('link', { name: /interface technique/ }).click()
     await expect(
       page

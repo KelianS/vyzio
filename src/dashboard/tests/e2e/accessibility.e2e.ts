@@ -94,9 +94,12 @@ test.describe('Accessibility, WCAG 2.1 A/AA', () => {
     '/settings/cameras/camera-1/privacy',
     '/settings/cameras/camera-1/image',
     '/settings/cameras/camera-1/connection',
+    '/settings/cameras/camera-1/connection/advanced',
+    '/settings/cameras/camera-1/connection/advanced/protocols/rtsp',
     '/settings/retention',
     '/settings/notifications',
     '/settings/notifications/telegram',
+    '/settings/notifications/telegram/advanced',
     '/settings/schedule',
     '/settings/schedule/rule-1',
     '/settings/access',
@@ -104,8 +107,10 @@ test.describe('Accessibility, WCAG 2.1 A/AA', () => {
     '/settings/detection/people/add',
     '/settings/detection/people/profile-1/identity',
     '/settings/detection/people/profile-1/photos',
+    '/settings/detection/people/profile-1/photos/advanced',
     '/settings/detection/people/profile-1/cameras',
     '/settings/hardware',
+    '/settings/hardware/advanced',
   ]
 
   for (const path of routes) {

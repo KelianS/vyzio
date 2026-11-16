@@ -49,9 +49,17 @@ export function rubricPath(slug: string) {
 interface SettingsRouteHandle {
   /** The route shows its own title; the rubric shell adds none. */
   readonly ownHeader?: boolean
+  /** A page under a thing's tabs that names itself instead, such as its `Avancé`: the shell shows neither name nor tabs. */
+  readonly subPage?: boolean
 }
 
 export const OWN_HEADER: SettingsRouteHandle = { ownHeader: true }
+
+export const SUB_PAGE: SettingsRouteHandle = { ownHeader: true, subPage: true }
+
+export function isSubPage(matches: readonly { readonly handle?: unknown }[]): boolean {
+  return matches.some((match) => (match.handle as SettingsRouteHandle | undefined)?.subPage)
+}
 
 export function declaresOwnHeader(matches: readonly { readonly handle?: unknown }[]): boolean {
   return matches.some((match) => (match.handle as SettingsRouteHandle | undefined)?.ownHeader)

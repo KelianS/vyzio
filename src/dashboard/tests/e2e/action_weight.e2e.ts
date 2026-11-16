@@ -44,7 +44,7 @@ test.describe('Action weight', () => {
     await expect(remove).not.toHaveCSS('background-color', TRANSPARENT)
 
     const removeTop = (await remove.boundingBox())?.y ?? 0
-    const advancedTop = (await page.locator('summary', { hasText: 'Avancé' }).boundingBox())?.y ?? 0
+    const advancedTop = (await page.getByRole('link', { name: 'Avancé' }).boundingBox())?.y ?? 0
     const testTop =
       (await page.getByRole('button', { name: 'Envoyer un message de test' }).boundingBox())?.y ?? 0
     expect(removeTop).toBeGreaterThan(advancedTop)
@@ -99,7 +99,7 @@ test.describe('Action weight', () => {
     expect(green).toBeLessThanOrEqual(1)
   })
 
-  test('HelpQuestions_ShouldReadAsAFootnoteBeforeAvancé_WhenAPageCarriesHelp', async ({ page }) => {
+  test('HelpQuestions_ShouldReadAsAFootnoteLastOnThePage_WhenAPageCarriesHelp', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
     await page.setViewportSize(PHONE)
     await page.goto('/settings/cameras/camera-1/connection')
@@ -112,9 +112,13 @@ test.describe('Action weight', () => {
     await expect(questions.first()).toHaveCSS('background-color', TRANSPARENT)
     expect(await heightOf(questions.first())).toBeGreaterThanOrEqual(44)
 
-    const lastTop = (await questions.last().boundingBox())?.y ?? 0
-    const advancedTop = (await page.locator('summary', { hasText: 'Avancé' }).boundingBox())?.y ?? 0
-    expect(advancedTop).toBeGreaterThan(lastTop)
+    // Settings, then Avancé, then the removal, then the help (DESIGN SYSTEM § Help).
+    const advancedTop = (await page.getByRole('link', { name: 'Avancé' }).boundingBox())?.y ?? 0
+    const removeTop =
+      (await page.getByRole('button', { name: 'Supprimer cette caméra' }).boundingBox())?.y ?? 0
+    const firstQuestionTop = (await questions.first().boundingBox())?.y ?? 0
+    expect(removeTop).toBeGreaterThan(advancedTop)
+    expect(firstQuestionTop).toBeGreaterThan(removeTop)
   })
 
   test('FoldAndSecondaryAction_ShouldShareTheNeutralTint_WhenTheySitOnOneCard', async ({

@@ -559,14 +559,17 @@ export function buildCameraConnectionPresenter({
       }
     },
 
+    /** Resolves true once removed, so its page can close. */
     async onRemoveProtocol(cameraId: string, protocol: SupportedProtocol) {
       dispatch({ type: 'PROTOCOL_REMOVE_STARTED', protocol })
       try {
         await container.removeCameraProtocol.execute(cameraId, protocol)
         toast('Protocole retiré.', 'success')
         readProtocols(cameraId, true)
+        return true
       } catch (e) {
         toastError(toast, toAppError(e))
+        return false
       } finally {
         dispatch({ type: 'PROTOCOL_REMOVE_FINISHED', protocol })
       }

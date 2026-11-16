@@ -155,20 +155,31 @@ test.describe('Settings screens coherence', () => {
     }
   })
 
-  const FOLD_ROUTES = ['/settings/hardware', '/settings/detection/people/profile-1/photos']
+  const ADVANCED_ROUTES = [
+    { path: '/settings/hardware', advanced: '/settings/hardware/advanced' },
+    {
+      path: '/settings/detection/people/profile-1/photos',
+      advanced: '/settings/detection/people/profile-1/photos/advanced',
+    },
+    {
+      path: '/settings/cameras/camera-1/connection',
+      advanced: '/settings/cameras/camera-1/connection/advanced',
+    },
+  ]
 
-  for (const path of FOLD_ROUTES) {
-    test(`AdvancedFold_ShouldBeClosed_WhenThePageOpens (${path})`, async ({ page }) => {
+  for (const { path, advanced } of ADVANCED_ROUTES) {
+    test(`AdvancedRow_ShouldOpenItsOwnPageNamedAvancé_WhenTheUserFollowsIt (${path})`, async ({
+      page,
+    }) => {
       await page.goto(path)
-      await page.waitForLoadState('networkidle')
 
-      // "Avance" is a position, not a mode (UI-09): hence a fold, closed on load.
-      const fold = page.locator('details', { has: page.getByText('Avancé', { exact: true }) })
-      await expect(fold).toHaveCount(1)
-      await expect(fold).not.toHaveAttribute('open', /.*/)
+      // "Avance" is a position, not a mode (UI-09): one row of its own, leading to its own page.
+      await page.getByRole('link', { name: 'Avancé' }).click()
+      await expect(page).toHaveURL(advanced)
+      await expect(page.getByRole('heading', { level: 1, name: 'Avancé' })).toBeVisible()
 
-      await fold.getByText('Avancé', { exact: true }).click()
-      await expect(fold).toHaveAttribute('open', /.*/)
+      await page.getByRole('button', { name: 'Retour' }).click()
+      await expect(page).toHaveURL(path)
     })
   }
 })

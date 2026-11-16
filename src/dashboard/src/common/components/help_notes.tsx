@@ -26,8 +26,8 @@ export function HelpQuestion({
 }) {
   return (
     <details open={defaultOpen}>
-      <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-md px-1 py-2 text-body text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset [&::-webkit-details-marker]:hidden">
-        <CircleHelp className="size-4 shrink-0" aria-hidden="true" />
+      <summary className="flex min-h-11 cursor-pointer list-none items-start gap-2 rounded-md px-1 py-2.75 text-body text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset [&::-webkit-details-marker]:hidden">
+        <CircleHelp className="mt-0.75 size-4 shrink-0" aria-hidden="true" />
         <span className="min-w-0">{title}</span>
       </summary>
       <div className="space-y-3 pr-1 pb-3 pl-7 text-body text-muted-foreground">{children}</div>

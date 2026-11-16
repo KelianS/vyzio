@@ -59,6 +59,13 @@ function channelAt(slug: string) {
   return { path: '/settings/notifications/:channel', url: `/settings/notifications/${slug}` }
 }
 
+function advancedAt(slug: string) {
+  return {
+    path: '/settings/notifications/:channel/advanced',
+    url: `/settings/notifications/${slug}/advanced`,
+  }
+}
+
 // What every channel page reads, with the channel's settings given.
 function channelRoutes(config = makeChannelConfig()) {
   return { [SETTINGS]: ok(config), [LABELS]: ok([]), [LOG]: ok([]), [RULES]: ok([]) }
@@ -231,7 +238,7 @@ describe('NotificationChannelView', () => {
     })
 
     // Act
-    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+    renderScreen(<NotificationChannelView advanced />, advancedAt('telegram'))
 
     // Assert
     expect(await screen.findByText('Chat not found')).toBeInTheDocument()
@@ -401,8 +408,8 @@ describe('NotificationChannelView', () => {
     expect(screen.getByRole('button', { name: 'Relier une conversation' })).toBeInTheDocument()
     expect(screen.queryByText('N’écoute plus')).not.toBeInTheDocument()
     expect(screen.queryByText(/ce qui se passe chez vous/)).not.toBeInTheDocument()
-    // The two left belong to the sent log and the command journal, under Avancé.
-    expect(screen.getAllByRole('button', { name: 'Actualiser' })).toHaveLength(2)
+    // The sent log and the command journal, each with its own, live on the Avancé page.
+    expect(screen.queryByRole('button', { name: 'Actualiser' })).not.toBeInTheDocument()
   })
 
   it('onOpen_ShouldKeepQuietAboutTheListening_WhenItCannotBeReadAndNoConversationIsLinked', async () => {
@@ -524,7 +531,7 @@ describe('NotificationChannelView', () => {
     fakeNetwork({ ...channelRoutes(), [LOG]: failure(500) })
 
     // Act
-    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+    renderScreen(<NotificationChannelView advanced />, advancedAt('telegram'))
 
     // Assert
     expect(
@@ -536,7 +543,7 @@ describe('NotificationChannelView', () => {
   it('onRetryLog_ShouldShowWhatWasSent_WhenTheSecondReadSucceeds', async () => {
     // Arrange
     const network = fakeNetwork({ ...channelRoutes(), [LOG]: failure(500) })
-    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+    renderScreen(<NotificationChannelView advanced />, advancedAt('telegram'))
     await screen.findByText(/GET \/api\/notifications\/log\/telegram · 500/)
     network.answer(LOG, ok([FAILED_SEND]))
 
@@ -550,7 +557,7 @@ describe('NotificationChannelView', () => {
   it('onRefreshLog_ShouldKeepWhatWasSentAndSayWhy_WhenTheRereadFails', async () => {
     // Arrange
     const network = fakeNetwork({ ...channelRoutes(), [LOG]: ok([FAILED_SEND]) })
-    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+    renderScreen(<NotificationChannelView advanced />, advancedAt('telegram'))
     const sent = await screen.findByText('Chat not found')
     network.answer(LOG, failure(500))
 
@@ -568,7 +575,7 @@ describe('NotificationChannelView', () => {
     fakeNetwork({ ...commandRoutes(), [COMMANDS]: failure(500) })
 
     // Act
-    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+    renderScreen(<NotificationChannelView advanced />, advancedAt('telegram'))
 
     // Assert
     expect(
@@ -580,7 +587,7 @@ describe('NotificationChannelView', () => {
   it('onRetryJournal_ShouldShowTheCommands_WhenTheSecondReadSucceeds', async () => {
     // Arrange
     const network = fakeNetwork({ ...commandRoutes(), [COMMANDS]: failure(500) })
-    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+    renderScreen(<NotificationChannelView advanced />, advancedAt('telegram'))
     await screen.findByText(/GET \/api\/notifications\/settings\/telegram\/commands · 500/)
     network.answer(COMMANDS, ok([]))
 
@@ -594,7 +601,7 @@ describe('NotificationChannelView', () => {
   it('onRefreshJournal_ShouldKeepTheCommandsAndSayWhy_WhenTheRereadFails', async () => {
     // Arrange
     const network = fakeNetwork({ ...commandRoutes(), [COMMANDS]: ok([ANSWERED]) })
-    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+    renderScreen(<NotificationChannelView advanced />, advancedAt('telegram'))
     const command = await screen.findByText('/etat')
     network.answer(COMMANDS, failure(500))
 
