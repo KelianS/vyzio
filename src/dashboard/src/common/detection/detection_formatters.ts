@@ -62,10 +62,13 @@ export function formatClipDay(occurredAt: string, now: Date): string {
 const NBSP = '\u00a0'
 
 /**
- * A clip's line under its name, the same on every screen: its camera when the list mixes them, its
- * hour, and how sure the engine was when it said.
+ * A clip's line under its name: its camera when the screen mixes them, its hour, and how sure the
+ * engine was when it said, unless a row of a mixed list must stay on one line.
  */
-export function formatClipDetail(event: DetectionEvent, withCamera = false): string {
+export function formatClipDetail(
+  event: DetectionEvent,
+  { camera = false, howSure = true }: { camera?: boolean; howSure?: boolean } = {},
+): string {
   const date = new Date(event.occurredAt)
   const minutes = date.getMinutes()
   // Non-breaking inside each part: a narrow row wraps between them, never inside « 92 % ».
@@ -73,9 +76,9 @@ export function formatClipDetail(event: DetectionEvent, withCamera = false): str
     .filter((part) => part !== null)
     .join(NBSP)
   return [
-    withCamera ? event.cameraName : null,
+    camera ? event.cameraName : null,
     hour,
-    event.confidence !== null
+    howSure && event.confidence !== null
       ? ['sûr', 'à', Math.round(event.confidence * 100), '%'].join(NBSP)
       : null,
   ]

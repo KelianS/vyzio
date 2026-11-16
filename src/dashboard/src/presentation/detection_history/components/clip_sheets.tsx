@@ -47,7 +47,7 @@ export function ClipActionsSheet({
   return (
     <Sheet
       title={formatEventTitle(event, labels)}
-      effect={formatClipDetail(event, true)}
+      effect={formatClipDetail(event, { camera: true })}
       options={options}
       onClose={onClose}
     />

@@ -80,7 +80,7 @@ export function ClipPlayer({
       <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-picture/80 to-transparent px-3 pt-8 pb-3">
         <p className="text-row font-semibold">{formatEventTitle(event, labels)}</p>
         <p className="text-label font-semibold text-ink-muted">
-          {formatClipDetail(event, withCamera)}
+          {formatClipDetail(event, { camera: withCamera })}
         </p>
       </div>
       {children}

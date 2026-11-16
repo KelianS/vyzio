@@ -80,7 +80,8 @@ export function ClipList({
                       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                         <span className="truncate text-row font-semibold">{title}</span>
                         <span className="text-body text-muted-foreground">
-                          {formatClipDetail(event, withCamera)}
+                          {/* A row of a mixed list leaves how sure to the player, so it stays on one line. */}
+                          {formatClipDetail(event, { camera: withCamera, howSure: !withCamera })}
                         </span>
                       </span>
                     </button>

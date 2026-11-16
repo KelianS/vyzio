@@ -87,7 +87,7 @@ export function DetectionHistoryView() {
   const playing = playingClip(uido)
 
   return (
-    <main className="flex flex-col gap-5 py-4">
+    <main className="flex flex-col gap-5">
       <PageHeader
         title="Détections"
         action={

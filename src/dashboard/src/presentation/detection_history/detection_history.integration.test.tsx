@@ -70,7 +70,7 @@ describe('DetectionHistoryView', () => {
     expect(screen.queryByRole('button', { name: 'Voir plus ancien' })).not.toBeInTheDocument()
   })
 
-  it('ClipList_ShouldSayTheCameraHourAndCertainty_WhenTheListMixesCameras', async () => {
+  it('ClipList_ShouldSayTheCameraAndHourInTheRowAndHowSureInThePlayer_WhenTheListMixesCameras', async () => {
     // Arrange
     fakeNetwork({
       ...reference,
@@ -85,8 +85,11 @@ describe('DetectionHistoryView', () => {
 
     // Assert
     expect(
-      await screen.findByRole('button', { name: /Front Door · 17\sh\s46 · sûr\sà\s92\s%/ }),
+      await screen.findByRole('button', { name: /Front Door · 17\sh\s46$/ }),
     ).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: /^Détection :/ })).toHaveTextContent(
+      /Front Door · 17\sh\s46 · sûr\sà\s92\s%/,
+    )
   })
 
   it('onPlay_ShouldPlayTheTappedClipInThePlayer_WhenTheUserTapsItsRow', async () => {
