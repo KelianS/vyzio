@@ -3,13 +3,17 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type ReactNode,
 } from 'react'
 import { CheckCircle2, Info, RotateCw, X, XCircle } from 'lucide-react'
+import { motionValue } from 'motion/react'
 import { cn } from '../ui/utils'
-import { whenStill } from './layer_exit'
+import { projection, rubberBand, useFingerDrag } from '../motion/gesture'
+import { paintOn, translation } from '../motion/ghost'
+import { prefersReducedMotion, springTo } from '../motion/springs'
 import { PressableControl } from './pressable'
 import { SecondaryButton } from './secondary_button'
 
@@ -100,6 +104,9 @@ const TONE_ICON_CLASS: Record<ToastTone, string> = {
   info: 'text-ink-muted',
 }
 
+// How far below its place a toast starts and ends, in its own heights: out of sight under the screen's edge.
+const OUT_OF_SIGHT = 1.6
+
 function ToastChip({
   item,
   onDismiss,
@@ -109,36 +116,106 @@ function ToastChip({
   onDismiss: (id: number) => void
   onGone: (id: number) => void
 }) {
-  const chipRef = useRef<HTMLDivElement>(null)
+  const [chip, setChip] = useState<HTMLDivElement | null>(null)
+  const [y] = useState(() => motionValue(0))
+  const [opacity] = useState(() => motionValue(1))
+  const [held, setHeld] = useState(false)
+  const grabbed = useRef(0)
+  const flung = useRef<number | undefined>(undefined)
+  const shown = useRef(false)
   // A diagnostic may have to be photographed (UI-03), an action needs the time to be taken.
   const closesItself = item.diagnostic === undefined && item.action === undefined
   useEffect(() => {
-    if (!closesItself || item.leaving) return
+    if (!closesItself || item.leaving || held) return
     const timer = setTimeout(() => onDismiss(item.id), 4000)
     return () => clearTimeout(timer)
-  }, [item.id, item.leaving, onDismiss, closesItself])
+  }, [item.id, item.leaving, onDismiss, closesItself, held])
 
-  // It leaves the page once its fade has played.
-  useEffect(() => {
-    if (!item.leaving) return
-    return whenStill(chipRef.current, () => onGone(item.id))
-  }, [item.id, item.leaving, onGone])
+  useLayoutEffect(() => {
+    if (!chip) return
+    const height = () => Math.max(1, chip.offsetHeight)
+    return paintOn([y, opacity], () => {
+      chip.style.transform = translation(0, y.get())
+      const lowered = Math.min(1, Math.max(0, y.get() / (height() * OUT_OF_SIGHT)))
+      chip.style.opacity = String(opacity.get() * (1 - lowered))
+    })
+  }, [chip, y, opacity])
+
+  // It rises at the bottom, leaves downwards, and comes back when raised again while it leaves.
+  useLayoutEffect(() => {
+    if (!chip) return
+    const reduced = prefersReducedMotion()
+    const away = chip.offsetHeight * OUT_OF_SIGHT
+    if (item.leaving) {
+      const velocity = flung.current
+      flung.current = undefined
+      const leaving = reduced
+        ? springTo(opacity, 0, 'departure')
+        : springTo(y, Math.max(away, y.get()), 'departure', velocity)
+      let gone = false
+      void leaving.then(() => {
+        if (!gone) onGone(item.id)
+      })
+      return () => {
+        gone = true
+      }
+    }
+    // Under reduced motion it fades in by the stylesheet, and only a raised-again toast is brought back here.
+    if (reduced) {
+      if (shown.current) void springTo(opacity, 1, 'arrival')
+    } else {
+      opacity.jump(1)
+      if (!shown.current) y.jump(Math.max(1, away))
+      void springTo(y, 0, 'arrival')
+    }
+    shown.current = true
+  }, [chip, item.leaving, item.id, onGone, y, opacity])
+
+  const drag = useFingerDrag('y', {
+    // Only its top edge: a scroll or a selection starting on the text never closes it (UI-03).
+    canStart: (target) =>
+      !item.leaving && target instanceof Element && target.closest('[data-toast-handle]') !== null,
+    onStart: () => {
+      setHeld(true)
+      y.stop()
+      grabbed.current = y.get()
+    },
+    onMove: (offset) => {
+      const next = grabbed.current + offset
+      const height = Math.max(1, chip?.offsetHeight ?? 1)
+      // Upwards it has nowhere to go: it stretches, never under reduced motion.
+      y.set(next >= 0 ? next : prefersReducedMotion() ? 0 : rubberBand(next, height))
+    },
+    onEnd: (_offset, velocity) => {
+      setHeld(false)
+      const height = Math.max(1, chip?.offsetHeight ?? 1)
+      // A deliberate gesture closes it like its close button (UI-03).
+      if (y.get() + projection(velocity) > height / 2) {
+        flung.current = velocity
+        onDismiss(item.id)
+      } else void springTo(y, 0, 'arrival', velocity)
+    },
+  })
 
   const Icon = TONE_ICON[item.tone]
 
   return (
     <div
-      ref={chipRef}
+      ref={setChip}
       role="status"
+      {...drag}
       className={cn(
-        'pointer-events-auto flex min-w-60 max-w-sm items-start gap-3 rounded-card bg-picture px-4 py-3 text-ink-muted',
-        // Transitions, not keyframes: a toast raised mid-fade picks up from where it stands.
-        'transition-[opacity,translate] starting:opacity-0 motion-safe:starting:translate-y-2',
-        item.leaving
-          ? 'pointer-events-none opacity-0 duration-(--duration-short)'
-          : 'duration-(--duration-long)',
+        'pointer-events-auto relative flex min-w-60 max-w-sm items-start gap-3 rounded-card bg-picture px-4 py-3 text-ink-muted',
+        'motion-reduce:transition-opacity motion-reduce:starting:opacity-0',
+        item.leaving && 'pointer-events-none',
       )}
     >
+      {/* The edge a finger pulls it down by: finger-sized, over its top padding and the gap above it. */}
+      <span
+        data-toast-handle
+        aria-hidden="true"
+        className="absolute inset-x-0 -top-2 h-5 touch-none"
+      />
       <Icon
         className={cn('mt-0.5 size-4 shrink-0', TONE_ICON_CLASS[item.tone])}
         aria-hidden="true"

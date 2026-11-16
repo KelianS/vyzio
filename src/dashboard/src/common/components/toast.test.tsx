@@ -21,7 +21,6 @@ function showToast(tone: ToastTone, diagnostic?: string) {
   act(() => screen.getByRole('button', { name: 'go' }).click())
 }
 
-/** jsdom plays no animation: the toast's fade is stood in for by one that ends with `finished`. */
 function showToastWithRetry(onRetry: () => void) {
   function RetryTrigger() {
     const { toast } = useToast()
@@ -47,19 +46,9 @@ function showToastWithRetry(onRetry: () => void) {
   act(() => screen.getByRole('button', { name: 'go' }).click())
 }
 
-function playFadesUntil(finished: Promise<unknown>) {
-  Object.defineProperty(Element.prototype, 'getAnimations', {
-    configurable: true,
-    value: () => [{ finished }],
-  })
-}
-
 describe('Toast', () => {
   beforeEach(() => vi.useFakeTimers())
-  afterEach(() => {
-    vi.useRealTimers()
-    Reflect.deleteProperty(Element.prototype, 'getAnimations')
-  })
+  afterEach(() => vi.useRealTimers())
 
   it('toast_ShouldShowTheDiagnosticLineUnderTheSentence_WhenAnErrorCarriesOne', () => {
     // Arrange & Act
@@ -106,54 +95,17 @@ describe('Toast', () => {
     expect(onRetry).toHaveBeenCalledOnce()
   })
 
-  it('toast_ShouldCloseByItself_WhenItCarriesNoDiagnosticLine', () => {
+  it('toast_ShouldCloseByItself_WhenItCarriesNoDiagnosticLine', async () => {
     // Arrange
     showToast('error')
 
     // Act
     act(() => vi.advanceTimersByTime(4_000))
+    // Its leaving lands on the next frames.
+    await act(() => vi.advanceTimersByTimeAsync(100))
 
     // Assert
     expect(screen.queryByText('La caméra a refusé la commande')).not.toBeInTheDocument()
-  })
-
-  it('toast_ShouldStayOnScreenWhileItFadesOut_WhenTheUserClosesIt', () => {
-    // Arrange
-    playFadesUntil(new Promise(() => undefined))
-    showToast('error', 'GET /api/hub · 500')
-
-    // Act
-    act(() => screen.getByRole('button', { name: 'Fermer' }).click())
-
-    // Assert
-    expect(screen.getByText('La caméra a refusé la commande')).toBeInTheDocument()
-  })
-
-  it('toast_ShouldLeaveTheScreen_WhenItsFadeOutHasPlayed', async () => {
-    // Arrange
-    let endFade = () => {}
-    playFadesUntil(new Promise<void>((resolve) => (endFade = resolve)))
-    showToast('error', 'GET /api/hub · 500')
-    act(() => screen.getByRole('button', { name: 'Fermer' }).click())
-
-    // Act
-    await act(async () => endFade())
-
-    // Assert
-    expect(screen.queryByText('La caméra a refusé la commande')).not.toBeInTheDocument()
-  })
-
-  it('toast_ShouldComeBackOnce_WhenTheSameFailureIsRaisedWhileItFadesOut', () => {
-    // Arrange
-    playFadesUntil(new Promise(() => undefined))
-    showToast('error', 'GET /api/hub · 500')
-    act(() => screen.getByRole('button', { name: 'Fermer' }).click())
-
-    // Act
-    act(() => screen.getByRole('button', { name: 'go' }).click())
-
-    // Assert
-    expect(screen.getAllByText('La caméra a refusé la commande')).toHaveLength(1)
   })
 
   it('toast_ShouldShowItOnce_WhenTheSameFailureIsRaisedTwice', () => {

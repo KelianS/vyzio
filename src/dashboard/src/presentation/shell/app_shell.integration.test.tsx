@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router'
@@ -12,6 +12,8 @@ import { AppContainerProvider } from '../../infrastructure/providers/app_contain
 import { ToastProvider } from '../../common/components/toast'
 import { PageHeader } from '../../common/components/page_header'
 import type { SystemStats } from '../../domain/entities/system_stats.entity'
+import { holdStill, layOut, touchDown, touchMove, touchUp } from '../../testing/finger'
+import { withFullMotion } from '../../testing/full_motion'
 import { AddCameraView } from '../cameras/add_camera.component'
 import { AppShell } from './app_shell.component'
 
@@ -449,5 +451,170 @@ describe('AppShell', () => {
     expect(
       within(screen.getByRole('list', { name: 'Alertes' })).getByText('Jardin ne répond plus'),
     ).toBeVisible()
+  })
+})
+
+describe('AppShell motion', () => {
+  /** The shell open on the home, its reads answered. */
+  async function openTheHome() {
+    fakeNetwork({ 'GET /api/cameras': ok([]), 'GET /api/system/stats': ok(stats()) })
+    const router = openShellAt('/')
+    await screen.findByText('Accueil')
+    return router
+  }
+
+  /** The page under the bar, which slides; the bar is the banner above it. */
+  function stage() {
+    return screen.getByRole('banner').nextElementSibling as HTMLElement
+  }
+
+  /** How far a `translate3d` moves sideways, in pixels. */
+  function shiftOf(transform: string): number {
+    return Number(/translate3d\((-?[\d.]+)px/.exec(transform)?.[1] ?? Number.NaN)
+  }
+
+  function copiesLeftBehind() {
+    return [...document.body.children]
+      .filter((node): node is HTMLElement => node instanceof HTMLElement)
+      .filter((node) => node.getAttribute('aria-hidden') === 'true')
+  }
+
+  it('TopBar_ShouldStayInPlaceWhileOnlyItsContentsMoveVertically_WhenAPageOpens', async () => {
+    // Arrange
+    withFullMotion()
+    const router = await openTheHome()
+
+    // Act
+    await act(() => router.navigate('/detections'))
+
+    // Assert
+    const bar = screen.getByRole('banner')
+    expect(bar.style.transform).toBe('')
+    const contents = screen
+      .getByRole('button', { name: 'Retour' })
+      .closest('[style]') as HTMLElement
+    expect(contents.style.transform).toBe('translate3d(0px, 16px, 0px)')
+    expect(stage().style.transform).toBe(`translate3d(${window.innerWidth}px, 0px, 0px)`)
+    expect(copiesLeftBehind().some((copy) => copy.textContent?.includes('Vyzio'))).toBe(true)
+    await waitFor(() => expect(stage().style.transform).toBe(''))
+    expect(contents.style.transform).toBe('')
+  })
+
+  it('PageTransition_ShouldGoBackFromWhereThePageStands_WhenBackIsTappedWhileItSlidesIn', async () => {
+    // Arrange
+    withFullMotion()
+    const router = await openTheHome()
+    await act(() => router.navigate('/detections'))
+    await new Promise((resolve) => setTimeout(resolve, 80))
+    const midway = stage().style.transform
+
+    // Act
+    await act(() => router.navigate(-1))
+
+    // Assert
+    const leaving = copiesLeftBehind().find((copy) => copy.style.zIndex === '30')
+    const from = shiftOf(leaving?.style.transform ?? '')
+    // A frame or two may pass between the two reads; a jump would land at an end.
+    expect(shiftOf(midway)).toBeGreaterThan(0)
+    expect(Math.abs(from - shiftOf(midway))).toBeLessThan(window.innerWidth / 10)
+  })
+
+  it('PageTransition_ShouldOnlyFadeTheNewPageIn_WhenThePhoneAsksForLessMotion', async () => {
+    // Arrange
+    const router = await openTheHome()
+
+    // Act
+    await act(() => router.navigate('/detections'))
+
+    // Assert
+    expect(stage().style.transform).toBe('')
+    expect(stage().style.opacity).toBe('0')
+    expect(copiesLeftBehind()).toHaveLength(0)
+    await waitFor(() => expect(stage().style.opacity).toBe(''))
+  })
+
+  describe('a swiped alert', () => {
+    let restoreLayout = () => {}
+    beforeEach(() => {
+      restoreLayout = layOut(320, 60)
+    })
+    afterEach(() => restoreLayout())
+
+    async function theOfflineAlert() {
+      fakeNetwork({
+        'GET /api/cameras': ok([makeCamera({ displayName: 'Jardin', status: 'offline' })]),
+        'GET /api/system/stats': ok(stats()),
+      })
+      openShellAt('/')
+      const alerts = await screen.findByRole('list', { name: 'Alertes' })
+      return within(alerts).getByText('Jardin ne répond plus').closest('li') as HTMLElement
+    }
+
+    it('BarAlert_ShouldFollowTheFingerOneToOne_WhenSwipedSideways', async () => {
+      // Arrange
+      const alert = await theOfflineAlert()
+
+      // Act
+      touchDown(alert, 100, 20)
+      touchMove(alert, 115, 20)
+      touchMove(alert, 175, 20)
+
+      // Assert
+      expect(alert.style.transform).toBe('translate3d(60px, 0px, 0px)')
+    })
+
+    it('BarAlert_ShouldStayAsideOnThisDevice_WhenAFlickThrowsItAway', async () => {
+      // Arrange
+      const alert = await theOfflineAlert()
+
+      // Act
+      touchDown(alert, 100, 20)
+      touchMove(alert, 115, 20)
+      touchMove(alert, 145, 20)
+      touchUp(alert, 145, 20)
+
+      // Assert
+      await waitFor(() =>
+        expect(screen.queryByRole('list', { name: 'Alertes' })).not.toBeInTheDocument(),
+      )
+      expect(localStorage.getItem('vyzio.bar-alerts.dismissed')).toContain('offline')
+    })
+
+    it('BarAlert_ShouldComeBack_WhenReleasedSlowlyBeforeItIsThrownFarEnough', async () => {
+      // Arrange
+      const alert = await theOfflineAlert()
+      touchDown(alert, 100, 20)
+      touchMove(alert, 115, 20)
+      touchMove(alert, 175, 20)
+      await holdStill()
+
+      // Act
+      touchUp(alert, 175, 20)
+
+      // Assert
+      await waitFor(() => expect(alert.style.transform).toBe(''))
+      expect(screen.getByRole('list', { name: 'Alertes' })).toBeInTheDocument()
+    })
+
+    it('BarAlert_ShouldNotMove_WhenVyzioNoLongerAnswers', async () => {
+      // Arrange
+      fakeNetwork({ 'GET /api/cameras': ok([]), 'GET /api/system/stats': ok(stats()) })
+      openShellAt('/')
+      await waitFor(() => expect(useRootStore.getState().systemStats).not.toBeNull())
+      vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')))
+      await act(() => useRootStore.getState().loadSystemStats(appContainer.hub.getSystemStats))
+      const alerts = await screen.findByRole('list', { name: 'Alertes' })
+      const alert = within(alerts).getByText('Vyzio ne répond plus').closest('li') as HTMLElement
+
+      // Act
+      touchDown(alert, 100, 20)
+      touchMove(alert, 115, 20)
+      touchMove(alert, 300, 20)
+      touchUp(alert, 300, 20)
+
+      // Assert
+      expect(alert.style.transform).toBe('')
+      expect(within(alerts).getByText('Vyzio ne répond plus')).toBeVisible()
+    })
   })
 })

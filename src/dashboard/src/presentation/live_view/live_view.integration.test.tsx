@@ -16,6 +16,7 @@ import { ToastProvider } from '../../common/components/toast'
 import { AppShell } from '../shell/app_shell.component'
 import { LIVE_VIEW_ROUTE } from './live_view.route'
 import { OrientationControl } from '../../common/orientation/orientation_control'
+import { touchDown, touchMove, touchUp } from '../../testing/finger'
 
 const PRESETS = 'GET /api/cameras/camera-1/ptz/presets'
 const START = 'POST /api/cameras/camera-1/ptz/move/start'
@@ -1719,5 +1720,47 @@ describe('LiveView layouts', () => {
 
     // Assert
     expect(exit).toHaveBeenCalled()
+  })
+})
+
+describe('LiveView tabs under the finger', () => {
+  it('ViewTabs_ShouldOpenDetections_WhenAFingerFlicksTheControlsAside', async () => {
+    // Arrange
+    fakeNetwork({ [PRESETS]: presetsRead() })
+    renderLiveView()
+    const panel = await screen.findByRole('tabpanel')
+
+    // Act
+    touchDown(panel, 300, 100)
+    touchMove(panel, 285, 100)
+    touchMove(panel, 230, 100)
+    touchUp(panel, 230, 100)
+
+    // Assert
+    await waitFor(() =>
+      expect(screen.getByRole('tab', { name: 'Détections' })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      ),
+    )
+  })
+
+  it('ViewTabs_ShouldStayStillAndTheCameraStop_WhenADragStartsOnTheSteeringPad', async () => {
+    // Arrange
+    const network = fakeNetwork({ [PRESETS]: presetsRead(), [START]: ok(), [STOP]: ok() })
+    renderLiveView()
+    const up = await screen.findByTitle('Haut')
+    const panel = screen.getByRole('tabpanel')
+
+    // Act
+    touchDown(up, 300, 100)
+    touchMove(up, 285, 100)
+    touchMove(up, 60, 100)
+    touchUp(up, 60, 100)
+
+    // Assert
+    await sentWithin(network, STOP)
+    expect(screen.getByRole('tab', { name: 'Contrôles' })).toHaveAttribute('aria-selected', 'true')
+    expect(panel.style.transform).toBe('')
   })
 })

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Link } from 'react-router'
@@ -8,6 +8,9 @@ import { failure, fakeNetwork, ok } from '../../testing/fake_network'
 import { renderScreen } from '../../testing/render_screen'
 import { pollTheSurveillance } from '../../testing/shared_reads'
 import { NavigationGuard } from './navigation_guard.component'
+import { TabBar } from '../../common/components/tab_bar'
+import { layOut, touchDown, touchMove, touchUp } from '../../testing/finger'
+import { withFullMotion } from '../../testing/full_motion'
 
 const STATS = 'GET /api/system/stats'
 const APPLY = 'POST /api/cameras/apply-configuration'
@@ -184,5 +187,80 @@ describe('NavigationGuard', () => {
     expect(dialog.getByText(/Vyzio a rencontré une erreur/)).toBeInTheDocument()
     expect(dialog.getByText(/POST \/api\/cameras\/apply-configuration · 500/)).toBeVisible()
     expect(dialog.getByRole('button', { name: 'Réessayer' })).toBeInTheDocument()
+  })
+})
+
+describe('NavigationGuard over the tabs of a camera', () => {
+  const CAMERA = '/settings/cameras/camera-1'
+  let restoreLayout = () => {}
+  beforeEach(() => {
+    withFullMotion()
+    restoreLayout = layOut(360, 44)
+  })
+  afterEach(() => restoreLayout())
+
+  /** A camera's settings open on Connexion with an edit not saved yet. */
+  function editTheConnection() {
+    fakeNetwork({})
+    const { router } = renderScreen(
+      <>
+        <NavigationGuard />
+        <TabBar
+          label="Réglages de la caméra"
+          tabs={[
+            { to: `${CAMERA}/connection`, label: 'Connexion' },
+            { to: `${CAMERA}/privacy`, label: 'Vie privée' },
+          ]}
+        >
+          <p>Réglages de connexion</p>
+        </TabBar>
+      </>,
+      { path: `${CAMERA}/:tab`, url: `${CAMERA}/connection` },
+    )
+    act(() => useRootStore.getState().setUnsavedChanges(true))
+    const content = screen.getByText('Réglages de connexion').parentElement as HTMLElement
+    return { router, content }
+  }
+
+  async function stayOnThePage() {
+    await userEvent.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', {
+        name: 'Rester sur la page',
+      }),
+    )
+  }
+
+  function copiesLeftOnThePage() {
+    return document.body.querySelectorAll(':scope > [inert]')
+  }
+
+  it('TabBar_ShouldLeaveThePageAsItWas_WhenASwipedTabChangeIsRefusedToKeepTheEdits', async () => {
+    // Arrange
+    const { router, content } = editTheConnection()
+    touchDown(content, 300, 100)
+    touchMove(content, 285, 100)
+    touchMove(content, 240, 100)
+    touchUp(content, 240, 100)
+
+    // Act
+    await stayOnThePage()
+
+    // Assert
+    expect(router.state.location.pathname).toBe(`${CAMERA}/connection`)
+    await waitFor(() => expect(content.style.transform).toBe(''))
+    expect(copiesLeftOnThePage()).toHaveLength(0)
+  })
+
+  it('TabBar_ShouldLeaveNoCopyOverTheForm_WhenATappedTabChangeIsRefusedToKeepTheEdits', async () => {
+    // Arrange
+    const { router } = editTheConnection()
+    await userEvent.click(screen.getByRole('link', { name: 'Vie privée' }))
+
+    // Act
+    await stayOnThePage()
+
+    // Assert
+    expect(router.state.location.pathname).toBe(`${CAMERA}/connection`)
+    await waitFor(() => expect(copiesLeftOnThePage()).toHaveLength(0))
   })
 })

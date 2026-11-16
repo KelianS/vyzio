@@ -241,8 +241,9 @@ body {
 }
 
 /* ---------------------------------------------------------------------------
-   Motion (DESIGN SYSTEM § Motion): one curve, three durations, one press, and
-   what remains when the phone asks for less motion.
+   Motion (DESIGN SYSTEM § Motion): the springs live in common/motion; what the
+   primitives animate themselves (small layers, a confirmation) keeps one calm
+   curve, and what remains when the phone asks for less motion.
    --------------------------------------------------------------------------- */
 
 :root {
@@ -274,20 +275,15 @@ body {
   }
 }
 
-/* A control shrinks while pressed, a dim instead under reduced motion: the button primitive and every other control, by their slot. */
+/* A control sinks on a spring while pressed (common/motion/press.ts), a dim instead under reduced motion: by their slot. */
 [data-slot='button'],
 [data-slot='pressable-control'] {
-  transition-property: color, background-color, border-color, box-shadow, opacity, scale;
+  transition-property: color, background-color, border-color, box-shadow, opacity;
   transition-duration: var(--duration-press);
   transition-timing-function: var(--ease-calm);
 
-  &:not(:disabled):active {
-    scale: 0.97;
-  }
-
   @media (prefers-reduced-motion: reduce) {
     &:not(:disabled):active {
-      scale: none;
       opacity: 0.8;
     }
   }
