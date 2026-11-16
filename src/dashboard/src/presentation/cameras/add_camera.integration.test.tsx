@@ -162,7 +162,7 @@ describe('AddCameraView', () => {
     )
   })
 
-  it('onCreate_ShouldSayWhyAndForSupportAndStay_WhenTheCameraCannotBeCreated', async () => {
+  it('onCreate_ShouldSayWhyAndForSupportInAToastAndStay_WhenTheCameraCannotBeCreated', async () => {
     // Arrange
     fakeNetwork({ 'POST /api/cameras': failure(400, 'invalid_camera') })
     const { router } = renderScreen(<AddCameraView />)
@@ -172,9 +172,10 @@ describe('AddCameraView', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Ajouter' }))
 
     // Assert
-    const alert = await screen.findByRole('alert')
-    expect(alert).toHaveTextContent('La demande n’a pas abouti')
-    expect(alert).toHaveTextContent('POST /api/cameras · 400')
+    const toasts = screen.getByRole('region', { name: 'Notifications' })
+    expect(await within(toasts).findByText(/La demande n’a pas abouti/)).toBeInTheDocument()
+    expect(within(toasts).getByText(/POST \/api\/cameras · 400/)).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     expect(router.state.location.pathname).toBe('/')
     expect(screen.getByRole('button', { name: 'Ajouter' })).toBeEnabled()
   })
@@ -252,6 +253,29 @@ describe('AddCameraView', () => {
       )
     },
   )
+
+  it('onVendorAssistanceNeeded_ShouldOfferToReadTheSheetAgainWhereItWouldBe_WhenItsReadFails', async () => {
+    // Arrange
+    const network = fakeNetwork({
+      ...rangesToSweep,
+      'POST /api/cameras/discovery': ok([{ ...answeringNoStream, streamPath: '/onvif1' }]),
+      'POST /api/cameras/vendor-assistance': failure(500),
+    })
+    renderScreen(<AddCameraView />)
+    await searchTheNetwork()
+    await userEvent.click(await screen.findByRole('button', { name: /Boîtier ONVIF/ }))
+    await chooseHelpVendor('TP-Link Tapo')
+    network.answer(
+      'POST /api/cameras/vendor-assistance',
+      ok({ vendorFamily: 'tplink_tapo', markdown: 'Fiche TP-Link Tapo' }),
+    )
+
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: 'Réessayer' }))
+
+    // Assert
+    expect(await screen.findByText('Fiche TP-Link Tapo')).toBeInTheDocument()
+  })
 
   it('onHelpVendorChosen_ShouldShowThatVendorsNoticeAndNeverSendIt_WhenTheTypedAddressIsAdded', async () => {
     // Arrange
@@ -537,7 +561,7 @@ describe('AddCameraView', () => {
     expect(dialog).toHaveTextContent('GET /api/cameras/discovery/ranges · 500')
   })
 
-  it('onDiscover_ShouldSayWhyAndForSupport_WhenTheSearchFails', async () => {
+  it('onDiscover_ShouldSayWhyAndForSupportInAToast_WhenTheSearchFails', async () => {
     // Arrange
     fakeNetwork({ ...rangesToSweep, 'POST /api/cameras/discovery': failure(500) })
     renderScreen(<AddCameraView />)
@@ -549,8 +573,9 @@ describe('AddCameraView', () => {
     )
 
     // Assert
-    const alert = await screen.findByRole('alert')
-    expect(alert).toHaveTextContent('Vyzio a rencontré une erreur')
-    expect(alert).toHaveTextContent('POST /api/cameras/discovery · 500')
+    const toasts = screen.getByRole('region', { name: 'Notifications' })
+    expect(await within(toasts).findByText(/Vyzio a rencontré une erreur/)).toBeInTheDocument()
+    expect(within(toasts).getByText('POST /api/cameras/discovery · 500')).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 })

@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router'
 import { Keyboard, LoaderCircle, Radar, RotateCw, Video } from 'lucide-react'
 import { PageHeader } from '../../common/components/page_header'
 import { TechnicalDetails } from '../../common/components/technical_details'
-import { DiagnosticLine, ErrorMessage } from '../../common/components/error_message'
+import { ReadFailure } from '../../common/components/error_message'
 import { Button } from '../../common/ui/button'
 import { SecondaryButton } from '../../common/components/secondary_button'
 import { ConfirmModal } from '../../common/components/confirm_modal'
@@ -144,8 +144,6 @@ export function AddCameraView() {
             />
           </GroupedList>
 
-          <Feedback message={unclaimed.length > 0 ? null : uido.message} error={uido.error} />
-
           <GroupedList label="Elle n’apparaît pas ?">
             <GroupedRow
               icon={Keyboard}
@@ -177,7 +175,12 @@ export function AddCameraView() {
           <ConfirmModal
             title="Rechercher les caméras du réseau ?"
             body={searchWarning(uido.rangesToSweep)}
-            details={<RangesToSweep rangesToSweep={uido.rangesToSweep} />}
+            details={
+              <RangesToSweep
+                rangesToSweep={uido.rangesToSweep}
+                onRetry={() => void presenter.onSearchAsked()}
+              />
+            }
             confirmLabel="Rechercher"
             onConfirm={async () => {
               presenter.onConfirmScanSet(false)
@@ -250,7 +253,10 @@ export function AddCameraView() {
       ) : uido.vendorAssistance.loading ? (
         <Loading />
       ) : uido.vendorAssistance.error ? (
-        <ErrorMessage error={uido.vendorAssistance.error} className="text-row" />
+        <ReadFailure
+          error={uido.vendorAssistance.error}
+          onRetry={() => void presenter.onVendorAssistanceNeeded(vendorFamily)}
+        />
       ) : uido.vendorAssistance.markdown ? (
         <VendorNotice markdown={uido.vendorAssistance.markdown} />
       ) : null}
@@ -281,7 +287,6 @@ export function AddCameraView() {
                   {uido.refreshing ? 'Vérification…' : 'Réessayer maintenant'}
                 </SecondaryButton>
               </div>
-              <Feedback message={uido.message} error={uido.error} />
             </SettingsSection>
             <SettingsSection
               title="Aide de votre caméra"
@@ -303,8 +308,6 @@ export function AddCameraView() {
                 )}
               </HelpRow>
             </GroupedList>
-
-            <Feedback message={uido.message} error={uido.error} />
 
             <Button
               type="button"
@@ -340,16 +343,16 @@ const RANGE_SOURCE_LABELS: Record<DiscoveryRangeSource, string> = {
 }
 
 /** What the search confirmation names: every range it will sweep, with where each comes from (ADR-05). */
-function RangesToSweep({ rangesToSweep }: { rangesToSweep: AddCameraUido['rangesToSweep'] }) {
+function RangesToSweep({
+  rangesToSweep,
+  onRetry,
+}: {
+  rangesToSweep: AddCameraUido['rangesToSweep']
+  onRetry: () => void
+}) {
   if (rangesToSweep.loading)
     return <p className="text-body text-muted-foreground">Lecture des adresses à parcourir…</p>
-  if (rangesToSweep.error)
-    return (
-      <div className="text-body text-destructive">
-        <p>{rangesToSweep.error.message}</p>
-        {rangesToSweep.error.diagnostic && <DiagnosticLine text={rangesToSweep.error.diagnostic} />}
-      </div>
-    )
+  if (rangesToSweep.error) return <ReadFailure error={rangesToSweep.error} onRetry={onRetry} />
   if (rangesToSweep.ranges.length === 0) return null
   return (
     <ul className="list-disc pl-5 text-left text-body">
@@ -369,19 +372,6 @@ function searchWarning(rangesToSweep: AddCameraUido['rangesToSweep']): string {
   if (rangesToSweep.ranges.length === 0)
     return 'Aucune plage d’adresses n’est à parcourir : ouvrez Vyzio avec son adresse sur votre réseau (par exemple 192.168.1.10), ou saisissez l’adresse de la caméra.'
   return 'Vyzio va interroger chaque adresse de ces plages pour y chercher des caméras. La recherche prend 15 à 30 secondes.'
-}
-
-/** Last action's outcome: success or failure, never both. */
-function Feedback({ message, error }: { message: string | null; error: AddCameraUido['error'] }) {
-  if (error)
-    return (
-      <div role="alert" className="text-body text-destructive">
-        <p>{error.message}</p>
-        {error.diagnostic && <DiagnosticLine text={error.diagnostic} />}
-      </div>
-    )
-  if (message) return <p className="text-body text-success">{message}</p>
-  return null
 }
 
 /** Raw discovery facts for support (UI-02): only useful to diagnose a stuck add. */

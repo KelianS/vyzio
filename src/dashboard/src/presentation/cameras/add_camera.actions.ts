@@ -11,24 +11,18 @@ export type AddCameraAction =
   | { type: 'SELECTION_CLEARED' }
   | { type: 'CANDIDATE_SELECTED'; index: number; candidate: DiscoveredCamera }
   | { type: 'DISCOVERY_STARTED' }
-  | { type: 'DISCOVERY_SUCCEEDED'; candidates: DiscoveredCamera[]; message: string }
-  | { type: 'DISCOVERY_FAILED'; message: string; diagnostic?: string }
+  | { type: 'DISCOVERY_SUCCEEDED'; candidates: DiscoveredCamera[] }
+  | { type: 'DISCOVERY_FAILED' }
   | { type: 'REFRESH_CANDIDATE_STARTED' }
-  | {
-      type: 'REFRESH_CANDIDATE_SUCCEEDED'
-      index: number
-      candidate: DiscoveredCamera
-      message: string
-    }
-  | { type: 'REFRESH_CANDIDATE_NO_CHANGE'; message: string }
-  | { type: 'REFRESH_CANDIDATE_FAILED'; message: string; diagnostic?: string }
+  | { type: 'REFRESH_CANDIDATE_SUCCEEDED'; index: number; candidate: DiscoveredCamera }
+  | { type: 'REFRESH_CANDIDATE_FINISHED' }
   | { type: 'CREATE_STARTED' }
   | { type: 'CREATE_SUCCEEDED' }
-  | { type: 'CREATE_FAILED'; message: string; diagnostic?: string }
+  | { type: 'CREATE_FAILED' }
   | { type: 'CONFIRM_SCAN_SET'; value: boolean }
   | { type: 'RANGES_TO_SWEEP_STARTED' }
   | { type: 'RANGES_TO_SWEEP_SUCCEEDED'; ranges: DiscoveryRange[] }
-  | { type: 'RANGES_TO_SWEEP_FAILED'; message: string; diagnostic?: string }
+  | { type: 'RANGES_TO_SWEEP_FAILED'; error: AppError }
   | { type: 'HELP_VENDOR_CHOSEN'; vendorFamily: string | null }
   | { type: 'VENDOR_ASSISTANCE_STARTED' }
   | { type: 'VENDOR_ASSISTANCE_SUCCEEDED'; markdown: string | null }
