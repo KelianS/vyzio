@@ -47,6 +47,10 @@ of the camera itself; the engine stop never depends on the camera's answer.
   nothing to the engine.
 - **A privacy range is a scheduled rule** of ADR-15. The source of the activation, by hand or by a
   range, is persisted with the state, so a range never undoes a manual act (PRIV-07).
+- **A manual cut may carry an end**, persisted on the camera with its source, and set only when every
+  camera is cut at once (PRIV-22): the cut stays manual until then, so no range ends it early; at its
+  end the scheduler hands each camera to its ranges, cut by them if one covers it, resumed otherwise,
+  the resumed ones in one batch. A camera's own toggle never sets an end and clears any it held.
 - **A batch switches the cameras one after another, then restarts the engine once**, even when it
   stops half way, so every camera already saved stops recording.
 
@@ -84,3 +88,5 @@ of the camera itself; the engine stop never depends on the camera's answer.
 | Requiring the Parking position alone | The return would depend on a position nobody was asked to save. |
 | A strict return from parking | Keeps a camera out of surveillance because it failed to turn, although turned away it films nothing of the room. |
 | Privacy ranges held by each camera | Replaced by the scheduled rules of ADR-15, one calendar for every type of range. |
+| A timed cut as a household state beside the cameras, like the Silence | A camera resumed or cut again by its own toggle would need reconciling with it; the end on the camera says which cut it ends. |
+| A timed cut that stays on when it ends | A cut to the user's chosen hour that outlives it is no longer the hour chosen; the ranges already say what holds next. |

@@ -44,10 +44,14 @@ global restart the user triggers.
   A target is an identifier read in that kind, with no foreign key: a removed camera simply stops
   being targeted, and a rule left without target stays until edited or deleted. A rule is deleted,
   never paused. The server is the source of the current moment in the installation's clock.
-- **The household Silence is one stored state beside the rules, not a rule**: an end instant, bounded so a
-  forgotten Silence cannot hold for good, that survives a restart and lapses by itself. A channel is quiet while the
-  Silence holds or a muting rule targets it; neither ends the other. Its first offered end is the
-  next change of the muting rules, computed by the server.
+- **The household Silence is one stored state beside the rules, not a rule**: it holds until an end
+  instant, which lapses by itself, or, with no end, until the user ends it; either survives a restart.
+  A chosen end is bounded, the same bound for every end the user picks from a sheet, so a timed
+  Silence or cut cannot stretch past what the sheet offers. A channel is quiet while the Silence holds or a
+  muting rule targets it; neither ends the other.
+- **The next change of a rule type is computed by the server, once for every type**: the first moment
+  the set of covering rules of that type differs. It is the end the Silence offers first for the
+  muting rules, and the timed cut of every camera (ADR-10) for the privacy rules.
 - **One consumer per rule type.** A target is under a type's effect when any rule of that type
   covering the moment targets it. Adding a type is a type value, its target kind, its consumer and
   its wording; the rule storage, the API, the calendar and the range editor do not change. A camera
