@@ -50,7 +50,7 @@ describe('ConservationView', () => {
     expect(network.sent).toContainEqual(expect.objectContaining({ route: 'GET /api/system/stats' }))
   })
 
-  it('onOpenHelp_ShouldPointToPrivacyModeToRecordNothing_WhenTheUserAsksWhenSpaceIsFreed', async () => {
+  it('onOpenHelp_ShouldPointToTheCutToRecordNothing_WhenTheUserAsksWhenSpaceIsFreed', async () => {
     // Arrange
     fakeNetwork({ [SETTINGS]: ok(settings) })
     renderScreen(<ConservationView />, CONSERVATION)
@@ -60,7 +60,7 @@ describe('ConservationView', () => {
     await userEvent.click(screen.getByText('Quand la place est-elle vraiment libérée ?'))
 
     // Assert
-    expect(screen.getByText(/activez sa vie privée/)).toBeVisible()
+    expect(screen.getByText(/coupez-la/)).toBeVisible()
     expect(screen.queryByText(/désactivez-la/)).not.toBeInTheDocument()
   })
 
