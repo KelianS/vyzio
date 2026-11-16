@@ -16,7 +16,7 @@ import { SecondaryButton } from './secondary_button'
 export type ToastTone = 'success' | 'error' | 'info'
 
 /** The one thing a toast may offer: doing the act again (DESIGN SYSTEM § Where feedback goes). */
-export interface ToastAction {
+interface ToastAction {
   readonly label: string
   readonly onClick: () => void
 }
