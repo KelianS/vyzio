@@ -35,7 +35,7 @@ test.describe('Base styles', () => {
       .locator('.rounded-card')
       .first()
       .evaluate((el) => getComputedStyle(el).borderTopLeftRadius)
-    expect(cardRadius).toBe('20px')
+    expect(cardRadius).toBe('16px')
 
     await fullPageScreenshot(page, { path: 'test-results/socle-hub.png' })
 
@@ -155,7 +155,7 @@ test.describe('Style foundations', () => {
     await page.getByRole('button', { name: 'Déconnecter tous les appareils' }).click()
 
     const dialog = page.getByRole('alertdialog')
-    await expect(dialog).toHaveCSS('border-top-left-radius', '28px')
+    await expect(dialog).toHaveCSS('border-top-left-radius', '24px')
     await expect(dialog).toHaveCSS('border-top-width', '0px')
     await expect(dialog).toHaveCSS('background-color', ELEVATED)
     // A surface carries no shadow, a dialog included.
@@ -178,7 +178,7 @@ test.describe('Style foundations', () => {
 
     await expect(page.locator('summary', { hasText: 'Options' }).first()).toHaveCSS(
       'border-top-left-radius',
-      '16px',
+      '12px',
     )
   })
 })

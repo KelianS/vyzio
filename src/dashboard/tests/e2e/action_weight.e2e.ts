@@ -183,7 +183,7 @@ test.describe('Action weight', () => {
         .getByRole('group', { name: 'Ce qui déclenche une notification' })
         .locator('label')
         .first(),
-    ).toHaveCSS('border-top-left-radius', '16px')
+    ).toHaveCSS('border-top-left-radius', '12px')
   })
 })
 

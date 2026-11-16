@@ -123,15 +123,16 @@
      The `rounded-*` scale the primitives read is the field's; a surface, the
      plate of an alert and the bar take their own names. */
   --radius-*: initial;
-  --radius: 16px;
-  --radius-xs: 8px;
-  --radius-sm: 10px;
+  /* One step of 4 px per level: a nested surface is never rounder than the one holding it. */
+  --radius: 12px;
+  --radius-xs: 6px;
+  --radius-sm: 8px;
   --radius-md: var(--radius);
   --radius-lg: var(--radius);
-  --radius-xl: 20px;
-  --radius-inset: 18px;
-  --radius-card: 20px;
-  --radius-panel: 28px;
+  --radius-xl: 16px;
+  --radius-inset: 12px;
+  --radius-card: 16px;
+  --radius-panel: 24px;
   --radius-full: 9999px;
 }
 
