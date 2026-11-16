@@ -37,7 +37,7 @@
 
 ### A1 · Mettre Vyzio en service
 
-1. Aucune caméra n'est encore ajoutée : l'interface s'ouvre sur « Ajouter une caméra » (UI-33).
+1. Aucune caméra n'est encore ajoutée : l'accueil ne propose que « Ajouter une caméra » (UI-33).
 2. Le chemin continue par UC-CAM-01.
 
 ### A2 · Voir toutes les caméras
@@ -62,7 +62,7 @@
 ## Règles locales
 
 - **UI-32** · l'accueil montre les caméras d'abord : moins de quatre, chacune en grande carte avec son image ; quatre ou plus, les quatre premières de la liste des caméras en grille et « Voir les N caméras » ; chacune avec son nom, sa marque (UI-31) et un œil qui la coupe ou la réactive (PRIV-21) ; au-dessus, « Couper les caméras », qui les coupe toutes et devient « Réactiver les caméras » quand toutes le sont, et « Silence » (UC-NOTIF-06) ; en dessous, deux tuiles : « Détections », qui compte les détections de la dernière heure (« 2 depuis 1 h »), sans rien retenir de ce que l'utilisateur a déjà vu, et mène aux détections (UC-HIST-01), et « Notifications », qui mène à leurs réglages et ne porte un sous-titre que pour une exception (« À configurer », un Silence en cours, UC-NOTIF-06) ;
-- **UI-33** · tant qu'aucune caméra n'est ajoutée, l'interface, ouverte après la création du mot de passe (UC-ACCESS-01) ou plus tard, s'ouvre sur « Ajouter une caméra » (UC-CAM-01) ; il n'y a pas d'écran d'accueil à part pour la mise en service ;
+- **UI-33** · tant qu'aucune caméra n'est ajoutée, l'interface, ouverte après la création du mot de passe (UC-ACCESS-01) ou plus tard, ouvre l'accueil, qui ne propose qu'une action, « Ajouter une caméra » (UC-CAM-01) ; il n'y a ni écran de bienvenue ni parcours à part pour la mise en service ;
 - **UI-35** · la rubrique « Matériel » des réglages montre, à titre informatif, le matériel sur lequel tourne la détection (accélérateur dédié, carte graphique ou processeur) et la fréquence d'analyse retenue, ainsi que l'état de la surveillance (SYS-01), sans nommer le composant technique ; ce n'est pas un état à traiter, rien n'y est à toucher.
 
 ## Points ouverts

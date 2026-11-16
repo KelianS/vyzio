@@ -35,7 +35,7 @@
 
 ### N1 · Ajouter une caméra découverte
 
-1. L'utilisateur ouvre l'ajout d'une caméra, depuis la liste des caméras des réglages ou à la première ouverture (CAM-62, UC-UI-01 A1), et lance la recherche ; la confirmation dit quelles plages d'adresses seront interrogées, et d'où vient chacune (CAM-29).
+1. L'utilisateur ouvre l'ajout d'une caméra, depuis la liste des caméras des réglages ou depuis l'accueil tant qu'aucune caméra n'est ajoutée (CAM-62, UC-UI-01 A1), et lance la recherche ; la confirmation dit quelles plages d'adresses seront interrogées, et d'où vient chacune (CAM-29).
 2. Vyzio liste les candidats sous « Sur votre réseau », chacun avec son libellé de confiance et les signaux observés (CAM-30, CAM-31, CAM-32, CAM-34).
 3. L'utilisateur choisit un candidat prêt (CAM-37) ; l'écran suivant demande son nom et son compte, et il touche « Ajouter » (CAM-62).
 4. Vyzio crée la caméra de ce seul accès (CAM-62, CAM-26) et ouvre sa page sur « Connexion » (CAM-40, CAM-61).
