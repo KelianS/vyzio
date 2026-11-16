@@ -249,6 +249,7 @@ A toast rises at the bottom and leaves downwards; raised again while it leaves, 
 than showing twice. Every toast, one carrying a diagnostic line included, follows a finger dragging
 it down and closes when its momentum carries it away: a deliberate gesture closes it like its close
 button ([SPECS](SPECS.md) UI-03). How long it stays is § Errors.
+Only its top edge takes that drag: a scroll or a selection starting on its text never closes it.
 
 ### State pills
 

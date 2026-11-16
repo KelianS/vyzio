@@ -26,12 +26,15 @@ function showToast(diagnostic: string) {
   act(() => screen.getByRole('button', { name: 'go' }).click())
 }
 
-/** The toast once it has risen into place. */
+const MESSAGE = 'La caméra a refusé la commande'
+
+/** The toast once it has risen into place, and the top edge a finger pulls it down by. */
 async function risenToast() {
   showToast('GET /api/hub · 500')
   const toast = screen.getByRole('status')
   await waitFor(() => expect(toast.style.transform).toBe(''))
-  return toast
+  const edge = toast.querySelector('[data-toast-handle]') as HTMLElement
+  return { toast, edge }
 }
 
 describe('Toast motion', () => {
@@ -41,8 +44,6 @@ describe('Toast motion', () => {
     restoreLayout = layOut(320, 60)
   })
   afterEach(() => restoreLayout())
-
-  const MESSAGE = 'La caméra a refusé la commande'
 
   it('toast_ShouldStayOnScreenWhileItLeaves_WhenTheUserClosesIt', () => {
     // Arrange
@@ -80,12 +81,12 @@ describe('Toast motion', () => {
 
   it('toast_ShouldFollowTheFingerOneToOne_WhenDraggedDown', async () => {
     // Arrange
-    const toast = await risenToast()
+    const { toast, edge } = await risenToast()
 
     // Act
-    touchDown(toast, 100, 100)
-    touchMove(toast, 100, 115)
-    touchMove(toast, 100, 140)
+    touchDown(edge, 100, 100)
+    touchMove(edge, 100, 115)
+    touchMove(edge, 100, 140)
 
     // Assert
     expect(toast.style.transform).toBe('translate3d(0px, 25px, 0px)')
@@ -93,13 +94,13 @@ describe('Toast motion', () => {
 
   it('toast_ShouldClose_WhenAFlickCarriesItDownEvenThoughItCarriesADiagnosticLine', async () => {
     // Arrange
-    const toast = await risenToast()
+    const { edge } = await risenToast()
 
     // Act
-    touchDown(toast, 100, 100)
-    touchMove(toast, 100, 115)
-    touchMove(toast, 100, 125)
-    touchUp(toast, 100, 125)
+    touchDown(edge, 100, 100)
+    touchMove(edge, 100, 115)
+    touchMove(edge, 100, 125)
+    touchUp(edge, 100, 125)
 
     // Assert
     await waitFor(() => expect(screen.queryByText(MESSAGE)).not.toBeInTheDocument())
@@ -107,17 +108,37 @@ describe('Toast motion', () => {
 
   it('toast_ShouldComeBackToItsPlace_WhenReleasedSlowlyBeforeHalfItsHeight', async () => {
     // Arrange
-    const toast = await risenToast()
-    touchDown(toast, 100, 100)
-    touchMove(toast, 100, 115)
-    touchMove(toast, 100, 135)
+    const { toast, edge } = await risenToast()
+    touchDown(edge, 100, 100)
+    touchMove(edge, 100, 115)
+    touchMove(edge, 100, 135)
     await holdStill()
 
     // Act
-    touchUp(toast, 100, 135)
+    touchUp(edge, 100, 135)
 
     // Assert
     await waitFor(() => expect(toast.style.transform).toBe(''))
+    expect(screen.getByText(MESSAGE)).toBeInTheDocument()
+  })
+})
+
+describe('Toast text under the finger', () => {
+  beforeEach(() => withFullMotion())
+
+  it('toast_ShouldStayOpenAndInPlace_WhenADragStartsOnItsDiagnosticLine', async () => {
+    // Arrange
+    const { toast } = await risenToast()
+    const diagnostic = screen.getByText('GET /api/hub · 500')
+
+    // Act
+    touchDown(diagnostic, 100, 100)
+    touchMove(diagnostic, 100, 115)
+    touchMove(diagnostic, 100, 200)
+    touchUp(diagnostic, 100, 200)
+
+    // Assert
+    expect(toast.style.transform).toBe('')
     expect(screen.getByText(MESSAGE)).toBeInTheDocument()
   })
 })

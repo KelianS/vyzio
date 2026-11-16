@@ -11,7 +11,7 @@ import {
 import { CheckCircle2, Info, RotateCw, X, XCircle } from 'lucide-react'
 import { motionValue } from 'motion/react'
 import { cn } from '../ui/utils'
-import { holdsItsOwnDrag, projection, rubberBand, useFingerDrag } from '../motion/gesture'
+import { projection, rubberBand, useFingerDrag } from '../motion/gesture'
 import { paintOn, translation } from '../motion/ghost'
 import { prefersReducedMotion, springTo } from '../motion/springs'
 import { PressableControl } from './pressable'
@@ -172,7 +172,9 @@ function ToastChip({
   }, [chip, item.leaving, item.id, onGone, y, opacity])
 
   const drag = useFingerDrag('y', {
-    canStart: (target) => !item.leaving && !holdsItsOwnDrag(target),
+    // Only its top edge: a scroll or a selection starting on the text never closes it (UI-03).
+    canStart: (target) =>
+      !item.leaving && target instanceof Element && target.closest('[data-toast-handle]') !== null,
     onStart: () => {
       setHeld(true)
       y.stop()
@@ -203,11 +205,17 @@ function ToastChip({
       role="status"
       {...drag}
       className={cn(
-        'pointer-events-auto flex min-w-60 max-w-sm touch-none items-start gap-3 rounded-card bg-picture px-4 py-3 text-ink-muted',
+        'pointer-events-auto relative flex min-w-60 max-w-sm items-start gap-3 rounded-card bg-picture px-4 py-3 text-ink-muted',
         'motion-reduce:transition-opacity motion-reduce:starting:opacity-0',
         item.leaving && 'pointer-events-none',
       )}
     >
+      {/* The edge a finger pulls it down by: finger-sized, over its top padding and just above it. */}
+      <span
+        data-toast-handle
+        aria-hidden="true"
+        className="absolute inset-x-0 -top-4 h-7 touch-none"
+      />
       <Icon
         className={cn('mt-0.5 size-4 shrink-0', TONE_ICON_CLASS[item.tone])}
         aria-hidden="true"
