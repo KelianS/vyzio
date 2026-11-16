@@ -26,6 +26,7 @@ import { ReadFailure } from '../../common/components/error_message'
 import { buildConservationPresenter } from './conservation.presenter'
 import { conservationReducer } from './conservation.reducer'
 import { buildInitialConservationUido } from './conservation.uido'
+import { Loading } from '../../common/components/loading'
 
 // The save request is flat while reads are grouped by window; this bridges the two shapes.
 const FIELD_OF = {
@@ -57,7 +58,12 @@ export function ConservationView() {
     presenter.onLoad()
   }, [presenter])
 
-  if (uido.loading) return <SettingsPage>Chargement…</SettingsPage>
+  if (uido.loading)
+    return (
+      <SettingsPage>
+        <Loading />
+      </SettingsPage>
+    )
   if (uido.error)
     return (
       <SettingsPage>
@@ -114,11 +120,9 @@ function ConservationForm({
       consequence: window === 'continuous' && current > 0 ? CONTINUOUS_DISK_WARNING : undefined,
       value: current,
       onChange: (days) => draft.set(field, days as number),
-      provenance: {
-        // One level above a camera: there's no override to fall back to, so matching the shipped value *is* following it.
-        following: current === shipped,
-        fallbackLabel: formatDays(shipped),
-        revertLabel: 'Revenir à la valeur d’origine',
+      recommended: {
+        atRecommendation: current === shipped,
+        valueLabel: formatDays(shipped),
         onRevert: () => draft.set(field, shipped),
       },
     }
@@ -126,7 +130,7 @@ function ConservationForm({
 
   return (
     <>
-      <SettingsPage lede="Ces durées s’appliquent à toutes vos caméras. Une caméra peut s’en écarter depuis sa propre fiche, durée par durée.">
+      <SettingsPage lede="Pour toutes vos caméras, sauf celles qui gardent leur propre durée.">
         <SettingsList settings={declarations} />
 
         <RetentionHelp />

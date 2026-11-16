@@ -10,7 +10,7 @@
 **Préalables** :
 
 - l'orientation de la caméra fonctionne (PTZ-19) ;
-- la caméra est en surveillance et sa vue en direct est ouverte (UC-LIVE-01, PRIV-18).
+- la caméra est en surveillance et sa vue est ouverte, onglet « Contrôles » (UC-LIVE-01, PRIV-18).
 
 **Résultat en succès** : la position est enregistrée sur son slot, avec sa miniature (PTZ-07, PTZ-11).
 
@@ -23,20 +23,20 @@
 
 | ID | Libellé | Type | Déclencheur |
 | --- | --- | --- | --- |
-| N1 | Enregistrer la vue actuelle sur un slot vide | Nominal | L'utilisateur touche le « + » d'un slot vide |
+| N1 | Enregistrer la vue actuelle sur un slot vide | Nominal | L'utilisateur touche « Ajouter » |
 | A1 | Aller à une position | Alternative | L'utilisateur touche un slot qui garde une position |
 | A2 | Remplacer une position | Alternative | L'utilisateur enregistre par-dessus une position existante |
 | A3 | Retrouver une position enregistrée ailleurs | Alternative | La position a été enregistrée dans l'application du fabricant |
 | A4 | Calibrer la caméra | Alternative | Vyzio garde les positions d'une caméra qui ne sait pas les garder |
 | E1 | Les positions ne peuvent pas être lues | Échec | La caméra ne répond pas à la lecture de ses positions |
-| E2 | La caméra n'est pas encore en surveillance | Échec | L'utilisateur veut régler les positions d'une caméra qui n'a pas de vue en direct |
+| E2 | La caméra n'est pas encore en surveillance | Échec | L'utilisateur veut régler les positions d'une caméra qui n'a pas encore de direct |
 
 ## Détail des chemins
 
 ### N1 · Enregistrer la vue actuelle sur un slot vide
 
-1. L'utilisateur oriente la caméra (UC-PTZ-01), puis touche le « + » d'un slot vide (PTZ-05, PTZ-07).
-2. Vyzio enregistre la vue actuelle sur ce slot (PTZ-04, PTZ-06) et prend sa miniature une fois la caméra arrivée (PTZ-12).
+1. L'utilisateur oriente la caméra (UC-PTZ-01), puis touche « Ajouter », après les miniatures des positions (PTZ-05, PTZ-07).
+2. Vyzio enregistre la vue actuelle sur le premier slot vide (PTZ-04, PTZ-06) et prend sa miniature une fois la caméra arrivée (PTZ-12).
 
 ### A1 · Aller à une position
 
@@ -56,7 +56,7 @@
 ### A4 · Calibrer la caméra
 
 1. La capacité d'orientation dit que Vyzio garde les positions, qu'elles sont moins fiables, et qu'il faut calibrer la caméra après chaque démarrage de Vyzio (PTZ-09).
-2. L'utilisateur calibre la caméra depuis la vue en direct.
+2. L'utilisateur calibre la caméra depuis sa vue.
 
 ### E1 · Les positions ne peuvent pas être lues
 
@@ -65,7 +65,7 @@
 
 ### E2 · La caméra n'est pas encore en surveillance
 
-1. La caméra n'a pas encore de vue en direct.
+1. La caméra n'a pas encore de direct.
 2. L'écran de pilotage le dit et mène à ce qui manque (PRIV-18).
 
 ## Règles locales
@@ -73,8 +73,8 @@
 - **PTZ-04** · l'utilisateur doit pouvoir définir la position de surveillance (preset "home") via des contrôles PTZ live dans l'interface — une fois orientée, il clique "Définir comme position de surveillance" ;
 - **PTZ-05** · la gestion des positions PTZ expose 4 slots : **preset 1** (Surveillance : ramener la caméra vers la zone surveillée nominale), **preset 2** (Parking vie privée : position de stationnement lors de l'activation du mode vie privée), **presets 3 et 4** personnalisables par l'utilisateur ; les presets 1 et 2 ont des labels fixes, les presets 3 et 4 ont un label libre ;
 - **PTZ-06** · sur une caméra qui garde ses positions elle-même, la caméra fait foi : le slot N de Vyzio est la position N de la caméra, numérotée comme dans l'application du fabricant quand celle-ci propose des positions ; une position enregistrée sous ce numéro dans cette application apparaît sur son slot, une position qui y est supprimée le libère, et les positions au-delà des quatre slots sont ignorées ([ADR-09](../adr/0009-ptz-positions-resolved-above-the-protocol.md)) ;
-- **PTZ-07** · chaque slot montre l'un de trois états, quel que soit qui garde la position : **vide** (le signe « + », un appui y enregistre la vue actuelle), **position enregistrée, sans miniature** (par exemple enregistrée dans l'application du fabricant ; un appui y emmène la caméra et prend sa miniature), **position avec sa miniature** (un appui y emmène la caméra) ; seul un slot vide montre « + », et enregistrer par-dessus une position existante demande toujours confirmation ;
-- **PTZ-09** · la capacité Orientation de la caméra dit, dans ses options, où sont gardées ses positions : par la caméra elle-même dès qu'elle sait les garder, même avant la première enregistrée, ou par Vyzio quand la caméra ne sait pas les garder ; dans ce second cas, elle dit que les positions sont moins fiables et qu'il faut calibrer la caméra après chaque démarrage de Vyzio, depuis la vue live ;
+- **PTZ-07** · chaque slot montre l'un de trois états, quel que soit qui garde la position : **vide** (les slots vides se rassemblent derrière une seule tuile « Ajouter » au signe « + », qui enregistre la vue actuelle sur le premier d'entre eux), **position enregistrée, sans miniature** (par exemple enregistrée dans l'application du fabricant ; un appui y emmène la caméra et prend sa miniature), **position avec sa miniature** (un appui y emmène la caméra) ; seul un slot vide montre « + », et enregistrer par-dessus une position existante demande toujours confirmation ;
+- **PTZ-09** · la capacité Orientation de la caméra dit, dans ses options, où sont gardées ses positions : par la caméra elle-même dès qu'elle sait les garder, même avant la première enregistrée, ou par Vyzio quand la caméra ne sait pas les garder ; dans ce second cas, elle dit que les positions sont moins fiables et qu'il faut calibrer la caméra après chaque démarrage de Vyzio, depuis la vue de la caméra ;
 - **PTZ-10** · la disponibilité des presets est indépendante du protocole de la caméra : Vyzio gère les positions par un mécanisme de homing + mesure du temps de mouvement pour les caméras qui ne supportent pas les presets natifs (voir [ADR-09](../adr/0009-ptz-positions-resolved-above-the-protocol.md)) ;
 - **PTZ-11** · chaque position enregistrée affiche une miniature de la vue caméra à cette position, dès qu'elle a été prise ;
 - **PTZ-12** · la miniature est capturée automatiquement après chaque enregistrement d'une position et chaque déplacement GoTo vers un preset demandé depuis l'interface, une fois la caméra arrivée à destination ; les déplacements du mode vie privée n'en prennent aucune ;
@@ -82,7 +82,7 @@
 - **PTZ-14** · une position enregistrée ailleurs (par exemple dans l'application du fabricant) n'a sa première miniature qu'après son premier GoTo ; avant, son slot montre qu'une position existe (PTZ-07), jamais le signe d'un slot vide ni une image générique ;
 - **PTZ-15** · la miniature est mise à jour à chaque nouveau GoTo ;
 - **PTZ-16** · l'arrivée sur une position s'annonce, et le slot de la position où se trouve la caméra se lit comme actif ;
-- **PTZ-17** · la section Pilotage des réglages de la caméra ne montre que l'état de la calibration et mène à la vue en direct, seul endroit où l'on pilote, enregistre et calibre ;
+- **PTZ-17** · la section Pilotage des réglages de la caméra ne montre que l'état de la calibration et mène à la vue de la caméra, seul endroit où l'on pilote, enregistre et calibre ;
 - **PTZ-18** · tant qu'une caméra dont Vyzio garde les positions n'est pas calibrée, le pilotage le dit et propose de la calibrer sur place ; ses slots ne s'enregistrent pas avant.
 
 ## Points ouverts

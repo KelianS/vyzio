@@ -19,7 +19,7 @@ test.describe('Privacy parking', () => {
     })
     state.ptz.presets = [saved(1)]
     await installFakeBackend(page, state)
-    await page.goto('/settings/cameras/camera-1/vie-privee')
+    await page.goto('/settings/cameras/camera-1/privacy')
 
     await page.getByRole('combobox', { name: 'En mode vie privée' }).click()
 
@@ -38,7 +38,7 @@ test.describe('Privacy parking', () => {
     })
     state.ptz.presets = [saved(1), saved(2)]
     await installFakeBackend(page, state)
-    await page.goto('/settings/cameras/camera-1/vie-privee')
+    await page.goto('/settings/cameras/camera-1/privacy')
 
     await page.getByRole('combobox', { name: 'En mode vie privée' }).click()
 

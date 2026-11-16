@@ -7,7 +7,7 @@ test.describe('Surveillance restart', () => {
 
   test('RestartSurveillanceTrigger_ShouldStayHidden_WhenNothingChanged', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
-    await page.goto('/settings/conservation')
+    await page.goto('/settings/retention')
 
     // Its absence is the information: everything saved is in service.
     await expect(page.getByRole('button', trigger())).toHaveCount(0)
@@ -17,7 +17,7 @@ test.describe('Surveillance restart', () => {
     page,
   }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
-    await page.goto('/settings/conservation')
+    await page.goto('/settings/retention')
 
     const motion = page.getByRole('spinbutton').nth(1)
     await motion.fill('30')
@@ -36,7 +36,7 @@ test.describe('Surveillance restart', () => {
     const state = createFakeBackendState({ cameras: [makeFakeCamera()] })
     state.pendingChanges = true
     await installFakeBackend(page, state)
-    await page.goto('/settings/conservation')
+    await page.goto('/settings/retention')
 
     await page.getByRole('button', trigger()).click()
 
@@ -55,7 +55,7 @@ test.describe('Surveillance restart', () => {
     state.pendingChanges = true
     state.restartFails = true
     await installFakeBackend(page, state)
-    await page.goto('/settings/conservation')
+    await page.goto('/settings/retention')
 
     await page.getByRole('button', trigger()).click()
     await page.getByRole('alertdialog').getByRole('button', { name: 'Redémarrer' }).click()
@@ -65,12 +65,18 @@ test.describe('Surveillance restart', () => {
     await expect(failed).toBeVisible()
 
     // Leaving the settings asks the question again - it must start from the failure, not from zero.
-    await page.getByRole('link', { name: 'Accueil' }).click()
+    await page.getByRole('banner').getByRole('button', { name: 'Retour' }).click()
     const guard = page.getByRole('alertdialog')
     await expect(guard).toContainText('La surveillance n’a pas redémarré.')
     await guard.getByRole('button', { name: 'Réessayer' }).click()
 
-    await expect(failed).toBeVisible()
+    // Outside the settings the failure stays, as the bar's alert (UI-17, UI-30).
+    await expect(page).toHaveURL('/')
+    await expect(
+      page
+        .getByRole('list', { name: 'Alertes' })
+        .getByText('Les changements ne sont pas appliqués'),
+    ).toBeVisible()
   })
 
   test('RestartSurveillanceTrigger_ShouldShowWhatSupportNeeds_WhenTheServerBreaksOnTheRestart', async ({
@@ -80,7 +86,7 @@ test.describe('Surveillance restart', () => {
     state.pendingChanges = true
     state.restartBreaks = true
     await installFakeBackend(page, state)
-    await page.goto('/settings/conservation')
+    await page.goto('/settings/retention')
 
     await page.getByRole('button', trigger()).click()
     await page.getByRole('alertdialog').getByRole('button', { name: 'Redémarrer' }).click()
@@ -102,14 +108,17 @@ test.describe('Surveillance restart', () => {
     await page.goto('/settings/cameras/camera-1/detection')
 
     // The most common gesture while configuring: asking here would nag, and stack with the draft guard.
-    await page.getByRole('link', { name: 'Conservation', exact: true }).click()
-    await expect(page).toHaveURL('/settings/cameras/camera-1/conservation')
+    await page
+      .getByRole('navigation', { name: 'Réglages de la caméra' })
+      .getByRole('link', { name: 'Conservation' })
+      .click()
+    await expect(page).toHaveURL('/settings/cameras/camera-1/retention')
     await expect(page.getByRole('alertdialog')).toHaveCount(0)
   })
 
   // Wait for the page to be mounted: with two blockers competing this passed by a race.
   for (const [url, where] of [
-    ['/settings/conservation', 'a settings page'],
+    ['/settings/retention', 'a settings page'],
     ['/settings/cameras/camera-1/detection', 'a camera page'],
   ]) {
     test(`NavigationGuard_ShouldAskAndLetThroughEitherWay_WhenTheUserLeavesTheSettings (${where})`, async ({
@@ -121,15 +130,15 @@ test.describe('Surveillance restart', () => {
       await page.goto(url)
       await expect(page.getByRole('region', { name: 'Modifications en attente' })).toBeHidden()
 
-      await page.getByRole('link', { name: 'Accueil' }).click()
+      await page.getByRole('banner').getByRole('button', { name: 'Retour' }).click()
 
       const dialog = page.getByRole('alertdialog')
       await expect(dialog).toContainText('Redémarrer la surveillance maintenant ?')
 
-      // "Plus tard" lets through too: the gap is allowed.
+      // "Plus tard" lets through too: the gap is allowed, and asked about from the settings only (UI-28).
       await dialog.getByRole('button', { name: 'Plus tard' }).click()
       await expect(page).toHaveURL('/')
-      await expect(page.getByRole('button', trigger())).toBeVisible()
+      await expect(page.getByRole('button', trigger())).toHaveCount(0)
     })
   }
 
@@ -137,13 +146,13 @@ test.describe('Surveillance restart', () => {
     const state = createFakeBackendState({ cameras: [makeFakeCamera()] })
     state.pendingChanges = true
     await installFakeBackend(page, state)
-    await page.goto('/settings/conservation')
+    await page.goto('/settings/retention')
 
     const motion = page.getByRole('spinbutton').nth(1)
     await motion.fill('30')
     await motion.blur()
 
-    await page.getByRole('link', { name: 'Accueil' }).click()
+    await page.getByRole('banner').getByRole('button', { name: 'Retour' }).click()
 
     // Losing edits comes first: the only one of the two whose wrong answer destroys something.
     const dialog = page.getByRole('alertdialog')

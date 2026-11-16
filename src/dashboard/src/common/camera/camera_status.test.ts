@@ -1,92 +1,61 @@
 import { describe, expect, it } from 'vitest'
 import { makeCamera } from '../../testing/camera_fixture'
-import {
-  SurveillanceEntry,
-  formatCameraStatusLabel,
-  formatStatusTone,
-  surveillanceEntryOf,
-} from './camera_status'
+import { SurveillanceEntry, cameraMark, surveillanceEntryOf } from './camera_status'
 
-describe('formatCameraStatusLabel', () => {
-  it('formatCameraStatusLabel_ShouldWriteItInFrenchWithItsAccents_WhenTheCameraIsOnline', () => {
+describe('cameraMark', () => {
+  it('cameraMark_ShouldShowTheGreenDot_WhenTheCameraIsWatchedAndFilms', () => {
     // Arrange & Act
-    const label = formatCameraStatusLabel(makeCamera({ status: 'online' }))
+    const mark = cameraMark(makeCamera({ status: 'online' }))
 
     // Assert
-    expect(label).toBe('Connectée')
+    expect(mark).toEqual({ kind: 'on', label: 'En marche' })
   })
 
-  it('formatCameraStatusLabel_ShouldAskToCheck_WhenTheStatusIsUnknown', () => {
+  it('cameraMark_ShouldShowTheGreyDot_WhenTheCameraIsCut', () => {
     // Arrange & Act
-    const label = formatCameraStatusLabel(makeCamera({ status: 'something_new' }))
+    const mark = cameraMark(makeCamera({ privacyModeActive: true }))
 
     // Assert
-    expect(label).toBe('À vérifier')
-  })
-
-  it('formatCameraStatusLabel_ShouldSayItIsToSetUp_WhenItsStreamNeverWorked', () => {
-    // Arrange & Act
-    const label = formatCameraStatusLabel(
-      makeCamera({ status: 'to_set_up', validationState: 'to_set_up' }),
-    )
-
-    // Assert
-    expect(label).toBe('À configurer')
-  })
-
-  it('formatCameraStatusLabel_ShouldStillSayItIsToSetUp_WhenItsStreamWorksButSurveillanceHasNotTakenItIn', () => {
-    // Arrange & Act
-    const label = formatCameraStatusLabel(
-      makeCamera({ status: 'online', validationState: 'draft' }),
-    )
-
-    // Assert
-    expect(label).toBe('À configurer')
+    expect(mark).toEqual({ kind: 'off', label: 'Coupée' })
   })
 
   it.each([
-    { status: 'offline', label: 'Hors ligne' },
-    { status: 'degraded', label: 'Dégradée' },
-    { status: 'config_error', label: 'Erreur de configuration' },
+    { status: 'to_set_up', validationState: 'to_set_up' },
+    { status: 'online', validationState: 'draft' },
   ])(
-    'formatCameraStatusLabel_ShouldNameTheTrouble_WhenTheCameraIsNotOnline ($status)',
-    ({ status, label }) => {
+    'cameraMark_ShouldSayItIsToSetUpWithTheGreyDot_WhenSurveillanceHasNotTakenItIn ($validationState)',
+    ({ status, validationState }) => {
       // Arrange & Act
-      const said = formatCameraStatusLabel(makeCamera({ status }))
+      const mark = cameraMark(makeCamera({ status, validationState, privacyModeActive: true }))
 
       // Assert
-      expect(said).toBe(label)
+      expect(mark).toEqual({ kind: 'off', label: 'À configurer' })
     },
   )
-})
-
-describe('formatStatusTone', () => {
-  it('formatStatusTone_ShouldStayNeutral_WhenTheCameraWaitsForTheRestart', () => {
-    // Arrange & Act
-    const said = formatStatusTone(
-      makeCamera({ status: 'online', validationState: 'draft', needsAttention: true }),
-    )
-
-    // Assert
-    expect(said).toBe('neutral')
-  })
 
   it.each([
-    { status: 'online', needsAttention: false, tone: 'ok' },
-    { status: 'online', needsAttention: true, tone: 'warn' },
-    { status: 'offline', needsAttention: false, tone: 'danger' },
-    { status: 'degraded', needsAttention: false, tone: 'warn' },
-    { status: 'to_set_up', needsAttention: true, tone: 'neutral' },
+    { status: 'offline', connected: true, label: 'Hors ligne' },
+    { status: 'online', connected: false, label: 'Hors ligne' },
+    { status: 'degraded', connected: true, label: 'Dégradée' },
+    { status: 'config_error', connected: true, label: 'Erreur de configuration' },
   ])(
-    'formatStatusTone_ShouldColourTheBadgeByHowTheCameraIs_WhenItReportsItsStatus ($status, attention: $needsAttention)',
-    ({ status, needsAttention, tone }) => {
+    'cameraMark_ShouldShowTheRingAndNameTheTrouble_WhenTheCameraDoesNotWork ($status, $connected)',
+    ({ status, connected, label }) => {
       // Arrange & Act
-      const said = formatStatusTone(makeCamera({ status, needsAttention }))
+      const mark = cameraMark(makeCamera({ status, connected }))
 
       // Assert
-      expect(said).toBe(tone)
+      expect(mark).toEqual({ kind: 'alert', label })
     },
   )
+
+  it('cameraMark_ShouldAskToCheckWithTheGreyDot_WhenTheStatusIsUnknown', () => {
+    // Arrange & Act
+    const mark = cameraMark(makeCamera({ status: 'something_new' }))
+
+    // Assert
+    expect(mark).toEqual({ kind: 'off', label: 'À vérifier' })
+  })
 })
 
 describe('surveillanceEntryOf', () => {

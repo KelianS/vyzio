@@ -183,9 +183,9 @@ export function buildNotificationChannelPresenter({
       readJournal(channel, journalInPlace)
     },
 
-    /** Resolves true once saved, so the view clears its draft; enabling asks first and resolves false. */
+    /** Resolves true once saved, so the view clears its draft; a first configuration asks first and resolves false. */
     async onSave(config: NotificationChannelConfig, values: NotificationValues) {
-      if (values.enabled && !config.isEnabled) {
+      if (!config.isConfigured) {
         dispatch({ type: 'ENABLE_ASKED' })
         return false
       }

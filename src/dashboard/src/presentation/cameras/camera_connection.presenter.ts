@@ -33,7 +33,7 @@ import {
 } from './camera_connection_values'
 import { IS_STREAM } from './capability_state'
 import { addedStream } from './stream_lines'
-import { detectionResultOf } from './detection_outcome'
+import { DETECTION_SENTENCES, DETECTION_TONE, detectionResultOf } from './detection_outcome'
 
 export interface CameraConnectionPresenterContext {
   container: CamerasContainer
@@ -225,13 +225,20 @@ export function buildCameraConnectionPresenter({
       ])
       if (bindingsLatest()) dispatch({ type: 'BINDINGS_LOADED', bindings })
       if (protocolsLatest()) dispatch({ type: 'PROTOCOLS_LOADED', protocols })
-      dispatch({ type: 'DETECT_SUCCEEDED', result: detectionResultOf(host, bindings, protocols) })
+      dispatch({ type: 'DETECT_SUCCEEDED' })
+      // What it found answers the user's act: a toast, photographed from there (UI-03).
+      const result = detectionResultOf(host, bindings, protocols)
+      toast(
+        DETECTION_SENTENCES[result.outcome],
+        DETECTION_TONE[result.outcome],
+        result.diagnostic ?? undefined,
+      )
     } catch (e) {
       const error = toAppError(e)
       if (error.kind === AppErrorKind.NotFound) reportCameraGone(container, dispatch)
       else toastError(toast, error)
       // Detection ran; only what it found could not be read back.
-      dispatch({ type: 'DETECT_SUCCEEDED', result: null })
+      dispatch({ type: 'DETECT_SUCCEEDED' })
     } finally {
       dispatch({ type: 'DETECT_FINISHED' })
     }
@@ -552,14 +559,17 @@ export function buildCameraConnectionPresenter({
       }
     },
 
+    /** Resolves true once removed, so its page can close. */
     async onRemoveProtocol(cameraId: string, protocol: SupportedProtocol) {
       dispatch({ type: 'PROTOCOL_REMOVE_STARTED', protocol })
       try {
         await container.removeCameraProtocol.execute(cameraId, protocol)
         toast('Protocole retiré.', 'success')
         readProtocols(cameraId, true)
+        return true
       } catch (e) {
         toastError(toast, toAppError(e))
+        return false
       } finally {
         dispatch({ type: 'PROTOCOL_REMOVE_FINISHED', protocol })
       }

@@ -13,8 +13,6 @@ export function addCameraReducer(state: AddCameraUido, action: AddCameraAction):
       return {
         ...state,
         form: { ...state.form, ...action.patch },
-        message: null,
-        error: null,
       }
 
     case 'SELECTION_CLEARED':
@@ -23,8 +21,6 @@ export function addCameraReducer(state: AddCameraUido, action: AddCameraAction):
         selection: { kind: 'none' },
         form: emptyCameraDraft,
         helpVendor: null,
-        message: null,
-        error: null,
       }
 
     case 'MANUAL_ENTRY_SELECTED':
@@ -33,8 +29,6 @@ export function addCameraReducer(state: AddCameraUido, action: AddCameraAction):
         selection: { kind: 'manual' },
         form: emptyCameraDraft,
         helpVendor: null,
-        message: null,
-        error: null,
       }
 
     case 'CANDIDATE_SELECTED':
@@ -43,12 +37,10 @@ export function addCameraReducer(state: AddCameraUido, action: AddCameraAction):
         selection: { kind: 'candidate', index: action.index },
         form: draftFromCandidate(state, action.candidate),
         helpVendor: action.candidate.vendorFamily,
-        message: null,
-        error: null,
       }
 
     case 'DISCOVERY_STARTED':
-      return { ...state, discovering: true, message: null, error: null }
+      return { ...state, discovering: true }
 
     // Auto-selecting the first result would open a form for a camera nobody looked at yet.
     case 'DISCOVERY_SUCCEEDED':
@@ -56,18 +48,13 @@ export function addCameraReducer(state: AddCameraUido, action: AddCameraAction):
         ...state,
         discovering: false,
         discoveryResults: action.candidates,
-        message: action.message,
       }
 
     case 'DISCOVERY_FAILED':
-      return {
-        ...state,
-        discovering: false,
-        error: { message: action.message, diagnostic: action.diagnostic },
-      }
+      return { ...state, discovering: false }
 
     case 'REFRESH_CANDIDATE_STARTED':
-      return { ...state, refreshing: true, message: null, error: null }
+      return { ...state, refreshing: true }
 
     case 'REFRESH_CANDIDATE_SUCCEEDED': {
       const results = [...state.discoveryResults]
@@ -80,32 +67,20 @@ export function addCameraReducer(state: AddCameraUido, action: AddCameraAction):
         form: draftFromCandidate(state, action.candidate),
         // A later scan that recognises no vendor keeps the user's pick.
         helpVendor: action.candidate.vendorFamily ?? state.helpVendor,
-        message: action.message,
       }
     }
 
-    case 'REFRESH_CANDIDATE_NO_CHANGE':
-      return { ...state, refreshing: false, message: action.message }
-
-    case 'REFRESH_CANDIDATE_FAILED':
-      return {
-        ...state,
-        refreshing: false,
-        error: { message: action.message, diagnostic: action.diagnostic },
-      }
+    case 'REFRESH_CANDIDATE_FINISHED':
+      return { ...state, refreshing: false }
 
     case 'CREATE_STARTED':
-      return { ...state, creating: true, message: null, error: null }
+      return { ...state, creating: true }
 
     case 'CREATE_SUCCEEDED':
       return { ...state, creating: false }
 
     case 'CREATE_FAILED':
-      return {
-        ...state,
-        creating: false,
-        error: { message: action.message, diagnostic: action.diagnostic },
-      }
+      return { ...state, creating: false }
 
     case 'CONFIRM_SCAN_SET':
       return { ...state, confirmScan: action.value }
@@ -117,11 +92,7 @@ export function addCameraReducer(state: AddCameraUido, action: AddCameraAction):
     case 'RANGES_TO_SWEEP_FAILED':
       return {
         ...state,
-        rangesToSweep: {
-          loading: false,
-          ranges: [],
-          error: { message: action.message, diagnostic: action.diagnostic },
-        },
+        rangesToSweep: { loading: false, ranges: [], error: action.error },
       }
 
     case 'HELP_VENDOR_CHOSEN':

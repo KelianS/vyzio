@@ -5,6 +5,8 @@ import type {
   CommandJournalEntry,
   CommandOutcome,
 } from '../../../domain/entities/notification_channel_config.entity'
+import { Loading } from '../../../common/components/loading'
+import { EmptyState } from '../../../common/components/empty_state'
 
 const formatReceivedAt = new Intl.DateTimeFormat('fr-FR', {
   dateStyle: 'short',
@@ -44,7 +46,7 @@ export function CommandJournal({
       </div>
 
       {entries.length > 0 ? (
-        <ul className="divide-y divide-border text-sm">
+        <ul className="divide-y divide-border text-body">
           {entries.map((entry) => {
             const outcome = OUTCOME[entry.outcome]
             return (
@@ -53,7 +55,7 @@ export function CommandJournal({
                 className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-2"
               >
                 <span>
-                  <code className="rounded bg-muted px-1 py-0.5 text-xs">/{entry.verb}</code>
+                  <code className="rounded bg-muted px-1 py-0.5 text-label">/{entry.verb}</code>
                   <span className="ml-2 text-muted-foreground">
                     {formatReceivedAt.format(new Date(entry.receivedAt))}
                   </span>
@@ -65,10 +67,10 @@ export function CommandJournal({
             )
           })}
         </ul>
+      ) : loading ? (
+        <Loading />
       ) : (
-        <p className="text-sm text-muted-foreground">
-          {loading ? 'Chargement…' : 'Aucune commande reçue pour l’instant.'}
-        </p>
+        <EmptyState>Aucune commande reçue pour l’instant.</EmptyState>
       )}
     </div>
   )

@@ -175,6 +175,13 @@ public static class CamerasEndpoints
             return dto is null ? Results.NotFound() : Results.Ok(dto);
         });
 
+        // The camera's part of privacy asked again, after a miss it did not follow or never answered (PRIV-05).
+        group.MapPost("/{id}/privacy/retry", async (string id, RetryCameraPrivacyAnswerUseCase useCase, CancellationToken ct) =>
+        {
+            var dto = await useCase.ExecuteAsync(id, ct);
+            return dto is null ? Results.NotFound() : Results.Ok(dto);
+        });
+
         // Privacy mode — toggle batch (un seul reload Frigate)
         group.MapPost("/privacy/batch-toggle", async (BatchTogglePrivacyRequest request, BatchToggleCameraPrivacyModeUseCase useCase, CancellationToken ct) =>
             Results.Ok(await useCase.ExecuteAsync(request.CameraIds, request.Active, ct)));

@@ -11,9 +11,9 @@
 
 - l'utilisateur est connecté (UC-ACCESS-02), depuis un navigateur sur téléphone ou ordinateur (UI-10).
 
-**Résultat en succès** : l'accueil montre l'état global du système et les notifications récentes (UI-22).
+**Résultat en succès** : l'accueil montre chaque caméra avec son état, le nombre de détections de la dernière heure et l'état des notifications (UI-32).
 
-**Résultats en échec** : aucun propre à ce cas ; un état dégradé se lit sur l'accueil (A2, A3).
+**Résultats en échec** : Vyzio ne répond pas, et un écran entier le dit (E1) ; un état dégradé se lit dans la barre du haut (A3).
 
 ## Chemins
 
@@ -21,34 +21,49 @@
 | --- | --- | --- | --- |
 | N1 | Lire l'état du système à l'accueil | Nominal | L'utilisateur ouvre l'interface |
 | A1 | Mettre Vyzio en service | Alternative | Aucune caméra n'est encore ajoutée |
-| A2 | Le moteur de détection redémarre ou est indisponible | Alternative | La surveillance applique une configuration, ou ne répond plus |
-| A3 | Le stockage devient critique | Alternative | Le disque est presque plein |
+| A2 | Voir toutes les caméras | Alternative | Quatre caméras ou plus sont ajoutées |
+| A3 | Une alerte se lève | Alternative | Une caméra ne répond plus, Vyzio cesse de répondre, le stockage devient critique ou la surveillance redémarre |
+| A4 | Consulter le matériel | Alternative | L'utilisateur ouvre « Matériel » dans les réglages |
+| E1 | Vyzio ne répond pas | Échec | L'interface s'ouvre sans que Vyzio réponde |
 
 ## Détail des chemins
 
 ### N1 · Lire l'état du système à l'accueil
 
-1. L'utilisateur ouvre l'interface : l'accueil montre l'état global et les notifications récentes (UI-22), et l'état de chaque caméra (CAM-01, CAM-04, PRIV-04).
-2. Il gère ses caméras, ses profils et ses notifications depuis la même interface, chaque réglage à son emplacement prévisible (UI-04, UI-06, UI-07).
+1. L'utilisateur ouvre l'interface : pendant la lecture, l'accueil montre la forme de ce qui arrive.
+2. L'accueil montre chaque caméra avec sa marque (UI-31) et son œil, puis le Silence et les tuiles (UI-32).
+3. Il coupe ou réactive une caméra d'un toucher sur son œil (PRIV-21, UC-PRIV-01), coupe toutes les caméras jusqu'à l'heure qu'il choisit (UC-PRIV-01 A1), lance un Silence (UC-NOTIF-06), ou touche une caméra pour ouvrir sa vue (UC-LIVE-01).
+4. Il gère ses caméras, ses profils et ses notifications depuis les réglages, chaque réglage à son emplacement prévisible (UI-04, UI-06, UI-07, UI-29).
 
 ### A1 · Mettre Vyzio en service
 
-1. Aucune caméra n'est encore ajoutée : l'accueil annonce la mise en service en trois étapes (UI-23).
-2. L'utilisateur va directement à l'ajout d'une caméra (UC-CAM-01) ou au réglage des notifications (UC-NOTIF-02).
+1. Aucune caméra n'est encore ajoutée : l'accueil ne propose que « Ajouter une caméra » (UI-33).
+2. Le chemin continue par UC-CAM-01.
 
-### A2 · Le moteur de détection redémarre ou est indisponible
+### A2 · Voir toutes les caméras
 
-1. L'accueil dit l'état du moteur, sur ses trois paliers, sans nommer le composant (SYS-01).
+1. Quatre caméras ou plus sont ajoutées : l'accueil en montre quatre et « Voir les N caméras » (UI-32).
+2. L'utilisateur le touche : toutes les caméras s'affichent, chacune avec sa marque et son œil.
 
-### A3 · Le stockage devient critique
+### A3 · Une alerte se lève
 
-1. L'utilisateur en est informé (HIST-01).
+1. Une caméra ne répond plus, Vyzio cesse de répondre, le stockage devient critique (HIST-01) ou la surveillance redémarre ou est indisponible (SYS-01).
+2. La barre du haut s'agrandit et le dit, sur toutes les pages, jusqu'à ce que la cause cesse (UI-30).
+
+### A4 · Consulter le matériel
+
+1. L'utilisateur ouvre « Matériel » dans les réglages : il lit le matériel qui fait tourner la détection (UI-35).
+
+### E1 · Vyzio ne répond pas
+
+1. L'interface s'ouvre sans que Vyzio réponde : un écran entier le dit, avec le détail technique, et réessaie de lui-même (UI-34).
+2. Dès que Vyzio répond, l'interface s'ouvre comme en N1.
 
 ## Règles locales
 
-- **UI-22** · l'accueil doit rendre visible l'etat global du systeme et les notifications recentes ;
-- **UI-23** · tant qu'aucune camera n'est ajoutee, l'accueil, ouvert apres la creation du mot de passe (UC-ACCESS-01), annonce la mise en service en trois etapes, ajouter une camera, choisir ce qui merite une notification, recevoir les notifications, et mene directement a l'ajout d'une camera et au reglage des notifications ; aucune etape ne demande de fichier a ecrire ;
-- **UI-27** · l'accueil montre, a titre informatif, le materiel sur lequel tourne la detection (accelerateur dedie, carte graphique ou processeur) et la frequence d'analyse retenue, sans nommer le composant technique ; ce n'est pas un etat a traiter, rien n'y est a toucher.
+- **UI-32** · l'accueil montre les caméras d'abord : moins de quatre, chacune en grande carte avec son image ; quatre ou plus, les quatre premières de la liste des caméras en grille et « Voir les N caméras » ; chacune avec son nom, sa marque (UI-31) et un œil qui la coupe ou la réactive (PRIV-21) ; au-dessus, « Couper les caméras », qui ouvre la feuille où se choisit jusqu'à quand les couper toutes (PRIV-22) et devient « Réactiver les caméras » quand toutes le sont, ou dit jusqu'à quand quand elles partagent une heure (PRIV-22), et « Silence » (UC-NOTIF-06) ; en dessous, deux tuiles : « Détections », qui compte les détections de la dernière heure (« 2 depuis 1 h »), sans rien retenir de ce que l'utilisateur a déjà vu, et mène aux détections (UC-HIST-01), et « Notifications », qui mène à leurs réglages et ne porte un sous-titre que pour une exception (« À configurer », un Silence en cours, UC-NOTIF-06) ;
+- **UI-33** · tant qu'aucune caméra n'est ajoutée, l'interface, ouverte après la création du mot de passe (UC-ACCESS-01) ou plus tard, ouvre l'accueil, qui ne propose qu'une action, « Ajouter une caméra » (UC-CAM-01) ; il n'y a ni écran de bienvenue ni parcours à part pour la mise en service ;
+- **UI-35** · la rubrique « Matériel » des réglages montre, à titre informatif, le matériel sur lequel tourne la détection (accélérateur dédié, carte graphique ou processeur) et la fréquence d'analyse retenue, ainsi que l'état de la surveillance (SYS-01), sans nommer le composant technique ; ce n'est pas un état à traiter, rien n'y est à toucher.
 
 ## Points ouverts
 

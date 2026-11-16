@@ -14,6 +14,7 @@ import {
   type SettingNature,
 } from './setting_declaration'
 import { SECRET_KEYBOARD, TEXT_KEYBOARD } from './text_keyboard'
+import { EmptyState } from '../components/empty_state'
 
 /** Nature -> control (ADR-15): the only place this choice is made. */
 export function SettingControl({ setting }: { setting: SettingDeclaration }) {
@@ -44,11 +45,6 @@ export function SettingControl({ setting }: { setting: SettingDeclaration }) {
   }
 }
 
-/** Dims the value while it's inherited from the level above (ADR-15). */
-function followingClass(setting: SettingDeclaration) {
-  return setting.provenance?.following ? 'text-muted-foreground' : undefined
-}
-
 function ToggleControl({ setting }: { setting: SettingDeclaration }) {
   return (
     <Switch
@@ -75,7 +71,7 @@ function DropdownControl({
       disabled={setting.disabled}
       onValueChange={(value) => setting.onChange(value)}
     >
-      <SelectTrigger id={setting.id} className={cn('w-full', followingClass(setting))}>
+      <SelectTrigger id={setting.id} className="w-full">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
@@ -91,7 +87,7 @@ function DropdownControl({
           >
             <span className="flex flex-col items-start gap-0.5">
               {option.label}
-              {option.unavailable && <span className="text-xs">{option.unavailable}</span>}
+              {option.unavailable && <span className="text-label">{option.unavailable}</span>}
             </span>
           </SelectItem>
         ))}
@@ -102,7 +98,7 @@ function DropdownControl({
 
 /** The multiple choice opens like a select, so it is drawn as a field, never as a button. */
 const FIELD_TRIGGER =
-  'h-11 w-full justify-between rounded-md border border-input bg-transparent px-3 font-normal text-foreground hover:bg-transparent md:h-10'
+  'h-13 w-full justify-between rounded-md border border-input bg-card px-4 font-normal text-foreground hover:bg-card'
 
 function MultiChoiceControl({
   setting,
@@ -134,7 +130,7 @@ function MultiChoiceControl({
           variant="ghost"
           role="combobox"
           disabled={setting.disabled}
-          className={cn(FIELD_TRIGGER, followingClass(setting))}
+          className={FIELD_TRIGGER}
         >
           {/* Un reglage se lit au repos : le controle dit son etat, pas la liste des options. */}
           <span className="truncate">
@@ -165,7 +161,7 @@ function MultiChoiceControl({
           {visible.map((option) => (
             <label
               key={option.value}
-              className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg px-1 py-1 text-sm hover:bg-secondary md:min-h-0"
+              className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg px-1 py-1 text-body hover:bg-secondary"
             >
               <Checkbox
                 checked={selected.includes(option.value)}
@@ -175,7 +171,7 @@ function MultiChoiceControl({
               {option.label}
             </label>
           ))}
-          {visible.length === 0 && <p className="text-sm text-muted-foreground">Aucun résultat.</p>}
+          {visible.length === 0 && <EmptyState>Aucun résultat.</EmptyState>}
         </div>
       </PopoverContent>
     </Popover>
@@ -227,8 +223,14 @@ function NumberControl({
   }
 
   return (
-    // Narrow and starting at the column's edge, so the anatomy stays aligned (ADR-15).
-    <div className="relative w-36">
+    // Sized to its value and starting at the column's edge, so the anatomy stays aligned (ADR-15).
+    <div
+      className={cn(
+        'flex h-11 w-fit min-w-26 items-center rounded-md border border-input bg-card shadow-xs',
+        'focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50',
+        setting.disabled && 'opacity-50',
+      )}
+    >
       <Input
         id={setting.id}
         type="number"
@@ -236,7 +238,13 @@ function NumberControl({
         min={min}
         max={max}
         disabled={setting.disabled}
-        className={cn('tabular-nums', nature.unit && 'pr-20', followingClass(setting))}
+        className={cn(
+          // Over the whole height and at least a finger wide: the field itself is the tap target.
+          'h-11 w-0 min-w-11 flex-1 rounded-none border-0 bg-transparent py-0 pl-3 text-right tabular-nums shadow-none',
+          nature.unit ? 'pr-0' : 'pr-3',
+          'focus-visible:ring-0 disabled:opacity-100',
+          '[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none',
+        )}
         value={typed ?? String(setting.value)}
         onChange={(event) => setTyped(event.target.value)}
         onBlur={commit}
@@ -246,7 +254,7 @@ function NumberControl({
       />
       {/* L'unite appartient a la valeur, jamais au libelle. */}
       {nature.unit && (
-        <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">
+        <span className="pointer-events-none shrink-0 pr-3 pl-1 text-body text-muted-foreground">
           {nature.unit}
         </span>
       )}
@@ -277,7 +285,7 @@ function RangeControl({
         onValueChange={([value]) => setting.onChange(value)}
       />
       {/* Un curseur seul empeche de viser et de se relire. */}
-      <span className="w-16 shrink-0 text-right text-sm tabular-nums">
+      <span className="w-16 shrink-0 text-right text-body tabular-nums">
         {current} {nature.unit}
       </span>
     </div>
@@ -289,7 +297,7 @@ function TimeControl({ setting }: { setting: SettingDeclaration }) {
     <Input
       id={setting.id}
       type="time"
-      className={cn('w-full tabular-nums', followingClass(setting))}
+      className="w-full tabular-nums"
       disabled={setting.disabled}
       value={String(setting.value ?? '')}
       onChange={(event) => setting.onChange(event.target.value)}
@@ -302,7 +310,7 @@ function TextControl({ setting, nature }: { setting: SettingDeclaration; nature:
     <Input
       {...TEXT_KEYBOARD[nature.keyboard ?? 'prose']}
       id={setting.id}
-      className={cn('w-full', followingClass(setting))}
+      className="w-full"
       placeholder={nature.placeholder}
       disabled={setting.disabled}
       value={String(setting.value ?? '')}

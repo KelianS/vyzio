@@ -2,7 +2,7 @@
  * Declaring a setting (ADR-15).
  *
  * A setting **is declared, it is not drawn**: one describes what it *is*, and the
- * rendering derives the control, the alignment, the provenance and the way back
+ * rendering derives the control, the alignment, the lock and the way back
  * from that. The author of a screen has no hold on the appearance - not because it
  * is forbidden, but because nothing here offers it to them.
  *
@@ -69,20 +69,35 @@ export type SettingNature =
 export const VISIBLE_CHOICES_MAX = 7
 
 /**
- * Where the shown value comes from, when the setting can be overridden (ADR-15).
- * Supplied by the declaration, never recomputed while rendering.
+ * A value inherited from a real parent level, a camera's from the whole installation, which the
+ * row reads by its lock (ADR-15). Supplied by the declaration, never recomputed while rendering.
  */
-interface SettingProvenance {
-  /** `true` for as long as the value is the one from the level above. */
-  readonly following: boolean
-  /** What going back restores, already formatted to be read. */
-  readonly fallbackLabel: string
-  /** Names the restored value rather than announcing a reset. */
-  readonly revertLabel: string
+interface SettingInheritance {
+  /** `true` for as long as the value is the inherited one. */
+  readonly inherited: boolean
+  /** The inherited value, already formatted to be read: what going back restores. */
+  readonly valueLabel: string
   readonly onRevert: () => void
 }
 
-export interface SettingDeclaration<T = unknown> {
+/**
+ * A value recommended to a setting with no parent level, the installation's shipped durations,
+ * which the row offers to return to by a revert arrow once it differs (ADR-15).
+ */
+interface SettingRecommendation {
+  /** `true` for as long as the value is the recommended one: the row then shows nothing. */
+  readonly atRecommendation: boolean
+  /** The recommended value, already formatted to be read: what going back restores. */
+  readonly valueLabel: string
+  readonly onRevert: () => void
+}
+
+/** A row reads a parent level by its lock or a recommendation by its arrow, never both. */
+type SettingReference =
+  | { readonly inherits?: SettingInheritance; readonly recommended?: never }
+  | { readonly inherits?: never; readonly recommended?: SettingRecommendation }
+
+interface SettingFields<T> {
   readonly id: string
   readonly label: string
   readonly nature: SettingNature
@@ -99,6 +114,7 @@ export interface SettingDeclaration<T = unknown> {
   readonly consequence?: string
   readonly value: T
   readonly onChange: (value: T) => void
-  readonly provenance?: SettingProvenance
   readonly disabled?: boolean
 }
+
+export type SettingDeclaration<T = unknown> = SettingFields<T> & SettingReference

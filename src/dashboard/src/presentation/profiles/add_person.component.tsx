@@ -1,6 +1,6 @@
 import { useReducer } from 'react'
-import { Link, useNavigate } from 'react-router'
-import { ChevronLeft } from 'lucide-react'
+import { useNavigate } from 'react-router'
+import { PageHeader } from '../../common/components/page_header'
 import { Button } from '../../common/ui/button'
 import { SettingsPage } from '../../common/settings/settings_page'
 import { SettingsList } from '../../common/settings/settings_list'
@@ -13,6 +13,7 @@ import { ALERT_MODE_FIELD_LABEL, ALERT_MODE_OPTIONS, CATEGORY_OPTIONS } from './
 import { buildAddPersonPresenter } from './add_person.presenter'
 import { addPersonReducer } from './add_person.reducer'
 import { buildInitialAddPersonUido } from './add_person.uido'
+import { PEOPLE_PATH } from '../settings/settings.rubrics'
 
 /** Adding a person is one task, one page. */
 export function AddPersonView() {
@@ -26,7 +27,7 @@ export function AddPersonView() {
   async function add() {
     const createdId = await presenter.onCreate(uido.form)
     // Photos are next: without them recognition can't do anything with this profile.
-    if (createdId) void navigate(`/settings/detection/personnes/${createdId}/photos`)
+    if (createdId) void navigate(`${PEOPLE_PATH}/${createdId}/photos`, { replace: true })
   }
 
   const declarations: SettingDeclaration[] = [
@@ -56,16 +57,7 @@ export function AddPersonView() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <Link
-          to="/settings/detection/personnes"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ChevronLeft className="size-4" aria-hidden="true" />
-          Personnes
-        </Link>
-        <h1 className="mt-1 font-serif text-3xl">Ajouter une personne</h1>
-      </div>
+      <PageHeader title="Ajouter une personne" />
 
       <SettingsPage lede="Les photos viendront juste après.">
         <SettingsList settings={declarations} />

@@ -113,9 +113,9 @@ test.describe('Live view video', () => {
         const frame = await video.boundingBox()
         return frame && Math.round(frame.height)
       })
-      .toBe(293)
+      .toBe(269)
     const frame = await video.boundingBox()
-    expect(frame?.width).toBe(UPRIGHT.width)
+    expect(frame?.width).toBe(UPRIGHT.width - 32)
     expect(await video.evaluate((v: HTMLVideoElement) => getComputedStyle(v).objectFit)).toBe(
       'contain',
     )
@@ -128,7 +128,7 @@ test.describe('Live view video', () => {
     await openTheLiveView(page)
     const video = page.locator('video[aria-label="Porte d’entrée"]')
     await expectPlaying(video)
-    await page.getByRole('main', { name: 'Porte d’entrée' }).click()
+    await video.click()
     await expect.poll(() => page.evaluate(() => document.fullscreenElement !== null)).toBe(true)
 
     await page.getByRole('button', { name: 'Quitter le plein écran' }).click()
@@ -145,8 +145,7 @@ test.describe('Live view video', () => {
     const sentence = page.getByText('La vidéo n’arrive pas : image rafraîchie chaque seconde.')
     await expect(sentence).toBeVisible()
 
-    expect(await userSelectOf(page.getByRole('button', { name: 'Retour' }))).toBe('none')
-    expect(await userSelectOf(page.getByText('Porte d’entrée', { exact: true }))).toBe('none')
+    expect(await userSelectOf(page.getByRole('button', { name: 'Plein écran' }))).toBe('none')
     expect(await userSelectOf(page.getByRole('button', { name: 'Réessayer' }))).toBe('none')
     expect(await userSelectOf(sentence)).not.toBe('none')
   })

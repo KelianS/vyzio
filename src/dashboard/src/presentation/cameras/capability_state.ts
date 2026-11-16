@@ -1,4 +1,4 @@
-import type { BadgeTone } from '../../common/components/badge'
+import { StatusMarkKind, type StatusMarkState } from '../../common/components/status_mark_state'
 import { CameraState, type Camera } from '../../domain/entities/camera.entity'
 import type {
   CameraCapabilityBinding,
@@ -7,13 +7,7 @@ import type {
 } from '../../domain/entities/camera_capability_binding.entity'
 import { ProtocolStatus } from '../../domain/entities/camera_protocol.entity'
 
-/** A state pill: its word and its tone. */
-export interface StatePill {
-  label: string
-  tone: BadgeTone
-}
-
-/** Where a capability stands, the pill of its card and of a stream line (CAM-21). */
+/** Where a capability stands, the mark of its row and of a stream line (CAM-21). */
 export const CapabilityState = {
   Working: 'working',
   Failed: 'failed',
@@ -34,18 +28,34 @@ export const SWITCHED_ON_AND_OFF: Record<Capability, boolean> = {
 }
 
 // The one word both levels share: nobody asked yet (CAM-22).
-const NOT_CHECKED_YET: StatePill = { label: 'Pas encore vérifié', tone: 'neutral' }
+const NOT_CHECKED_YET = 'Pas encore vérifié'
 
 /** The capability level's words, the same on every card and stream line. */
-export const CAPABILITY_STATE_PILLS: Record<CapabilityState, StatePill> = {
-  working: { label: 'Fonctionne', tone: 'ok' },
-  failed: { label: 'En échec', tone: 'danger' },
-  to_confirm: { label: 'À confirmer', tone: 'warn' },
+const CAPABILITY_STATE_WORDS: Record<CapabilityState, string> = {
+  working: 'Fonctionne',
+  failed: 'En échec',
+  to_confirm: 'À confirmer',
   // The user's no is an answer, not a failure (CAM-16).
-  rejected: { label: 'Non confirmée', tone: 'neutral' },
+  rejected: 'Non confirmée',
   unchecked: NOT_CHECKED_YET,
-  unconfigured: { label: 'À configurer', tone: 'neutral' },
-  switched_off: { label: 'Désactivée', tone: 'neutral' },
+  unconfigured: 'À configurer',
+  switched_off: 'Désactivée',
+}
+
+// Only a working capability is green, only a failing one is the ring; every other word is grey (UI-31).
+const CAPABILITY_MARK_KIND: Record<CapabilityState, StatusMarkKind> = {
+  working: StatusMarkKind.On,
+  failed: StatusMarkKind.Alert,
+  to_confirm: StatusMarkKind.Off,
+  rejected: StatusMarkKind.Off,
+  unchecked: StatusMarkKind.Off,
+  unconfigured: StatusMarkKind.Off,
+  switched_off: StatusMarkKind.Off,
+}
+
+/** A capability card's mark, carrying the same word as its stream lines. */
+export function capabilityMark(state: CapabilityState): StatusMarkState {
+  return { kind: CAPABILITY_MARK_KIND[state], label: CAPABILITY_STATE_WORDS[state] }
 }
 
 // Proven or confirmed works; to confirm waits for the user's try; the user's no is kept apart, the rest failed (ADR-04).
@@ -118,15 +128,17 @@ export function streamBindingOf(
   return bindings.find((b) => IS_STREAM[b.capability])
 }
 
-/** The protocol level's words, a box's pill: its last check, reach then login with its account (ADR-04). */
-const PROTOCOL_STATE_PILLS: Record<ProtocolStatus, StatePill> = {
-  answers: { label: 'Accessible', tone: 'ok' },
-  refused: { label: 'Accès refusé', tone: 'danger' },
-  unreachable: { label: 'Injoignable', tone: 'danger' },
+/** The protocol level's words and marks: its last check, reach then login with its account (ADR-04). */
+const PROTOCOL_STATE_MARKS: Record<ProtocolStatus, StatusMarkState> = {
+  answers: { kind: StatusMarkKind.On, label: 'Accessible' },
+  refused: { kind: StatusMarkKind.Alert, label: 'Accès refusé' },
+  unreachable: { kind: StatusMarkKind.Alert, label: 'Injoignable' },
 }
 
-export function protocolPill(status: ProtocolStatus | null): StatePill {
-  return status === null ? NOT_CHECKED_YET : PROTOCOL_STATE_PILLS[status]
+export function protocolMark(status: ProtocolStatus | null): StatusMarkState {
+  return status === null
+    ? { kind: StatusMarkKind.Off, label: NOT_CHECKED_YET }
+    : PROTOCOL_STATE_MARKS[status]
 }
 
 // The way out of a failed capability depends on what its protocol said: wake it, fix the account, or try again.

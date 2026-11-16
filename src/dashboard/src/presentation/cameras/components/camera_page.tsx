@@ -1,20 +1,22 @@
-import { Link, Outlet } from 'react-router'
-import { ChevronLeft } from 'lucide-react'
+import { Link, Outlet, useMatches } from 'react-router'
 import { TabBar } from '../../../common/components/tab_bar'
 import { SettingsPage } from '../../../common/settings/settings_page'
 import { ReadFailure } from '../../../common/components/error_message'
 import type { AppError } from '../../../common/errors/app_error'
 import type { Camera } from '../../../domain/entities/camera.entity'
-import { formatCameraStatusLabel } from '../../../common/camera/camera_status'
+import { cameraMark } from '../../../common/camera/camera_status'
+import { PageHeader } from '../../../common/components/page_header'
 import { CameraNotFound } from './camera_not_found'
+import { Loading } from '../../../common/components/loading'
+import { isSubPage } from '../../settings/settings.rubrics'
 
 // The pages of one camera, each the twin of an installation page one notch lower (UI-08).
 const CAMERA_PAGES = [
-  { slug: 'connexion', label: 'Connexion' },
-  { slug: 'vie-privee', label: 'Vie privée' },
+  { slug: 'connection', label: 'Connexion' },
+  { slug: 'privacy', label: 'Vie privée' },
   { slug: 'detection', label: 'Détection' },
   { slug: 'image', label: 'Image et pilotage' },
-  { slug: 'conservation', label: 'Conservation' },
+  { slug: 'retention', label: 'Conservation' },
 ]
 
 export function CameraPage({
@@ -28,13 +30,20 @@ export function CameraPage({
   error: AppError | null
   onRetry: () => void
 }) {
-  if (!camera && loading) return <SettingsPage>Chargement…</SettingsPage>
+  const subPage = isSubPage(useMatches())
+
+  if (!camera && loading)
+    return (
+      <SettingsPage>
+        <Loading />
+      </SettingsPage>
+    )
 
   // An unread list says nothing about this camera: "not found" would be a false answer.
   if (!camera && error) {
     return (
       <SettingsPage>
-        <h1 className="font-serif text-3xl">Cette caméra ne s’affiche pas</h1>
+        <h1 className="text-title">Cette caméra ne s’affiche pas</h1>
         <ReadFailure error={error} onRetry={onRetry} className="mt-3" />
         <Link to="/settings/cameras" className="mt-3 inline-block underline underline-offset-2">
           Revenir à la liste des caméras
@@ -52,21 +61,12 @@ export function CameraPage({
     )
   }
 
+  // A sub-page names itself and leads back to its tab: neither the camera's name nor its tabs.
+  if (subPage) return <Outlet context={camera} />
+
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <Link
-          to="/settings/cameras"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ChevronLeft className="size-4" aria-hidden="true" />
-          Caméras
-        </Link>
-        <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <h1 className="font-serif text-3xl">{camera.displayName}</h1>
-          <span className="text-sm text-muted-foreground">{formatCameraStatusLabel(camera)}</span>
-        </div>
-      </div>
+      <PageHeader title={camera.displayName} mark={cameraMark(camera)} />
 
       {/* Tabs rather than a list: few pages at this level, and one moves between them. */}
       <TabBar

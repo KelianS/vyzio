@@ -1,11 +1,11 @@
 import { LogOut } from 'lucide-react'
 import { useEffect, useReducer, useState } from 'react'
-import { HelpPanel } from '../../common/components/help_panel'
+import { HelpNotes, HelpQuestion } from '../../common/components/help_notes'
+import { GroupedList, GroupedRow } from '../../common/components/grouped_list'
 import { ConfirmModal } from '../../common/components/confirm_modal'
 import { useToast } from '../../common/components/toast'
 import { SettingsPage, SettingsSection } from '../../common/settings/settings_page'
 import { Button } from '../../common/ui/button'
-import { SecondaryButton } from '../../common/components/secondary_button'
 import { Input } from '../../common/ui/input'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
@@ -43,27 +43,28 @@ export function AccessView() {
         />
       </SettingsSection>
 
-      <SettingsSection title="Cet appareil">
-        <SecondaryButton
+      {/* The cost of leaving everywhere is said by its confirmation, not above it (DESIGN SYSTEM § Help). */}
+      <GroupedList label="Appareils">
+        <GroupedRow
           icon={LogOut}
+          title="Se déconnecter"
+          weight="action"
+          trailing="none"
           disabled={uido.leaving}
           onClick={() => void leave(presenter.onSignOut)}
-        >
-          Se déconnecter
-        </SecondaryButton>
-      </SettingsSection>
-
-      {/* The cost is said by the confirmation, not above the button (DESIGN SYSTEM § Help). */}
-      <SettingsSection title="Tous les appareils">
-        <SecondaryButton
+        />
+        <GroupedRow
           icon={LogOut}
+          title="Déconnecter tous les appareils"
+          weight="action"
+          trailing="none"
           disabled={uido.leavingEverywhere}
           onClick={presenter.onAskSignOutEverywhere}
-        >
-          Déconnecter tous les appareils
-        </SecondaryButton>
+        />
+      </GroupedList>
 
-        <HelpPanel title="Quand faut-il déconnecter tous les appareils ?">
+      <HelpNotes>
+        <HelpQuestion title="Quand faut-il déconnecter tous les appareils ?">
           <p>
             Quand un téléphone ou un ordinateur qui ouvrait Vyzio n’est plus entre vos mains :
             perdu, volé, revendu, ou simplement prêté. Tant qu’il reste connecté, il donne accès à
@@ -73,8 +74,8 @@ export function AccessView() {
             Si vous pensez que quelqu’un connaît votre mot de passe, cela ne suffit pas : il
             pourrait se reconnecter aussitôt. Changez-le plutôt, ci-dessus.
           </p>
-        </HelpPanel>
-      </SettingsSection>
+        </HelpQuestion>
+      </HelpNotes>
 
       {uido.confirmEverywhere && (
         <ConfirmModal
@@ -124,7 +125,10 @@ function ChangePasswordForm({
       }}
     >
       <div className="space-y-2">
-        <label htmlFor="current-password" className="block text-sm font-medium">
+        <label
+          htmlFor="current-password"
+          className="ml-1 block text-label font-semibold text-muted-foreground"
+        >
           Mot de passe actuel
         </label>
         <Input
@@ -138,7 +142,10 @@ function ChangePasswordForm({
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="new-password" className="block text-sm font-medium">
+        <label
+          htmlFor="new-password"
+          className="ml-1 block text-label font-semibold text-muted-foreground"
+        >
           Nouveau mot de passe
         </label>
         <Input
@@ -151,16 +158,16 @@ function ChangePasswordForm({
           aria-describedby="new-password-hint"
         />
         {minLength !== null && (
-          <p id="new-password-hint" className="text-sm text-muted-foreground">
+          <p id="new-password-hint" className="text-body text-muted-foreground">
             Au moins {minLength} caractères.
           </p>
         )}
       </div>
 
       {/* A refusal is read beside the field it refused, in a line kept so the button never jumps. */}
-      <div className="min-h-5">
+      <div className="min-h-lh text-body">
         {refused && (
-          <p role="alert" className="text-sm font-medium text-destructive">
+          <p role="alert" className="text-body font-medium text-destructive">
             Mot de passe actuel incorrect.
           </p>
         )}

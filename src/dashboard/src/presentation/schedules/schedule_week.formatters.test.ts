@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ScheduleRuleKind, type ScheduleRule } from '../../domain/entities/schedule_rule.entity'
-import { barOf, entryTimes, targetSummary, weekOf } from './schedule_week.formatters'
+import { barOf, daysSummary, entryTimes, targetSummary, weekOf } from './schedule_week.formatters'
 
 function makeRule(overrides: Partial<ScheduleRule> = {}): ScheduleRule {
   return {
@@ -155,12 +155,12 @@ describe('barOf', () => {
 
 describe('entryTimes', () => {
   it.each([
-    [{ rule: makeRule(), tail: false }, '22:00 → 06:00 le lendemain'],
-    [{ rule: makeRule(), tail: true }, 'jusqu’à 06:00, depuis la veille'],
-    [{ rule: makeRule({ startTime: '08:00', endTime: '12:00' }), tail: false }, '08:00 → 12:00'],
+    [{ rule: makeRule(), tail: false }, '22 h – 6 h le lendemain'],
+    [{ rule: makeRule(), tail: true }, 'jusqu’à 6 h, depuis la veille'],
+    [{ rule: makeRule({ startTime: '08:00', endTime: '12:30' }), tail: false }, '8 h – 12 h 30'],
     [
       { rule: makeRule({ startTime: '20:00', endTime: '00:00' }), tail: false },
-      '20:00 → 00:00 le lendemain',
+      '20 h – 0 h le lendemain',
     ],
   ])('entryTimes_ShouldSayWhenTheRangeRuns_WhenTheWeekShowsIt %#', (entry, expected) => {
     // Act
@@ -169,6 +169,26 @@ describe('entryTimes', () => {
     // Assert
     expect(times).toBe(expected)
   })
+})
+
+describe('daysSummary', () => {
+  it.each([
+    { days: [1, 2, 3, 4, 5], expected: 'lundi au vendredi' },
+    { days: [6, 0], expected: 'samedi et dimanche' },
+    { days: [6], expected: 'samedi' },
+    { days: [0, 1, 2, 3, 4, 5, 6], expected: 'tous les jours' },
+    { days: [1, 2, 3, 5], expected: 'lundi au mercredi et vendredi' },
+    { days: [1, 3, 5], expected: 'lundi, mercredi et vendredi' },
+  ])(
+    'daysSummary_ShouldReadTheDaysAsASentence_WhenARangeIsListed ($expected)',
+    ({ days, expected }) => {
+      // Act
+      const summary = daysSummary(days)
+
+      // Assert
+      expect(summary).toBe(expected)
+    },
+  )
 })
 
 describe('targetSummary', () => {

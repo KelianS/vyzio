@@ -1,7 +1,14 @@
+import type { AppError } from '../../common/errors/app_error'
 import type { DetectionEvent } from '../../domain/entities/detection_event.entity'
 import type { DetectionLabel } from '../../domain/entities/detection_label.entity'
 import type { Profile } from '../../domain/entities/profile.entity'
-import type { DetectionMedia } from '../../common/detection/detection_preview'
+import { ANY_DAY, type DayFilter } from './day_filter'
+
+/** The sheet the page shows: its filter, the playing clip's actions, or who the clip shows. */
+export type DetectionSheet = 'filter' | 'actions' | 'identity'
+
+/** An axis of the filter that holds several values at once (HIST-03). */
+export type FilterAxis = 'camera' | 'profile' | 'label'
 
 export interface DetectionHistoryUido {
   items: DetectionEvent[]
@@ -10,47 +17,39 @@ export interface DetectionHistoryUido {
   loaded: boolean
   profiles: Profile[]
   detectionLabels: DetectionLabel[]
-  loading: boolean
   loadingMore: boolean
-  /** A failed read: its sentence, and the diagnostic line support reads (UI-01). */
-  error: { message: string; diagnostic?: string } | null
-  media: DetectionMedia | null
-  /** Filters are an option, not the top of the screen: folded until they are asked for. */
-  filtersOpen: boolean
+  /** A failed read, shown with its diagnostic line (UI-01). */
+  error: AppError | null
+  /** The clip in the player; null holds the most recent one (HIST-18). */
+  playingId: string | null
+  sheet: DetectionSheet | null
 
-  filterCamera: string
-  filterLabel: string
-  filterProfileId: string
-  filterFrom: string
-  filterTo: string
+  /** The values checked on each axis, none meaning all; a camera by its id, never the engine's name. */
+  filters: Record<FilterAxis, string[]>
+  filterDay: DayFilter
 
-  correctingEventId: string | null
   /** The detection whose deletion waits for its confirmation. */
   deletingEventId: string | null
   /** The detection whose video turned out erased with another one. */
   clipGoneEventId: string | null
 }
 
-export function buildInitialDetectionHistoryUido(): DetectionHistoryUido {
+/** `cameraId`: the camera the page opens filtered on, from a camera view's « Toutes ses détections ». */
+export function buildInitialDetectionHistoryUido(cameraId = ''): DetectionHistoryUido {
   return {
     items: [],
     nextCursor: null,
     loaded: false,
     profiles: [],
     detectionLabels: [],
-    loading: true,
     loadingMore: false,
     error: null,
-    media: null,
-    filtersOpen: false,
+    playingId: null,
+    sheet: null,
 
-    filterCamera: '',
-    filterLabel: '',
-    filterProfileId: '',
-    filterFrom: '',
-    filterTo: '',
+    filters: { camera: cameraId ? [cameraId] : [], profile: [], label: [] },
+    filterDay: ANY_DAY,
 
-    correctingEventId: null,
     deletingEventId: null,
     clipGoneEventId: null,
   }

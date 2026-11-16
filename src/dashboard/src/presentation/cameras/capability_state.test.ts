@@ -3,12 +3,12 @@ import { CapabilityStatus } from '../../domain/entities/camera_capability_bindin
 import { makeCamera } from '../../testing/camera_fixture'
 import { makeCapabilityBinding } from '../../testing/capability_binding_fixture'
 import {
-  CAPABILITY_STATE_PILLS,
   CapabilityState,
   capabilityFailureLine,
+  capabilityMark,
   capabilityState,
   otherTestsSuspended,
-  protocolPill,
+  protocolMark,
   shownState,
   streamCheckState,
 } from './capability_state'
@@ -94,13 +94,13 @@ describe('capabilityState', () => {
   })
 })
 
-describe('CAPABILITY_STATE_PILLS', () => {
-  it('CAPABILITY_STATE_PILLS_ShouldNotSayFailure_WhenTheUserAnsweredNo', () => {
+describe('capabilityMark', () => {
+  it('capabilityMark_ShouldNotSayFailure_WhenTheUserAnsweredNo', () => {
     // Arrange & Act
-    const pill = CAPABILITY_STATE_PILLS[CapabilityState.Rejected]
+    const mark = capabilityMark(CapabilityState.Rejected)
 
     // Assert
-    expect(pill).toEqual({ label: 'Non confirmée', tone: 'neutral' })
+    expect(mark).toEqual({ kind: 'off', label: 'Non confirmée' })
   })
 })
 
@@ -199,34 +199,34 @@ describe('otherTestsSuspended', () => {
   })
 })
 
-describe('protocolPill', () => {
+describe('protocolMark', () => {
   it.each([
     {
-      name: 'protocolPill_ShouldSayItIsAccessible_WhenTheLoginWasAccepted',
+      name: 'protocolMark_ShouldSayItIsAccessibleInGreen_WhenTheLoginWasAccepted',
       status: 'answers' as const,
-      label: 'Accessible',
+      expected: { kind: 'on', label: 'Accessible' },
     },
     {
-      name: 'protocolPill_ShouldSayAccessIsRefused_WhenTheAccountWasTurnedDown',
+      name: 'protocolMark_ShouldRingThatAccessIsRefused_WhenTheAccountWasTurnedDown',
       status: 'refused' as const,
-      label: 'Accès refusé',
+      expected: { kind: 'alert', label: 'Accès refusé' },
     },
     {
-      name: 'protocolPill_ShouldSayItIsUnreachable_WhenNothingWasReached',
+      name: 'protocolMark_ShouldRingThatItIsUnreachable_WhenNothingWasReached',
       status: 'unreachable' as const,
-      label: 'Injoignable',
+      expected: { kind: 'alert', label: 'Injoignable' },
     },
     {
-      name: 'protocolPill_ShouldSayNotCheckedYet_WhenTheCameraWasNeverAsked',
+      name: 'protocolMark_ShouldSayNotCheckedYetInGrey_WhenTheCameraWasNeverAsked',
       status: null,
-      label: 'Pas encore vérifié',
+      expected: { kind: 'off', label: 'Pas encore vérifié' },
     },
-  ])('$name', ({ status, label }) => {
+  ])('$name', ({ status, expected }) => {
     // Arrange & Act
-    const pill = protocolPill(status)
+    const mark = protocolMark(status)
 
     // Assert
-    expect(pill.label).toBe(label)
+    expect(mark).toEqual(expected)
   })
 })
 

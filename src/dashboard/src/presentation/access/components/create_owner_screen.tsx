@@ -1,4 +1,4 @@
-import { HelpPanel } from '../../../common/components/help_panel'
+import { HelpNotes, HelpQuestion } from '../../../common/components/help_notes'
 import { PasswordScreen } from './password_screen'
 
 export function CreateOwnerScreen({
@@ -29,17 +29,20 @@ export function CreateOwnerScreen({
       onSubmit={onCreate}
       help={
         afterReset ? undefined : (
-          <HelpPanel title="Et si je l’oublie ?">
-            <p>
-              Il n’y a ni courriel de récupération ni compte en ligne : Vyzio ne connaît personne
-              d’autre que vous. Un mot de passe oublié se remet à zéro depuis la machine qui héberge
-              Vyzio : il faut donc y avoir accès, ce qui est précisément ce qui protège vos images.
-            </p>
-            <p>
-              Choisissez-en un que votre navigateur retient. Il ne vous sera pas redemandé à chaque
-              visite : une fois connecté, cet appareil le reste plusieurs semaines.
-            </p>
-          </HelpPanel>
+          <HelpNotes>
+            <HelpQuestion title="Et si je l’oublie ?">
+              <p>
+                Il n’y a ni courriel de récupération ni compte en ligne : Vyzio ne connaît personne
+                d’autre que vous. Un mot de passe oublié se remet à zéro depuis la machine qui
+                héberge Vyzio : il faut donc y avoir accès, ce qui est précisément ce qui protège
+                vos images.
+              </p>
+              <p>
+                Choisissez-en un que votre navigateur retient. Il ne vous sera pas redemandé à
+                chaque visite : une fois connecté, cet appareil le reste plusieurs semaines.
+              </p>
+            </HelpQuestion>
+          </HelpNotes>
         )
       }
     />

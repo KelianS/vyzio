@@ -35,7 +35,7 @@ public sealed class GetProfileDetectionEventsUseCase(
 
         // Frigate knows a profile by the name it was recognized under, never by its Vyzio id.
         var detections = await events.QueryAsync(
-            new FrigateDetectionQuery(Identity: profile.Name, Limit: Math.Clamp(limit, 1, 100)), ct);
+            new FrigateDetectionQuery(Identities: [profile.Name], Limit: Math.Clamp(limit, 1, 100)), ct);
         return await projector.ToContractsAsync(detections, ct);
     }
 }
@@ -51,25 +51,27 @@ public sealed class GetDetectionHistoryUseCase(
     {
         var limit = Math.Clamp(query.Limit, 1, 100);
 
-        string? identity = null;
-        if (!string.IsNullOrWhiteSpace(query.ProfileId))
+        var profileIds = Values(query.ProfileIds);
+        var identities = new List<string>();
+        foreach (var profileId in profileIds)
         {
-            var profile = await profiles.GetByIdAsync(query.ProfileId, ct);
             // A profile renamed since is unreachable by its former name: Frigate kept what it saw.
-            if (profile is null)
-                return new DetectionHistoryPageDto([], null);
-
-            identity = profile.Name;
+            if (await profiles.GetByIdAsync(profileId, ct) is { } profile)
+                identities.Add(profile.Name);
         }
+
+        // Every person asked for is gone: none of them can have been seen, so nothing matches.
+        if (profileIds.Count > 0 && identities.Count == 0)
+            return new DetectionHistoryPageDto([], null);
 
         var cursor = ParseCursor(query.Cursor);
         var before = cursor ?? query.To;
 
         var detections = await events.QueryAsync(
             new FrigateDetectionQuery(
-                Camera: query.Camera,
-                Label: query.Label,
-                Identity: identity,
+                Cameras: Values(query.Cameras),
+                Labels: Values(query.Labels),
+                Identities: identities,
                 After: query.From,
                 Before: before,
                 Limit: limit),
@@ -82,6 +84,9 @@ public sealed class GetDetectionHistoryUseCase(
 
         return new DetectionHistoryPageDto(await projector.ToContractsAsync(detections, ct), nextCursor);
     }
+
+    private static List<string> Values(IReadOnlyList<string>? values)
+        => values?.Where(value => !string.IsNullOrWhiteSpace(value)).Distinct().ToList() ?? [];
 
     private static DateTimeOffset? ParseCursor(string? cursor)
         => string.IsNullOrWhiteSpace(cursor)

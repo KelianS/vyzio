@@ -9,12 +9,9 @@ import type { CameraProtocol } from '../../../domain/entities/camera_protocol.en
 import { Button } from '../../../common/ui/button'
 import { SecondaryButton } from '../../../common/components/secondary_button'
 import { CAPABILITY_LABELS } from '../cameras.formatters'
-import {
-  NO_PROTOCOL_FOR_ANOTHER_CAPABILITY,
-  protocolOptions,
-  type ProtocolOption,
-} from '../protocol_labels'
+import { protocolOptions, type ProtocolOption } from '../protocol_labels'
 import { Picker } from './protocol_choice'
+import { Field } from '../../../common/components/field'
 
 // The stream is never added by hand: a camera is born with it (ADR-04).
 const ADDABLE_CAPABILITIES: Capability[] = ['ptz', 'hardware_privacy', 'image_settings']
@@ -47,18 +44,8 @@ export function ManualCapability({
   const choices = new Map(unbound.map((c) => [c, protocolOptions(c, protocols, null)]))
   const available = unbound.filter((c) => (choices.get(c) ?? []).length > 0)
   if (!bindingsRead) return null
-  // A capability that already has its card changes its protocol there, failing or not.
-  if (unbound.length === 0)
-    return (
-      <p className="text-sm text-muted-foreground">
-        Chaque capacité a déjà sa carte : pour en joindre une autrement, ouvrez ses options.
-      </p>
-    )
-  // With no protocol at all, the stream card already says the way out.
-  if (available.length === 0)
-    return protocols.length === 0 ? null : (
-      <p className="text-sm text-muted-foreground">{NO_PROTOCOL_FOR_ANOTHER_CAPABILITY}</p>
-    )
+  // Nothing left to add: the page offers no way to add one rather than a sentence on why.
+  if (available.length === 0) return null
 
   return open ? (
     <ManualCapabilityForm
@@ -115,8 +102,7 @@ function ManualCapabilityForm({
     <div className="rounded-inset border border-border p-3">
       <p className="font-medium">Configurer manuellement</p>
       <div className="mt-2 flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-muted-foreground">Capacité</span>
+        <Field label="Capacité">
           <Picker
             value={selectedCapability}
             options={availableCapabilities.map((cap) => ({
@@ -129,16 +115,15 @@ function ManualCapabilityForm({
               setSelectedProtocol(firstOf(cap))
             }}
           />
-        </label>
+        </Field>
 
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-muted-foreground">Protocole</span>
+        <Field label="Protocole">
           <Picker
             value={selectedProtocol}
             options={optionsOf(selectedCapability)}
             onChange={(value) => setSelectedProtocol(value as SupportedProtocol)}
           />
-        </label>
+        </Field>
 
         <SecondaryButton
           icon={Settings2}
@@ -153,7 +138,7 @@ function ManualCapabilityForm({
           Annuler
         </Button>
       </div>
-      <p className="mt-2 text-sm text-muted-foreground">
+      <p className="mt-2 text-body text-muted-foreground">
         La capacité est testée immédiatement et activée en cas de succès.
       </p>
     </div>

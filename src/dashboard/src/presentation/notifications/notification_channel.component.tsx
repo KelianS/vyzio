@@ -1,10 +1,10 @@
 import { useEffect, useReducer } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
-import { ChevronLeft, Send } from 'lucide-react'
+import { Link, useParams } from 'react-router'
+import { Send } from 'lucide-react'
 import { SettingsPage, SettingsSection } from '../../common/settings/settings_page'
 import { SettingsList } from '../../common/settings/settings_list'
-import { AdvancedFold } from '../../common/settings/advanced_fold'
-import { HelpPanel } from '../../common/components/help_panel'
+import { AdvancedPage, AdvancedRow } from '../../common/settings/advanced'
+import { HelpNotes, HelpQuestion } from '../../common/components/help_notes'
 import { SettingsDraftBar } from '../../common/settings/settings_draft_bar'
 import { useSettingsDraft } from '../../common/settings/use_settings_draft'
 import type { SettingDeclaration } from '../../common/settings/setting_declaration'
@@ -14,6 +14,7 @@ import { ConfirmModal } from '../../common/components/confirm_modal'
 import { DeleteAction } from '../../common/components/delete_action'
 import { ReadFailure } from '../../common/components/error_message'
 import { ScheduleCountLine } from '../../common/schedule/schedule_count_line'
+import { GroupedList } from '../../common/components/grouped_list'
 import { ScheduleRuleKind } from '../../domain/entities/schedule_rule.entity'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
@@ -22,7 +23,8 @@ import {
   type MediaMode,
   type NotificationChannelConfig,
 } from '../../domain/entities/notification_channel_config.entity'
-import { sendingSentence } from './channel_status'
+import { useGoBack } from '../../common/navigation/use_go_back'
+import { PageHeader } from '../../common/components/page_header'
 import { NotificationLog } from './components/notification_log'
 import { CommandJournal } from './components/command_journal'
 import { ChannelPairingSection } from './components/channel_pairing_section'
@@ -41,6 +43,7 @@ import {
   toNotificationValues,
   type NotificationValues,
 } from './notification_settings'
+import { Loading } from '../../common/components/loading'
 
 const MEDIA_MODE_OPTIONS: readonly { value: MediaMode; label: string }[] = [
   { value: 'clip_or_photo', label: 'Photo et vidéo' },
@@ -58,8 +61,8 @@ const MESSAGE_FIELD_OPTIONS = [
 
 const TRIGGERS_LABEL = 'Ce qui déclenche une notification'
 
-/** Second level of the Notifications rubric: one channel, whichever it is (ADR-14, UI-25). */
-export function NotificationChannelView() {
+/** Second level of the Notifications rubric: one channel, whichever it is (ADR-14, UI-25), or its Avancé page. */
+export function NotificationChannelView({ advanced = false }: { advanced?: boolean }) {
   const { channel: slug } = useParams()
   const channel = parseNotificationChannelName(slug)
   const { notifications: container, schedules: schedulesContainer } = useAppContainer()
@@ -84,7 +87,7 @@ export function NotificationChannelView() {
   if (channel && uido.configError) {
     return (
       <SettingsPage>
-        <h1 className="font-serif text-3xl">Ce canal ne s’affiche pas</h1>
+        <h1 className="text-title">Ce canal ne s’affiche pas</h1>
         <ReadFailure
           error={uido.configError}
           onRetry={() => presenter.onLoad(channel)}
@@ -105,7 +108,7 @@ export function NotificationChannelView() {
       // This route announces that it carries its own header: with no channel to name,
       // the failure has to do it, or the page would stay anonymous.
       <SettingsPage>
-        <h1 className="font-serif text-3xl">Canal introuvable</h1>
+        <h1 className="text-title">Canal introuvable</h1>
         <Link
           to="/settings/notifications"
           className="mt-3 inline-block underline underline-offset-2"
@@ -117,10 +120,18 @@ export function NotificationChannelView() {
   }
 
   if (uido.configLoading || !uido.config) {
-    return <SettingsPage>Chargement…</SettingsPage>
+    return (
+      <SettingsPage>
+        <Loading />
+      </SettingsPage>
+    )
   }
 
-  return <ChannelForm key={channel} config={uido.config} uido={uido} presenter={presenter} />
+  return advanced ? (
+    <ChannelAdvancedForm key={channel} config={uido.config} uido={uido} presenter={presenter} />
+  ) : (
+    <ChannelForm key={channel} config={uido.config} uido={uido} presenter={presenter} />
+  )
 }
 
 function ChannelForm({
@@ -132,7 +143,7 @@ function ChannelForm({
   uido: NotificationChannelUido
   presenter: ReturnType<typeof buildNotificationChannelPresenter>
 }) {
-  const navigate = useNavigate()
+  const goBack = useGoBack()
   const { channel, acceptsCommands } = config
 
   // The sections below the settings read on mount, as they did when each fetched its own.
@@ -147,20 +158,12 @@ function ChannelForm({
 
   useUnsavedChanges(draft.dirty)
 
-  // Enabling ships images off the local network: asked once, at save, never on the toggle itself.
+  // A first configuration ships images off the local network: asked once, at save (NOTIF-04).
   async function save() {
     if (await presenter.onSave(config, draft.values)) draft.accept()
   }
 
   const channelSettings: SettingDeclaration[] = [
-    {
-      id: 'channel-enabled',
-      label: `Notifications ${config.displayName}`,
-      nature: { kind: 'toggle' },
-      consequence: `Photos, vidéos et noms de caméras transitent par les serveurs de ${config.displayName} : ces images quittent votre réseau.`,
-      value: draft.values.enabled,
-      onChange: (value) => draft.set('enabled', value as boolean),
-    },
     // What the channel asks for, it declares: the screen knows no channel of its own.
     ...config.credentials.map((credential): SettingDeclaration => {
       const copy = credentialCopy(config.channel, credential.field)
@@ -188,7 +191,7 @@ function ChannelForm({
             kind: 'multiChoice',
             options: uido.labels.map((label) => ({
               value: label.value,
-              label: `${label.emoji} ${label.displayName}`,
+              label: label.displayName,
             })),
           },
           help: 'Seules les catégories cochées vous sont notifiées. Les autres restent détectées et consultables dans l’historique.',
@@ -230,56 +233,21 @@ function ChannelForm({
     })
   }
 
-  const message: SettingDeclaration[] = [
-    {
-      id: 'channel-media',
-      label: 'Ce qui est envoyé',
-      // A channel that cannot carry video does not offer it: the capability decides (ADR-14).
-      nature: {
-        kind: 'choice',
-        options: MEDIA_MODE_OPTIONS.filter(
-          (option) => option.value !== 'clip_or_photo' || config.capabilities.video,
-        ),
-      },
-      help: config.capabilities.video
-        ? 'La vidéo arrive quelques secondes après la photo, le temps que l’enregistrement se termine. Si elle n’est pas prête, la photo part seule ; si la photo manque aussi, le message part en texte.'
-        : undefined,
-      value: draft.values.mediaMode,
-      onChange: (value) => draft.set('mediaMode', value as MediaMode),
-    },
-    {
-      id: 'channel-fields',
-      label: 'Détails du message',
-      nature: { kind: 'multiChoice', options: [...MESSAGE_FIELD_OPTIONS] },
-      value: draft.values.messageFields,
-      onChange: (value) => draft.set('messageFields', value as string[]),
-    },
-  ]
-
   const testable = config.isConfigured && !draft.dirty
 
   return (
     <>
       <div className="flex flex-col gap-4">
-        <div>
-          <Link
-            to="/settings/notifications"
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-          >
-            <ChevronLeft className="size-4" aria-hidden="true" />
-            Notifications
-          </Link>
-          <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <h1 className="font-serif text-3xl">{config.displayName}</h1>
-            <span className="text-sm text-muted-foreground">{describeChannel(config)}</span>
-          </div>
-        </div>
+        <PageHeader title={config.displayName} />
 
         <SettingsPage>
-          <SettingsSection title="Connexion">
+          <SettingsSection
+            title="Connexion"
+            lede={config.isConfigured ? undefined : 'Pas encore configuré.'}
+          >
             <SettingsList settings={channelSettings} />
 
-            {/* Tester agit tout de suite : il n'a rien a faire dans le brouillon. */}
+            {/* Testing acts at once: it has no place in the draft. */}
             <div className="mt-5">
               <SecondaryButton
                 icon={Send}
@@ -293,12 +261,14 @@ function ChannelForm({
             </div>
 
             {/* Unfolded while nothing is configured: the walkthrough is then the task, not a fallback. */}
-            <HelpPanel
-              title={`Où trouver ces informations dans ${config.displayName} ?`}
-              defaultOpen={!config.isConfigured}
-            >
-              <ChannelSetupSteps channel={config.channel} />
-            </HelpPanel>
+            <HelpNotes>
+              <HelpQuestion
+                title={`Où trouver ces informations dans ${config.displayName} ?`}
+                defaultOpen={!config.isConfigured}
+              >
+                <ChannelSetupSteps channel={config.channel} />
+              </HelpQuestion>
+            </HelpNotes>
           </SettingsSection>
 
           {config.acceptsCommands && (
@@ -328,19 +298,6 @@ function ChannelForm({
                   onRefresh={() => presenter.onRefreshPairing(channel, uido.listening !== null)}
                 />
               )}
-
-              <HelpPanel title="Que puis-je demander, une fois relié ?">
-                <p>
-                  Envoyez <code className="rounded bg-muted px-1 py-0.5 text-xs">/aide</code> dans
-                  la conversation reliée : le bot répond lui-même la liste de ce qu’il sait faire,
-                  toujours à jour.
-                </p>
-                <p>
-                  Une seule conversation à la fois : en relier une nouvelle remplace la précédente.
-                  Un code cesse de valoir passé quelques minutes, ou après plusieurs essais
-                  infructueux : dans les deux cas, générez-en un autre ici.
-                </p>
-              </HelpPanel>
             </SettingsSection>
           )}
 
@@ -355,73 +312,26 @@ function ChannelForm({
                     className="mt-2"
                   />
                 ) : (
-                  <p className="mt-1 text-sm text-muted-foreground">Chargement…</p>
+                  <Loading lines={1} />
                 )}
               </div>
             )}
             <SettingsList settings={when} />
             {/* Outside the list: a count and a link are not a setting (ADR-15). */}
-            <ScheduleCountLine
-              rules={uido.rules}
-              kind={ScheduleRuleKind.MuteNotifications}
-              targetId={channel}
-              error={uido.rulesError}
-              onRetry={presenter.onRetryRules}
-            />
-
-            <HelpPanel title="Pourquoi une notification n’est-elle pas partie ?">
-              <p>Une détection n’est envoyée sur ce canal que si tout est vrai à la fois :</p>
-              <ul className="list-disc space-y-1 pl-5">
-                <li>le canal est activé et entièrement renseigné ;</li>
-                <li>la catégorie détectée fait partie de celles qu’il notifie ;</li>
-                <li>la certitude atteint le seuil ;</li>
-                <li>aucune plage « Sans notification » ne s’applique à ce moment ;</li>
-                <li>aucun envoi récent ne le fait taire ;</li>
-                <li>l’événement ne lui a pas déjà été envoyé.</li>
-              </ul>
-              <p>
-                Les notifications ont besoin d’Internet : sans connexion, Vyzio continue de détecter
-                et d’enregistrer chez vous, mais rien ne part. <em>Derniers envois</em>, dans le
-                repli <em>Avancé</em>, montre ce qui est réellement parti et l’erreur en cas
-                d’échec.
-              </p>
-            </HelpPanel>
+            <GroupedList>
+              <ScheduleCountLine
+                rules={uido.rules}
+                kind={ScheduleRuleKind.MuteNotifications}
+                targetId={channel}
+                error={uido.rulesError}
+                onRetry={presenter.onRetryRules}
+              />
+            </GroupedList>
           </SettingsSection>
 
-          <AdvancedFold>
-            <SettingsSection title="Contenu du message">
-              <SettingsList settings={message} />
-            </SettingsSection>
-
-            <SettingsSection title="Derniers envois">
-              {uido.logError ? (
-                <ReadFailure error={uido.logError} onRetry={() => presenter.onRetryLog(channel)} />
-              ) : (
-                <NotificationLog
-                  entries={uido.log}
-                  loading={uido.logLoading}
-                  onRefresh={() => presenter.onRefreshLog(channel)}
-                />
-              )}
-            </SettingsSection>
-
-            {config.acceptsCommands && (
-              <SettingsSection title="Dernières commandes">
-                {uido.journalError ? (
-                  <ReadFailure
-                    error={uido.journalError}
-                    onRetry={() => presenter.onRetryJournal(channel)}
-                  />
-                ) : (
-                  <CommandJournal
-                    entries={uido.journal}
-                    loading={uido.journalLoading}
-                    onRefresh={() => presenter.onRefreshJournal(channel)}
-                  />
-                )}
-              </SettingsSection>
-            )}
-          </AdvancedFold>
+          {config.isConfigured && (
+            <AdvancedRow to={`/settings/notifications/${channel}/advanced`} />
+          )}
 
           {config.isConfigured && (
             <DeleteAction
@@ -434,11 +344,45 @@ function ChannelForm({
               onConfirm={async () => {
                 if (!(await presenter.onRemove(channel))) return
                 draft.discard()
-                void navigate('/settings/notifications')
+                goBack('/settings/notifications')
               }}
               onCancel={presenter.onCancelRemove}
             />
           )}
+
+          <HelpNotes>
+            {config.acceptsCommands && (
+              <HelpQuestion title="Que puis-je demander, une fois relié ?">
+                <p>
+                  Envoyez <code className="rounded bg-muted px-1 py-0.5 text-label">/aide</code>{' '}
+                  dans la conversation reliée : le bot répond lui-même la liste de ce qu’il sait
+                  faire, toujours à jour.
+                </p>
+                <p>
+                  Une seule conversation à la fois : en relier une nouvelle remplace la précédente.
+                  Un code cesse de valoir passé quelques minutes, ou après plusieurs essais
+                  infructueux : dans les deux cas, générez-en un autre ici.
+                </p>
+              </HelpQuestion>
+            )}
+
+            <HelpQuestion title="Pourquoi une notification n’est-elle pas partie ?">
+              <p>Une détection n’est envoyée sur ce canal que si tout est vrai à la fois :</p>
+              <ul className="list-disc space-y-1 pl-5">
+                <li>le canal est entièrement renseigné ;</li>
+                <li>la catégorie détectée fait partie de celles qu’il notifie ;</li>
+                <li>la certitude atteint le seuil ;</li>
+                <li>aucun Silence n’est en cours, lancé depuis l’accueil ou par une plage ;</li>
+                <li>aucun envoi récent ne le fait taire ;</li>
+                <li>l’événement ne lui a pas déjà été envoyé.</li>
+              </ul>
+              <p>
+                Les notifications ont besoin d’Internet : sans connexion, Vyzio continue de détecter
+                et d’enregistrer chez vous, mais rien ne part. <em>Derniers envois</em>, dans
+                <em>Avancé</em>, montre ce qui est réellement parti et l’erreur en cas d’échec.
+              </p>
+            </HelpQuestion>
+          </HelpNotes>
         </SettingsPage>
       </div>
 
@@ -453,7 +397,7 @@ function ChannelForm({
         <ConfirmModal
           title={`Envoyer les notifications par ${config.displayName} ?`}
           body={`Les photos, vidéos et noms de caméras seront transmis aux serveurs de ${config.displayName}, qui en aura connaissance. Vos données ne resteront plus strictement chez vous.`}
-          confirmLabel="Activer"
+          confirmLabel="Envoyer"
           cancelLabel="Annuler"
           tone="warn"
           loading={uido.saving}
@@ -467,8 +411,100 @@ function ChannelForm({
   )
 }
 
-/** Channel status in one sentence, right where it's configured. */
-function describeChannel(config: NotificationChannelConfig): string {
-  if (!config.isConfigured) return 'Pas encore configuré.'
-  return sendingSentence(config.isEnabled)
+/** The channel's rare part: what its message carries, and what was sent or asked (UI-09). */
+function ChannelAdvancedForm({
+  config,
+  uido,
+  presenter,
+}: {
+  config: NotificationChannelConfig
+  uido: NotificationChannelUido
+  presenter: ReturnType<typeof buildNotificationChannelPresenter>
+}) {
+  const { channel, acceptsCommands } = config
+
+  useEffect(() => {
+    presenter.onOpen(channel, acceptsCommands)
+  }, [presenter, channel, acceptsCommands])
+
+  const draft = useSettingsDraft<NotificationValues>({
+    saved: config.isConfigured ? toNotificationValues(config) : DEFAULT_NOTIFICATION_VALUES,
+    labels: notificationDraftLabels(config.channel),
+  })
+
+  useUnsavedChanges(draft.dirty)
+
+  const message: SettingDeclaration[] = [
+    {
+      id: 'channel-media',
+      label: 'Ce qui est envoyé',
+      // A channel that cannot carry video does not offer it: the capability decides (ADR-14).
+      nature: {
+        kind: 'choice',
+        options: MEDIA_MODE_OPTIONS.filter(
+          (option) => option.value !== 'clip_or_photo' || config.capabilities.video,
+        ),
+      },
+      help: config.capabilities.video
+        ? 'La vidéo arrive quelques secondes après la photo, le temps que l’enregistrement se termine. Si elle n’est pas prête, la photo part seule ; si la photo manque aussi, le message part en texte.'
+        : undefined,
+      value: draft.values.mediaMode,
+      onChange: (value) => draft.set('mediaMode', value as MediaMode),
+    },
+    {
+      id: 'channel-fields',
+      label: 'Détails du message',
+      nature: { kind: 'multiChoice', options: [...MESSAGE_FIELD_OPTIONS] },
+      value: draft.values.messageFields,
+      onChange: (value) => draft.set('messageFields', value as string[]),
+    },
+  ]
+
+  return (
+    <>
+      <AdvancedPage>
+        <SettingsSection title="Contenu du message">
+          <SettingsList settings={message} />
+        </SettingsSection>
+
+        <SettingsSection title="Derniers envois">
+          {uido.logError ? (
+            <ReadFailure error={uido.logError} onRetry={() => presenter.onRetryLog(channel)} />
+          ) : (
+            <NotificationLog
+              entries={uido.log}
+              loading={uido.logLoading}
+              onRefresh={() => presenter.onRefreshLog(channel)}
+            />
+          )}
+        </SettingsSection>
+
+        {config.acceptsCommands && (
+          <SettingsSection title="Dernières commandes">
+            {uido.journalError ? (
+              <ReadFailure
+                error={uido.journalError}
+                onRetry={() => presenter.onRetryJournal(channel)}
+              />
+            ) : (
+              <CommandJournal
+                entries={uido.journal}
+                loading={uido.journalLoading}
+                onRefresh={() => presenter.onRefreshJournal(channel)}
+              />
+            )}
+          </SettingsSection>
+        )}
+      </AdvancedPage>
+
+      <SettingsDraftBar
+        changes={draft.changes}
+        saving={uido.saving}
+        onSave={async () => {
+          if (await presenter.onSave(config, draft.values)) draft.accept()
+        }}
+        onDiscard={draft.discard}
+      />
+    </>
+  )
 }

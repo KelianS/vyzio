@@ -17,25 +17,21 @@ describe('PrivacyAnswerNotice', () => {
     expect(screen.getByText('Coupure matérielle confirmée')).toBeInTheDocument()
   })
 
-  it('PrivacyAnswerNotice_ShouldSayWhatHappenedAndShowTheDetail_WhenTheCameraDidNotFollow', () => {
+  it('PrivacyAnswerNotice_ShouldSayNothingInThePage_WhenTheCameraDidNotFollow', () => {
     // Arrange & Act
-    render(
+    const { container } = render(
       <PrivacyAnswerNotice
         camera={makeCamera({
           privacyModeActive: true,
           privacyStrategy: PrivacyStrategy.PtzParking,
           privacyMiss: PrivacyMiss.CameraFailed,
-          privacyMissDetail:
-            'privacy on, ptz_parking: CameraUnreachableException: ONVIF Ptz: no answer',
+          privacyMissDetail: 'privacy on, ptz_parking: no answer',
         })}
       />,
     )
 
     // Assert
-    expect(screen.getByText('Caméra non tournée, enregistrement désactivé')).toBeInTheDocument()
-    expect(screen.getByRole('status')).toHaveTextContent(
-      /ne s’est pas tournée vers sa position Parking.*ONVIF Ptz: no answer/,
-    )
+    expect(container).toBeEmptyDOMElement()
   })
 
   it('PrivacyAnswerNotice_ShouldShowNothing_WhenPrivacyIsOffAndTheCameraFollowed', () => {

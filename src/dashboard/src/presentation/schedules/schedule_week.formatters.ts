@@ -1,4 +1,5 @@
 import { endsNextDay, minutesOf, WEEK_DAYS } from '../../common/schedule/schedule_types'
+import { formatHouseTime } from '../../common/schedule/house_moment'
 import type { ScheduleRule, ScheduleRuleKind } from '../../domain/entities/schedule_rule.entity'
 
 /** One range as a day shows it: from its start, or its tail when it began the day before. */
@@ -71,13 +72,37 @@ export function barOf(entries: readonly WeekEntry[]): { blocks: BarBlock[]; lane
   return { blocks, lanes: Math.max(1, laneEnds.length) }
 }
 
+/** A range's hours as its row titles them: « 22 h – 7 h » (DESIGN SYSTEM § Shared words). */
+export function rangeTimes(rule: Pick<ScheduleRule, 'startTime' | 'endTime'>): string {
+  return `${formatHouseTime(rule.startTime)} – ${formatHouseTime(rule.endTime)}`
+}
+
 /** The times of an entry, in the words of the week (SCHED-05). */
 export function entryTimes(entry: WeekEntry): string {
   const { startTime, endTime } = entry.rule
-  if (entry.tail) return `jusqu’à ${endTime}, depuis la veille`
+  if (entry.tail) return `jusqu’à ${formatHouseTime(endTime)}, depuis la veille`
   return endsNextDay(startTime, endTime)
-    ? `${startTime} → ${endTime} le lendemain`
-    : `${startTime} → ${endTime}`
+    ? `${rangeTimes(entry.rule)} le lendemain`
+    : rangeTimes(entry.rule)
+}
+
+/** Its days as a sentence reads them, Monday first: « lundi au vendredi », « samedi et dimanche ». */
+export function daysSummary(days: readonly number[]): string {
+  if (WEEK_DAYS.every((day) => days.includes(day.value))) return 'tous les jours'
+  // Consecutive days of three or more read as a span; shorter runs are named one by one.
+  const runs: string[][] = []
+  WEEK_DAYS.forEach((day, index) => {
+    if (!days.includes(day.value)) return
+    const previous = WEEK_DAYS[index - 1]
+    const run = runs.at(-1)
+    if (run && previous && days.includes(previous.value)) run.push(day.name.toLowerCase())
+    else runs.push([day.name.toLowerCase()])
+  })
+  const parts = runs.flatMap((run) =>
+    run.length >= 3 ? [`${run[0]} au ${run[run.length - 1]}`] : run,
+  )
+  if (parts.length <= 1) return parts[0] ?? ''
+  return `${parts.slice(0, -1).join(', ')} et ${parts[parts.length - 1]}`
 }
 
 /** Beyond two names the row would wrap on a phone: the rest is a count. */

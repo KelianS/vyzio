@@ -7,8 +7,8 @@ import { renderScreen } from '../../testing/render_screen'
 import { CameraConservationView } from './camera_conservation.component'
 
 const CONSERVATION_TAB = {
-  path: '/settings/cameras/:cameraId/conservation',
-  url: '/settings/cameras/camera-1/conservation',
+  path: '/settings/cameras/:cameraId/retention',
+  url: '/settings/cameras/camera-1/retention',
 }
 
 async function setMotionToTenDays() {
@@ -44,6 +44,40 @@ describe('CameraConservationView', () => {
         }),
       }),
     )
+  })
+
+  it('CameraConservation_ShouldOpenTheLockOfADuration_WhenTheUserSetsIt', async () => {
+    // Arrange
+    fakeNetwork({ 'GET /api/cameras/camera-1/detection-config': ok(makeDetectionConfig()) })
+    renderScreen(<CameraConservationView />, CONSERVATION_TAB)
+    await screen.findByLabelText('Séquences de mouvement')
+
+    // Act
+    await setMotionToTenDays()
+
+    // Assert
+    // The fixture already sets the detection history apart; the motion clips now join it.
+    expect(screen.getAllByRole('img', { name: 'Valeur de l’ensemble' })).toHaveLength(1)
+    expect(
+      screen.getByRole('button', { name: 'Revenir à la valeur de l’ensemble (7 jours)' }),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Comme l’ensemble')).not.toBeInTheDocument()
+  })
+
+  it('CameraConservation_ShouldFollowTheWholeInstallationAgain_WhenTheUserTapsTheOpenLock', async () => {
+    // Arrange
+    fakeNetwork({ 'GET /api/cameras/camera-1/detection-config': ok(makeDetectionConfig()) })
+    renderScreen(<CameraConservationView />, CONSERVATION_TAB)
+    await setMotionToTenDays()
+
+    // Act
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Revenir à la valeur de l’ensemble (7 jours)' }),
+    )
+
+    // Assert
+    expect(screen.getAllByRole('img', { name: 'Valeur de l’ensemble' })).toHaveLength(2)
+    expect(screen.getByLabelText('Séquences de mouvement')).toHaveValue(7)
   })
 
   it('onSave_ShouldKeepTheDraftAndSayWhy_WhenTheSaveFails', async () => {

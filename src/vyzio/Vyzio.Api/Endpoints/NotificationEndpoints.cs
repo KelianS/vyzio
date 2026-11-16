@@ -1,4 +1,5 @@
 using Vyzio.Application.DTOs.Notifications;
+using Vyzio.Application.DTOs.Scheduling;
 using Vyzio.Application.UseCases.Commands;
 using Vyzio.Application.UseCases.Notifications;
 using Vyzio.Core.Common;
@@ -12,6 +13,15 @@ public static class NotificationEndpoints
     {
         app.MapGet("/api/notifications/channels", ListChannels)
             .WithName("ListNotificationChannels");
+
+        app.MapGet("/api/notifications/silence", GetSilence)
+            .WithName("GetNotificationSilence");
+
+        app.MapPut("/api/notifications/silence", StartSilence)
+            .WithName("StartNotificationSilence");
+
+        app.MapDelete("/api/notifications/silence", StopSilence)
+            .WithName("StopNotificationSilence");
 
         app.MapGet("/api/notifications/settings/{channel}", GetChannelConfig)
             .WithName("GetNotificationChannelConfig");
@@ -47,6 +57,23 @@ public static class NotificationEndpoints
     }
 
     private static async Task<IResult> ListChannels(ListNotificationChannelsUseCase useCase, CancellationToken ct)
+        => Results.Ok(await useCase.ExecuteAsync(ct));
+
+    private static async Task<IResult> GetSilence(GetSilenceUseCase useCase, CancellationToken ct)
+        => Results.Ok(await useCase.ExecuteAsync(ct));
+
+    private static async Task<IResult> StartSilence(
+        ChosenEndRequest request,
+        StartSilenceUseCase useCase,
+        CancellationToken ct)
+    {
+        var result = await useCase.ExecuteAsync(request, ct);
+        return result.Refusal is { } refusal
+            ? ChosenEndProblem.Of("silence", refusal)
+            : Results.Ok(result.Silence);
+    }
+
+    private static async Task<IResult> StopSilence(StopSilenceUseCase useCase, CancellationToken ct)
         => Results.Ok(await useCase.ExecuteAsync(ct));
 
     private static async Task<IResult> GetChannelConfig(

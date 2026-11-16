@@ -10,11 +10,11 @@ import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fi
  * screen added: putting up a titled frame is the spontaneous gesture.
  */
 const CAMERA_TABS = [
-  ['connexion', 'Connexion'],
-  ['vie-privee', 'Vie privée'],
+  ['connection', 'Connexion'],
+  ['privacy', 'Vie privée'],
   ['detection', 'Détection'],
   ['image', 'Image et pilotage'],
-  ['conservation', 'Conservation'],
+  ['retention', 'Conservation'],
 ] as const
 
 test.describe('A page is named once', () => {
@@ -43,7 +43,7 @@ test.describe('A page is named once', () => {
     })
   }
 
-  test('CamerasView_ShouldBeNamedByTheCameraWithOneBackLink_WhenACameraOpensOnAPhone', async ({
+  test('CamerasView_ShouldBeNamedByTheCameraWithOneWayBack_WhenACameraOpensOnAPhone', async ({
     page,
   }) => {
     // On a small screen the section menu goes away: all that is left are the
@@ -54,17 +54,16 @@ test.describe('A page is named once', () => {
     await expect(page.getByRole('heading', { name: 'Porte d’entrée' })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Caméras' })).toHaveCount(0)
 
-    // One back link only, the one of the page - the top bar aside. Two stacked
-    // arrows no longer say which one leads where.
-    await expect(page.getByRole('link', { name: 'Caméras', exact: true })).toHaveCount(1)
-    await expect(page.getByRole('link', { name: 'Réglages', exact: true })).toHaveCount(1)
+    // One way back only, the bar's: two stacked arrows no longer say which one leads where.
+    await expect(page.getByRole('button', { name: 'Retour' })).toHaveCount(1)
+    await expect(page.getByRole('link', { name: 'Caméras', exact: true })).toHaveCount(0)
   })
 
   test('SettingsView_ShouldNameTheRubricOnce_WhenItOpensOnAPhone', async ({ page }) => {
     // The section menu gives way to the page: without this title, the screen
     // would have nothing left to name itself.
     await page.setViewportSize({ width: 390, height: 844 })
-    await page.goto('/settings/conservation')
+    await page.goto('/settings/retention')
 
     await expect(page.getByRole('heading', { name: 'Conservation', level: 1 })).toHaveCount(1)
   })

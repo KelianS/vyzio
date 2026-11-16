@@ -1,19 +1,21 @@
 import { useEffect, useReducer, useRef } from 'react'
-import { RefreshCw, Trash2 } from 'lucide-react'
+import { Trash2 } from 'lucide-react'
 import { Badge } from '../../common/components/badge'
 import { Button } from '../../common/ui/button'
-import { SecondaryButton } from '../../common/components/secondary_button'
 import { SettingsPage } from '../../common/settings/settings_page'
-import { AdvancedFold } from '../../common/settings/advanced_fold'
+import { AdvancedRow } from '../../common/settings/advanced'
 import { useToast } from '../../common/components/toast'
 import { ConfirmModal } from '../../common/components/confirm_modal'
 import { ReadFailure } from '../../common/components/error_message'
+import { EmptyState } from '../../common/components/empty_state'
+import { Loading } from '../../common/components/loading'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import { usePerson } from './person_context'
 import { buildPersonPhotosPresenter } from './person_photos.presenter'
 import { personPhotosReducer } from './person_photos.reducer'
 import { buildInitialPersonPhotosUido } from './person_photos.uido'
+import { PEOPLE_PATH } from '../settings/settings.rubrics'
 
 /** Below this, recognition misfires more than it recognizes. */
 const ADVISED_PHOTOS = 3
@@ -28,6 +30,8 @@ export function PersonPhotosView() {
 
   const personId = person.id
   const count = uido.photos.length
+  // A reread under photos already shown keeps them: only a first read has nothing to show yet.
+  const reading = uido.loading && count === 0
 
   useEffect(() => {
     presenter.onLoad(personId)
@@ -47,7 +51,16 @@ export function PersonPhotosView() {
 
   return (
     <>
-      <SettingsPage lede={describeCoverage(count, uido.loading)}>
+      <SettingsPage lede={reading ? undefined : describeCoverage(count)}>
+        {reading && <Loading lines={2} className="mb-3" />}
+        {/* Under the state it explains, never above it in size (DESIGN SYSTEM § Typography). */}
+        {count === 0 && !reading && (
+          <EmptyState className="-mt-4 mb-3">
+            Des photos nettes, de face, sous plusieurs angles : c’est ce qui permet de la
+            reconnaître.
+          </EmptyState>
+        )}
+
         <div className="flex flex-wrap gap-2">
           <Button
             type="button"
@@ -70,7 +83,10 @@ export function PersonPhotosView() {
         </div>
 
         {count > 0 && (
-          <ul className="mt-5 grid grid-cols-[repeat(auto-fill,minmax(8rem,1fr))] gap-3">
+          <ul
+            aria-label="Photos"
+            className="mt-5 grid grid-cols-[repeat(auto-fill,minmax(8rem,1fr))] gap-3"
+          >
             {uido.photos.map((photo) => (
               <li key={photo.id} className="relative">
                 <img
@@ -99,23 +115,7 @@ export function PersonPhotosView() {
           </ul>
         )}
 
-        {count === 0 && !uido.loading && (
-          <p className="mt-5 text-muted-foreground">
-            Des photos nettes, de face, sous plusieurs angles : c’est ce qui permet de la
-            reconnaître.
-          </p>
-        )}
-
-        <AdvancedFold lede="Si une photo reste « en attente », renvoyez toute la bibliothèque au moteur de reconnaissance.">
-          <SecondaryButton
-            icon={RefreshCw}
-            type="button"
-            disabled={uido.resyncing}
-            onClick={presenter.onAskResync}
-          >
-            {uido.resyncing ? 'Reprise…' : 'Reprendre toutes les photos'}
-          </SecondaryButton>
-        </AdvancedFold>
+        <AdvancedRow to={`${PEOPLE_PATH}/${personId}/photos/advanced`} />
       </SettingsPage>
 
       {uido.confirmRemoveId && (
@@ -133,24 +133,12 @@ export function PersonPhotosView() {
           onCancel={presenter.onCancelRemove}
         />
       )}
-
-      {uido.confirmResync && (
-        <ConfirmModal
-          title="Reprendre toutes les photos ?"
-          body="Toutes les photos de toutes les personnes sont réanalysées. Selon leur nombre, cela prend de quelques secondes à plusieurs minutes."
-          confirmLabel="Reprendre"
-          loading={uido.resyncing}
-          onConfirm={presenter.onResync}
-          onCancel={presenter.onCancelResync}
-        />
-      )}
     </>
   )
 }
 
 /** States where the count stands relative to the threshold, instead of a bare number. */
-function describeCoverage(count: number, loading: boolean): string {
-  if (loading) return 'Chargement…'
+function describeCoverage(count: number): string {
   if (count === 0) return 'Aucune photo : la reconnaissance est inactive pour cette personne.'
   if (count < ADVISED_PHOTOS) {
     return `${count} photo${count > 1 ? 's' : ''} : au moins ${ADVISED_PHOTOS} pour une reconnaissance fiable.`

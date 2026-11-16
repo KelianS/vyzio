@@ -1,94 +1,35 @@
-import { Search } from 'lucide-react'
-import { useEffect, useMemo, useReducer } from 'react'
-import { useNavigate, useOutletContext } from 'react-router'
+import { useEffect } from 'react'
+import { useOutletContext } from 'react-router'
+import { useGoBack } from '../../common/navigation/use_go_back'
 import { SettingsList } from '../../common/settings/settings_list'
 import { SettingsDraftBar } from '../../common/settings/settings_draft_bar'
-import { useUnsavedChanges } from '../navigation/use_unsaved_changes'
-import { useSettingsDraft } from '../../common/settings/use_settings_draft'
 import type { SettingDeclaration } from '../../common/settings/setting_declaration'
-import { useToast } from '../../common/components/toast'
 import { DeleteAction } from '../../common/components/delete_action'
-import { usePresenter } from '../../common/presenter/use_presenter'
-import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import type { Camera } from '../../domain/entities/camera.entity'
-import type { SupportedProtocol } from '../../domain/entities/camera_capability_binding.entity'
 import { SettingsPage, SettingsSection } from '../../common/settings/settings_page'
-import { HelpPanel } from '../../common/components/help_panel'
-import { AdvancedFold } from '../../common/settings/advanced_fold'
+import { HelpNotes, HelpQuestion } from '../../common/components/help_notes'
+import { AdvancedRow } from '../../common/settings/advanced'
 import { CapabilitySection } from './components/capability_section'
-import { AddProtocol } from './components/add_protocol_form'
-import { ProtocolBoxes } from './components/protocol_boxes'
 import { CameraNotFound } from './components/camera_not_found'
-import { buildCameraConnectionPresenter } from './camera_connection.presenter'
-import { cameraConnectionReducer } from './camera_connection.reducer'
-import { buildInitialCameraConnectionUido } from './camera_connection.uido'
-import { CAPABILITY_LABELS } from './cameras.formatters'
 import { otherTestsSuspended, streamBindingOf } from './capability_state'
-import { SecondaryButton } from '../../common/components/secondary_button'
-import {
-  ALL_PROTOCOLS,
-  connectionValuesOf,
-  protocolKey,
-  sameBox,
-  type ConnectionValues,
-  type ProtocolKey,
-  type ProtocolValues,
-} from './camera_connection_values'
-
-// Protocol names stay out of the draft bar, which sits outside every fold (UI-02).
-const PROTOCOL_DRAFT_LABELS = Object.fromEntries(
-  ALL_PROTOCOLS.map((protocol) => [protocolKey(protocol), 'Protocoles']),
-) as Record<ProtocolKey, string>
-
-const DRAFT_LABELS: Record<keyof ConnectionValues, string> = {
-  displayName: 'Nom',
-  host: 'Adresse',
-  username: 'Identifiant',
-  password: 'Mot de passe',
-  ...PROTOCOL_DRAFT_LABELS,
-}
+import { useCameraConnection } from './use_camera_connection'
+import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 
 export function CameraConnectionView() {
   const camera = useOutletContext<Camera>()
-  const { cameras: container, hub: hubContainer } = useAppContainer()
-  const { toast } = useToast()
-  const navigate = useNavigate()
-  const [uido, dispatch] = useReducer(
-    cameraConnectionReducer,
-    undefined,
-    buildInitialCameraConnectionUido,
-  )
-  const presenter = usePresenter(buildCameraConnectionPresenter, {
-    container,
-    hubContainer,
-    dispatch,
-    toast,
+  const { cameras, hub } = useAppContainer()
+  const goBack = useGoBack()
+  const { uido, presenter, draft } = useCameraConnection(camera, {
+    container: cameras,
+    hubContainer: hub,
   })
-
   const cameraId = camera.id
-
-  useEffect(() => {
-    presenter.onLoad(cameraId)
-  }, [presenter, cameraId])
 
   const neverDetected = camera.detectedAt === null
   const host = camera.host
   useEffect(() => {
     presenter.onArrive(cameraId, host, neverDetected)
   }, [presenter, cameraId, host, neverDetected])
-
-  const saved = useMemo(() => connectionValuesOf(camera, uido.protocols), [camera, uido.protocols])
-  const draft = useSettingsDraft<ConnectionValues>({ saved, labels: DRAFT_LABELS })
-
-  useUnsavedChanges(draft.dirty)
-
-  /** Back to its saved content, a box drops its edit, so a later re-read never mistakes it for a change. */
-  function setProtocol(protocol: SupportedProtocol, patch: Partial<ProtocolValues>) {
-    const key = protocolKey(protocol)
-    const next = { ...draft.values[key], ...patch }
-    if (sameBox(next, draft.saved[key])) draft.revert(key)
-    else draft.set(key, next)
-  }
 
   // The name is the camera's identity, not a capability: it stays at the top of the page.
   const identity: SettingDeclaration[] = [
@@ -98,33 +39,6 @@ export function CameraConnectionView() {
       nature: { kind: 'text' },
       value: draft.values.displayName,
       onChange: (value) => draft.set('displayName', value as string),
-    },
-  ]
-
-  // How Vyzio reaches the camera itself: rare, in the Avancé fold (DESIGN SYSTEM § Folds).
-  const access: SettingDeclaration[] = [
-    {
-      id: 'connection-host',
-      label: 'Adresse',
-      nature: { kind: 'text', placeholder: '192.168.1.50', keyboard: 'address' },
-      help: 'L’adresse de la caméra sur votre réseau local. Elle peut changer si votre box la réattribue.',
-      value: draft.values.host,
-      onChange: (value) => draft.set('host', value as string),
-    },
-    {
-      id: 'connection-username',
-      label: 'Identifiant',
-      nature: { kind: 'text', keyboard: 'identifier' },
-      value: draft.values.username,
-      onChange: (value) => draft.set('username', value as string),
-    },
-    {
-      id: 'connection-password',
-      label: 'Mot de passe',
-      nature: { kind: 'secret', placeholder: 'Inchangé' },
-      help: 'Laissez vide pour conserver le mot de passe actuel.',
-      value: draft.values.password,
-      onChange: (value) => draft.set('password', value as string),
     },
   ]
 
@@ -144,7 +58,7 @@ export function CameraConnectionView() {
         <SettingsList settings={identity} />
 
         {/* Checking or configuring a capability tests a connection and returns a result: an action, not a draft value. */}
-        <SettingsSection title="Capacités" lede="Ce que Vyzio vérifie auprès de cette caméra.">
+        <SettingsSection title="Capacités">
           <CapabilitySection
             camera={camera}
             bindings={uido.bindings}
@@ -154,7 +68,6 @@ export function CameraConnectionView() {
             readError={uido.bindingsError}
             detecting={uido.detecting}
             detected={uido.detected}
-            detection={uido.detection}
             verifyingStream={uido.verifying}
             testsSuspended={testsSuspended}
             pending={uido.pending}
@@ -203,12 +116,29 @@ export function CameraConnectionView() {
                 void presenter.onConfigureManually(cameraId, capability, protocol),
             }}
           />
+        </SettingsSection>
 
-          <HelpPanel title="Une vérification échoue, que faire ?">
+        <AdvancedRow to={`/settings/cameras/${cameraId}/connection/advanced`} />
+
+        <DeleteAction
+          label="Supprimer cette caméra"
+          question={`Supprimer « ${camera.displayName} » ?`}
+          consequence="Vyzio cesse de surveiller cette caméra. Les enregistrements déjà faits ne sont pas effacés."
+          confirming={uido.confirmDelete}
+          deleting={uido.deleting}
+          onAsk={presenter.onAskDelete}
+          onConfirm={async () => {
+            if (await presenter.onDelete(cameraId)) goBack('/settings/cameras')
+          }}
+          onCancel={presenter.onCancelDelete}
+        />
+
+        <HelpNotes>
+          <HelpQuestion title="Une vérification échoue">
             <p>
               Commencez par le flux vidéo : les autres capacités passent par lui. S’il échoue,
-              corrigez l’adresse ou le compte de la caméra dans Avancé, en bas de page, ou la façon
-              de lire les images dans les options du flux, enregistrez, puis relancez « Vérifier ».
+              corrigez l’adresse ou le compte de la caméra dans Avancé, ou la façon de lire les
+              images dans les options du flux, enregistrez, puis relancez « Vérifier ».
             </p>
             <p>
               Une capacité qui dit que la caméra ne répond pas attend qu’elle soit allumée ; une
@@ -219,9 +149,9 @@ export function CameraConnectionView() {
               Une capacité dont la vérification échoue n’est jamais proposée comme active, et la
               vérification se relance à tout moment.
             </p>
-          </HelpPanel>
+          </HelpQuestion>
 
-          <HelpPanel title="Une capacité est à confirmer, pourquoi ?">
+          <HelpQuestion title="Une capacité est à confirmer">
             <p>
               Certaines caméras ne permettent pas à Vyzio de lire la preuve d’une capacité. Vyzio ne
               la suppose pas : il vous la fait essayer une fois, et votre réponse décide.
@@ -235,59 +165,44 @@ export function CameraConnectionView() {
               Ensuite, « Essayer à nouveau » refait l’essai et repose la question, ses options
               permettent de la joindre autrement, et « Retirer » l’enlève si la caméra ne l’a pas.
             </p>
-          </HelpPanel>
-        </SettingsSection>
+          </HelpQuestion>
 
-        <AdvancedFold lede="Comment Vyzio joint cette caméra.">
-          <SettingsList settings={access} />
+          <HelpQuestion title="Quel rôle donner à chaque flux ?">
+            <p>
+              Par défaut, le flux le plus détaillé enregistre et le plus léger est analysé : Vyzio
+              réduit de toute façon l’image avant de l’analyser.
+            </p>
+            <p>
+              Sur une caméra large, jardin, garage, allée, gardez le flux le plus léger en
+              détection. Pour reconnaître les gens, entrée, couloir, salon, donnez « Enregistrement
+              et détection » au flux le plus détaillé, surtout si les visages y apparaissent à
+              plusieurs mètres. Si Vyzio devient lent, vérifiez qu’aucune caméra n’analyse son flux
+              le plus détaillé sans raison.
+            </p>
+            <p>
+              Un seul flux enregistre. Donner un rôle à un flux le retire à celui qui l’avait. Un
+              flux gardé sans servir a le rôle « Aucun ».
+            </p>
+            <p>
+              Changer de protocole remplace les flux par ceux que la caméra sert par ce protocole. «
+              Ajouter un flux » propose ceux qu’elle sert et qui ne sont pas dans la liste, y
+              compris un flux retiré.
+            </p>
+            <p>
+              Un chemin erroné se corrige en ajoutant le bon flux avec le rôle « Enregistrement »,
+              puis en retirant l’ancien.
+            </p>
+            <p>
+              Si la liste ne propose que « Autre chemin… », la caméra ne dit pas quels flux elle
+              sert, ou ne répond pas : saisissez le chemin donné par le fabricant.
+            </p>
+            <p>
+              Une caméra qui ne donne pas les dimensions de ses flux les voit nommés « Flux
+              principal » ou « Flux secondaire » plutôt qu’avec un chiffre faux.
+            </p>
+          </HelpQuestion>
 
-          <div className="mt-6 flex flex-col gap-3">
-            <h3 className="font-medium">Protocoles</h3>
-            <ProtocolBoxes
-              protocols={uido.protocols}
-              loading={uido.protocolsLoading}
-              readError={uido.protocolsError}
-              values={(protocol) => draft.values[protocolKey(protocol)]}
-              checking={uido.checking}
-              removing={uido.removing}
-              usedBy={(protocol) =>
-                uido.bindings
-                  .filter((b) => b.isConfigured && b.protocol === protocol)
-                  .map((b) => CAPABILITY_LABELS[b.capability])
-              }
-              edited={(protocol) =>
-                draft.values[protocolKey(protocol)] !== draft.saved[protocolKey(protocol)]
-              }
-              onChange={setProtocol}
-              onCheck={(protocol) => void presenter.onCheckProtocol(cameraId, protocol)}
-              onRemove={(protocol) => presenter.onRemoveProtocol(cameraId, protocol)}
-              onRetryRead={() => presenter.onLoad(cameraId)}
-            />
-            {!uido.protocolsLoading && !uido.protocolsError && (
-              <div className="flex flex-wrap items-center gap-2">
-                <SecondaryButton
-                  icon={Search}
-                  type="button"
-                  size="sm"
-                  disabled={uido.searchingProtocols}
-                  onClick={() => void presenter.onSearchProtocols(cameraId)}
-                >
-                  {uido.searchingProtocols ? 'Recherche…' : 'Rechercher les protocoles'}
-                </SecondaryButton>
-                {/* Adding by hand is the way out when the search finds nothing (CAM-48). */}
-                <AddProtocol
-                  protocols={uido.protocols}
-                  open={uido.protocolFormOpen}
-                  adding={uido.addingProtocol}
-                  onOpen={presenter.onOpenProtocolForm}
-                  onClose={presenter.onCloseProtocolForm}
-                  onAdd={(addition) => void presenter.onAddProtocol(cameraId, addition)}
-                />
-              </div>
-            )}
-          </div>
-
-          <HelpPanel title="Un protocole ne répond pas, que vérifier ?">
+          <HelpQuestion title="Un protocole ne répond pas, que vérifier ?">
             <p>
               Chaque protocole passe par son propre port, affiché dans sa case. « Accessible » dit
               que la caméra écoute sur ce port et accepte le compte ; « Accès refusé » dit qu’elle
@@ -305,21 +220,8 @@ export function CameraConnectionView() {
               l’écart, en vie privée, suppose que l’orientation soit déjà vérifiée sur la même
               caméra.
             </p>
-          </HelpPanel>
-        </AdvancedFold>
-
-        <DeleteAction
-          label="Supprimer cette caméra"
-          question={`Supprimer « ${camera.displayName} » ?`}
-          consequence="Vyzio cesse de surveiller cette caméra. Les enregistrements déjà faits ne sont pas effacés."
-          confirming={uido.confirmDelete}
-          deleting={uido.deleting}
-          onAsk={presenter.onAskDelete}
-          onConfirm={async () => {
-            if (await presenter.onDelete(cameraId)) void navigate('/settings/cameras')
-          }}
-          onCancel={presenter.onCancelDelete}
-        />
+          </HelpQuestion>
+        </HelpNotes>
       </SettingsPage>
 
       <SettingsDraftBar

@@ -64,10 +64,20 @@ async function toastEntrances(page: Page) {
   return page.evaluate(() => (window as unknown as { toastEntrances: string[][] }).toastEntrances)
 }
 
-async function pauseTheCamera(page: Page) {
-  await page.getByRole('button', { name: 'Pause' }).click()
-  await page.getByRole('alertdialog').getByRole('button', { name: 'Mettre en pause' }).click()
-  await expect(page.getByRole('status')).toContainText('Salon est en pause.')
+/** A configured channel: its page sends a test message, and asks before removing it. */
+async function openTheChannel(page: Page) {
+  await installFakeBackend(
+    page,
+    createFakeBackendState({ notificationChannels: { telegram: makeFakeChannel('telegram') } }),
+  )
+  await page.goto('/settings/notifications/telegram')
+}
+
+async function sendATestMessage(page: Page) {
+  await page.getByRole('button', { name: 'Envoyer un message de test' }).click()
+  await expect(
+    page.getByRole('region', { name: 'Notifications' }).getByRole('status'),
+  ).toContainText('Message envoyé')
 }
 
 test.describe('Press feedback', () => {
@@ -79,16 +89,16 @@ test.describe('Press feedback', () => {
   test('Button_ShouldShrinkSlightly_WhenItIsPressed', async ({ page }) => {
     await page.goto('/')
 
-    expect(await pressed(page.getByRole('button', { name: 'Pause' }))).toEqual({
+    expect(await pressed(page.getByRole('button', { name: 'Couper les caméras' }))).toEqual({
       scale: '0.97',
       opacity: '1',
     })
   })
 
   test('LiveControl_ShouldShrinkSlightly_WhenItIsPressed', async ({ page }) => {
-    await page.goto('/cameras/camera-1/direct')
+    await page.goto('/cameras/camera-1')
 
-    expect(await pressed(page.getByRole('button', { name: 'Retour' }))).toEqual({
+    expect(await pressed(page.getByRole('button', { name: 'Plein écran' }))).toEqual({
       scale: '0.97',
       opacity: '1',
     })
@@ -97,7 +107,7 @@ test.describe('Press feedback', () => {
   test('JoystickArrow_ShouldShrinkSlightly_WhenItIsHeld', async ({ page }) => {
     const camera = makeFakeCamera({ ptzSupported: true, verifiedCapabilities: ['ptz'] })
     await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
-    await page.goto('/cameras/camera-1/direct')
+    await page.goto('/cameras/camera-1')
 
     expect(await pressed(page.getByTitle('Haut'))).toEqual({ scale: '0.97', opacity: '1' })
   })
@@ -106,7 +116,7 @@ test.describe('Press feedback', () => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.goto('/')
 
-    expect(await pressed(page.getByRole('button', { name: 'Pause' }))).toEqual({
+    expect(await pressed(page.getByRole('button', { name: 'Couper les caméras' }))).toEqual({
       scale: 'none',
       opacity: '0.8',
     })
@@ -131,16 +141,12 @@ test.describe('Press feedback on links and rows', () => {
     })
   })
 
-  test('HeaderLink_ShouldDimWithoutMoving_WhenItIsPressed', async ({ page }) => {
+  test('TopBarGear_ShouldShrinkSlightly_WhenItIsPressed', async ({ page }) => {
     await page.goto('/')
 
-    expect(
-      await pressed(
-        page
-          .getByRole('navigation', { name: 'Navigation principale' })
-          .getByRole('link', { name: 'Historique', exact: true }),
-      ),
-    ).toEqual({ scale: 'none', opacity: '0.7' })
+    expect(await pressed(page.getByRole('banner').getByRole('link', { name: 'Réglages' }))).toEqual(
+      { scale: '0.97', opacity: '1' },
+    )
   })
 
   test('CameraRow_ShouldDimWithoutMoving_WhenItIsPressed', async ({ page }) => {
@@ -169,7 +175,7 @@ test.describe('Press feedback on every kind of row', () => {
       createdAt: '2026-11-01T08:00:00Z',
     }
     await installFakeBackend(page, createFakeBackendState({ profiles: [alice] }))
-    await page.goto('/settings/detection/personnes')
+    await page.goto('/settings/face-recognition')
 
     expect(await pressed(page.getByRole('link', { name: /Alice/ }))).toEqual(DIMMED)
   })
@@ -186,9 +192,19 @@ test.describe('Press feedback on every kind of row', () => {
 
   test('AddChannelRow_ShouldDimWithoutMoving_WhenItIsPressed', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState())
-    await page.goto('/settings/notifications/ajout')
+    await page.goto('/settings/notifications/add')
 
     expect(await pressed(page.getByRole('link', { name: /Telegram/ }))).toEqual(DIMMED)
+  })
+
+  test('ClipRow_ShouldDimWithoutMoving_WhenItIsPressed', async ({ page }) => {
+    await installFakeBackend(
+      page,
+      createFakeBackendState({ detectionHistory: [makeFakeDetectionEvent()] }),
+    )
+    await page.goto('/detections')
+
+    expect(await pressed(page.getByRole('listitem').getByRole('button').first())).toEqual(DIMMED)
   })
 
   test('SettingsRubricRow_ShouldDimWithoutMoving_WhenItIsPressed', async ({ page }) => {
@@ -206,7 +222,7 @@ test.describe('Press feedback on every kind of row', () => {
 
   test('DiscoveredCameraRow_ShouldDimWithoutMoving_WhenItIsPressed', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [] }))
-    await page.goto('/settings/cameras/ajout')
+    await page.goto('/settings/cameras/add')
     await page.getByRole('button', { name: 'Rechercher sur le réseau' }).click()
     await page.getByRole('alertdialog').getByRole('button', { name: 'Rechercher' }).click()
 
@@ -219,14 +235,17 @@ test.describe('Press feedback on every kind of control', () => {
   const SHRUNK = { scale: '0.97', opacity: '1' }
 
   test('ToastClose_ShouldShrinkSlightly_WhenItIsPressed', async ({ page }) => {
-    const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
-    await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
-    await page.goto('/')
-    await pauseTheCamera(page)
+    await openTheChannel(page)
+    await sendATestMessage(page)
 
-    expect(await pressed(page.getByRole('status').getByRole('button', { name: 'Fermer' }))).toEqual(
-      SHRUNK,
-    )
+    expect(
+      await pressed(
+        page
+          .getByRole('region', { name: 'Notifications' })
+          .getByRole('status')
+          .getByRole('button', { name: 'Fermer' }),
+      ),
+    ).toEqual(SHRUNK)
   })
 
   test('AccessRetry_ShouldShrinkSlightly_WhenItIsPressed', async ({ page }) => {
@@ -238,20 +257,20 @@ test.describe('Press feedback on every kind of control', () => {
     expect(await pressed(page.getByRole('button', { name: 'Réessayer' }))).toEqual(SHRUNK)
   })
 
-  test('DetectionTile_ShouldShrinkSlightly_WhenItIsPressed', async ({ page }) => {
+  test('ClipActions_ShouldShrinkSlightly_WhenItIsPressed', async ({ page }) => {
     await installFakeBackend(
       page,
       createFakeBackendState({ detectionHistory: [makeFakeDetectionEvent()] }),
     )
-    await page.goto('/history')
+    await page.goto('/detections')
 
-    expect(await pressed(page.getByRole('button', { name: /Voir l’aperçu/ }))).toEqual(SHRUNK)
+    expect(await pressed(page.getByRole('button', { name: 'Plus d’actions' }))).toEqual(SHRUNK)
   })
 
   test('PositionTile_ShouldShrinkSlightly_WhenItIsPressed', async ({ page }) => {
     const camera = makeFakeCamera({ ptzSupported: true, verifiedCapabilities: ['ptz'] })
     await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
-    await page.goto('/cameras/camera-1/direct')
+    await page.goto('/cameras/camera-1')
 
     expect(await pressed(page.getByTitle('Enregistrer la position actuelle ici').first())).toEqual(
       SHRUNK,
@@ -264,9 +283,9 @@ test.describe('Press feedback on every kind of control', () => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
     await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
-    await page.goto('/cameras/camera-1/direct')
+    await page.goto('/cameras/camera-1')
 
-    expect(await pressed(page.getByRole('button', { name: 'Retour' }))).toEqual({
+    expect(await pressed(page.getByRole('button', { name: 'Plein écran' }))).toEqual({
       scale: 'none',
       opacity: '0.8',
     })
@@ -275,11 +294,10 @@ test.describe('Press feedback on every kind of control', () => {
 
 test.describe('Layers', () => {
   test('ConfirmModal_ShouldFadeInGrowingSlightly_WhenItOpens', async ({ page }) => {
-    await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
-    await page.goto('/')
+    await openTheChannel(page)
     await slowDownMotion(page)
 
-    await page.getByRole('button', { name: 'Pause' }).click()
+    await page.getByRole('button', { name: 'Supprimer le canal' }).click()
 
     expect(await frameOf(page.getByRole('alertdialog'), 'first')).toEqual({
       opacity: 0,
@@ -288,9 +306,8 @@ test.describe('Layers', () => {
   })
 
   test('ConfirmModal_ShouldFadeOutShrinkingSlightly_WhenItCloses', async ({ page }) => {
-    await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
-    await page.goto('/')
-    await page.getByRole('button', { name: 'Pause' }).click()
+    await openTheChannel(page)
+    await page.getByRole('button', { name: 'Supprimer le canal' }).click()
     const dialog = page.getByRole('alertdialog')
     await expect(dialog).toBeVisible()
     await slowDownMotion(page)
@@ -303,16 +320,16 @@ test.describe('Layers', () => {
   test('ConfirmModal_ShouldFadeOutShrinkingSlightly_WhenTheConfirmedActionSettles', async ({
     page,
   }) => {
-    const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
-    await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
-    await page.goto('/')
-    await page.getByRole('button', { name: 'Pause' }).click()
+    await openTheChannel(page)
+    await page.getByRole('button', { name: 'Supprimer le canal' }).click()
     const dialog = page.getByRole('alertdialog')
     await expect(dialog).toBeVisible()
     await slowDownMotion(page)
 
-    await dialog.getByRole('button', { name: 'Mettre en pause' }).click()
-    await expect(page.getByRole('status')).toContainText('Salon est en pause.')
+    await dialog.getByRole('button', { name: 'Supprimer' }).click()
+    await expect(
+      page.getByRole('region', { name: 'Notifications' }).getByRole('status'),
+    ).toContainText('Canal supprimé.')
 
     // Leaving after its action, it is a copy hidden from assistive technologies.
     const leaving = page.locator('[data-slot="alert-dialog-content"][data-state="closed"]')
@@ -321,8 +338,9 @@ test.describe('Layers', () => {
 
   test('HelpPopover_ShouldFadeInGrowingSlightly_WhenItOpens', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
-    await page.goto('/settings/cameras/camera-1/connexion')
+    await page.goto('/settings/cameras/camera-1/connection')
     const stream = page.getByRole('list', { name: 'Capacités' }).getByRole('listitem').first()
+    await stream.getByRole('heading', { name: 'Flux vidéo' }).click()
     await stream.getByText('Options').click()
     await slowDownMotion(page)
 
@@ -336,8 +354,9 @@ test.describe('Layers', () => {
 
   test('Select_ShouldFadeInGrowingSlightly_WhenItOpens', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [] }))
-    await page.goto('/settings/cameras/ajout')
-    await page.getByRole('button', { name: 'Saisir l’adresse moi-même' }).click()
+    await page.goto('/settings/cameras/add')
+    await page.getByRole('button', { name: 'Saisir son adresse' }).click()
+    await page.getByText('Où trouver ces identifiants').click()
     await slowDownMotion(page)
 
     await page.getByRole('combobox', { name: 'Marque' }).click()
@@ -345,45 +364,12 @@ test.describe('Layers', () => {
     expect(await frameOf(page.getByRole('listbox'), 'first')).toEqual({ opacity: 0, scale: 0.95 })
   })
 
-  test('Overlay_ShouldOnlyFade_WhenItOpens', async ({ page }) => {
-    await installFakeBackend(
-      page,
-      createFakeBackendState({ detectionHistory: [makeFakeDetectionEvent()] }),
-    )
-    await page.goto('/history')
-    await slowDownMotion(page)
-
-    await page.getByRole('button', { name: /Voir l’aperçu/ }).click()
-
-    expect(
-      await frameOf(page.getByRole('dialog', { name: 'Aperçu de la détection' }), 'first'),
-    ).toEqual({ opacity: 0, scale: 1 })
-  })
-
-  test('Overlay_ShouldOnlyFade_WhenItCloses', async ({ page }) => {
-    await installFakeBackend(
-      page,
-      createFakeBackendState({ detectionHistory: [makeFakeDetectionEvent()] }),
-    )
-    await page.goto('/history')
-    await page.getByRole('button', { name: /Voir l’aperçu/ }).click()
-    const viewer = page.getByRole('dialog', { name: 'Aperçu de la détection' })
-    await expect(viewer).toBeVisible()
-    await expect.poll(() => viewer.evaluate((el) => el.getAnimations().length)).toBe(0)
-    await slowDownMotion(page)
-
-    await viewer.getByRole('button', { name: 'Fermer' }).first().click()
-
-    expect(await frameOf(viewer, 'last')).toEqual({ opacity: 0, scale: 1 })
-  })
-
   test('ConfirmModal_ShouldOnlyFade_WhenThePhoneAsksForLessMotion', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
-    await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
-    await page.goto('/')
+    await openTheChannel(page)
     await slowDownMotion(page)
 
-    await page.getByRole('button', { name: 'Pause' }).click()
+    await page.getByRole('button', { name: 'Supprimer le canal' }).click()
 
     expect(await frameOf(page.getByRole('alertdialog'), 'first')).toEqual({
       opacity: 0,
@@ -394,33 +380,29 @@ test.describe('Layers', () => {
 
 test.describe('Toasts', () => {
   test.beforeEach(async ({ page }) => {
-    const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
-    await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
+    await openTheChannel(page)
   })
 
   test('Toast_ShouldFadeInRisingSlightly_WhenItAppears', async ({ page }) => {
-    await page.goto('/')
     await recordToastEntrances(page)
 
-    await pauseTheCamera(page)
+    await sendATestMessage(page)
 
     expect(await toastEntrances(page)).toEqual([expect.arrayContaining(['opacity', 'translate'])])
   })
 
   test('Toast_ShouldOnlyFadeIn_WhenThePhoneAsksForLessMotion', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
-    await page.goto('/')
     await recordToastEntrances(page)
 
-    await pauseTheCamera(page)
+    await sendATestMessage(page)
 
     expect(await toastEntrances(page)).toEqual([['opacity']])
   })
 
   test('Toast_ShouldFadeOut_WhenTheUserClosesIt', async ({ page }) => {
-    await page.goto('/')
-    await pauseTheCamera(page)
-    const toast = page.getByRole('status')
+    await sendATestMessage(page)
+    const toast = page.getByRole('region', { name: 'Notifications' }).getByRole('status')
     await expect.poll(() => toast.evaluate((el) => el.getAnimations().length)).toBe(0)
     await slowDownMotion(page)
 

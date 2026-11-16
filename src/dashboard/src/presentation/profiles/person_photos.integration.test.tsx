@@ -5,6 +5,7 @@ import { makeProfile, makeProfilePhoto } from '../../testing/profile_fixture'
 import { failure, fakeNetwork, ok } from '../../testing/fake_network'
 import { renderScreen } from '../../testing/render_screen'
 import { PersonPhotosView } from './person_photos.component'
+import { PersonPhotosAdvancedView } from './person_photos_advanced.component'
 
 const PHOTOS = 'GET /api/profiles/person-1/photos'
 const UPLOAD = 'POST /api/profiles/person-1/photos'
@@ -12,9 +13,19 @@ const REMOVE = 'DELETE /api/profiles/person-1/photos/photo-1'
 const RESYNC = 'POST /api/profiles/resync-face-library'
 
 const PHOTOS_TAB = {
-  path: '/settings/detection/personnes/:profileId/photos',
-  url: '/settings/detection/personnes/person-1/photos',
+  path: '/settings/face-recognition/:profileId/photos',
+  url: '/settings/face-recognition/person-1/photos',
   outletContext: { person: makeProfile(), reload: () => undefined },
+}
+
+const PHOTOS_ADVANCED = {
+  path: '/settings/face-recognition/:profileId/photos/advanced',
+  url: '/settings/face-recognition/person-1/photos/advanced',
+}
+
+/** The one photo of the gallery, apart from the page's other rows. */
+async function photoTiles() {
+  return within(await screen.findByRole('list', { name: 'Photos' })).getByRole('listitem')
 }
 
 describe('PersonPhotosView', () => {
@@ -59,7 +70,7 @@ describe('PersonPhotosView', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Réessayer' }))
 
     // Assert
-    expect(await screen.findByRole('listitem')).toHaveTextContent('Prise en compte')
+    expect(await photoTiles()).toHaveTextContent('Prise en compte')
   })
 
   it('onLoad_ShouldShowEachPhotoAndWhetherItCounts_WhenThePersonHasSome', async () => {
@@ -70,7 +81,7 @@ describe('PersonPhotosView', () => {
     renderScreen(<PersonPhotosView />, PHOTOS_TAB)
 
     // Assert
-    const photo = await screen.findByRole('listitem')
+    const photo = await photoTiles()
     expect(photo).toHaveTextContent('En attente')
   })
 
@@ -151,15 +162,14 @@ describe('PersonPhotosView', () => {
 
     // Assert
     expect(await screen.findByText(/GET \/api\/profiles\/person-1\/photos · 500/)).toBeVisible()
-    expect(screen.getByRole('listitem')).toBeInTheDocument()
+    expect(screen.getByRole('list', { name: 'Photos' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Réessayer' })).not.toBeInTheDocument()
   })
 
   it('onResync_ShouldSayHowManyPhotosWereTakenBack_WhenTheUserConfirms', async () => {
     // Arrange
     fakeNetwork({ [PHOTOS]: ok([]), [RESYNC]: ok({ synced: 4 }) })
-    renderScreen(<PersonPhotosView />, PHOTOS_TAB)
-    await userEvent.click(await screen.findByText('Avancé'))
+    renderScreen(<PersonPhotosAdvancedView />, PHOTOS_ADVANCED)
     await userEvent.click(screen.getByRole('button', { name: 'Reprendre toutes les photos' }))
 
     // Act

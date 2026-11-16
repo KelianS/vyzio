@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { formatEventTitle } from './detection_formatters'
+import {
+  clipFileName,
+  formatClipDay,
+  formatClipDetail,
+  formatEventTitle,
+} from './detection_formatters'
 import type { DetectionEvent } from '../../domain/entities/detection_event.entity'
 
 const event = (overrides: Partial<DetectionEvent>): DetectionEvent => ({
@@ -26,15 +31,15 @@ describe('formatEventTitle', () => {
     expect(title).toBe('Paul')
   })
 
-  it('formatEventTitle_ShouldNameTheDetectionInFrench_WhenTheCatalogueKnowsItsLabel', () => {
+  it('formatEventTitle_ShouldNameTheDetectedObjectInFrench_WhenTheCatalogueKnowsItsLabel', () => {
     // Arrange
-    const labels = [{ value: 'car', displayName: 'Voiture', emoji: '🚗' }]
+    const labels = [{ value: 'car', displayName: 'Voiture' }]
 
     // Act
     const title = formatEventTitle(event({ identity: null, label: 'car' }), labels)
 
     // Assert
-    expect(title).toBe('Détection « Voiture »')
+    expect(title).toBe('Voiture')
   })
 
   it('formatEventTitle_ShouldKeepTheEngineLabel_WhenTheCatalogueDoesNotKnowIt', () => {
@@ -42,6 +47,84 @@ describe('formatEventTitle', () => {
     const title = formatEventTitle(event({ identity: null, label: 'car' }), [])
 
     // Assert
-    expect(title).toBe('Détection « car »')
+    expect(title).toBe('car')
+  })
+
+  it('formatEventTitle_ShouldSayAnUnknownPerson_WhenAPersonCarriesNoIdentity', () => {
+    // Arrange
+    const labels = [{ value: 'person', displayName: 'Personne' }]
+
+    // Act
+    const title = formatEventTitle(event({ identity: null, label: 'person' }), labels)
+
+    // Assert
+    expect(title).toBe('Personne inconnue')
+  })
+})
+
+describe('formatClipDay', () => {
+  it.each([
+    { occurredAt: '2026-11-16T09:00:00', said: 'Aujourd’hui' },
+    { occurredAt: '2026-11-15T23:30:00', said: 'Hier' },
+    { occurredAt: '2026-11-12T10:00:00', said: 'Jeudi 12 novembre' },
+  ])('formatClipDay_ShouldNameTheDayAClipHappened_WhenItIs ($said)', ({ occurredAt, said }) => {
+    // Arrange & Act
+    const day = formatClipDay(occurredAt, new Date('2026-11-16T18:00:00'))
+
+    // Assert
+    expect(day).toBe(said)
+  })
+})
+
+describe('formatClipDetail', () => {
+  it.each([
+    {
+      occurredAt: '2026-11-16T17:46:00',
+      confidence: 0.92,
+      said: '17\u00a0h\u00a046 · sûr\u00a0à\u00a092\u00a0%',
+    },
+    { occurredAt: '2026-11-16T08:00:00', confidence: null, said: '8\u00a0h' },
+  ])(
+    'formatClipDetail_ShouldSayTheHourAndHowSure_WhenTheEngineSaidIt ($said)',
+    ({ occurredAt, confidence, said }) => {
+      // Arrange & Act
+      const detail = formatClipDetail(event({ occurredAt, confidence }))
+
+      // Assert
+      expect(detail).toBe(said)
+    },
+  )
+})
+
+describe('formatClipDetail with its camera', () => {
+  it('formatClipDetail_ShouldPutTheCameraFirst_WhenTheListMixesCameras', () => {
+    // Arrange & Act
+    const detail = formatClipDetail(
+      event({ occurredAt: '2026-11-16T17:46:00', confidence: 0.92 }),
+      { camera: true },
+    )
+
+    // Assert
+    expect(detail).toBe('Porte d’entrée · 17\u00a0h\u00a046 · sûr\u00a0à\u00a092\u00a0%')
+  })
+  it('formatClipDetail_ShouldLeaveHowSureOut_WhenARowOfAMixedListMustStayOnOneLine', () => {
+    // Arrange & Act
+    const detail = formatClipDetail(
+      event({ occurredAt: '2026-11-16T17:46:00', confidence: 0.92 }),
+      { camera: true, howSure: false },
+    )
+
+    // Assert
+    expect(detail).toBe('Porte d’entrée · 17 h 46')
+  })
+})
+
+describe('clipFileName', () => {
+  it('clipFileName_ShouldNameTheFileAfterItsCameraAndMoment_WhenAClipIsDownloaded', () => {
+    // Arrange & Act
+    const name = clipFileName(event({ occurredAt: '2026-11-16T07:05:00' }))
+
+    // Assert
+    expect(name).toBe('Porte d’entrée 2026-11-16 07h05.mp4')
   })
 })

@@ -1,8 +1,8 @@
 import { cn } from '../../../common/ui/utils'
 
-// Readable over any picture: the inverse surface, dimmed.
+// Readable over any picture: a round control on the glass (DESIGN SYSTEM § Palette).
 export const LIVE_CONTROL =
-  'inline-flex h-9 min-w-9 items-center justify-center rounded-full bg-surface-inverse/70 px-3 text-xs font-semibold text-surface-inverse-foreground'
+  'inline-flex h-11 min-w-11 items-center justify-center rounded-full bg-glass px-3 text-body font-semibold text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50'
 
 /** A faded control leaves the page and its focus order, so nothing invisible can be pressed. */
 export function fading(shown: boolean) {

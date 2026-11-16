@@ -1,8 +1,10 @@
-import { Link } from 'react-router'
+import { CalendarClock } from 'lucide-react'
 import type { AppError } from '../errors/app_error'
 import type { ScheduleRule, ScheduleRuleKind } from '../../domain/entities/schedule_rule.entity'
 import { ReadFailure } from '../components/error_message'
-import { appliesSentence, rulesTargeting, SCHEDULES_PATH } from './schedule_types'
+import { GroupedItem, GroupedRow } from '../components/grouped_list'
+import { rangeCount, rulesTargeting, SCHEDULES_PATH } from './schedule_types'
+import { Loading } from '../components/loading'
 
 export const SCHEDULES_UNREAD = 'La planification n’a pas pu être lue.'
 
@@ -16,7 +18,7 @@ interface ScheduleCountLineProps {
   onRetry: () => void
 }
 
-/** A camera or a channel does not list its ranges: it says how many apply, and where they are (ADR-15). */
+/** A grouped list's row to the calendar: a camera or a channel says how many ranges apply, not which (ADR-15). */
 export function ScheduleCountLine({
   rules,
   kind,
@@ -25,15 +27,26 @@ export function ScheduleCountLine({
   onRetry,
 }: ScheduleCountLineProps) {
   // Unread rules are not "no range": saying so would be a false answer.
-  if (error) return <ReadFailure error={error} onRetry={onRetry} subject={SCHEDULES_UNREAD} />
-  if (rules === null) return <p className="py-3 text-sm text-muted-foreground">Chargement…</p>
+  if (error)
+    return (
+      <GroupedItem>
+        <ReadFailure error={error} onRetry={onRetry} subject={SCHEDULES_UNREAD} className="p-4" />
+      </GroupedItem>
+    )
+  if (rules === null)
+    return (
+      <GroupedItem>
+        <Loading lines={1} className="px-4 py-5" />
+      </GroupedItem>
+    )
 
   return (
-    <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-3">
-      <span>{appliesSentence(kind, rulesTargeting(rules, kind, targetId))}</span>
-      <Link to={SCHEDULES_PATH} className="text-sm underline underline-offset-2">
-        Voir la planification
-      </Link>
-    </p>
+    <GroupedRow
+      icon={CalendarClock}
+      title="Planification"
+      subtitle={rangeCount(rulesTargeting(rules, kind, targetId))}
+      weight="action"
+      to={SCHEDULES_PATH}
+    />
   )
 }

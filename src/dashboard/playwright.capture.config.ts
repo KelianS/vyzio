@@ -13,6 +13,8 @@ export default defineConfig({
   reporter: 'list',
   use: {
     baseURL: BASE_URL,
+    // The interface is French: time fields then read 22:00, not 10:00 PM.
+    locale: 'fr-FR',
   },
   webServer: {
     command: `node node_modules/typescript/bin/tsc -b && node node_modules/vite/bin/vite.js build && node node_modules/vite/bin/vite.js preview --port ${PORT} --strictPort`,

@@ -11,39 +11,19 @@ import {
  * being fixed.
  */
 
-test.describe('Camera pause', () => {
-  test('HubView_ShouldConfirmThenSayItHappened_WhenTheUserPausesACamera', async ({ page }) => {
-    const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
-    await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
-
-    await page.goto('/')
-    await page.getByRole('button', { name: 'Pause' }).click()
-
-    // Cutting one camera costs as much as all of them: the request announces itself alike.
-    const dialog = page.getByRole('alertdialog')
-    await expect(dialog).toContainText('Mettre « Salon » en pause ?')
-    await expect(dialog).toContainText(
-      'Plus rien n’est enregistré, détecté ni notifié par cette caméra',
-    )
-    await dialog.getByRole('button', { name: 'Mettre en pause' }).click()
-
-    // And the result is said: without that, nothing tells a long operation from a failed one.
-    await expect(page.getByRole('status')).toContainText('Salon est en pause.')
-    await expect(page.getByRole('button', { name: 'Réactiver' })).toBeVisible()
-  })
-})
-
 test.describe('LiveView', () => {
-  test('LiveView_ShouldOpenFullScreenAndGoBackHome_WhenTheUserTapsACamera', async ({ page }) => {
+  test('LiveView_ShouldOpenTheCameraViewUnderTheBarAndGoBackHome_WhenTheUserTapsACamera', async ({
+    page,
+  }) => {
     const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
     await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
 
     await page.goto('/')
     await page.getByRole('link', { name: 'Salon' }).click()
 
-    await expect(page).toHaveURL('/cameras/camera-1/direct')
+    await expect(page).toHaveURL('/cameras/camera-1')
     await expect(page.getByRole('main', { name: 'Salon' })).toBeVisible()
-    await expect(page.getByRole('navigation', { name: 'Navigation principale' })).toBeHidden()
+    await expect(page.getByRole('banner').getByRole('heading', { name: 'Salon' })).toBeVisible()
 
     await page.getByRole('button', { name: 'Retour' }).click()
     await expect(page).toHaveURL('/')
@@ -54,15 +34,16 @@ test.describe('LiveView', () => {
     const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
     await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
 
-    await page.goto('/cameras/camera-1/direct')
+    await page.goto('/cameras/camera-1')
     const back = await page.getByRole('button', { name: 'Retour' }).boundingBox()
     const picture = await page.locator('video[aria-label="Salon"]').boundingBox()
 
     expect(back!.y + back!.height).toBeLessThanOrEqual(picture!.y)
-    expect(picture!.width).toBe(390)
+    expect(picture!.width).toBe(390 - 32)
   })
 
-  test('LiveView_ShouldKeepThePadAComfortableSizeAboveThePositions_WhenThePhoneIsHeldUpright', async ({
+  // One round pad, its four directions each a finger's size (#389).
+  test('LiveView_ShouldDrawThePadAsOneRoundControlWithFingerSizedZones_WhenThePhoneIsHeldUpright', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 390, height: 844 })
@@ -71,29 +52,20 @@ test.describe('LiveView', () => {
     })
     await installFakeBackend(page, state)
 
-    await page.goto('/cameras/camera-1/direct')
-    await expect(page.getByTitle('Enregistrer la position actuelle ici').first()).toBeVisible()
-    const pad = await page.getByTitle('Haut').locator('..').boundingBox()
-    const tile = await page.getByTitle('Enregistrer la position actuelle ici').first().boundingBox()
+    await page.goto('/cameras/camera-1')
+    const pad = page.getByRole('group', { name: 'Orienter la caméra' })
+    await expect(pad).toBeVisible()
 
-    // Capped, not inflated by the free height; the positions follow right under it.
-    expect(pad!.width).toBeLessThanOrEqual(160)
-    expect(pad!.width).toBeGreaterThanOrEqual(112)
-    expect(tile!.y - (pad!.y + pad!.height)).toBeLessThan(40)
-  })
+    const reach = async (name: string) => {
+      const zone = await pad.getByRole('button', { name }).boundingBox()
+      return Math.min(zone!.width, zone!.height)
+    }
 
-  test('LiveView_ShouldFitWithoutScrolling_WhenAShortPhoneIsHeldUpright', async ({ page }) => {
-    await page.setViewportSize({ width: 360, height: 600 })
-    const state = createFakeBackendState({
-      cameras: [makeFakeCamera({ ptzSupported: true, verifiedCapabilities: ['ptz'] })],
-    })
-    await installFakeBackend(page, state)
-
-    await page.goto('/cameras/camera-1/direct')
-    await expect(page.getByTitle('Enregistrer la position actuelle ici').first()).toBeVisible()
-    const screen = page.getByRole('main', { name: 'Porte d’entrée' })
-
-    expect(await screen.evaluate((main) => main.scrollHeight - main.clientHeight)).toBe(0)
+    await expect(pad).toHaveCSS('border-radius', '9999px')
+    expect(await reach('Haut')).toBeGreaterThanOrEqual(44)
+    expect(await reach('Bas')).toBeGreaterThanOrEqual(44)
+    expect(await reach('Gauche')).toBeGreaterThanOrEqual(44)
+    expect(await reach('Droite')).toBeGreaterThanOrEqual(44)
   })
 
   test('LiveView_ShouldGoBackHome_WhenTheBrowserGoesBack', async ({ page }) => {
@@ -102,7 +74,7 @@ test.describe('LiveView', () => {
 
     await page.goto('/')
     await page.getByRole('link', { name: 'Salon' }).click()
-    await expect(page).toHaveURL('/cameras/camera-1/direct')
+    await expect(page).toHaveURL('/cameras/camera-1')
     await page.goBack()
 
     await expect(page).toHaveURL('/')
@@ -116,13 +88,13 @@ test.describe('LiveView', () => {
     const camera = makeFakeCamera({ id: 'camera-1', displayName: 'Salon' })
     await installFakeBackend(page, createFakeBackendState({ cameras: [camera] }))
 
-    await page.goto('/cameras/camera-1/direct')
-    const back = page.getByRole('button', { name: 'Retour' })
-    await expect(back).toBeVisible()
-    await expect(back).toBeHidden({ timeout: 6000 })
+    await page.goto('/cameras/camera-1')
+    const leave = page.getByRole('button', { name: 'Quitter le plein écran' })
+    await expect(leave).toBeVisible()
+    await expect(leave).toBeHidden({ timeout: 6000 })
 
-    await page.getByRole('main', { name: 'Salon' }).click({ position: { x: 420, y: 200 } })
-    await expect(back).toBeVisible()
+    await page.mouse.click(420, 200)
+    await expect(leave).toBeVisible()
   })
 
   test('LiveView_ShouldShowAWaitNeverABrokenImage_WhenTheStreamIsUnavailable', async ({ page }) => {
@@ -170,7 +142,9 @@ test.describe('LiveView PTZ positions', () => {
     // The long press is the overwrite gesture; there is nothing to overwrite.
     await page.getByTitle('Enregistrer la position actuelle ici').first().click()
 
-    await expect(page.getByRole('status')).toContainText('enregistrée')
+    await expect(
+      page.getByRole('region', { name: 'Notifications' }).getByRole('status'),
+    ).toContainText('enregistrée')
     expect(state.ptz.presets).toHaveLength(1)
   })
 
@@ -184,11 +158,13 @@ test.describe('LiveView PTZ positions', () => {
     })
 
     const tile = page.getByTitle(/^Parking \(appui : y aller et prendre sa miniature/)
-    await expect(page.getByTitle('Enregistrer la position actuelle ici')).toHaveCount(3)
+    await expect(page.getByTitle('Enregistrer la position actuelle ici')).toHaveCount(1)
 
     await tile.click()
 
-    await expect(page.getByRole('status')).toContainText('Caméra en position « Parking ».')
+    await expect(
+      page.getByRole('region', { name: 'Notifications' }).getByRole('status'),
+    ).toContainText('Caméra en position « Parking ».')
     // The capture waits CAPTURE_DELAY_MS after the acknowledgement, on the real clock here.
     await expect.poll(() => state.ptz.presets[0].thumbnail, { timeout: 10_000 }).toBe(true)
     await expect(page.getByTitle(/^Parking \(appui : y aller, appui long/)).toBeVisible()
@@ -214,7 +190,9 @@ test.describe('LiveView PTZ positions', () => {
     await tile.click()
 
     // A move takes time: without an acknowledgement, the press looks like it did nothing.
-    await expect(page.getByRole('status')).toContainText('Caméra en position « Surveillance ».')
+    await expect(
+      page.getByRole('region', { name: 'Notifications' }).getByRole('status'),
+    ).toContainText('Caméra en position « Surveillance ».')
     await expect(tile).toHaveAttribute('aria-pressed', 'true')
   })
 
@@ -226,12 +204,16 @@ test.describe('LiveView PTZ positions', () => {
     await expect(page.getByText(/pas de position de référence/)).toBeVisible()
 
     await page.getByRole('button', { name: 'Calibrer maintenant' }).click()
-    await expect(page.getByRole('status')).toContainText('Caméra calibrée')
+    await expect(
+      page.getByRole('region', { name: 'Notifications' }).getByRole('status'),
+    ).toContainText('Caméra calibrée')
     expect(state.ptz.calibrated).toBe(true)
 
     // And the positions become usable again without going through the settings.
     await page.getByTitle('Enregistrer la position actuelle ici').first().click()
-    await expect(page.getByRole('status').last()).toContainText('enregistrée')
+    await expect(
+      page.getByRole('region', { name: 'Notifications' }).getByRole('status').last(),
+    ).toContainText('enregistrée')
   })
 })
 
@@ -243,20 +225,20 @@ test.describe('DetectionHistoryView', () => {
         detectionHistory: [makeEvent(), makeEvent({ eventId: 'event-2' })],
       }),
     )
-    await page.goto('/history')
+    await page.goto('/detections')
   }
 
-  test('DetectionHistoryView_ShouldShowDetectionsWithFiltersFolded_WhenOpened', async ({
+  test('DetectionHistoryView_ShouldShowDetectionsWithTheFilterInTheBar_WhenOpened', async ({
     page,
   }) => {
     await openHistory(page)
 
-    await expect(page.getByRole('heading', { name: 'Historique' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Détections' })).toBeVisible()
 
     // What one comes to read here is the detections - not a filter form.
-    await expect(page.getByRole('region', { name: 'Filtres' })).toBeHidden()
-    await page.getByRole('button', { name: 'Filtrer' }).click()
-    await expect(page.getByRole('region', { name: 'Filtres' })).toBeVisible()
+    await expect(page.getByRole('dialog', { name: 'Filtrer' })).toHaveCount(0)
+    await page.getByRole('banner').getByRole('button', { name: 'Filtrer' }).click()
+    await expect(page.getByRole('dialog', { name: 'Filtrer' })).toBeVisible()
   })
 
   test('DetectionHistoryView_ShouldShowTheThumbnailAndSummary_WhenItListsDetections', async ({
@@ -264,26 +246,11 @@ test.describe('DetectionHistoryView', () => {
   }) => {
     await openHistory(page)
 
-    // The home thumbnail was missing here, although it is the same list.
-    const preview = page.getByRole('button', { name: /Voir l’aperçu/ }).first()
-    await expect(preview).toBeVisible()
-    await expect(preview.locator('img')).toBeAttached()
-
-    await expect(page.getByText(/front door · .* · 92 % de certitude/).first()).toBeVisible()
-  })
-
-  test('DetectionHistoryView_ShouldOfferIdentifyingOnlyPeople_WhenADetectionCarriesNoIdentity', async ({
-    page,
-  }) => {
-    await installFakeBackend(
-      page,
-      createFakeBackendState({
-        detectionHistory: [makeEvent(), makeEvent({ eventId: 'event-2', label: 'cat' })],
-      }),
+    const row = page.getByRole('listitem').first()
+    await expect(row.locator('img')).toBeAttached()
+    await expect(row).toContainText(/front door · \d+\sh/)
+    await expect(page.getByRole('group', { name: /^Détection :/ })).toContainText(
+      /front door · .* · sûr\sà\s92\s%/,
     )
-    await page.goto('/history')
-
-    // Only person detections carry an identity (person_known/person_unknown).
-    await expect(page.getByRole('button', { name: 'Identifier' })).toHaveCount(1)
   })
 })

@@ -1,78 +1,71 @@
-/** Settings rubrics, declared as data (UI-25) — organized by functional domain, never by scope or screen of origin. */
+import {
+  Bell,
+  CalendarClock,
+  Server,
+  Lock,
+  ScanFace,
+  Archive,
+  Video,
+  type LucideIcon,
+} from 'lucide-react'
+
+/** The two groups the rubrics are shown in (UI-36). */
+export const SETTINGS_SECTIONS = ['Surveillance', 'Système'] as const
+
+type SettingsSection = (typeof SETTINGS_SECTIONS)[number]
+
+/** Settings rubrics, declared as data (UI-25), organized by functional domain, never by scope or screen of origin. */
 export interface SettingsRubric {
   /** Route segment under `/settings`. */
   readonly slug: string
   readonly label: string
-  /** What the rubric governs, in a few words — a full sentence would compete with the label. */
-  readonly summary: string
+  readonly section: SettingsSection
+  /** The neutral icon of its row (DESIGN SYSTEM § Grouped lists). */
+  readonly icon: LucideIcon
 }
 
+/** The known people, whom face recognition names. */
+const PEOPLE_SLUG = 'face-recognition'
+
 export const SETTINGS_RUBRICS: readonly SettingsRubric[] = [
-  {
-    slug: 'cameras',
-    label: 'Caméras',
-    summary: 'Ajout et réglages',
-  },
-  {
-    slug: 'detection',
-    label: 'Détection',
-    summary: 'Ce qui est reconnu',
-  },
-  {
-    slug: 'conservation',
-    label: 'Conservation',
-    summary: 'Durée des enregistrements',
-  },
-  {
-    slug: 'notifications',
-    label: 'Notifications',
-    summary: 'Canaux et messages',
-  },
-  {
-    slug: 'planification',
-    label: 'Planification',
-    summary: 'Vie privée et notifications',
-  },
-  {
-    slug: 'acces',
-    label: 'Accès',
-    summary: 'Mot de passe et appareils',
-  },
-  {
-    slug: 'systeme',
-    label: 'Système',
-    summary: 'Stockage et ressources',
-  },
+  { slug: 'cameras', label: 'Caméras', section: 'Surveillance', icon: Video },
+  { slug: PEOPLE_SLUG, label: 'Personnes', section: 'Surveillance', icon: ScanFace },
+  { slug: 'schedule', label: 'Planification', section: 'Surveillance', icon: CalendarClock },
+  { slug: 'notifications', label: 'Notifications', section: 'Surveillance', icon: Bell },
+  { slug: 'retention', label: 'Conservation', section: 'Système', icon: Archive },
+  { slug: 'access', label: 'Accès', section: 'Système', icon: Lock },
+  { slug: 'hardware', label: 'Matériel', section: 'Système', icon: Server },
 ]
 
 export const SETTINGS_ROOT = '/settings'
+
+export const PEOPLE_PATH = `${SETTINGS_ROOT}/${PEOPLE_SLUG}`
+
+/** Whether an address is one of the settings' pages, their root included. */
+export function isSettingsPath(pathname: string): boolean {
+  return pathname === SETTINGS_ROOT || pathname.startsWith(`${SETTINGS_ROOT}/`)
+}
 
 export function rubricPath(slug: string) {
   return `${SETTINGS_ROOT}/${slug}`
 }
 
-/** A page is named once — the settings shell does it by default; routes naming something else (a camera, a task) declare it here. */
-export interface SettingsRouteHandle {
+/** A page is named once: the settings shell names a rubric, a route naming something else (a camera, a task) declares it. */
+interface SettingsRouteHandle {
   /** The route shows its own title; the rubric shell adds none. */
   readonly ownHeader?: boolean
-  /** The route shows its own back link; the rubric shell adds none. */
-  readonly ownBackLink?: boolean
+  /** A page under a thing's tabs that names itself instead, such as its `Avancé`: the shell shows neither name nor tabs. */
+  readonly subPage?: boolean
 }
 
-/** Migrated screen that names itself and provides its own way back. */
-export const OWN_HEADER: SettingsRouteHandle = { ownHeader: true, ownBackLink: true }
+export const OWN_HEADER: SettingsRouteHandle = { ownHeader: true }
 
-/** Not-yet-migrated screen: has its own title but no back link, so the shell keeps providing one. */
-export const OWN_HEADER_ONLY: SettingsRouteHandle = { ownHeader: true }
+export const SUB_PAGE: SettingsRouteHandle = { ownHeader: true, subPage: true }
 
-function handlesOf(matches: readonly { readonly handle?: unknown }[]) {
-  return matches.map((match) => match.handle as SettingsRouteHandle | undefined)
+export function isSubPage(matches: readonly { readonly handle?: unknown }[]): boolean {
+  return matches.some((match) => (match.handle as SettingsRouteHandle | undefined)?.subPage)
 }
 
 export function declaresOwnHeader(matches: readonly { readonly handle?: unknown }[]): boolean {
-  return handlesOf(matches).some((handle) => handle?.ownHeader)
-}
-
-export function declaresOwnBackLink(matches: readonly { readonly handle?: unknown }[]): boolean {
-  return handlesOf(matches).some((handle) => handle?.ownBackLink)
+  return matches.some((match) => (match.handle as SettingsRouteHandle | undefined)?.ownHeader)
 }

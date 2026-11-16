@@ -11,8 +11,8 @@ import { CameraPrivacyView } from './camera_privacy.component'
 const camera = makeCamera()
 
 const PRIVACY_TAB = {
-  path: '/settings/cameras/:cameraId/vie-privee',
-  url: '/settings/cameras/camera-1/vie-privee',
+  path: '/settings/cameras/:cameraId/privacy',
+  url: '/settings/cameras/camera-1/privacy',
   outletContext: camera,
 }
 
@@ -43,11 +43,13 @@ describe('CameraPrivacyView', () => {
     renderScreen(<CameraPrivacyView />, { ...PRIVACY_TAB, outletContext: ptzCamera })
 
     // Assert
-    expect(await screen.findByText('Aucune plage « Vie privée » ne s’applique')).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: 'Planification' })).toBeInTheDocument()
     expect(screen.getByRole('combobox', { name: 'En mode vie privée' })).toHaveTextContent(
       'Arrêt logiciel',
     )
-    expect(screen.getByText(/Rien n’est demandé à la caméra/)).toBeVisible()
+    expect(
+      screen.getByText('Vyzio s’arrête, la caméra filme toujours, visible sur votre réseau local.'),
+    ).toBeVisible()
     expect(screen.queryByText(/Parking/)).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Début')).not.toBeInTheDocument()
   })
@@ -70,10 +72,10 @@ describe('CameraPrivacyView', () => {
     renderScreen(<CameraPrivacyView />, PRIVACY_TAB)
 
     // Assert
-    expect(await screen.findByText('1 plage « Vie privée » s’applique')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Voir la planification' })).toHaveAttribute(
+    expect(await screen.findByRole('link', { name: 'Planification 1 plage' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /^Planification/ })).toHaveAttribute(
       'href',
-      '/settings/planification',
+      '/settings/schedule',
     )
   })
 
@@ -101,7 +103,7 @@ describe('CameraPrivacyView', () => {
     renderScreen(<CameraPrivacyView />, PRIVACY_TAB)
 
     // Assert
-    expect(await screen.findByText('1 plage « Vie privée » s’applique')).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: 'Planification 1 plage' })).toBeInTheDocument()
     expect(screen.queryByText(/Surveillance reprise/)).not.toBeInTheDocument()
   })
 
@@ -115,7 +117,7 @@ describe('CameraPrivacyView', () => {
     // Assert
     expect(await screen.findByText('La planification n’a pas pu être lue.')).toBeInTheDocument()
     expect(screen.getByRole('alert')).toHaveTextContent('GET /api/schedules · 500')
-    expect(screen.queryByText('Aucune plage « Vie privée » ne s’applique')).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /Planification/ })).not.toBeInTheDocument()
   })
 
   it('onRetryRules_ShouldCountTheRanges_WhenTheSecondReadSucceeds', async () => {
@@ -129,7 +131,7 @@ describe('CameraPrivacyView', () => {
     await userEvent.click(retry)
 
     // Assert
-    expect(await screen.findByText('2 plages « Vie privée » s’appliquent')).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: 'Planification 2 plages' })).toBeInTheDocument()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
@@ -137,7 +139,7 @@ describe('CameraPrivacyView', () => {
     // Arrange
     fakeNetwork({ [RULES]: ok([]), [PRESETS]: ok({ presets: [], calibrated: true }) })
     renderScreen(<CameraPrivacyView />, { ...PRIVACY_TAB, outletContext: ptzCamera })
-    await screen.findByText('Aucune plage « Vie privée » ne s’applique')
+    await screen.findByRole('link', { name: 'Planification' })
     screen.getByRole('combobox', { name: 'En mode vie privée' }).focus()
 
     // Act
@@ -213,7 +215,7 @@ describe('CameraPrivacyView', () => {
       'GET /api/cameras': ok([cutCamera]),
     })
     renderScreen(<CameraPrivacyView />, { ...PRIVACY_TAB, outletContext: cutCamera })
-    await screen.findByText('Aucune plage « Vie privée » ne s’applique')
+    await screen.findByRole('link', { name: 'Planification' })
     // The list opens on the current mode; the next choosable one skips the greyed Parking.
     screen.getByRole('combobox', { name: 'En mode vie privée' }).focus()
     await userEvent.keyboard('{ArrowDown}{ArrowDown}{Enter}')
@@ -249,7 +251,7 @@ describe('CameraPrivacyView', () => {
     // Assert
     expect(
       await screen.findByText(
-        /^Ses positions se règlent une fois la caméra en surveillance, et son flux vidéo n’a pas encore fonctionné : voir « Connexion »/,
+        /^Positions réglables une fois son flux vidéo reçu : voir « Connexion »/,
       ),
     ).toBeInTheDocument()
   })
@@ -266,7 +268,7 @@ describe('CameraPrivacyView', () => {
 
     // Assert
     expect(
-      await screen.findByText(/^Ses positions se règlent .* appliquez les changements, en haut/),
+      await screen.findByText(/^Positions réglables une fois les changements appliqués, en haut/),
     ).toBeInTheDocument()
     expect(screen.queryByText(/Enregistrez d’abord ses positions/)).not.toBeInTheDocument()
     expect(
@@ -281,7 +283,7 @@ describe('CameraPrivacyView', () => {
       ...PRIVACY_TAB,
       outletContext: { ...ptzCamera, validationState: 'draft' },
     })
-    await screen.findByText('Aucune plage « Vie privée » ne s’applique')
+    await screen.findByRole('link', { name: 'Planification' })
     screen.getByRole('combobox', { name: 'En mode vie privée' }).focus()
 
     // Act
@@ -290,9 +292,7 @@ describe('CameraPrivacyView', () => {
     // Assert
     const parking = await screen.findByRole('option', { name: /Orientation à l’écart/ })
     expect(parking).toHaveAttribute('aria-disabled', 'true')
-    expect(parking).toHaveTextContent(
-      /une fois la caméra en surveillance : appliquez les changements/,
-    )
+    expect(parking).toHaveTextContent(/une fois les changements appliqués/)
   })
 
   it('render_ShouldNotPromiseThePositions_WhenOrientationIsNotVerifiedYet', async () => {
@@ -310,7 +310,7 @@ describe('CameraPrivacyView', () => {
     })
 
     // Assert
-    await screen.findByText('Aucune plage « Vie privée » ne s’applique')
-    expect(screen.queryByText(/^Ses positions se règlent/)).not.toBeInTheDocument()
+    await screen.findByRole('link', { name: 'Planification' })
+    expect(screen.queryByText(/^Positions réglables/)).not.toBeInTheDocument()
   })
 })

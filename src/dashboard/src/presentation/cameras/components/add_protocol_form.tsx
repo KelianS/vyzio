@@ -13,6 +13,7 @@ import { SECRET_KEYBOARD, TEXT_KEYBOARD } from '../../../common/settings/text_ke
 import { PROTOCOL_LABELS, SPECIFIC_ACCOUNT_HELP } from '../protocol_labels'
 import { ALL_PROTOCOLS } from '../camera_connection_values'
 import { Picker } from './protocol_choice'
+import { Field } from '../../../common/components/field'
 
 /** Adds a protocol the camera does not speak yet, checked at once (CAM-45). */
 export function AddProtocol({
@@ -78,16 +79,14 @@ function AddProtocolForm({
     >
       <p className="font-medium">Ajouter un protocole</p>
       <div className="mt-2 flex flex-col gap-3">
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-muted-foreground">Protocole</span>
+        <Field label="Protocole">
           <Picker
             value={protocol}
             options={available.map((p) => ({ value: p, label: PROTOCOL_LABELS[p] }))}
             onChange={(value) => setProtocol(value as SupportedProtocol)}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-muted-foreground">Port</span>
+        </Field>
+        <Field label="Port">
           <Input
             type="number"
             inputMode="numeric"
@@ -97,31 +96,29 @@ function AddProtocolForm({
             value={port}
             onChange={(event) => setPort(event.target.value)}
           />
-        </label>
-        <label className="flex items-center justify-between gap-3 text-sm">
-          <span className="text-muted-foreground">Compte spécifique</span>
+        </Field>
+        <label className="flex items-center justify-between gap-3">
+          <span className="font-medium">Compte spécifique</span>
           <Switch checked={specificAccount} onCheckedChange={setSpecificAccount} />
         </label>
-        <p className="-mt-2 text-sm text-muted-foreground">{SPECIFIC_ACCOUNT_HELP}</p>
+        <p className="-mt-2 text-body text-muted-foreground">{SPECIFIC_ACCOUNT_HELP}</p>
         {specificAccount && (
           <>
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="text-muted-foreground">Identifiant</span>
+            <Field label="Identifiant">
               <Input
                 {...TEXT_KEYBOARD.identifier}
                 value={username}
                 onChange={(event) => setUsername(event.target.value)}
               />
-            </label>
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="text-muted-foreground">Mot de passe</span>
+            </Field>
+            <Field label="Mot de passe">
               <Input
                 {...SECRET_KEYBOARD}
                 type="password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
               />
-            </label>
+            </Field>
           </>
         )}
         <div className="flex flex-wrap gap-2">
@@ -133,7 +130,7 @@ function AddProtocolForm({
           </Button>
         </div>
       </div>
-      <p className="mt-2 text-sm text-muted-foreground">
+      <p className="mt-2 text-body text-muted-foreground">
         Vyzio vérifie aussitôt que la caméra répond par ce protocole, avec le compte de la caméra ou
         le compte spécifique.
       </p>

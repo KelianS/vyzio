@@ -91,7 +91,6 @@ describe('addCameraReducer', () => {
       type: 'REFRESH_CANDIDATE_SUCCEEDED',
       index: 0,
       candidate: { ...candidate, vendorFamily: null },
-      message: 'La caméra est maintenant joignable.',
     } as const
 
     // Act
@@ -101,24 +100,15 @@ describe('addCameraReducer', () => {
     expect(next.helpVendor).toBe('v380_pro')
   })
 
-  it('addCameraReducer_ShouldKeepTheFailureAndItsDiagnostic_WhenTheCameraCannotBeCreated', () => {
+  it('addCameraReducer_ShouldLetTheUserAddAgain_WhenTheCameraCannotBeCreated', () => {
     // Arrange
     const creating = { ...manual, creating: true }
-    const action = {
-      type: 'CREATE_FAILED',
-      message: 'Ces informations ne sont pas valides.',
-      diagnostic: 'POST /api/cameras · 400',
-    } as const
 
     // Act
-    const next = addCameraReducer(creating, action)
+    const next = addCameraReducer(creating, { type: 'CREATE_FAILED' })
 
     // Assert
     expect(next.creating).toBe(false)
-    expect(next.error).toEqual({
-      message: 'Ces informations ne sont pas valides.',
-      diagnostic: 'POST /api/cameras · 400',
-    })
   })
 
   it('addCameraReducer_ShouldForgetThePreviousRanges_WhenTheConfirmationReadsThemAgain', () => {

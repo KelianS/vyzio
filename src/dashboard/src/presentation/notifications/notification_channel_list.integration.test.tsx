@@ -14,7 +14,7 @@ describe('NotificationChannelListView', () => {
     // Arrange
     fakeNetwork({
       [CHANNELS]: ok([
-        makeChannelSummary({ isEnabled: false }),
+        makeChannelSummary(),
         makeChannelSummary({ channel: 'discord', displayName: 'Discord', isConfigured: false }),
       ]),
     })
@@ -23,8 +23,7 @@ describe('NotificationChannelListView', () => {
     renderScreen(<NotificationChannelListView />, LIST)
 
     // Assert
-    const telegram = await screen.findByRole('link', { name: /Telegram/ })
-    expect(telegram).toHaveTextContent('En pause')
+    expect(await screen.findByRole('link', { name: 'Telegram' })).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: /Discord/ })).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Ajouter un canal' })).toBeInTheDocument()
   })
@@ -64,7 +63,7 @@ describe('NotificationChannelListView', () => {
     const network = fakeNetwork({ [CHANNELS]: failure(500) })
     renderScreen(<NotificationChannelListView />, LIST)
     await screen.findByRole('alert')
-    network.answer(CHANNELS, ok([makeChannelSummary({ isEnabled: false })]))
+    network.answer(CHANNELS, ok([makeChannelSummary()]))
 
     // Act
     await userEvent.click(screen.getByRole('button', { name: 'Réessayer' }))

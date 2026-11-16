@@ -14,8 +14,8 @@ export type ScheduleRuleAction =
   | { type: 'SAVE_STARTED' }
   | { type: 'SAVED'; rule: ScheduleRule }
   | { type: 'ADDED' }
-  | { type: 'SAVE_FAILED'; error: AppError }
+  | { type: 'SAVE_FAILED' }
   | { type: 'DELETE_ASKED' }
   | { type: 'DELETE_CANCELLED' }
   | { type: 'DELETE_STARTED' }
-  | { type: 'DELETE_FAILED'; error: AppError }
+  | { type: 'DELETE_FAILED' }

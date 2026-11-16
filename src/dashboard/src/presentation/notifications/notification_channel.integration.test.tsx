@@ -20,7 +20,7 @@ const LISTENING = 'GET /api/notifications/settings/telegram/listening'
 const COMMANDS = 'GET /api/notifications/settings/telegram/commands'
 const RULES = 'GET /api/schedules'
 
-const PERSON = { value: 'person', displayName: 'Personne', emoji: '🧍' }
+const PERSON = { value: 'person', displayName: 'Personne' }
 const FAILED_SEND = {
   status: 'failed',
   sentAt: '2026-09-01T08:00:00Z',
@@ -59,6 +59,13 @@ function channelAt(slug: string) {
   return { path: '/settings/notifications/:channel', url: `/settings/notifications/${slug}` }
 }
 
+function advancedAt(slug: string) {
+  return {
+    path: '/settings/notifications/:channel/advanced',
+    url: `/settings/notifications/${slug}/advanced`,
+  }
+}
+
 // What every channel page reads, with the channel's settings given.
 function channelRoutes(config = makeChannelConfig()) {
   return { [SETTINGS]: ok(config), [LABELS]: ok([]), [LOG]: ok([]), [RULES]: ok([]) }
@@ -75,6 +82,32 @@ function commandRoutes(pairing = makePairing()) {
 }
 
 describe('NotificationChannelView', () => {
+  it('onOpen_ShouldLeadToItsAdvancedPage_WhenTheChannelIsConfigured', async () => {
+    // Arrange
+    fakeNetwork(channelRoutes())
+
+    // Act
+    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+
+    // Assert
+    expect(await screen.findByRole('link', { name: 'Avancé' })).toHaveAttribute(
+      'href',
+      '/settings/notifications/telegram/advanced',
+    )
+  })
+
+  it('onOpen_ShouldOfferNoAdvancedPage_WhenTheChannelIsNotConfiguredYet', async () => {
+    // Arrange
+    fakeNetwork(channelRoutes(makeChannelConfig({ isConfigured: false })))
+
+    // Act
+    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+
+    // Assert
+    expect(await screen.findByRole('button', { name: /Envoyer un message de test/ })).toBeVisible()
+    expect(screen.queryByRole('link', { name: 'Avancé' })).not.toBeInTheDocument()
+  })
+
   it('onOpen_ShouldCountTheRangesMutingThisChannelAndLinkToTheCalendar_WhenSomeTargetIt', async () => {
     // Arrange
     fakeNetwork({
@@ -90,14 +123,25 @@ describe('NotificationChannelView', () => {
     renderScreen(<NotificationChannelView />, channelAt('telegram'))
 
     // Assert
-    expect(
-      await screen.findByText('2 plages « Sans notification » s’appliquent'),
-    ).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Voir la planification' })).toHaveAttribute(
+    expect(await screen.findByRole('link', { name: 'Planification 2 plages' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /^Planification/ })).toHaveAttribute(
       'href',
-      '/settings/planification',
+      '/settings/schedule',
     )
     expect(screen.queryByText('Seulement à certaines heures')).not.toBeInTheDocument()
+  })
+
+  it('onOpen_ShouldOfferNoPauseOfItsOwn_WhenTheChannelIsConfigured', async () => {
+    // Arrange
+    fakeNetwork(channelRoutes())
+
+    // Act
+    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+
+    // Assert
+    expect(await screen.findByRole('link', { name: 'Planification' })).toBeInTheDocument()
+    expect(screen.queryByRole('switch', { name: /Notifications Telegram/ })).not.toBeInTheDocument()
+    expect(screen.queryByText(/En pause/)).not.toBeInTheDocument()
   })
 
   it('onOpen_ShouldSayTheRangesCouldNotBeRead_WhenTheirReadFails', async () => {
@@ -109,9 +153,7 @@ describe('NotificationChannelView', () => {
 
     // Assert
     expect(await screen.findByText('La planification n’a pas pu être lue.')).toBeInTheDocument()
-    expect(
-      screen.queryByText('Aucune plage « Sans notification » ne s’applique'),
-    ).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /Planification/ })).not.toBeInTheDocument()
   })
 
   it('onRetryRules_ShouldCountTheRanges_WhenTheSecondReadSucceeds', async () => {
@@ -125,9 +167,7 @@ describe('NotificationChannelView', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Réessayer' }))
 
     // Assert
-    expect(
-      await screen.findByText('Aucune plage « Sans notification » ne s’applique'),
-    ).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: 'Planification' })).toBeInTheDocument()
   })
 
   it('NotificationChannelView_ShouldSayTheChannelIsMissing_WhenTheAddressNamesNone', async () => {
@@ -141,26 +181,29 @@ describe('NotificationChannelView', () => {
     expect(await screen.findByRole('heading', { name: 'Canal introuvable' })).toBeInTheDocument()
   })
 
-  it('onConfirmEnable_ShouldAskFirstThenSave_WhenTheUserEnablesTheChannel', async () => {
+  it('onConfirmEnable_ShouldAskFirstThenSave_WhenTheUserConfiguresTheChannelForTheFirstTime', async () => {
     // Arrange
     const network = fakeNetwork({
-      ...channelRoutes(makeChannelConfig({ isEnabled: false })),
+      ...channelRoutes(makeChannelConfig({ isConfigured: false })),
       [SAVE]: ok(makeChannelConfig()),
     })
     renderScreen(<NotificationChannelView />, channelAt('telegram'))
-    await userEvent.click(await screen.findByRole('switch', { name: /Notifications Telegram/ }))
+    await userEvent.type(await screen.findByLabelText('Token du bot'), '123:abc')
     await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
     const question = screen.getByRole('alertdialog', {
       name: 'Envoyer les notifications par Telegram ?',
     })
 
     // Act
-    await userEvent.click(within(question).getByRole('button', { name: 'Activer' }))
+    await userEvent.click(within(question).getByRole('button', { name: 'Envoyer' }))
 
     // Assert
     expect(await screen.findByText('Notifications enregistrées.')).toBeInTheDocument()
     expect(network.sent).toContainEqual(
-      expect.objectContaining({ route: SAVE, body: expect.objectContaining({ isEnabled: true }) }),
+      expect.objectContaining({
+        route: SAVE,
+        body: expect.objectContaining({ credentials: { bot_token: '123:abc' } }),
+      }),
     )
   })
 
@@ -168,7 +211,7 @@ describe('NotificationChannelView', () => {
     // Arrange
     fakeNetwork({ ...channelRoutes(), [SAVE]: failure(500) })
     renderScreen(<NotificationChannelView />, channelAt('telegram'))
-    await userEvent.click(await screen.findByRole('switch', { name: /Notifications Telegram/ }))
+    await userEvent.type(await screen.findByLabelText('Token du bot'), '123:abc')
 
     // Act
     await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
@@ -176,7 +219,7 @@ describe('NotificationChannelView', () => {
     // Assert
     expect(await screen.findByText(/Vyzio a rencontré une erreur/)).toBeInTheDocument()
     expect(screen.getByText(/PUT \/api\/notifications\/settings\/telegram · 500/)).toBeVisible()
-    expect(screen.getByRole('switch', { name: /Notifications Telegram/ })).not.toBeChecked()
+    expect(screen.getByLabelText('Token du bot')).toHaveValue('123:abc')
   })
 
   it('onTest_ShouldSayTheSendFailedAndShowWhy_WhenTheChannelRefuses', async () => {
@@ -221,7 +264,7 @@ describe('NotificationChannelView', () => {
     })
 
     // Act
-    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+    renderScreen(<NotificationChannelView advanced />, advancedAt('telegram'))
 
     // Assert
     expect(await screen.findByText('Chat not found')).toBeInTheDocument()
@@ -322,7 +365,7 @@ describe('NotificationChannelView', () => {
     expect(
       await screen.findByText(/GET \/api\/detection-labels\/notifications · 500/),
     ).toBeVisible()
-    expect(screen.getByRole('switch', { name: /Notifications Telegram/ })).toBeInTheDocument()
+    expect(screen.getByLabelText('Token du bot')).toBeInTheDocument()
   })
 
   it('onRetryLabels_ShouldOfferTheTriggers_WhenTheSecondReadSucceeds', async () => {
@@ -391,8 +434,8 @@ describe('NotificationChannelView', () => {
     expect(screen.getByRole('button', { name: 'Relier une conversation' })).toBeInTheDocument()
     expect(screen.queryByText('N’écoute plus')).not.toBeInTheDocument()
     expect(screen.queryByText(/ce qui se passe chez vous/)).not.toBeInTheDocument()
-    // The two left belong to the sent log and the command journal, under Avancé.
-    expect(screen.getAllByRole('button', { name: 'Actualiser' })).toHaveLength(2)
+    // The sent log and the command journal, each with its own, live on the Avancé page.
+    expect(screen.queryByRole('button', { name: 'Actualiser' })).not.toBeInTheDocument()
   })
 
   it('onOpen_ShouldKeepQuietAboutTheListening_WhenItCannotBeReadAndNoConversationIsLinked', async () => {
@@ -495,7 +538,7 @@ describe('NotificationChannelView', () => {
     // Arrange
     const network = fakeNetwork({ ...channelRoutes(), [SAVE]: ok(makeChannelConfig()) })
     renderScreen(<NotificationChannelView />, channelAt('telegram'))
-    await userEvent.click(await screen.findByRole('switch', { name: /Notifications Telegram/ }))
+    await userEvent.type(await screen.findByLabelText('Token du bot'), '123:abc')
     network.answer(SETTINGS, failure(500))
 
     // Act
@@ -514,7 +557,7 @@ describe('NotificationChannelView', () => {
     fakeNetwork({ ...channelRoutes(), [LOG]: failure(500) })
 
     // Act
-    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+    renderScreen(<NotificationChannelView advanced />, advancedAt('telegram'))
 
     // Assert
     expect(
@@ -526,7 +569,7 @@ describe('NotificationChannelView', () => {
   it('onRetryLog_ShouldShowWhatWasSent_WhenTheSecondReadSucceeds', async () => {
     // Arrange
     const network = fakeNetwork({ ...channelRoutes(), [LOG]: failure(500) })
-    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+    renderScreen(<NotificationChannelView advanced />, advancedAt('telegram'))
     await screen.findByText(/GET \/api\/notifications\/log\/telegram · 500/)
     network.answer(LOG, ok([FAILED_SEND]))
 
@@ -540,7 +583,7 @@ describe('NotificationChannelView', () => {
   it('onRefreshLog_ShouldKeepWhatWasSentAndSayWhy_WhenTheRereadFails', async () => {
     // Arrange
     const network = fakeNetwork({ ...channelRoutes(), [LOG]: ok([FAILED_SEND]) })
-    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+    renderScreen(<NotificationChannelView advanced />, advancedAt('telegram'))
     const sent = await screen.findByText('Chat not found')
     network.answer(LOG, failure(500))
 
@@ -558,7 +601,7 @@ describe('NotificationChannelView', () => {
     fakeNetwork({ ...commandRoutes(), [COMMANDS]: failure(500) })
 
     // Act
-    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+    renderScreen(<NotificationChannelView advanced />, advancedAt('telegram'))
 
     // Assert
     expect(
@@ -570,7 +613,7 @@ describe('NotificationChannelView', () => {
   it('onRetryJournal_ShouldShowTheCommands_WhenTheSecondReadSucceeds', async () => {
     // Arrange
     const network = fakeNetwork({ ...commandRoutes(), [COMMANDS]: failure(500) })
-    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+    renderScreen(<NotificationChannelView advanced />, advancedAt('telegram'))
     await screen.findByText(/GET \/api\/notifications\/settings\/telegram\/commands · 500/)
     network.answer(COMMANDS, ok([]))
 
@@ -584,7 +627,7 @@ describe('NotificationChannelView', () => {
   it('onRefreshJournal_ShouldKeepTheCommandsAndSayWhy_WhenTheRereadFails', async () => {
     // Arrange
     const network = fakeNetwork({ ...commandRoutes(), [COMMANDS]: ok([ANSWERED]) })
-    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+    renderScreen(<NotificationChannelView advanced />, advancedAt('telegram'))
     const command = await screen.findByText('/etat')
     network.answer(COMMANDS, failure(500))
 

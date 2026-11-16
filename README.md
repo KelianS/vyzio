@@ -22,14 +22,15 @@ a YAML file in sight.
 
 ## A look at it
 
-Designed for the phone first. The home screen holds the whole product: what the cameras see, who
-was recognised and when, whether notifications go out, and how the machine is doing. A tap on a
-camera opens its live view, and steers it when the camera can move.
+Designed for the phone first, dark and calm. The home screen shows what the cameras see, cuts one
+or all of them in a tap, silences the notifications for a while, and counts the last hour's
+detections. A tap on a camera opens its view: the live picture, steering when the camera can move,
+and its latest detections, played in place.
 
 <p>
-  <img src="docs/assets/hub.jpg" width="240" alt="Home screen: live cameras, one on a privacy schedule, latest detections, notifications and system health">
-  <img src="docs/assets/live.jpg" width="240" alt="Live view of a camera, with its direction pad and position slots">
-  <img src="docs/assets/history.jpg" width="240" alt="Detection history: who was seen, where and when, each one correctable">
+  <img src="docs/assets/hub.jpg" width="240" alt="Home screen: the cameras, one cut by its schedule, the Silence button, and the detections and notifications tiles">
+  <img src="docs/assets/live.jpg" width="240" alt="Camera view: the live picture, its round steering pad and saved positions">
+  <img src="docs/assets/history.jpg" width="240" alt="Detections: the latest clip playing on top, the others grouped by day, each one correctable">
 </p>
 
 Adding a camera: Vyzio searches the local network (the subnet the interface is opened from, plus
@@ -38,11 +39,11 @@ the ranges you give it), then asks only for the camera's access.
 <p>
   <img src="docs/assets/onboarding-1.png" width="240" alt="Add a camera: search the network, or type the address">
   <img src="docs/assets/onboarding-2.png" width="240" alt="One camera found on the network, ready to add">
-  <img src="docs/assets/onboarding-3.png" width="240" alt="Only its access is asked: name, address and account">
+  <img src="docs/assets/onboarding-3.png" width="240" alt="Only its name and its account are asked">
 </p>
 
 <p>
-  <img src="docs/assets/cameras.png" width="240" alt="Camera list, each with its connection state">
+  <img src="docs/assets/cameras.png" width="240" alt="Camera list, each with its status mark">
   <img src="docs/assets/people.png" width="240" alt="Known people, and what Vyzio does when it recognises them">
 </p>
 
@@ -57,7 +58,7 @@ the ranges you give it), then asks only for the camera's access.
 - **Local person recognition.** Faces are matched on your own machine, and a detection names who
   was seen.
 - **Notifications worth reading.** You choose which people and which cameras notify you, and
-  through which channel.
+  through which channel, and silence them all for a while from the home screen.
 - **Works with the IP cameras you already own.** RTSP and ONVIF, plus vendor protocols where a
   camera needs one.
 - **One place to drive every camera.** Movement, privacy mode, image settings and privacy

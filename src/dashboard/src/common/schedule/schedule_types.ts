@@ -6,7 +6,10 @@ import {
 } from '../../domain/entities/schedule_rule.entity'
 
 /** Where the house's calendar lives (ADR-15). */
-export const SCHEDULES_PATH = '/settings/planification'
+export const SCHEDULES_PATH = '/settings/schedule'
+
+/** Carries the type of a range to add, from the list it is added to (SCHED-10). */
+export const KIND_PARAM = 'kind'
 
 /** A rule type in the interface's words: the same name, icon and effect everywhere (DESIGN SYSTEM § Shared words). */
 interface ScheduleTypeCopy {
@@ -20,18 +23,18 @@ interface ScheduleTypeCopy {
 
 export const SCHEDULE_TYPES: Record<ScheduleRuleKind, ScheduleTypeCopy> = {
   [ScheduleRuleKind.Privacy]: {
-    name: 'Vie privée',
+    name: 'Caméras coupées',
     effect: 'Aucun enregistrement, aucune détection, aucune notification.',
     icon: EyeOff,
     targetKind: ScheduleTargetKind.Camera,
-    fill: 'bg-surface-inverse text-surface-inverse-foreground',
+    fill: 'bg-input text-ink-muted',
   },
   [ScheduleRuleKind.MuteNotifications]: {
-    name: 'Sans notification',
+    name: 'Silence',
     effect: 'Filme et enregistre, mais n’envoie aucune notification.',
     icon: BellOff,
     targetKind: ScheduleTargetKind.Channel,
-    fill: 'bg-stripes text-accent-foreground',
+    fill: 'bg-silence/22 text-silence',
   },
 }
 
@@ -72,9 +75,8 @@ export function rulesTargeting(rules: readonly ScheduleRule[], kind: ScheduleRul
   return rules.filter((rule) => rule.kind === kind && rule.targetIds.includes(id)).length
 }
 
-/** What a camera or a channel says about the ranges of one type that apply to it. */
-export function appliesSentence(kind: ScheduleRuleKind, count: number): string {
-  const name = `« ${SCHEDULE_TYPES[kind].name} »`
-  if (count === 0) return `Aucune plage ${name} ne s’applique`
-  return count === 1 ? `1 plage ${name} s’applique` : `${count} plages ${name} s’appliquent`
+/** How many ranges apply, said only when some do: none is the ordinary case (UI-31). */
+export function rangeCount(count: number): string | null {
+  if (count === 0) return null
+  return count === 1 ? '1 plage' : `${count} plages`
 }

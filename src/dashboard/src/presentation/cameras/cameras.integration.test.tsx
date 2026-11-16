@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { screen } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { makeCamera } from '../../testing/camera_fixture'
 import { failure, fakeNetwork, ok } from '../../testing/fake_network'
@@ -39,11 +39,11 @@ describe('CamerasView', () => {
       await readTheCameraList()
 
       // Assert
-      expect(screen.getByText('À configurer')).toBeInTheDocument()
+      expect(screen.getByRole('img', { name: 'À configurer' })).toBeInTheDocument()
     },
   )
 
-  it('render_ShouldSayThereIsNoCameraYet_WhenTheListIsEmpty', async () => {
+  it('render_ShouldOfferOnlyAddingACamera_WhenTheListIsEmpty', async () => {
     // Arrange
     fakeNetwork({ 'GET /api/cameras': ok([]) })
     renderScreen(<CamerasView />, LIST)
@@ -52,7 +52,22 @@ describe('CamerasView', () => {
     await readTheCameraList()
 
     // Assert
-    expect(screen.getByText('Aucune caméra pour l’instant.')).toBeInTheDocument()
+    expect(screen.getAllByRole('link')).toHaveLength(1)
+    expect(screen.getByRole('link', { name: 'Ajouter une caméra' })).toBeInTheDocument()
+  })
+
+  it('render_ShouldShowARunningCameraByItsMarkAlone_WhenTheListIsRead', async () => {
+    // Arrange
+    fakeNetwork({ 'GET /api/cameras': ok([makeCamera()]) })
+    renderScreen(<CamerasView />, LIST)
+
+    // Act
+    await readTheCameraList()
+
+    // Assert
+    const row = screen.getByRole('link', { name: /Front Door/ })
+    expect(within(row).getByRole('img', { name: 'En marche' })).toBeInTheDocument()
+    expect(row).toHaveTextContent(/^Front Door$/)
   })
 
   it('render_ShouldSayWhyAndWithholdAdding_WhenTheListCannotBeRead', async () => {
@@ -97,8 +112,21 @@ describe('CamerasView', () => {
     expect(screen.getByRole('heading', { name: 'Front Door' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Conservation' })).toHaveAttribute(
       'href',
-      '/settings/cameras/camera-1/conservation',
+      '/settings/cameras/camera-1/retention',
     )
+  })
+
+  it('render_ShouldShowTheCameraMarkBesideItsName_WhenTheCameraIsOpened', async () => {
+    // Arrange
+    fakeNetwork({ 'GET /api/cameras': ok([makeCamera()]) })
+    renderScreen(<CamerasView />, OPEN_CAMERA)
+
+    // Act
+    await readTheCameraList()
+
+    // Assert
+    const title = screen.getByRole('heading', { level: 1, name: 'Front Door' })
+    expect(within(title.parentElement!).getByRole('img', { name: 'En marche' })).toBeVisible()
   })
 
   it('render_ShouldSayTheCameraIsNotFound_WhenTheListHasNoSuchCamera', async () => {

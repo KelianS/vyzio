@@ -9,7 +9,7 @@
 
 **Préalables** :
 
-- la caméra existe ; son écran « Vie privée » est ouvert (CAM-03, CAM-06).
+- la caméra existe ; son écran « Vie privée » est ouvert (CAM-61, CAM-06).
 
 **Résultat en succès** : la stratégie choisie est enregistrée (PRIV-10), et l'écran vie privée dit ce qu'elle fait (PRIV-16).
 

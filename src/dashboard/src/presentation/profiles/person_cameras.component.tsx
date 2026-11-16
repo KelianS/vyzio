@@ -17,6 +17,8 @@ import { ALERT_MODE_FIELD_LABEL, ALERT_MODE_LABELS } from './person_labels'
 import { buildPersonCamerasPresenter } from './person_cameras.presenter'
 import { personCamerasReducer } from './person_cameras.reducer'
 import { buildInitialPersonCamerasUido } from './person_cameras.uido'
+import { Loading } from '../../common/components/loading'
+import { EmptyState } from '../../common/components/empty_state'
 
 interface CameraValues {
   cameraIds: string[]
@@ -64,15 +66,19 @@ export function PersonCamerasView() {
       </SettingsPage>
     )
   if (uido.loading || (camerasLoading && cameras.length === 0))
-    return <SettingsPage>Chargement…</SettingsPage>
+    return (
+      <SettingsPage>
+        <Loading />
+      </SettingsPage>
+    )
   if (!SIGNALLED[person.alertMode])
     return (
       <SettingsPage>
-        <p className="text-muted-foreground">
+        <EmptyState>
           Aucune notification n’est envoyée pour le passage de cette personne. Pour choisir des
           caméras, réglez « {ALERT_MODE_FIELD_LABEL} » sur « {ALERT_MODE_LABELS.always} » dans
           Identité.
-        </p>
+        </EmptyState>
       </SettingsPage>
     )
   // Unread links are not "every camera": the form would offer a false choice.
@@ -140,7 +146,7 @@ function CameraLinksForm({
             ]}
           />
         ) : (
-          <p className="text-muted-foreground">Aucune caméra pour l’instant.</p>
+          <EmptyState>Aucune caméra pour l’instant.</EmptyState>
         )}
       </SettingsPage>
 

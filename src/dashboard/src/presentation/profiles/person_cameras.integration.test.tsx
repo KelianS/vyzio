@@ -14,8 +14,8 @@ const LINKS = 'GET /api/profiles/person-1/camera-links'
 const SAVE = 'PUT /api/profiles/person-1/camera-links'
 
 const CAMERAS_TAB = {
-  path: '/settings/detection/personnes/:profileId/cameras',
-  url: '/settings/detection/personnes/person-1/cameras',
+  path: '/settings/face-recognition/:profileId/cameras',
+  url: '/settings/face-recognition/person-1/cameras',
   outletContext: { person: makeProfile(), reload: () => undefined },
 }
 

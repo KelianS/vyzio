@@ -11,8 +11,8 @@ const DELETE = 'DELETE /api/profiles/person-1'
 
 function identityTab(reload: () => void) {
   return {
-    path: '/settings/detection/personnes/:profileId/identite',
-    url: '/settings/detection/personnes/person-1/identite',
+    path: '/settings/face-recognition/:profileId/identity',
+    url: '/settings/face-recognition/person-1/identity',
     outletContext: { person: makeProfile(), reload },
   }
 }
@@ -73,9 +73,7 @@ describe('PersonIdentityView', () => {
     )
 
     // Assert
-    await waitFor(() =>
-      expect(router.state.location.pathname).toBe('/settings/detection/personnes'),
-    )
+    await waitFor(() => expect(router.state.location.pathname).toBe('/settings/face-recognition'))
     expect(network.sent).toContainEqual(expect.objectContaining({ route: DELETE }))
   })
 })

@@ -11,7 +11,7 @@
 
 - le propriétaire est connecté (UC-ACCESS-02).
 
-**Résultat en succès** : le réglage est enregistré, puis repris par la surveillance au moment que le propriétaire a choisi (UI-13).
+**Résultat en succès** : le réglage est enregistré, puis repris par la surveillance au moment que le propriétaire a choisi (UI-28).
 
 **Résultats en échec** : la surveillance ne reprend pas les réglages enregistrés, et l'interface le signale de façon persistante (E1).
 
@@ -32,7 +32,7 @@
 1. Le propriétaire trouve le réglage à son emplacement prévisible, à la portée qu'il lit sans explication (UI-07, UI-08), présenté comme les réglages de même nature (UI-18), l'aide à portée de doigt (UI-19).
 2. Il le modifie : rien ne change encore ; il voit ce qu'il a modifié (UI-11).
 3. Il enregistre : la main lui revient aussitôt (UI-12).
-4. En quittant les réglages, la question de redémarrer se pose quand un réglage l'exige (UI-13, UI-15) ; il redémarre.
+4. En quittant les réglages, la question de redémarrer se pose quand un réglage l'exige (UI-28, UI-15) ; il redémarre.
 
 ### A1 · Renoncer
 
@@ -41,7 +41,7 @@
 ### A2 · Quitter les réglages sans redémarrer
 
 1. Le propriétaire quitte sans redémarrer : l'écart se voit et dit quels réglages attendent (UI-14).
-2. Il redémarre plus tard, depuis n'importe où (UI-13).
+2. Il redémarre plus tard, depuis la barre de n'importe quelle page des réglages (UI-28).
 
 ### A3 · Régler un réglage rare
 

@@ -10,6 +10,7 @@ import type {
   ChannelListening,
   ChannelPairing,
 } from '../../../domain/entities/notification_channel_config.entity'
+import { Loading } from '../../../common/components/loading'
 
 const formatDate = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long' })
 const formatTime = new Intl.DateTimeFormat('fr-FR', { timeStyle: 'short' })
@@ -60,7 +61,7 @@ export function ChannelPairingSection({
   onRefresh: () => void
 }) {
   if (pairingLoading && !pairing) {
-    return <p className="text-sm text-muted-foreground">Chargement…</p>
+    return <Loading />
   }
 
   const status = pairing?.status ?? 'not_paired'
@@ -72,7 +73,7 @@ export function ChannelPairingSection({
         {inUse && listeningError ? (
           // A linked conversation proves nothing: an unread listening state is said, never left blank (NOTIF-25).
           <div className="flex flex-col gap-1">
-            <p className="text-sm">Impossible de savoir si le canal est à l’écoute.</p>
+            <p className="text-body">Impossible de savoir si le canal est à l’écoute.</p>
             <ReadFailure error={listeningError} onRetry={onRetryListening} />
           </div>
         ) : (
@@ -82,7 +83,7 @@ export function ChannelPairingSection({
         {status === 'awaiting_conversation' ? (
           <AwaitingConversation pairing={pairing!} displayName={displayName} />
         ) : (
-          <p className="text-sm text-muted-foreground">{describe(status, pairing)}</p>
+          <p className="text-body text-muted-foreground">{describe(status, pairing)}</p>
         )}
 
         <div className="flex flex-wrap gap-2">
@@ -138,7 +139,7 @@ function ListeningStatus({ state }: { state: ChannelListening }) {
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <Badge tone="ok">À l’écoute</Badge>
         {state.since && (
-          <span className="text-sm text-muted-foreground">
+          <span className="text-body text-muted-foreground">
             Depuis le {formatDate.format(new Date(state.since))} à{' '}
             {formatTime.format(new Date(state.since))}.
           </span>
@@ -152,13 +153,13 @@ function ListeningStatus({ state }: { state: ChannelListening }) {
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <Badge tone="danger">N’écoute plus</Badge>
         {state.interruptedAt && (
-          <span className="text-sm text-muted-foreground">
+          <span className="text-body text-muted-foreground">
             Depuis le {formatDate.format(new Date(state.interruptedAt))} à{' '}
             {formatTime.format(new Date(state.interruptedAt))}.
           </span>
         )}
       </div>
-      <p className="text-sm text-muted-foreground">
+      <p className="text-body text-muted-foreground">
         {state.reason
           ? // The failure is said in the channel's own words: paraphrasing loses the only clue we have.
             `Vos commandes restent sans réponse jusqu’à ce qu’elle reprenne : Vyzio réessaie tout seul. Raison signalée : ${state.reason}`
@@ -177,13 +178,13 @@ function AwaitingConversation({
 }) {
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-sm text-muted-foreground">
+      <p className="text-body text-muted-foreground">
         Dans {displayName}, ouvrez la conversation qui doit commander votre installation et
         envoyez-lui&nbsp;:
       </p>
-      <p className="font-mono text-2xl tracking-widest">{pairing.instruction}</p>
+      <p className="font-mono text-title tracking-widest">{pairing.instruction}</p>
       {pairing.codeExpiresAt && (
-        <p className="text-sm text-muted-foreground">
+        <p className="text-body text-muted-foreground">
           Ce code est valable jusqu’à {formatTime.format(new Date(pairing.codeExpiresAt))}. Passé ce
           délai, générez-en un autre.
         </p>

@@ -86,6 +86,9 @@ public class Camera
 
     public PrivacyModeSource? PrivacyModeSource { get; set; }
 
+    // When a manual cut of every camera ends by itself; null for any other cut (ADR-10, PRIV-22)
+    public DateTimeOffset? PrivacyModeUntil { get; set; }
+
     // true if the vendor API confirmed the hardware-level cut during last toggle
     public bool PrivacyVendorCut { get; set; }
 

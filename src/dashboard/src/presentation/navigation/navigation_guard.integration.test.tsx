@@ -11,7 +11,7 @@ import { NavigationGuard } from './navigation_guard.component'
 
 const STATS = 'GET /api/system/stats'
 const APPLY = 'POST /api/cameras/apply-configuration'
-const CONSERVATION = { path: '*', url: '/settings/conservation' }
+const CONSERVATION = { path: '*', url: '/settings/retention' }
 
 const applied = { applied: true, message: 'ok', configPath: '/config/config.yml', cameraCount: 1 }
 
@@ -31,7 +31,7 @@ function renderGuard() {
       <NavigationGuard />
       <Link to="/">Accueil</Link>
       <Link to="/settings/notifications">Notifications</Link>
-      <Link to="/cameras/camera-1/direct">Direct</Link>
+      <Link to="/cameras/camera-1">Direct</Link>
     </>,
     CONSERVATION,
   )
@@ -81,7 +81,7 @@ describe('NavigationGuard', () => {
     )
 
     // Assert
-    expect(router.state.location.pathname).toBe('/settings/conservation')
+    expect(router.state.location.pathname).toBe('/settings/retention')
   })
 
   it('NavigationGuard_ShouldLeave_WhenTheUserDropsTheUnsavedEdits', async () => {
@@ -126,7 +126,7 @@ describe('NavigationGuard', () => {
     await userEvent.click(screen.getByRole('link', { name: 'Direct' }))
 
     // Assert
-    expect(router.state.location.pathname).toBe('/cameras/camera-1/direct')
+    expect(router.state.location.pathname).toBe('/cameras/camera-1')
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
   })
 
@@ -174,7 +174,7 @@ describe('NavigationGuard', () => {
       within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Redémarrer' }),
     )
     await waitFor(() => expect(useRootStore.getState().restartFailure).not.toBeNull())
-    await act(() => router.navigate('/settings/conservation'))
+    await act(() => router.navigate('/settings/retention'))
 
     // Act
     await userEvent.click(screen.getByRole('link', { name: 'Accueil' }))

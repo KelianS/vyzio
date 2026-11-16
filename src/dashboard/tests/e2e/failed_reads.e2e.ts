@@ -21,7 +21,7 @@ test.describe('Failed reads', () => {
   test('ConservationView_ShouldShowTheFailure_WhenTheSettingsCannotBeRead', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
     await failRead(page, '/api/settings/recording')
-    await page.goto('/settings/conservation')
+    await page.goto('/settings/retention')
 
     const alert = page.getByRole('alert')
     await expect(alert).toContainText(SERVER_FAILURE)
@@ -33,7 +33,7 @@ test.describe('Failed reads', () => {
   }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
     await failRead(page, '/api/settings/recording')
-    await page.goto('/settings/conservation')
+    await page.goto('/settings/retention')
     await expect(page.getByRole('alert')).toBeVisible()
 
     await page.unroute('**/api/settings/recording')
@@ -48,7 +48,7 @@ test.describe('Failed reads', () => {
   }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
     await failRead(page, '/api/cameras/camera-1/detection-config')
-    await page.goto('/settings/cameras/camera-1/conservation')
+    await page.goto('/settings/cameras/camera-1/retention')
 
     const alert = page.getByRole('alert')
     await expect(alert).toContainText(SERVER_FAILURE)
@@ -80,7 +80,6 @@ test.describe('Failed reads', () => {
     const alert = page.getByRole('alert')
     await expect(alert).toContainText(SERVER_FAILURE)
     await expect(alert).toContainText('500')
-    await expect(page.getByText('Aucune caméra pour l’instant.')).toHaveCount(0)
     await expect(page.getByRole('link', { name: 'Ajouter une caméra' })).toHaveCount(0)
   })
 
@@ -89,7 +88,7 @@ test.describe('Failed reads', () => {
   }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
     await failRead(page, '/api/cameras')
-    await page.goto('/settings/cameras/camera-1/conservation')
+    await page.goto('/settings/cameras/camera-1/retention')
 
     const alert = page.getByRole('alert')
     await expect(alert).toContainText(SERVER_FAILURE)
@@ -125,7 +124,7 @@ test.describe('Failed reads', () => {
     await page.unroute('**/api/cameras/camera-1/ptz/presets')
     await page.getByRole('button', { name: 'Réessayer' }).click()
 
-    await expect(page.getByTitle('Enregistrer la position actuelle ici')).toHaveCount(4)
+    await expect(page.getByTitle('Enregistrer la position actuelle ici')).toHaveCount(1)
   })
 
   test('ReadFailure_ShouldShowTheList_WhenRetriedOnceTheServerAnswers', async ({ page }) => {

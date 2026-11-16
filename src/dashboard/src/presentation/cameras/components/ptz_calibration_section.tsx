@@ -3,6 +3,7 @@ import type { AppError } from '../../../common/errors/app_error'
 import { ReadFailure } from '../../../common/components/error_message'
 import { POSITIONS_UNREAD } from '../cameras.formatters'
 import { SecondaryButton } from '../../../common/components/secondary_button'
+import { Loading } from '../../../common/components/loading'
 
 /** Says where the camera stands and opens the live view, where all control happens (PTZ-17). */
 export function PtzCalibrationSection({
@@ -21,12 +22,12 @@ export function PtzCalibrationSection({
 }) {
   return (
     <div className="flex flex-col gap-3">
-      {loading && <p className="text-muted-foreground">Chargement…</p>}
+      {loading && <Loading />}
       {error && <ReadFailure error={error} onRetry={onRetry} subject={POSITIONS_UNREAD} />}
 
       {!loading && !error && (
         <>
-          <span className="text-sm text-muted-foreground">
+          <span className="text-body text-muted-foreground">
             {calibrated
               ? 'Ouvrez la vue en direct pour définir les positions de cette caméra.'
               : 'Cette caméra n’a pas encore de position de référence. Ouvrez la vue en direct pour la calibrer, puis définir ses positions.'}

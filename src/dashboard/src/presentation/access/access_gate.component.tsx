@@ -1,5 +1,4 @@
 import { useEffect, useReducer, type ReactNode } from 'react'
-import { ErrorMessage } from '../../common/components/error_message'
 import { useToast } from '../../common/components/toast'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
@@ -8,7 +7,10 @@ import { SignInScreen } from './components/sign_in_screen'
 import { buildAccessGatePresenter } from './access_gate.presenter'
 import { accessGateReducer } from './access_gate.reducer'
 import { buildInitialAccessGateUido } from './access_gate.uido'
-import { PressableControl } from '../../common/components/pressable'
+import { HubUnreachableScreen } from './components/hub_unreachable_screen'
+
+/** Often enough that the app opens soon after Vyzio is back, rarely enough to stay quiet. */
+const RETRY_EVERY_MS = 5000
 
 /** Nothing shows before someone is in: first the password to choose, then sign-in (ADR-16). */
 export function AccessGate({ children }: { children: ReactNode }) {
@@ -24,25 +26,24 @@ export function AccessGate({ children }: { children: ReactNode }) {
   // A session can end while a screen is open: the answer lands on whichever call happens next.
   useEffect(() => presenter.onWatchSession(), [presenter])
 
+  // Vyzio not answering: asked again on its own, silently, and the app opens once it does (UI-34).
+  const unreachable = uido.error !== null
+  useEffect(() => {
+    if (!unreachable) return
+    const timer = setInterval(() => void presenter.onRetry(), RETRY_EVERY_MS)
+    return () => clearInterval(timer)
+  }, [presenter, unreachable])
+
   if (uido.loading) return null
 
-  if (uido.error) {
+  if (uido.error)
     return (
-      <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center gap-4 px-4 text-center">
-        <h1 className="font-serif text-2xl">Vyzio ne répond pas</h1>
-        <ErrorMessage error={uido.error} className="text-muted-foreground" />
-        <PressableControl>
-          <button
-            type="button"
-            onClick={() => void presenter.onLoad()}
-            className="text-sm font-medium underline"
-          >
-            Réessayer
-          </button>
-        </PressableControl>
-      </main>
+      <HubUnreachableScreen
+        error={uido.error}
+        retrying={uido.retrying}
+        onRetry={() => void presenter.onRetry()}
+      />
     )
-  }
 
   if (!uido.state) return null
 

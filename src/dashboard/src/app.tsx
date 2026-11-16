@@ -2,14 +2,19 @@ import { lazy } from 'react'
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router'
 import { ToastProvider } from './common/components/toast'
 import { AppContainerProvider } from './infrastructure/providers/app_container.context'
-import { OWN_HEADER, OWN_HEADER_ONLY } from './presentation/settings/settings.rubrics'
+import { OWN_HEADER, SUB_PAGE } from './presentation/settings/settings.rubrics'
 import { AccessGate } from './presentation/access/access_gate.component'
 import { AppShell } from './presentation/shell/app_shell.component'
-import { FULL_SCREEN } from './presentation/shell/app_shell.handle'
 import { LIVE_VIEW_ROUTE } from './presentation/live_view/live_view.route'
+import { CAMERA_WALL_ROUTE } from './presentation/camera_wall/camera_wall.route'
 
 const HubView = lazy(() =>
   import('./presentation/hub/hub.component').then((m) => ({ default: m.HubView })),
+)
+const CameraWallView = lazy(() =>
+  import('./presentation/camera_wall/camera_wall.component').then((m) => ({
+    default: m.CameraWallView,
+  })),
 )
 const LiveViewScreen = lazy(() =>
   import('./presentation/live_view/live_view.component').then((m) => ({
@@ -71,6 +76,21 @@ const PersonView = lazy(() =>
 const PersonIdentityView = lazy(() =>
   import('./presentation/profiles/person_identity.component').then((m) => ({
     default: m.PersonIdentityView,
+  })),
+)
+const CameraConnectionAdvancedView = lazy(() =>
+  import('./presentation/cameras/camera_connection_advanced.component').then((m) => ({
+    default: m.CameraConnectionAdvancedView,
+  })),
+)
+const CameraProtocolView = lazy(() =>
+  import('./presentation/cameras/camera_protocol.component').then((m) => ({
+    default: m.CameraProtocolView,
+  })),
+)
+const PersonPhotosAdvancedView = lazy(() =>
+  import('./presentation/profiles/person_photos_advanced.component').then((m) => ({
+    default: m.PersonPhotosAdvancedView,
   })),
 )
 const PersonPhotosView = lazy(() =>
@@ -144,9 +164,10 @@ const router = createBrowserRouter([
     children: [
       // Consultation
       { path: '/', element: <HubView /> },
-      { path: '/history', element: <DetectionHistoryView /> },
-      // A screen of its own, without the header: the picture takes the whole viewport (LIVE-07).
-      { path: LIVE_VIEW_ROUTE, element: <LiveViewScreen />, handle: FULL_SCREEN },
+      { path: CAMERA_WALL_ROUTE, element: <CameraWallView /> },
+      { path: '/detections', element: <DetectionHistoryView /> },
+      // A screen of its own, never a layer over a page (LIVE-19).
+      { path: LIVE_VIEW_ROUTE, element: <LiveViewScreen /> },
 
       // Settings - a two-level tree (UI-25). The route carries the selection: it,
       // and not a screen-held state, is what says where one is.
@@ -155,7 +176,7 @@ const router = createBrowserRouter([
         element: <SettingsView />,
         children: [
           // Names the task, not the section.
-          { path: 'cameras/ajout', element: <AddCameraView />, handle: OWN_HEADER },
+          { path: 'cameras/add', element: <AddCameraView />, handle: OWN_HEADER },
           // One screen: the list, then the camera the route names, with its tabs.
           {
             path: 'cameras',
@@ -166,41 +187,48 @@ const router = createBrowserRouter([
                 // Carries the name of the open camera, and its tabs.
                 handle: OWN_HEADER,
                 children: [
-                  // A camera always opens on Connexion (CAM-03).
-                  { index: true, element: <Navigate to="connexion" replace /> },
-                  { path: 'connexion', element: <CameraConnectionView /> },
-                  { path: 'vie-privee', element: <CameraPrivacyView /> },
+                  // A camera always opens on Connexion (CAM-61).
+                  { index: true, element: <Navigate to="connection" replace /> },
+                  { path: 'connection', element: <CameraConnectionView /> },
+                  {
+                    path: 'connection/advanced',
+                    element: <CameraConnectionAdvancedView />,
+                    handle: SUB_PAGE,
+                  },
+                  {
+                    path: 'connection/advanced/protocols/:protocol',
+                    element: <CameraProtocolView />,
+                    handle: SUB_PAGE,
+                  },
+                  { path: 'privacy', element: <CameraPrivacyView /> },
                   { path: 'detection', element: <CameraDetectionView /> },
                   { path: 'image', element: <CameraImageView /> },
-                  { path: 'conservation', element: <CameraConservationView /> },
+                  { path: 'retention', element: <CameraConservationView /> },
                 ],
               },
             ],
           },
-          { path: 'detection', element: <Navigate to="/settings/detection/personnes" replace /> },
-          // Screens not reworked yet: they already carry a title, never a back link.
-          // The marker goes away with their rework, not before - without it the page
-          // would announce itself twice.
-          { path: 'detection/personnes', element: <PersonListView /> },
+          { path: 'face-recognition', element: <PersonListView /> },
           // Names the task, not the section.
-          { path: 'detection/personnes/ajout', element: <AddPersonView />, handle: OWN_HEADER },
+          { path: 'face-recognition/add', element: <AddPersonView />, handle: OWN_HEADER },
           {
-            path: 'detection/personnes/:profileId',
+            path: 'face-recognition/:profileId',
             element: <PersonView />,
             // Carries the name of the open person, and their tabs.
             handle: OWN_HEADER,
             children: [
-              { index: true, element: <Navigate to="identite" replace /> },
-              { path: 'identite', element: <PersonIdentityView /> },
+              { index: true, element: <Navigate to="identity" replace /> },
+              { path: 'identity', element: <PersonIdentityView /> },
               { path: 'photos', element: <PersonPhotosView /> },
+              { path: 'photos/advanced', element: <PersonPhotosAdvancedView />, handle: SUB_PAGE },
               { path: 'cameras', element: <PersonCamerasView /> },
             ],
           },
-          { path: 'conservation', element: <ConservationView /> },
+          { path: 'retention', element: <ConservationView /> },
           { path: 'notifications', element: <NotificationChannelListView /> },
           // Names the task, not the section.
           {
-            path: 'notifications/ajout',
+            path: 'notifications/add',
             element: <AddNotificationChannelView />,
             handle: OWN_HEADER,
           },
@@ -210,21 +238,19 @@ const router = createBrowserRouter([
             element: <NotificationChannelView />,
             handle: OWN_HEADER,
           },
-          { path: 'planification', element: <ScheduleWeekView /> },
-          { path: 'planification/ajout', element: <ScheduleRuleView />, handle: OWN_HEADER },
-          { path: 'planification/:ruleId', element: <ScheduleRuleView />, handle: OWN_HEADER },
-          { path: 'acces', element: <AccessView /> },
-          { path: 'systeme', element: <SystemView /> },
-          { path: 'systeme/avance', element: <ExpertView />, handle: OWN_HEADER_ONLY },
+          {
+            path: 'notifications/:channel/advanced',
+            element: <NotificationChannelView advanced />,
+            handle: OWN_HEADER,
+          },
+          { path: 'schedule', element: <ScheduleWeekView /> },
+          { path: 'schedule/add', element: <ScheduleRuleView />, handle: OWN_HEADER },
+          { path: 'schedule/:ruleId', element: <ScheduleRuleView />, handle: OWN_HEADER },
+          { path: 'access', element: <AccessView /> },
+          { path: 'hardware', element: <SystemView /> },
+          { path: 'hardware/advanced', element: <ExpertView />, handle: OWN_HEADER },
         ],
       },
-
-      // Former addresses: a kept link or a bookmark must not fall into the void
-      // because the tree changed.
-      { path: '/cameras', element: <Navigate to="/settings/cameras" replace /> },
-      { path: '/profiles', element: <Navigate to="/settings/detection/personnes" replace /> },
-      { path: '/notifications', element: <Navigate to="/settings/notifications" replace /> },
-      { path: '/expert', element: <Navigate to="/settings/systeme/avance" replace /> },
     ],
   },
 ])

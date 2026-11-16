@@ -35,19 +35,18 @@ export function SettingsDraftBar({
       aria-label="Modifications en attente"
       className={cn(
         'sticky bottom-4 z-50 mt-4 flex flex-wrap items-center gap-x-4 gap-y-3',
-        'rounded-card border border-border bg-card p-3 shadow-elevated sm:px-4',
+        'rounded-card border border-border bg-card p-3 sm:px-4',
       )}
     >
-      <div className="min-w-0 flex-1">
-        <p className="font-medium">{count === 1 ? '1 modification' : `${count} modifications`}</p>
-        {/* Nommer les reglages touches, pas seulement les compter : « ce qui a
-            ete modifie » est precisement ce que l'utilisateur ne voyait pas. */}
-        <p className="truncate text-sm text-muted-foreground" title={summary}>
-          {summary}
-        </p>
-      </div>
+      {/* One line, the whole width on a phone: what changed is named, never squeezed beside the buttons. */}
+      <p className="w-full min-w-0 truncate sm:w-auto sm:flex-1" title={summary}>
+        <span className="font-medium">
+          {count === 1 ? '1 modification' : `${count} modifications`}
+        </span>
+        <span className="text-muted-foreground"> · {summary}</span>
+      </p>
 
-      <div className="flex shrink-0 items-center gap-2">
+      <div className="ml-auto flex shrink-0 items-center gap-2">
         <Button type="button" variant="ghost" disabled={saving} onClick={onDiscard}>
           Annuler
         </Button>

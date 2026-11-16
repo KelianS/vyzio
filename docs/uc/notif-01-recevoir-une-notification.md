@@ -26,7 +26,7 @@
 | N1 | Être notifié d'une personne connue | Nominal | Une personne connue est reconnue |
 | A1 | Être notifié d'un visage inconnu | Alternative | Un visage inconnu apparaît |
 | A2 | La personne n'est pas notifiée ici | Alternative | Sa politique, ou ses caméras, l'excluent |
-| A3 | Une plage sans notification est en cours | Alternative | La plage vise le canal |
+| A3 | Un Silence est en cours | Alternative | Un Silence lancé à la main, ou une plage Silence qui vise le canal |
 | A4 | La détection n'est plus une nouvelle | Alternative | Sa certitude est inconnue, ou elle a commencé trop tôt |
 | E1 | Le canal externe est indisponible | Échec | Le réseau ou le service du canal ne répond pas |
 
@@ -35,7 +35,7 @@
 ### N1 · Être notifié d'une personne connue
 
 1. Une personne connue est reconnue, l'événement passant le tri entre prioritaire et bruit (DET-01) et la certitude minimale choisie (UC-NOTIF-03).
-2. Vyzio envoie la notification sur les canaux actifs, avec son contexte et le format choisi (NOTIF-03, UC-NOTIF-03), pendant que la personne est encore dans le champ (NOTIF-15).
+2. Vyzio envoie la notification sur les canaux configurés (NOTIF-35), avec son contexte et le format choisi (NOTIF-03, UC-NOTIF-03), pendant que la personne est encore dans le champ (NOTIF-15).
 
 ### A1 · Être notifié d'un visage inconnu
 
@@ -47,10 +47,10 @@
 1. La politique de la personne, ou ses caméras, l'excluent (PROF-03, PROF-04).
 2. Rien n'est envoyé ; la personne reste reconnue et nommée dans l'historique.
 
-### A3 · Une plage sans notification est en cours
+### A3 · Un Silence est en cours
 
-1. Une plage sans notification vise le canal (SCHED-02).
-2. Le canal n'envoie rien, et la notification est abandonnée, jamais différée (NOTIF-07).
+1. Un Silence est lancé à la main (UC-NOTIF-06), ou une plage Silence vise le canal (SCHED-02).
+2. Le canal n'envoie rien, et la notification est abandonnée, jamais différée (NOTIF-33).
 
 ### A4 · La détection n'est plus une nouvelle
 

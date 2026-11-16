@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { screen, within } from '@testing-library/react'
+import { act, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { makeCamera } from '../../testing/camera_fixture'
 import { failure, fakeNetwork, ok } from '../../testing/fake_network'
@@ -64,11 +64,11 @@ async function searchTheNetwork() {
 }
 
 async function fillTheAccessByHand() {
-  await userEvent.click(screen.getByRole('button', { name: 'Saisir l’adresse moi-même' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Saisir son adresse' }))
   await userEvent.type(screen.getByLabelText('Nom'), 'Porte')
   await userEvent.type(screen.getByLabelText('Adresse'), '192.168.1.50')
-  await userEvent.type(screen.getByLabelText('Identifiant'), 'viewer')
-  await userEvent.type(screen.getByLabelText('Mot de passe'), 'not-a-real-secret')
+  await userEvent.type(screen.getByLabelText('Identifiant de la caméra'), 'viewer')
+  await userEvent.type(screen.getByLabelText('Mot de passe de la caméra'), 'not-a-real-secret')
 }
 
 async function chooseHelpVendor(name: string) {
@@ -88,7 +88,7 @@ describe('AddCameraView', () => {
     await fillTheAccessByHand()
 
     // Act
-    await userEvent.click(screen.getByRole('button', { name: 'Ajouter la caméra' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Ajouter' }))
 
     // Assert
     expect(await screen.findByText('« Porte » ajoutée.')).toBeInTheDocument()
@@ -106,20 +106,35 @@ describe('AddCameraView', () => {
     )
   })
 
+  it('AddCameraView_ShouldReturnToTheFirstStep_WhenTheAccessStepIsLeftBack', async () => {
+    // Arrange
+    fakeNetwork({})
+    const { router } = renderScreen(<AddCameraView />, { path: '*', url: '/settings/cameras/add' })
+    await userEvent.click(screen.getByRole('button', { name: 'Saisir son adresse' }))
+    await screen.findByLabelText('Nom')
+
+    // Act
+    await act(() => router.navigate(-1))
+
+    // Assert
+    expect(await screen.findByRole('region', { name: 'Sur votre réseau' })).toBeInTheDocument()
+    expect(screen.queryByLabelText('Nom')).not.toBeInTheDocument()
+  })
+
   it('onSelectManualEntry_ShouldAskForTheAccessAlone_WhenTheUserTypesTheAddress', async () => {
     // Arrange
     fakeNetwork({})
     renderScreen(<AddCameraView />)
 
     // Act
-    await userEvent.click(screen.getByRole('button', { name: 'Saisir l’adresse moi-même' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Saisir son adresse' }))
 
     // Assert
     expect(screen.getByLabelText('Nom')).toBeInTheDocument()
     expect(screen.queryByLabelText('Port')).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Chemin du flux')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Vérifier la connexion' })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Ajouter la caméra' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Ajouter' })).toBeDisabled()
   })
 
   it('onSelectManualEntry_ShouldTakeTheAccessAsTyped_WhenAPhoneWouldCapitaliseOrCorrectIt', async () => {
@@ -128,7 +143,7 @@ describe('AddCameraView', () => {
     renderScreen(<AddCameraView />)
 
     // Act
-    await userEvent.click(screen.getByRole('button', { name: 'Saisir l’adresse moi-même' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Saisir son adresse' }))
 
     // Assert
     expect(screen.getByLabelText('Nom')).not.toHaveAttribute('autocapitalize')
@@ -137,28 +152,32 @@ describe('AddCameraView', () => {
     expect(address).toHaveAttribute('autocapitalize', 'none')
     expect(address).toHaveAttribute('autocorrect', 'off')
     expect(address).toHaveAttribute('spellcheck', 'false')
-    const userName = screen.getByLabelText('Identifiant')
+    const userName = screen.getByLabelText('Identifiant de la caméra')
     expect(userName).toHaveAttribute('autocapitalize', 'none')
     expect(userName).toHaveAttribute('autocorrect', 'off')
     expect(userName).toHaveAttribute('spellcheck', 'false')
-    expect(screen.getByLabelText('Mot de passe')).toHaveAttribute('autocomplete', 'new-password')
+    expect(screen.getByLabelText('Mot de passe de la caméra')).toHaveAttribute(
+      'autocomplete',
+      'new-password',
+    )
   })
 
-  it('onCreate_ShouldSayWhyAndForSupportAndStay_WhenTheCameraCannotBeCreated', async () => {
+  it('onCreate_ShouldSayWhyAndForSupportInAToastAndStay_WhenTheCameraCannotBeCreated', async () => {
     // Arrange
     fakeNetwork({ 'POST /api/cameras': failure(400, 'invalid_camera') })
     const { router } = renderScreen(<AddCameraView />)
     await fillTheAccessByHand()
 
     // Act
-    await userEvent.click(screen.getByRole('button', { name: 'Ajouter la caméra' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Ajouter' }))
 
     // Assert
-    const alert = await screen.findByRole('alert')
-    expect(alert).toHaveTextContent('La demande n’a pas abouti')
-    expect(alert).toHaveTextContent('POST /api/cameras · 400')
+    const toasts = screen.getByRole('region', { name: 'Notifications' })
+    expect(await within(toasts).findByText(/La demande n’a pas abouti/)).toBeInTheDocument()
+    expect(within(toasts).getByText(/POST \/api\/cameras · 400/)).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     expect(router.state.location.pathname).toBe('/')
-    expect(screen.getByRole('button', { name: 'Ajouter la caméra' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Ajouter' })).toBeEnabled()
   })
 
   it('onSelectCandidate_ShouldShowTheVendorNotice_WhenTheFoundCameraIsStillToPrepare', async () => {
@@ -192,11 +211,12 @@ describe('AddCameraView', () => {
     fakeNetwork({})
     renderScreen(<AddCameraView />)
 
+    await userEvent.click(screen.getByRole('button', { name: 'Saisir son adresse' }))
+
     // Act
-    await userEvent.click(screen.getByRole('button', { name: 'Saisir l’adresse moi-même' }))
+    await userEvent.click(screen.getByText('Où trouver ces identifiants'))
 
     // Assert
-    expect(screen.getByText('Aide de votre caméra')).toBeInTheDocument()
     expect(screen.getByRole('combobox', { name: 'Marque' })).toHaveTextContent('Autre marque')
     expect(
       screen.getByText(/^Ouvrez l’application de la caméra et créez-y un compte/),
@@ -234,6 +254,29 @@ describe('AddCameraView', () => {
     },
   )
 
+  it('onVendorAssistanceNeeded_ShouldOfferToReadTheSheetAgainWhereItWouldBe_WhenItsReadFails', async () => {
+    // Arrange
+    const network = fakeNetwork({
+      ...rangesToSweep,
+      'POST /api/cameras/discovery': ok([{ ...answeringNoStream, streamPath: '/onvif1' }]),
+      'POST /api/cameras/vendor-assistance': failure(500),
+    })
+    renderScreen(<AddCameraView />)
+    await searchTheNetwork()
+    await userEvent.click(await screen.findByRole('button', { name: /Boîtier ONVIF/ }))
+    await chooseHelpVendor('TP-Link Tapo')
+    network.answer(
+      'POST /api/cameras/vendor-assistance',
+      ok({ vendorFamily: 'tplink_tapo', markdown: 'Fiche TP-Link Tapo' }),
+    )
+
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: 'Réessayer' }))
+
+    // Assert
+    expect(await screen.findByText('Fiche TP-Link Tapo')).toBeInTheDocument()
+  })
+
   it('onHelpVendorChosen_ShouldShowThatVendorsNoticeAndNeverSendIt_WhenTheTypedAddressIsAdded', async () => {
     // Arrange
     const network = fakeNetwork({
@@ -247,14 +290,15 @@ describe('AddCameraView', () => {
     renderScreen(<AddCameraView />)
     await fillTheAccessByHand()
 
+    await userEvent.click(screen.getByText('Où trouver ces identifiants'))
+
     // Act
     await chooseHelpVendor('ICSee / XMEye')
-    await userEvent.click(screen.getByRole('button', { name: 'Ajouter la caméra' }))
+    await screen.findByText('Créez le compte caméra dans l’application ICSee.')
+    await userEvent.click(screen.getByRole('button', { name: 'Ajouter' }))
 
     // Assert
-    expect(
-      await screen.findByText('Créez le compte caméra dans l’application ICSee.'),
-    ).toBeInTheDocument()
+    expect(await screen.findByText('« Porte » ajoutée.')).toBeInTheDocument()
     expect(network.sent).toContainEqual(
       expect.objectContaining({
         route: 'POST /api/cameras/vendor-assistance',
@@ -310,6 +354,35 @@ describe('AddCameraView', () => {
     expect(screen.queryByRole('combobox', { name: 'Marque' })).not.toBeInTheDocument()
   })
 
+  it('onSelectCandidate_ShouldKeepWhatDiscoveryReadUnderTechnicalDetails_WhenTheFoundCameraIsOpened', async () => {
+    // Arrange
+    fakeNetwork({
+      ...rangesToSweep,
+      'POST /api/cameras/discovery': ok([
+        {
+          ...discovered,
+          technicalDetails: {
+            resolvedHostName: null,
+            detectedPorts: [{ protocol: 'rtsp', port: 554, label: 'RTSP' }],
+            rtspPathsDetected: [],
+            capabilities: [],
+          },
+        },
+      ]),
+      'POST /api/cameras/vendor-assistance': ok(null),
+    })
+    renderScreen(<AddCameraView />)
+    await searchTheNetwork()
+
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: /Tapo C200/ }))
+
+    // Assert
+    const facts = screen.getByText('Ports ouverts').closest('details')
+    expect(facts).toHaveTextContent('Détails techniques')
+    expect(facts).not.toHaveTextContent('Avancé')
+  })
+
   it.each([[/Tapo C200/], [/ICSee salon/]])(
     'onDiscover_ShouldMarkTheCameraReady_WhenAProtocolServesItsStream: %s',
     async (name) => {
@@ -324,7 +397,7 @@ describe('AddCameraView', () => {
       await searchTheNetwork()
 
       // Assert
-      expect(await screen.findByRole('button', { name })).toHaveTextContent('Prête')
+      expect(await screen.findByRole('button', { name })).not.toHaveTextContent('À préparer')
     },
   )
 
@@ -377,7 +450,7 @@ describe('AddCameraView', () => {
     await userEvent.click(await screen.findByRole('button', { name: /ICSee salon/ }))
 
     // Act
-    await userEvent.click(screen.getByRole('button', { name: 'Ajouter la caméra' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Ajouter' }))
 
     // Assert
     expect(await screen.findByText('« ICSee salon » ajoutée.')).toBeInTheDocument()
@@ -403,7 +476,7 @@ describe('AddCameraView', () => {
 
     // Assert
     expect(screen.getByText('Cette caméra n’est pas encore joignable')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Ajouter la caméra' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Ajouter' })).not.toBeInTheDocument()
   })
 
   it('onSearchAsked_ShouldWarnAboutEveryRangeToSweepWithItsSource_WhenTheConfirmationOpens', async () => {
@@ -488,7 +561,7 @@ describe('AddCameraView', () => {
     expect(dialog).toHaveTextContent('GET /api/cameras/discovery/ranges · 500')
   })
 
-  it('onDiscover_ShouldSayWhyAndForSupport_WhenTheSearchFails', async () => {
+  it('onDiscover_ShouldSayWhyAndForSupportInAToast_WhenTheSearchFails', async () => {
     // Arrange
     fakeNetwork({ ...rangesToSweep, 'POST /api/cameras/discovery': failure(500) })
     renderScreen(<AddCameraView />)
@@ -500,8 +573,9 @@ describe('AddCameraView', () => {
     )
 
     // Assert
-    const alert = await screen.findByRole('alert')
-    expect(alert).toHaveTextContent('Vyzio a rencontré une erreur')
-    expect(alert).toHaveTextContent('POST /api/cameras/discovery · 500')
+    const toasts = screen.getByRole('region', { name: 'Notifications' })
+    expect(await within(toasts).findByText(/Vyzio a rencontré une erreur/)).toBeInTheDocument()
+    expect(within(toasts).getByText('POST /api/cameras/discovery · 500')).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 })

@@ -5,9 +5,9 @@ import { makeCamera } from '../../testing/camera_fixture'
 import type { ChoiceOption, SettingDeclaration } from '../../common/settings/setting_declaration'
 
 const POSITIONS_FIRST = 'Enregistrez d’abord ses positions Surveillance et Parking'
-const ORIENTATION_UNVERIFIED = 'L’orientation de cette caméra n’est pas vérifiée'
-const ORIENTATION_OFF = 'L’orientation de cette caméra est désactivée'
-const HARDWARE_UNVERIFIED = 'Aucune coupure matérielle vérifiée sur cette caméra'
+const ORIENTATION_UNVERIFIED = 'Orientation non vérifiée'
+const ORIENTATION_OFF = 'Orientation désactivée'
+const HARDWARE_UNVERIFIED = 'Coupure matérielle non vérifiée'
 
 const camera = (overrides: Partial<Camera> = {}) =>
   makeCamera({ ptzSupported: true, verifiedCapabilities: ['ptz'], ...overrides })
@@ -105,8 +105,9 @@ describe('buildPrivacySettings', () => {
     const setting = strategyOf(camera({ privacyStrategy: PrivacyStrategy.SoftwareBlur }), false)
 
     // Assert
-    expect(setting.consequence).toContain('Rien n’est demandé à la caméra')
-    expect(setting.consequence).not.toContain('Parking')
+    expect(setting.consequence).toBe(
+      'Vyzio s’arrête, la caméra filme toujours, visible sur votre réseau local.',
+    )
   })
 
   it('buildPrivacySettings_ShouldKeepItChoosableAndSayWhatIsMissing_WhenParkingIsSavedWithoutPositions', () => {
@@ -115,7 +116,7 @@ describe('buildPrivacySettings', () => {
 
     // Assert
     expect(optionOf(setting, PrivacyStrategy.PtzParking)?.unavailable).toBeUndefined()
-    expect(setting.consequence).not.toContain('pivote vers sa position Parking')
+    expect(setting.consequence).not.toContain('se tourne')
     expect(setting.consequence).toContain('seul Vyzio s’arrête')
     expect(setting.consequence).toContain(POSITIONS_FIRST)
   })
@@ -126,5 +127,24 @@ describe('buildPrivacySettings', () => {
 
     // Assert
     expect(setting.consequence).toContain(HARDWARE_UNVERIFIED)
+  })
+
+  it('buildPrivacySettings_ShouldSayInOneLineThatTheTurnedCameraStillFilms_WhenParkingIsChosen', () => {
+    // Arrange & Act
+    const setting = strategyOf(camera({ privacyStrategy: PrivacyStrategy.PtzParking }), true)
+
+    // Assert
+    expect(setting.consequence).toBe(
+      'La caméra se tourne, mais filme toujours, visible sur votre réseau local.',
+    )
+  })
+
+  it('buildPrivacySettings_ShouldExplainTheChosenStrategyInItsHelp_WhenParkingIsChosen', () => {
+    // Arrange & Act
+    const setting = strategyOf(camera({ privacyStrategy: PrivacyStrategy.PtzParking }), true)
+
+    // Assert
+    expect(setting.help).toContain('pivote vers sa position Parking')
+    expect(setting.help).toContain('accessible depuis votre réseau local')
   })
 })

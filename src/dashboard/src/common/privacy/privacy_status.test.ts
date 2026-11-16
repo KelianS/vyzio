@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { PrivacyMiss, PrivacyStrategy } from '../../domain/entities/camera.entity'
-import { privacyBadge, privacyMissLabel, privacyMissSentence } from './privacy_status'
+import { CameraState, PrivacyMiss, PrivacyStrategy } from '../../domain/entities/camera.entity'
+import { privacyBadge, privacyMissNotice } from './privacy_status'
 
 const parked = {
   privacyModeActive: true,
@@ -18,22 +18,16 @@ describe('privacyBadge', () => {
     expect(badge?.text).toBe('Caméra orientée, enregistrement désactivé')
   })
 
-  it('privacyBadge_ShouldSayTheCameraDidNotFollow_WhenItRefusedTheMove', () => {
-    // Arrange & Act
-    const badge = privacyBadge({ ...parked, privacyMiss: PrivacyMiss.CameraFailed })
+  it.each([PrivacyMiss.CameraFailed, PrivacyMiss.Unconfirmed])(
+    'privacyBadge_ShouldLeaveTheMissToItsOwnLine_WhenTheCameraDidNotConfirm (%s)',
+    (miss) => {
+      // Arrange & Act
+      const badge = privacyBadge({ ...parked, privacyMiss: miss })
 
-    // Assert
-    expect(badge?.text).toBe('Caméra non tournée, enregistrement désactivé')
-    expect(badge?.tone).toBe('warn')
-  })
-
-  it('privacyBadge_ShouldClaimNoMove_WhenTheCameraAnswerDidNotArrive', () => {
-    // Arrange & Act
-    const badge = privacyBadge({ ...parked, privacyMiss: PrivacyMiss.Unconfirmed })
-
-    // Assert
-    expect(badge?.text).toBe('Enregistrement désactivé')
-  })
+      // Assert
+      expect(badge).toBeNull()
+    },
+  )
 
   it('privacyBadge_ShouldClaimNoMiss_WhenTheMissBelongsToAStrategyThatAsksNothingOfTheCamera', () => {
     // Arrange & Act
@@ -60,150 +54,143 @@ describe('privacyBadge', () => {
   })
 })
 
-describe('privacyMissSentence', () => {
-  it('privacyMissSentence_ShouldSayNothing_WhenTheMissBelongsToAStrategyThatAsksNothingOfTheCamera', () => {
-    // Arrange & Act
-    const sentence = privacyMissSentence({
-      ...parked,
-      privacyStrategy: PrivacyStrategy.SoftwareBlur,
-      privacyMiss: PrivacyMiss.CameraFailed,
-    })
+describe('privacyMissNotice', () => {
+  const salon = {
+    ...parked,
+    id: 'camera-1',
+    displayName: 'Salon',
+    status: CameraState.Online,
+    privacyMissDetail: null,
+  }
 
-    // Assert
-    expect(sentence).toBeNull()
-  })
+  it.each([
+    [
+      true,
+      PrivacyStrategy.PtzParking,
+      PrivacyMiss.CameraFailed,
+      'Salon : la caméra ne s’est pas tournée',
+    ],
+    [
+      false,
+      PrivacyStrategy.PtzParking,
+      PrivacyMiss.CameraFailed,
+      'Salon : la caméra n’a pas repris sa position',
+    ],
+    [
+      true,
+      PrivacyStrategy.PtzParking,
+      PrivacyMiss.Unconfirmed,
+      'Salon : la caméra ne s’est peut-être pas tournée',
+    ],
+    [
+      false,
+      PrivacyStrategy.PtzParking,
+      PrivacyMiss.Unconfirmed,
+      'Salon : la caméra n’a peut-être pas repris sa position',
+    ],
+    [
+      true,
+      PrivacyStrategy.Hardware,
+      PrivacyMiss.CameraFailed,
+      'Salon : l’objectif ne s’est pas coupé',
+    ],
+  ])(
+    'privacyMissNotice_ShouldNameTheCameraAndTheConsequence_WhenItMissed (on: %s, %s, %s)',
+    (privacyModeActive, privacyStrategy, privacyMiss, expected) => {
+      // Act
+      const notice = privacyMissNotice({
+        ...salon,
+        privacyModeActive,
+        privacyStrategy,
+        privacyMiss,
+      })
 
-  it('privacyMissSentence_ShouldSayNothing_WhenTheCameraFollowed', () => {
-    // Arrange & Act
-    const sentence = privacyMissSentence(parked)
+      // Assert
+      expect(notice?.title).toBe(expected)
+    },
+  )
 
-    // Assert
-    expect(sentence).toBeNull()
-  })
+  it.each([
+    [PrivacyMiss.CameraFailed, true],
+    [PrivacyMiss.Unconfirmed, true],
+    [PrivacyMiss.PositionMissing, false],
+    [PrivacyMiss.CapabilityUnverified, false],
+  ])(
+    'privacyMissNotice_ShouldOfferToAskAgainOnlyWhenThatFixesIt_WhenTheCameraMissed (%s)',
+    (privacyMiss, expected) => {
+      // Act
+      const notice = privacyMissNotice({ ...salon, privacyMiss })
 
-  it('privacyMissSentence_ShouldPointAtWhereToSaveIt_WhenNoParkingPositionIsSaved', () => {
-    // Arrange & Act
-    const sentence = privacyMissSentence({ ...parked, privacyMiss: PrivacyMiss.PositionMissing })
+      // Assert
+      expect(notice?.retry).toBe(expected)
+    },
+  )
 
-    // Assert
-    expect(sentence).toBe(
-      'Aucune position Parking n’est enregistrée : la caméra est restée où elle était. Enregistrez-la dans « Image et pilotage ».',
-    )
-  })
-
-  it('privacyMissSentence_ShouldSayTheCameraDidNotComeBack_WhenPrivacyEndedOnAFailedMove', () => {
-    // Arrange & Act
-    const sentence = privacyMissSentence({
-      ...parked,
-      privacyModeActive: false,
-      privacyMiss: PrivacyMiss.CameraFailed,
-    })
-
-    // Assert
-    expect(sentence).toMatch(/^La caméra n’est pas revenue sur sa position Surveillance/)
-  })
-
-  it('privacyMissSentence_ShouldSayTheCameraDidNotComeBack_WhenNoSurveillancePositionIsSaved', () => {
-    // Arrange & Act
-    const sentence = privacyMissSentence({
-      ...parked,
+  it('privacyMissNotice_ShouldSayWhichPositionIsMissing_WhenNoSurveillancePositionIsSaved', () => {
+    // Act
+    const notice = privacyMissNotice({
+      ...salon,
       privacyModeActive: false,
       privacyMiss: PrivacyMiss.PositionMissing,
     })
 
     // Assert
-    expect(sentence).toBe(
-      'Aucune position Surveillance n’est enregistrée : la caméra n’est pas revenue. Enregistrez-la dans « Image et pilotage ».',
-    )
+    expect(notice?.missing).toBe('sa position Surveillance n’est pas enregistrée')
   })
 
-  it('privacyMissSentence_ShouldSayTheCameraMayStillFilm_WhenItRefusedTheParkingMove', () => {
-    // Arrange & Act
-    const sentence = privacyMissSentence({ ...parked, privacyMiss: PrivacyMiss.CameraFailed })
-
-    // Assert
-    expect(sentence).toBe(
-      'La caméra ne s’est pas tournée vers sa position Parking : elle filme peut-être encore, mais Vyzio n’enregistre plus rien. Vérifiez qu’elle est allumée et connectée.',
-    )
-  })
-
-  it('privacyMissSentence_ShouldSayRecordingIsCutButTheMoveIsUnknown_WhenTheCutWasInterrupted', () => {
-    // Arrange & Act
-    const sentence = privacyMissSentence({ ...parked, privacyMiss: PrivacyMiss.Unconfirmed })
-
-    // Assert
-    expect(sentence).toBe(
-      'La demande a été interrompue avant la réponse de la caméra : Vyzio ne sait pas si elle a suivi. L’enregistrement est bien coupé.',
-    )
-  })
-
-  it('privacyMissSentence_ShouldSayRecordingResumedButTheReturnIsUnknown_WhenTheResumeWasInterrupted', () => {
-    // Arrange & Act
-    const sentence = privacyMissSentence({
-      ...parked,
-      privacyModeActive: false,
-      privacyMiss: PrivacyMiss.Unconfirmed,
-    })
-
-    // Assert
-    expect(sentence).toBe(
-      'La demande a été interrompue avant la réponse de la caméra : Vyzio ne sait pas si elle est revenue sur sa position Surveillance. L’enregistrement a repris.',
-    )
-  })
-
-  it('privacyMissSentence_ShouldNameTheLens_WhenTheHardwareCutIsNotVerified', () => {
-    // Arrange & Act
-    const sentence = privacyMissSentence({
-      ...parked,
+  it('privacyMissNotice_ShouldNameTheLens_WhenTheHardwareCutIsNotVerified', () => {
+    // Act
+    const notice = privacyMissNotice({
+      ...salon,
       privacyStrategy: PrivacyStrategy.Hardware,
       privacyMiss: PrivacyMiss.CapabilityUnverified,
     })
 
     // Assert
-    expect(sentence).toBe(
-      'La coupure matérielle de cette caméra n’est pas vérifiée : seul l’enregistrement est coupé.',
-    )
+    expect(notice?.missing).toBe('sa coupure matérielle n’est pas vérifiée')
   })
-})
 
-describe('privacyMissLabel', () => {
-  it('privacyMissLabel_ShouldNotBlameTheCamera_WhenTheRequestWasInterrupted', () => {
-    // Arrange & Act
-    const label = privacyMissLabel({ ...parked, privacyMiss: PrivacyMiss.Unconfirmed })
+  it('privacyMissNotice_ShouldScrubTheCredentials_WhenTheDiagnosticCarriesThem', () => {
+    // Act
+    const notice = privacyMissNotice({
+      ...salon,
+      privacyMiss: PrivacyMiss.CameraFailed,
+      privacyMissDetail: 'rtsp://user:secret@10.0.0.2/stream refused',
+    })
 
     // Assert
-    expect(label).toBe('Demande interrompue')
+    expect(notice?.diagnostic).not.toContain('secret')
   })
 
-  it('privacyMissLabel_ShouldSayTheCameraDidNotTurn_WhenTheParkingMoveFailed', () => {
-    // Arrange & Act
-    const label = privacyMissLabel({ ...parked, privacyMiss: PrivacyMiss.CameraFailed })
-
-    // Assert
-    expect(label).toBe('La caméra ne s’est pas tournée')
-  })
-
-  it('privacyMissLabel_ShouldSayTheCameraDidNotComeBack_WhenTheReturnFailed', () => {
-    // Arrange & Act
-    const label = privacyMissLabel({
-      ...parked,
-      privacyModeActive: false,
+  it('privacyMissNotice_ShouldTellNothing_WhenTheCameraIsOffline', () => {
+    // Act
+    const notice = privacyMissNotice({
+      ...salon,
+      status: CameraState.Offline,
       privacyMiss: PrivacyMiss.CameraFailed,
     })
 
     // Assert
-    expect(label).toBe('La caméra n’est pas revenue')
+    expect(notice).toBeNull()
   })
 
-  it('privacyMissLabel_ShouldNameTheLens_WhenTheHardwareCutFailed', () => {
-    // Arrange & Act
-    const label = privacyMissLabel({
-      ...parked,
-      privacyStrategy: PrivacyStrategy.Hardware,
+  it('privacyMissNotice_ShouldTellNothing_WhenTheCameraFollowed', () => {
+    // Act
+    const notice = privacyMissNotice(salon)
+
+    // Assert
+    expect(notice).toBeNull()
+  })
+
+  it('privacyMissNotice_ShouldTellNothing_WhenTheStrategyAsksNothingOfTheCamera', () => {
+    // Act
+    const notice = privacyMissNotice({
+      ...salon,
+      privacyStrategy: PrivacyStrategy.SoftwareBlur,
       privacyMiss: PrivacyMiss.CameraFailed,
     })
 
     // Assert
-    expect(label).toBe('L’objectif ne s’est pas coupé')
+    expect(notice).toBeNull()
   })
 })

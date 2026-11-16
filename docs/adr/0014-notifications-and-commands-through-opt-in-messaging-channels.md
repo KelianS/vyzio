@@ -15,15 +15,17 @@ send but never receive.
 
 ## Decision
 
-A notification leaves only through a messaging channel the owner has set up and enabled, which
+A notification leaves only through a messaging channel the owner has set up, which
 carries the image itself; each channel is an adapter behind one port in both directions, and a
 command is declared once, whatever channel carries it.
 
-- Each enabled channel opens one outbound flow to its third-party service, carrying the detection's
-  image or clip. None is on by default: enabling it is the owner's explicit consent. Biometric data
+- Each configured channel opens one outbound flow to its third-party service, carrying the detection's
+  image or clip. None is on by default: the first save of a channel's credentials, after the
+  interface has stated that images leave the home network, is the owner's explicit consent; the
+  channel sends as soon as they are complete, and deleting it is the only way to stop it for good. Biometric data
   never travel (ADR-13).
-- The sender applies the person's policy (ADR-13), then the channel's filters, then the muting rules
-  (ADR-15). The media is a read that retries until it is ready, never a fixed wait.
+- The sender applies the person's policy (ADR-13), then the channel's filters, then the household Silence
+  and the muting rules (ADR-15). The media is a read that retries until it is ready, never a fixed wait.
 - A channel declares what it renders and, per direction, a transport and the credentials it needs. A
   channel with no inbound transport is a notification channel and nothing more.
 - Inbound runs only by outbound retrieval, a long poll or a gateway connection, never by a webhook;
@@ -50,7 +52,10 @@ command is declared once, whatever channel carries it.
 - ✅ Commands and the interface cannot drift apart: one business path behind both.
 - ✅ The command journal is the trace to read should a pairing leak.
 - ⚠️ The image passes through the channel's servers: a trade-off the interface states before the
-  channel is enabled.
+  channel is first saved.
+- ⚠️ A channel has no on/off of its own: complete credentials are the consent. A channel saved
+  complete by an earlier version but switched off sends once Vyzio is upgraded; the release notes
+  say so, and deleting the channel is how its owner keeps it silent.
 - ⚠️ Notifications and commands depend on internet and on the third party (SYS-03): they extend
   local use, never replace it, and a channel back from an outage replays nothing (NOTIF-11).
 - ⚠️ A bot costs a longer setup than a write-only address; the channel's setup guide in the
@@ -78,4 +83,5 @@ command is declared once, whatever channel carries it.
 | A bot that reads every message of the room | Access to the whole conversation, when Vyzio needs only what is addressed to it |
 | Configure from a conversation | A thread carries no draft, no provenance, no undo (ADR-15): changes would be invisible and irreversible |
 | Notification hours on each channel's settings | Replaced by the muting rules of the schedule (ADR-15) |
+| An on/off switch per channel, its consent given by turning it on | A second way to quiet notifications beside the Silence, and a channel paused and forgotten passes for a broken one; the consent moves to the first save |
 | Channel settings read once at start-up | Settings made in the interface would be ignored until a restart (NOTIF-06) |

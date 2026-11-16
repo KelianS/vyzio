@@ -1,43 +1,20 @@
 import { useSyncExternalStore } from 'react'
 
-/** How the live view lays out its picture and controls (LIVE-09, LIVE-10). */
-export const LiveLayout = {
-  Portrait: 'portrait',
-  Landscape: 'landscape',
-  Wide: 'wide',
-} as const
+// A phone on its side: too short to keep the controls off the picture (LIVE-10).
+const SIDEWAYS = '(orientation: landscape) and (max-height: 32rem)'
 
-export type LiveLayout = (typeof LiveLayout)[keyof typeof LiveLayout]
-
-// A phone on its side: too short to keep the controls off the picture.
-const LANDSCAPE = '(orientation: landscape) and (max-height: 32rem)'
-const WIDE = '(min-width: 64rem)'
-
-function matches(query: string): boolean {
-  return typeof window.matchMedia === 'function' && window.matchMedia(query).matches
-}
-
-function currentLayout(): LiveLayout {
-  if (matches(LANDSCAPE)) return LiveLayout.Landscape
-  if (matches(WIDE)) return LiveLayout.Wide
-  return LiveLayout.Portrait
+function matches(): boolean {
+  return typeof window.matchMedia === 'function' && window.matchMedia(SIDEWAYS).matches
 }
 
 function subscribe(onChange: () => void) {
   if (typeof window.matchMedia !== 'function') return () => undefined
-  const queries = [LANDSCAPE, WIDE].map((query) => window.matchMedia(query))
-  queries.forEach((query) => query.addEventListener('change', onChange))
-  return () => queries.forEach((query) => query.removeEventListener('change', onChange))
+  const query = window.matchMedia(SIDEWAYS)
+  query.addEventListener('change', onChange)
+  return () => query.removeEventListener('change', onChange)
 }
 
-/** Held upright, the bar sits above the picture and never covers it (LIVE-09). */
-export const BAR_ABOVE: Record<LiveLayout, boolean> = {
-  portrait: true,
-  landscape: false,
-  wide: false,
-}
-
-/** Follows the device as it turns. */
-export function useLiveLayout(): LiveLayout {
-  return useSyncExternalStore(subscribe, currentLayout)
+/** Whether the phone is held on its side, following the device as it turns. */
+export function useSideways(): boolean {
+  return useSyncExternalStore(subscribe, matches)
 }

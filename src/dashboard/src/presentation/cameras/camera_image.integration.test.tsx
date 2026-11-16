@@ -65,7 +65,7 @@ describe('CameraImageView', () => {
     ).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Connexion' })).toHaveAttribute(
       'href',
-      '/settings/cameras/camera-1/connexion',
+      '/settings/cameras/camera-1/connection',
     )
     expect(screen.queryByRole('link', { name: 'Piloter la caméra' })).not.toBeInTheDocument()
     expect(network.sent).toEqual([])
@@ -370,7 +370,7 @@ describe('CameraImageView', () => {
     // Assert
     expect(await screen.findByRole('link', { name: 'Piloter la caméra' })).toHaveAttribute(
       'href',
-      '/cameras/camera-1/direct',
+      '/cameras/camera-1',
     )
   })
   it('render_ShouldPointAtTheHeaderTrigger_WhenTheCameraIsNotInSurveillanceYet', async () => {

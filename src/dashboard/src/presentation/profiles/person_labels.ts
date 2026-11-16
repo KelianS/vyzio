@@ -2,7 +2,7 @@ import type { SettingOption } from '../../common/settings/setting_declaration'
 import type { ProfileAlertMode, ProfileCategory } from '../../domain/entities/profile.entity'
 
 /** The single home of the labels: a table, not a lookup through an options array. */
-export const CATEGORY_LABELS: Record<ProfileCategory, string> = {
+const CATEGORY_LABELS: Record<ProfileCategory, string> = {
   family: 'Famille',
   friend: 'Ami',
   staff: 'Intervenant',

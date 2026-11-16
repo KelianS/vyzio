@@ -1,15 +1,14 @@
-import { Link } from 'react-router'
-import { ChevronRight, Plus } from 'lucide-react'
-import { Badge } from '../../../common/components/badge'
-import { ListRow } from '../../../common/components/list_row'
-import { Button } from '../../../common/ui/button'
-import { SettingsPage } from '../../../common/settings/settings_page'
+import { Plus, Video } from 'lucide-react'
+import { markSubtitle } from '../../../common/components/status_mark_state'
+import { GroupedList, GroupedRow } from '../../../common/components/grouped_list'
 import { ReadFailure } from '../../../common/components/error_message'
 import type { AppError } from '../../../common/errors/app_error'
 import type { Camera } from '../../../domain/entities/camera.entity'
-import { formatCameraStatusLabel, formatStatusTone } from '../../../common/camera/camera_status'
+import { cameraMark } from '../../../common/camera/camera_status'
+import { Loading } from '../../../common/components/loading'
+import { Surface } from '../../../common/components/surface'
 
-/** The rubric with no camera chosen: the list. Adding a camera is its own task/page. */
+/** The rubric with no camera chosen: the list, each camera with its mark, adding one as its last row. */
 export function CameraList({
   cameras,
   loading,
@@ -22,53 +21,44 @@ export function CameraList({
   onRetry: () => void
 }) {
   // An unread list is not an empty one: adding would invite duplicating cameras that exist.
-  const unread = error !== null && cameras.length === 0
-
-  return (
-    <SettingsPage>
-      {cameras.length > 0 ? (
-        <ul className="divide-y divide-border">
-          {cameras.map((camera) => (
-            <li key={camera.id}>
-              <ListRow>
-                <Link to={`/settings/cameras/${camera.id}`}>
-                  <span className="min-w-0">
-                    <span className="block font-medium">{camera.displayName}</span>
-                    {/* Tells apart two cameras sharing a name, or the lenses of one device (CAM-02). */}
-                    <span className="block text-sm text-muted-foreground">{camera.host}</span>
-                  </span>
-                  <span className="flex shrink-0 items-center gap-3">
-                    <Badge tone={formatStatusTone(camera)}>{formatCameraStatusLabel(camera)}</Badge>
-                    <ChevronRight className="size-4 text-muted-foreground" aria-hidden="true" />
-                  </span>
-                </Link>
-              </ListRow>
-            </li>
-          ))}
-        </ul>
-      ) : unread ? (
+  if (error !== null && cameras.length === 0)
+    return (
+      <Surface>
         <ReadFailure
           error={error}
           onRetry={onRetry}
           subject="La liste de vos caméras n’a pas pu être lue."
-          className="py-3"
         />
-      ) : (
-        <p className="py-3 text-muted-foreground">
-          {loading ? 'Chargement…' : 'Aucune caméra pour l’instant.'}
-        </p>
-      )}
+      </Surface>
+    )
+  if (loading && cameras.length === 0)
+    return (
+      <Surface>
+        <Loading />
+      </Surface>
+    )
 
-      {!unread && (
-        <div className="mt-5">
-          <Button asChild>
-            <Link to="/settings/cameras/ajout">
-              <Plus aria-hidden="true" />
-              Ajouter une caméra
-            </Link>
-          </Button>
-        </div>
-      )}
-    </SettingsPage>
+  return (
+    <GroupedList>
+      {cameras.map((camera) => {
+        const mark = cameraMark(camera)
+        return (
+          <GroupedRow
+            key={camera.id}
+            to={`/settings/cameras/${camera.id}`}
+            icon={Video}
+            title={camera.displayName}
+            mark={mark}
+            subtitle={markSubtitle(mark)}
+          />
+        )
+      })}
+      <GroupedRow
+        to="/settings/cameras/add"
+        icon={Plus}
+        title="Ajouter une caméra"
+        trailing="none"
+      />
+    </GroupedList>
   )
 }

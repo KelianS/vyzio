@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import type { LivePlayback } from '../../../domain/entities/live_playback.entity'
-import type { LiveLayout } from '../live_layout'
 import type { FrigateStatus } from '../../../domain/entities/system_stats.entity'
 import { LiveVideo } from './live_video'
 
@@ -26,8 +25,8 @@ function renderWatched(frigateStatus: FrigateStatus = 'active') {
       quality="low"
       qualities={['low']}
       soundOn={false}
-      layout="portrait"
-      bar={() => null}
+      immersive={false}
+      overlay={() => null}
       onOpen={(_video, _camera, _quality, _sound, onPlayback) => {
         openings.push(onPlayback)
         return () => undefined
@@ -59,8 +58,8 @@ describe('LiveVideo', () => {
         quality="high"
         qualities={['low']}
         soundOn={false}
-        layout="portrait"
-        bar={() => null}
+        immersive={false}
+        overlay={() => null}
         onOpen={() => () => undefined}
         onChooseQuality={onChooseQuality}
         onToggleSound={vi.fn()}
@@ -82,8 +81,8 @@ describe('LiveVideo', () => {
         quality="high"
         qualities={['low', 'high']}
         soundOn={false}
-        layout="portrait"
-        bar={() => null}
+        immersive={false}
+        overlay={() => null}
         onOpen={(_video, _camera, _quality, _sound, onPlayback) => {
           onPlayback({
             kind: 'failed',
@@ -231,18 +230,18 @@ describe('LiveVideo', () => {
   })
 
   it.each([
-    { from: 'portrait' as LiveLayout, to: 'landscape' as LiveLayout },
-    { from: 'landscape' as LiveLayout, to: 'portrait' as LiveLayout },
+    { from: 'in the page', to: 'edge to edge', immersive: [false, true] },
+    { from: 'edge to edge', to: 'in the page', immersive: [true, false] },
   ])(
-    'LiveVideo_ShouldKeepPlayingInTheSamePicture_WhenTheDeviceTurnsFrom $from to $to',
-    ({ from, to }) => {
+    'LiveVideo_ShouldKeepPlayingInTheSamePicture_WhenTheFramingGoesFrom $from to $to',
+    ({ immersive }) => {
       // Arrange
       const played: HTMLVideoElement[] = []
       const open = (video: HTMLVideoElement) => {
         played.push(video)
         return () => undefined
       }
-      const view = (layout: LiveLayout) => (
+      const view = (edgeToEdge: boolean) => (
         <LiveVideo
           cameraId="camera-1"
           apiBaseUrl=""
@@ -251,17 +250,17 @@ describe('LiveVideo', () => {
           quality="low"
           qualities={['low']}
           soundOn={false}
-          layout={layout}
-          bar={() => <p>Front Door</p>}
+          immersive={edgeToEdge}
+          overlay={() => <p>Front Door</p>}
           onOpen={open}
           onChooseQuality={vi.fn()}
           onToggleSound={vi.fn()}
         />
       )
-      const { rerender } = render(view(from))
+      const { rerender } = render(view(immersive[0]))
 
       // Act
-      rerender(view(to))
+      rerender(view(immersive[1]))
 
       // Assert
       expect(played).toHaveLength(1)
@@ -270,11 +269,11 @@ describe('LiveVideo', () => {
   )
 
   it.each([
-    { layout: 'portrait' as LiveLayout, frame: '640 / 480' },
-    { layout: 'landscape' as LiveLayout, frame: '' },
+    { framing: 'in the page', immersive: false, frame: '640 / 480' },
+    { framing: 'edge to edge', immersive: true, frame: '' },
   ])(
-    'LiveVideo_ShouldShapeTheFrameAfterTheStreamOnlyUpright_WhenHeld $layout',
-    ({ layout, frame }) => {
+    'LiveVideo_ShouldShapeTheFrameAfterTheStreamOnlyInThePage_WhenShown $framing',
+    ({ immersive, frame }) => {
       // Arrange
       render(
         <LiveVideo
@@ -285,8 +284,8 @@ describe('LiveVideo', () => {
           quality="low"
           qualities={['low']}
           soundOn={false}
-          layout={layout}
-          bar={() => null}
+          immersive={immersive}
+          overlay={() => null}
           onOpen={() => () => undefined}
           onChooseQuality={vi.fn()}
           onToggleSound={vi.fn()}

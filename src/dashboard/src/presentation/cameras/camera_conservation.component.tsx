@@ -28,6 +28,7 @@ import {
 } from './camera_conservation.presenter'
 import { cameraConservationReducer } from './camera_conservation.reducer'
 import { buildInitialCameraConservationUido } from './camera_conservation.uido'
+import { Loading } from '../../common/components/loading'
 
 const DRAFT_LABELS: Record<keyof RetentionOverrides, string> = {
   continuousDaysOverride: RETENTION_LABEL.continuous,
@@ -35,7 +36,7 @@ const DRAFT_LABELS: Record<keyof RetentionOverrides, string> = {
   eventClipDaysOverride: RETENTION_LABEL.eventClip,
 }
 
-/** Per-camera retention: same shape as the installation page, "following" means no override here (ADR-15). */
+/** Per-camera retention: same shape as the installation page, "inherited" means no override here (ADR-15). */
 export function CameraConservationView() {
   const { cameraId } = useParams()
   const { cameras: container, hub: hubContainer } = useAppContainer()
@@ -56,7 +57,12 @@ export function CameraConservationView() {
     presenter.onLoad(cameraId!)
   }, [presenter, cameraId])
 
-  if (uido.loading) return <SettingsPage>Chargement…</SettingsPage>
+  if (uido.loading)
+    return (
+      <SettingsPage>
+        <Loading />
+      </SettingsPage>
+    )
   if (uido.error)
     return (
       <SettingsPage>
@@ -125,10 +131,9 @@ function ConservationForm({
       value: effective,
       // Writing to the field is what creates the override.
       onChange: (days) => draft.set(field, days as number),
-      provenance: {
-        following: override === null,
-        fallbackLabel: formatDays(inherited),
-        revertLabel: 'Suivre le réglage d’ensemble',
+      inherits: {
+        inherited: override === null,
+        valueLabel: formatDays(inherited),
         onRevert: () => draft.set(field, null),
       },
     }
@@ -136,7 +141,7 @@ function ConservationForm({
 
   return (
     <>
-      <SettingsPage lede="Cette caméra suit les durées d’ensemble tant qu’elle n’en fixe pas une à elle. Chaque durée est indépendante.">
+      <SettingsPage>
         <SettingsList settings={declarations} />
 
         <RetentionHelp />

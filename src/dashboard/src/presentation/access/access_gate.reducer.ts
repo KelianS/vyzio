@@ -6,10 +6,20 @@ export function accessGateReducer(state: AccessGateUido, action: AccessGateActio
     // Reopening after a sign-in starts over: the expired notice has done its job.
     case 'LOAD_STARTED':
       return { ...state, loading: true, error: null, expired: false }
+    // The error stays on screen while Vyzio is asked again: no blank between two tries (UI-34).
+    case 'RETRY_STARTED':
+      return { ...state, retrying: true }
     case 'LOAD_SUCCEEDED':
-      return { ...state, loading: false, state: action.state, session: action.session }
+      return {
+        ...state,
+        loading: false,
+        retrying: false,
+        error: null,
+        state: action.state,
+        session: action.session,
+      }
     case 'LOAD_FAILED':
-      return { ...state, loading: false, error: action.error }
+      return { ...state, loading: false, retrying: false, error: action.error }
     case 'SESSION_LOST':
       return { ...state, expired: true }
 

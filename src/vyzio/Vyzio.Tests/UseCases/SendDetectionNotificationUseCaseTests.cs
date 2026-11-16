@@ -21,6 +21,7 @@ public class SendDetectionNotificationUseCaseTests
     private readonly IProfileRepository _profiles = Substitute.For<IProfileRepository>();
     private readonly IScheduleRuleRepository _scheduleRules = Substitute.For<IScheduleRuleRepository>();
     private readonly IErasedDetections _erased = Substitute.For<IErasedDetections>();
+    private readonly INotificationSilenceRepository _silences = Substitute.For<INotificationSilenceRepository>();
 
     // One minute after the detection of CreateDetection started.
     private readonly FakeTimeProvider _time = new(LocalTime(2026, 5, 10, 10, 16));
@@ -29,7 +30,6 @@ public class SendDetectionNotificationUseCaseTests
         => new()
         {
             Channel = channel,
-            IsEnabled = true,
             Credentials = Credentials(channel),
             MinimumConfidence = 0.75f
         };
@@ -69,6 +69,7 @@ public class SendDetectionNotificationUseCaseTests
             new NotificationChannelCatalog(senders),
             _channelConfigs,
             _scheduleRules,
+            _silences,
             _imageProvider,
             _clipProvider,
             new DetectionMessageFormatter(),
@@ -274,26 +275,11 @@ public class SendDetectionNotificationUseCaseTests
         Configure(new NotificationChannelConfig
         {
             Channel = NotificationChannel.Telegram,
-            IsEnabled = true,
             Credentials = new ChannelCredentials(new Dictionary<ChannelCredential, string>
             {
                 [ChannelCredential.BotToken] = "bot-token"
             })
         });
-
-        var sent = await Build(_telegram).ExecuteAsync(CreateDetection());
-
-        Assert.False(sent);
-        await _telegram.DidNotReceive().SendAsync(
-            Arg.Any<OutgoingNotification>(), Arg.Any<ChannelCredentials>(), Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task ExecuteAsync_ShouldSendNothing_WhenTheChannelIsDisabled()
-    {
-        var config = ActiveConfig();
-        config.IsEnabled = false;
-        Configure(config);
 
         var sent = await Build(_telegram).ExecuteAsync(CreateDetection());
 
@@ -440,6 +426,61 @@ public class SendDetectionNotificationUseCaseTests
         Assert.False(sent);
         await _telegram.DidNotReceive().SendAsync(
             Arg.Any<OutgoingNotification>(), Arg.Any<ChannelCredentials>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldSendOnNoChannel_WhenASilenceCoversTheDetection()
+    {
+        // Arrange
+        Configure(ActiveConfig(), ActiveConfig(NotificationChannel.Discord));
+        _silences.GetAsync(Arg.Any<CancellationToken>()).Returns(new NotificationSilence
+        {
+            StartedAt = LocalTime(2026, 5, 10, 10, 0),
+            Until = LocalTime(2026, 5, 10, 11, 0),
+        });
+
+        // Act
+        var sent = await Build(_telegram, _discord).ExecuteAsync(CreateDetection());
+
+        // Assert
+        Assert.False(sent);
+        await _telegram.DidNotReceiveWithAnyArgs().SendAsync(default!, default!, default);
+        await _discord.DidNotReceiveWithAnyArgs().SendAsync(default!, default!, default);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldSendNothing_WhenASilenceStartedBetweenTheDetectionAndItsSending()
+    {
+        // Arrange
+        _silences.GetAsync(Arg.Any<CancellationToken>()).Returns(new NotificationSilence
+        {
+            StartedAt = LocalTime(2026, 5, 10, 10, 16),
+            Until = LocalTime(2026, 5, 10, 11, 0),
+        });
+
+        // Act
+        var sent = await Build(_telegram).ExecuteAsync(CreateDetection());
+
+        // Assert
+        Assert.False(sent);
+        await _telegram.DidNotReceiveWithAnyArgs().SendAsync(default!, default!, default);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldSend_WhenTheSilenceHasEnded()
+    {
+        // Arrange
+        _silences.GetAsync(Arg.Any<CancellationToken>()).Returns(new NotificationSilence
+        {
+            StartedAt = LocalTime(2026, 5, 10, 9, 0),
+            Until = LocalTime(2026, 5, 10, 10, 0),
+        });
+
+        // Act
+        var sent = await Build(_telegram).ExecuteAsync(CreateDetection());
+
+        // Assert
+        Assert.True(sent);
     }
 
     [Fact]

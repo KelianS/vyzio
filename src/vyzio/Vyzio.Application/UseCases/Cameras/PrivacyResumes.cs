@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using Vyzio.Application.DTOs.Cameras;
+using Vyzio.Application.DTOs.Notifications;
 using Vyzio.Application.DTOs.Scheduling;
 using Vyzio.Application.UseCases.Scheduling;
 using Vyzio.Core.Entities;
@@ -39,6 +40,21 @@ public sealed class PrivacyResumes(TimeZoneInfo timeZone, TimeProvider time)
         if (end is null || HouseNow() < end) return true;
         End(cameraId);
         return false;
+    }
+
+    /// <summary>When the cut ends: the end chosen for every camera, or when the ranges that cut it let it out; null when it holds until resumed (PRIV-20).</summary>
+    public HouseMomentDto? CutEndOf(Camera camera, IReadOnlyList<ScheduleRule> privacyRules)
+    {
+        if (!camera.PrivacyModeActive)
+            return null;
+        if (camera.PrivacyModeSource == PrivacyModeSource.Manual)
+            return camera.PrivacyModeUntil is { } until ? HouseMomentDto.Of(until, timeZone) : null;
+        if (camera.PrivacyModeSource != PrivacyModeSource.Schedule)
+            return null;
+        var now = HouseNow();
+        if (!ScheduleRuleCoverage.Covers(privacyRules, camera.Id, now))
+            return null;
+        return ScheduleRuleCoverage.EndOf(privacyRules, camera.Id, now) is { } end ? HouseMomentDto.Of(end, timeZone) : null;
     }
 
     /// <summary>The camera's resume while a range covers it, or null when it is not resumed.</summary>

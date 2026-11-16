@@ -31,13 +31,11 @@ public sealed record NotificationChannelSummaryDto(
     string Channel,
     string DisplayName,
     bool IsConfigured,
-    bool IsEnabled,
     bool AcceptsCommands);
 
 public sealed record NotificationChannelConfigDto(
     string Channel,
     string DisplayName,
-    bool IsEnabled,
     bool IsConfigured,
     ChannelCredentialDto[] Credentials,
     ChannelCapabilitiesDto Capabilities,
@@ -67,7 +65,6 @@ public sealed record NotificationChannelConfigDto(
         return new NotificationChannelConfigDto(
             Channel: SnakeCaseEnum.ToSnakeCase(config.Channel),
             DisplayName: descriptor.DisplayName,
-            IsEnabled: config.IsEnabled,
             IsConfigured: descriptor.IsSatisfiedBy(credentials),
             Credentials: [.. descriptor.RequiredCredentials.Select(spec => ChannelCredentialDto.From(spec, credentials))],
             Capabilities: ChannelCapabilitiesDto.From(descriptor.Capabilities),
@@ -100,7 +97,6 @@ public sealed record NotificationChannelConfigDto(
 
 /// <param name="Credentials">Channel field (snake_case) to value; a field left out keeps its stored value.</param>
 public sealed record SaveNotificationChannelConfigRequest(
-    bool IsEnabled,
     Dictionary<string, string?>? Credentials = null,
     float? MinimumConfidence = null,
     string[]? AllowedLabels = null,

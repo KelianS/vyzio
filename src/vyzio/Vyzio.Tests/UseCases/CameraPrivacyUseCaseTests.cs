@@ -69,6 +69,21 @@ public class ToggleCameraPrivacyModeUseCaseTests
         };
 
     [Fact]
+    public async Task ExecuteAsync_ShouldDropTheChosenEnd_WhenACameraIsCutByItsOwnToggle()
+    {
+        // Arrange
+        var camera = MakeCamera();
+        camera.PrivacyModeUntil = DateTimeOffset.Parse("2026-09-23T14:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture);
+        _cameras.GetByIdAsync("cam1", Arg.Any<CancellationToken>()).Returns(camera);
+
+        // Act
+        await _sut.ExecuteAsync("cam1", active: true);
+
+        // Assert
+        Assert.Equal((true, (PrivacyModeSource?)PrivacyModeSource.Manual, (DateTimeOffset?)null), (camera.PrivacyModeActive, camera.PrivacyModeSource, camera.PrivacyModeUntil));
+    }
+
+    [Fact]
     public async Task ExecuteAsync_ShouldCutTheLensThroughThePrivacyProvider_WhenTheStrategyIsHardware()
     {
         var camera = MakeCamera(strategy: PrivacyStrategy.Hardware);
@@ -611,6 +626,39 @@ public class BatchToggleCameraPrivacyModeUseCaseTests
 
         // Assert
         Assert.False(_resumes.Holds("cam1"));
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldCarryTheChosenEnd_WhenTheBatchCutsEveryCameraUntilAnHour()
+    {
+        // Arrange
+        var until = DateTimeOffset.Parse("2026-09-23T14:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture);
+        _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns([MakeCamera("cam1"), MakeCamera("cam2")]);
+
+        // Act
+        await _sut.ExecuteAsync(["cam1", "cam2"], active: true, until);
+
+        // Assert
+        await _cameras.Received(2).UpdateAsync(
+            Arg.Is<Camera>(c => c.PrivacyModeSource == PrivacyModeSource.Manual && c.PrivacyModeUntil == until), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldDropTheChosenEnd_WhenTheBatchResumesTheCameras()
+    {
+        // Arrange
+        var camera = MakeCamera("cam1");
+        camera.PrivacyModeActive = true;
+        camera.PrivacyModeSource = PrivacyModeSource.Manual;
+        camera.PrivacyModeUntil = DateTimeOffset.Parse("2026-09-23T14:00:00+00:00", System.Globalization.CultureInfo.InvariantCulture);
+        _cameras.GetAllAsync(Arg.Any<CancellationToken>()).Returns([camera]);
+        _schedules.GetByKindAsync(ScheduleRuleKind.Privacy, Arg.Any<CancellationToken>()).Returns([]);
+
+        // Act
+        await _sut.ExecuteAsync(["cam1"], active: false);
+
+        // Assert
+        Assert.Equal((false, (DateTimeOffset?)null), (camera.PrivacyModeActive, camera.PrivacyModeUntil));
     }
 
     private static Camera MakeCamera(string id, PrivacyStrategy strategy = PrivacyStrategy.SoftwareBlur) => new()

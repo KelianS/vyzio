@@ -1,4 +1,4 @@
-# UC-HIST-01 · Consulter l'historique
+# UC-HIST-01 · Consulter les détections
 
 | Champ | Valeur |
 | --- | --- |
@@ -11,7 +11,7 @@
 
 - l'utilisateur est connecté (UC-ACCESS-02).
 
-**Résultat en succès** : l'utilisateur voit les événements qu'il cherche, chacun avec sa caméra, son heure et l'identité estimée (DET-02), et leur clip quand il existe (HIST-04).
+**Résultat en succès** : l'utilisateur voit les détections qu'il cherche, chacune avec sa caméra, son heure et l'identité estimée (DET-02), et les regarde à la suite (HIST-18).
 
 **Résultats en échec** : la lecture échoue, et l'erreur se lit à deux niveaux (E1).
 
@@ -19,33 +19,46 @@
 
 | ID | Libellé | Type | Déclencheur |
 | --- | --- | --- | --- |
-| N1 | Consulter l'historique filtré | Nominal | L'utilisateur ouvre l'historique |
-| A1 | Ouvrir le clip d'un événement | Alternative | L'utilisateur ouvre l'aperçu d'un événement |
-| E1 | L'historique ne peut pas être lu | Échec | La lecture de l'historique échoue |
+| N1 | Regarder les détections | Nominal | L'utilisateur touche la tuile « Détections » à l'accueil |
+| A1 | Filtrer les détections | Alternative | L'utilisateur touche le filtre de la barre |
+| A2 | Ouvrir les détections d'une caméra | Alternative | L'utilisateur touche « Toutes ses détections » dans la vue d'une caméra |
+| A3 | Agir sur un clip | Alternative | L'utilisateur ouvre le menu « ⋯ » d'un clip |
+| E1 | Les détections ne peuvent pas être lues | Échec | La lecture des détections échoue |
 
 ## Détail des chemins
 
-### N1 · Consulter l'historique filtré
+### N1 · Regarder les détections
 
-1. L'utilisateur ouvre l'historique et le filtre par caméra, personne ou type d'événement (HIST-03).
+1. L'utilisateur touche la tuile « Détections » à l'accueil (UC-UI-01) : la page s'ouvre, le lecteur en haut, les clips groupés par jour en dessous (HIST-18).
+2. Il touche un clip : il se lit dans le lecteur, puis les suivants à la suite, sans rien à toucher (HIST-18).
+3. Une vidéo effacée avec une autre détection, ou dont la conservation est échue, le dit sans s'afficher en panne (HIST-11, HIST-17).
 
-### A1 · Ouvrir le clip d'un événement
+### A1 · Filtrer les détections
 
-1. L'utilisateur ouvre l'aperçu d'un événement et son clip, quand il existe (HIST-04).
-2. Une vidéo effacée avec une autre détection le dit, sans s'afficher en panne (HIST-11).
+1. L'utilisateur touche le filtre de la barre : il coche une ou plusieurs caméras, personnes ou types d'événement, et choisit un jour (HIST-03) ; la liste suit à chaque toucher.
+2. Le chemin reprend à N1, pas 2, sur les détections filtrées.
 
-### E1 · L'historique ne peut pas être lu
+### A2 · Ouvrir les détections d'une caméra
+
+1. Depuis la vue d'une caméra, l'utilisateur touche « Toutes ses détections » (UC-LIVE-01 A3) : la page s'ouvre filtrée sur cette caméra (HIST-03).
+2. Le retour ramène à la vue de la caméra (UI-29).
+
+### A3 · Agir sur un clip
+
+1. L'utilisateur ouvre le menu « ⋯ » d'un clip : il corrige la reconnaissance (UC-DET-02), télécharge le clip (HIST-19) ou le supprime (UC-HIST-03).
+
+### E1 · Les détections ne peuvent pas être lues
 
 1. La lecture échoue : l'écran le dit avec son détail technique (UI-01).
 
 ## Règles locales
 
-- **HIST-03** · l'utilisateur doit pouvoir consulter un historique filtre par camera, personne ou type d'evenement ;
+- **HIST-03** · l'utilisateur doit pouvoir consulter un historique filtré par caméra, personne, type d'événement et jour ; caméra, personne et type acceptent plusieurs valeurs à la fois, le jour en prend un : aujourd'hui, hier, les sept derniers jours ou un jour choisi ;
 - **HIST-04** · les clips associes a un evenement doivent etre consultables quand ils existent ;
-- **HIST-17** · la video d'une detection dont la duree de conservation est echue ne s'affiche pas en panne : son lecteur dit qu'elle n'est plus conservee, en raison de la duree choisie (UC-HIST-02).
+- **HIST-17** · la video d'une detection dont la duree de conservation est echue ne s'affiche pas en panne : son lecteur dit qu'elle n'est plus conservee, en raison de la duree choisie (UC-HIST-02) ;
+- **HIST-18** · la page « Détections » porte en haut le même lecteur que la vue d'une caméra (UC-LIVE-01 A3), et en dessous les clips groupés par jour, les plus récents d'abord, chacun avec ce qui a été vu, que l'icône de son type fait reconnaître d'un coup d'œil, sa caméra et son heure ; un toucher lit le clip ; à sa fin, le clip suivant de la liste se lit de lui-même, d'un jour au précédent, sans commande pour le régler, et après le dernier le lecteur s'arrête sur sa dernière image ; les actions d'un clip sont dans son menu « ⋯ », et le filtre est une icône de la barre ;
+- **HIST-19** · un clip se télécharge depuis son menu, pour le conserver ou le partager hors de Vyzio ; le téléchargement se fait sur l'appareil qui consulte, sans passer par un service tiers (SEC-01).
 
 ## Points ouverts
 
-| # | Question | Effet tant qu'elle reste ouverte |
-| --- | --- | --- |
-| 1 | Comment l'utilisateur conserve-t-il ou partage-t-il un clip hors de Vyzio ? | L'objectif de récupérer un clip s'arrête à sa consultation |
+Aucun.

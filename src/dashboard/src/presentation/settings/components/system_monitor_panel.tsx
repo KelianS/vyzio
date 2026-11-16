@@ -1,0 +1,159 @@
+import { Activity } from 'lucide-react'
+import { useId, type ReactNode } from 'react'
+import { StatusMark } from '../../../common/components/status_mark'
+import {
+  markSubtitle,
+  StatusMarkKind,
+  type StatusMarkState,
+} from '../../../common/components/status_mark_state'
+import { SecondaryButton } from '../../../common/components/secondary_button'
+import { Surface } from '../../../common/components/surface'
+import { cn } from '../../../common/ui/utils'
+import { TECHNICAL_INTERFACE_PATH } from '../hardware_paths'
+import { TechnicalDetails } from '../../../common/components/technical_details'
+import { isStorageCritical, storageUsedRatio } from '../../../common/surveillance/storage'
+import type { Camera } from '../../../domain/entities/camera.entity'
+import type {
+  FrigateDetectorKind,
+  FrigateStatus,
+  SystemStats,
+} from '../../../domain/entities/system_stats.entity'
+
+// Running is the nominal state, its mark alone; the two others carry their word (UI-31).
+const STATUS_MARK: Record<FrigateStatus, StatusMarkState> = {
+  active: { kind: StatusMarkKind.On, label: 'En marche' },
+  restarting: { kind: StatusMarkKind.Off, label: 'Redémarrage…' },
+  unavailable: { kind: StatusMarkKind.Alert, label: 'Arrêtée' },
+}
+
+const DETECTOR_HARDWARE_LABEL: Record<FrigateDetectorKind, string> = {
+  edge_tpu: 'Accélérateur dédié',
+  openvino: 'Carte graphique',
+  cpu: 'Processeur',
+}
+
+type DegradedStatus = Exclude<FrigateStatus, 'active'>
+
+const DEGRADED_MESSAGE: Record<DegradedStatus, string> = {
+  restarting: 'Les mesures réapparaîtront d’elles-mêmes.',
+  unavailable: 'Aucune mesure tant que la surveillance ne tourne pas.',
+}
+
+/** Diagnosis link only makes sense when the state won't resolve on its own. */
+const DEGRADED_SHOWS_DIAGNOSIS: Record<DegradedStatus, boolean> = {
+  restarting: false,
+  unavailable: true,
+}
+
+export function SystemMonitorPanel({ stats, cameras }: { stats: SystemStats; cameras: Camera[] }) {
+  switch (stats.status) {
+    case 'restarting':
+    case 'unavailable':
+      return (
+        <Panel status={stats.status}>
+          <p className="mt-3 text-body text-muted-foreground">{DEGRADED_MESSAGE[stats.status]}</p>
+          {DEGRADED_SHOWS_DIAGNOSIS[stats.status] && (
+            <div className="mt-4">
+              <SecondaryButton icon={Activity} to={TECHNICAL_INTERFACE_PATH} size="sm">
+                Diagnostiquer
+              </SecondaryButton>
+            </div>
+          )}
+        </Panel>
+      )
+    case 'active':
+      break
+    default: {
+      const unreachable: never = stats.status
+      return unreachable
+    }
+  }
+
+  const usedRatio = stats.storage ? storageUsedRatio(stats.storage) : 0
+  const frameRates = receivedFrameRates(stats, cameras)
+
+  return (
+    <Panel status={stats.status}>
+      {stats.storage && (
+        <dl className="mt-3 text-body">
+          <dt className="text-muted-foreground">Espace disque</dt>
+          <dd>
+            <div className="mt-1 h-2 overflow-hidden rounded-full bg-muted">
+              <div
+                className={cn(
+                  'h-full rounded-full',
+                  isStorageCritical(stats.storage) ? 'bg-destructive' : 'bg-primary',
+                )}
+                style={{ width: `${Math.min(100, usedRatio * 100).toFixed(1)}%` }}
+              />
+            </div>
+            <span className="mt-1 block">
+              {stats.storage.freeGb} Go libres sur {stats.storage.totalGb} Go
+            </span>
+          </dd>
+        </dl>
+      )}
+
+      <TechnicalDetails>
+        <dl className="space-y-3">
+          <div>
+            <dt className="text-muted-foreground">Analyse des images</dt>
+            <dd>
+              {DETECTOR_HARDWARE_LABEL[stats.detection.hardware]} · {stats.detection.targetFps}{' '}
+              images par seconde
+            </dd>
+          </div>
+
+          {frameRates.length > 0 && (
+            <div>
+              <dt className="text-muted-foreground">Images reçues par seconde</dt>
+              <dd className="mt-1 space-y-0.5">
+                {frameRates.map(({ key, label, fps }) => (
+                  <span key={key} className="flex justify-between gap-3">
+                    <span className="min-w-0 truncate">{label}</span>
+                    <span className="tabular-nums">{FPS_FORMAT.format(fps)}</span>
+                  </span>
+                ))}
+              </dd>
+            </div>
+          )}
+        </dl>
+      </TechnicalDetails>
+    </Panel>
+  )
+}
+
+const FPS_FORMAT = new Intl.NumberFormat('fr', {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+})
+
+/** Rates come keyed by the engine's camera name; the user knows the name they gave (principle 2). */
+function receivedFrameRates(stats: SystemStats, cameras: Camera[]) {
+  const byEngineKey = new Map(cameras.map((camera) => [camera.frigateCameraName, camera]))
+  return stats.cameras.map(({ camera: engineKey, fps }) => ({
+    key: engineKey,
+    label: byEngineKey.get(engineKey)?.displayName ?? 'Caméra retirée ou renommée',
+    fps,
+  }))
+}
+
+function Panel({ status, children }: { status: FrigateStatus; children: ReactNode }) {
+  const titleId = useId()
+  return (
+    <Surface asChild>
+      <section aria-labelledby={titleId}>
+        <div className="flex items-center gap-2">
+          <h2 id={titleId} className="text-row font-semibold">
+            Surveillance
+          </h2>
+          <StatusMark {...STATUS_MARK[status]} />
+        </div>
+        {markSubtitle(STATUS_MARK[status]) && (
+          <p className="text-body text-muted-foreground">{markSubtitle(STATUS_MARK[status])}</p>
+        )}
+        {children}
+      </section>
+    </Surface>
+  )
+}

@@ -1,4 +1,4 @@
-import { HelpPanel } from '../components/help_panel'
+import { HelpNotes, HelpQuestion } from '../components/help_notes'
 
 /**
  * The same two questions on both retention screens (ADR-17) -- installation-wide and per camera --
@@ -6,21 +6,21 @@ import { HelpPanel } from '../components/help_panel'
  */
 export function RetentionHelp() {
   return (
-    <>
-      <HelpPanel title="Pourquoi la vidéo complète est-elle livrée à zéro ?">
+    <HelpNotes>
+      <HelpQuestion title="Pourquoi la vidéo complète est-elle livrée à zéro ?">
         <p>
           C’est la seule des trois dont le coût grandit avec le temps qui passe plutôt qu’avec ce
           qui se produit : une semaine sur quatre caméras dépasse les 50 Go. Les séquences de
-          mouvement couvrent le besoin courant — retrouver ce qui s’est passé — pour une fraction de
+          mouvement couvrent le besoin courant, retrouver ce qui s’est passé, pour une fraction de
           cette place.
         </p>
         <p>
           Activez-la sur une caméra précise si vous voulez pouvoir remonter le temps sans dépendre
           de ce que Vyzio a jugé être un mouvement.
         </p>
-      </HelpPanel>
+      </HelpQuestion>
 
-      <HelpPanel title="Quand la place est-elle vraiment libérée ?">
+      <HelpQuestion title="Quand la place est-elle vraiment libérée ?">
         <p>
           Pas dans la seconde. La surveillance reprend les nouvelles durées quelques secondes après
           l’enregistrement, mais le ménage se fait ensuite par passes : comptez jusqu’à une heure
@@ -28,10 +28,10 @@ export function RetentionHelp() {
         </p>
         <p>
           Raccourcir l’historique en sort aussi les détections plus anciennes, aperçu et vidéo
-          compris. Pour ne plus rien enregistrer d’une caméra, activez sa vie privée&nbsp;: les
-          vidéos déjà gardées restent jusqu’à la fin de leur durée de conservation.
+          compris. Pour ne plus rien enregistrer d’une caméra, coupez-la&nbsp;: les vidéos déjà
+          gardées restent jusqu’à la fin de leur durée de conservation.
         </p>
-      </HelpPanel>
-    </>
+      </HelpQuestion>
+    </HelpNotes>
   )
 }

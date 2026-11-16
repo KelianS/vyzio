@@ -1,5 +1,5 @@
-import type { ToastTone } from '../../common/components/toast'
-import { appErrorDiagnostic, appErrorMessage } from '../../common/errors/app_error'
+import type { Toast } from '../../common/components/toast'
+import { toastError } from '../../common/errors/app_error'
 import { toAppError } from '../../common/errors/to_app_error'
 import { latestOnly } from '../../common/presenter/latest_only'
 import type { AddCameraForm } from './add_camera.uido'
@@ -8,16 +8,10 @@ import type { CamerasContainer } from '../../infrastructure/providers/cameras.co
 import { reloadCameraList } from './camera_list_reload'
 import type { AddCameraAction } from './add_camera.actions'
 
-/** A failed call as the screen keeps it: its sentence and its diagnostic line. */
-function failureOf(e: unknown): { message: string; diagnostic?: string } {
-  const error = toAppError(e)
-  return { message: appErrorMessage(error), diagnostic: appErrorDiagnostic(error) }
-}
-
 export interface AddCameraPresenterContext {
   container: CamerasContainer
   dispatch: (action: AddCameraAction) => void
-  toast: (message: string, tone?: ToastTone, diagnostic?: string) => void
+  toast: Toast
 }
 
 export function buildAddCameraPresenter({ container, dispatch, toast }: AddCameraPresenterContext) {
@@ -46,16 +40,17 @@ export function buildAddCameraPresenter({ container, dispatch, toast }: AddCamer
       dispatch({ type: 'DISCOVERY_STARTED' })
       try {
         const candidates = await container.discoverCameras.execute()
-        dispatch({
-          type: 'DISCOVERY_SUCCEEDED',
-          candidates,
-          message:
-            candidates.length > 0
-              ? `${candidates.length} caméra(s) trouvée(s).`
-              : 'Aucune caméra trouvée sur le réseau.',
-        })
+        dispatch({ type: 'DISCOVERY_SUCCEEDED', candidates })
+        toast(
+          candidates.length === 0
+            ? 'Aucune caméra trouvée sur le réseau.'
+            : candidates.length === 1
+              ? '1 caméra trouvée.'
+              : `${candidates.length} caméras trouvées.`,
+        )
       } catch (e) {
-        dispatch({ type: 'DISCOVERY_FAILED', ...failureOf(e) })
+        dispatch({ type: 'DISCOVERY_FAILED' })
+        toastError(toast, toAppError(e))
       }
     },
 
@@ -68,22 +63,16 @@ export function buildAddCameraPresenter({ container, dispatch, toast }: AddCamer
         })
         const refreshed = candidates.find((c) => c.host === candidate.host)
         if (!refreshed) {
-          dispatch({
-            type: 'REFRESH_CANDIDATE_NO_CHANGE',
-            message: 'Rien de nouveau : la caméra répond comme avant.',
-          })
+          toast('Rien de nouveau : la caméra répond comme avant.')
           return
         }
-        dispatch({
-          type: 'REFRESH_CANDIDATE_SUCCEEDED',
-          index,
-          candidate: refreshed,
-          message: refreshed.stream
-            ? 'La caméra est maintenant joignable.'
-            : 'Informations mises à jour, mais la caméra n’est toujours pas joignable.',
-        })
+        dispatch({ type: 'REFRESH_CANDIDATE_SUCCEEDED', index, candidate: refreshed })
+        if (refreshed.stream) toast('La caméra est maintenant joignable.', 'success')
+        else toast('Informations mises à jour, mais la caméra n’est toujours pas joignable.')
       } catch (e) {
-        dispatch({ type: 'REFRESH_CANDIDATE_FAILED', ...failureOf(e) })
+        toastError(toast, toAppError(e))
+      } finally {
+        dispatch({ type: 'REFRESH_CANDIDATE_FINISHED' })
       }
     },
 
@@ -97,7 +86,8 @@ export function buildAddCameraPresenter({ container, dispatch, toast }: AddCamer
         toast(`« ${created.displayName} » ajoutée.`, 'success')
         return created.id
       } catch (e) {
-        dispatch({ type: 'CREATE_FAILED', ...failureOf(e) })
+        dispatch({ type: 'CREATE_FAILED' })
+        toastError(toast, toAppError(e))
         return null
       }
     },
@@ -118,7 +108,7 @@ export function buildAddCameraPresenter({ container, dispatch, toast }: AddCamer
         const ranges = await container.getDiscoveryRanges.execute()
         dispatch({ type: 'RANGES_TO_SWEEP_SUCCEEDED', ranges })
       } catch (e) {
-        dispatch({ type: 'RANGES_TO_SWEEP_FAILED', ...failureOf(e) })
+        dispatch({ type: 'RANGES_TO_SWEEP_FAILED', error: toAppError(e) })
       }
     },
 

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { act, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { appContainer } from '../../infrastructure/providers/app.container'
@@ -89,17 +89,50 @@ describe('AccessGate', () => {
     expect(await screen.findByText('Interface ouverte')).toBeInTheDocument()
   })
 
-  it('onLoad_ShouldSayVyzioDoesNotAnswerAndWhy_WhenTheStateCannotBeRead', async () => {
+  it('onLoad_ShouldFillTheScreenSayingVyzioDoesNotAnswer_WhenTheStateCannotBeRead', async () => {
     // Arrange
     fakeNetwork({ [STATE]: failure(500) })
+    renderGate()
+    await screen.findByRole('heading', { name: 'Vyzio ne répond pas' })
 
     // Act
-    renderGate()
+    await userEvent.click(screen.getByText('Détails techniques'))
 
     // Assert
-    expect(await screen.findByRole('heading', { name: 'Vyzio ne répond pas' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Réessayer' })).toBeEnabled()
     expect(screen.getByText(/Vyzio a rencontré une erreur/)).toBeVisible()
     expect(screen.getByText(/GET \/api\/access\/state · 500/)).toBeVisible()
+  })
+
+  it('onRetry_ShouldOpenTheInterfaceByItself_WhenVyzioAnswersAgain', async () => {
+    // Arrange
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const network = fakeNetwork({ [STATE]: failure(503) })
+    renderGate()
+    await screen.findByRole('heading', { name: 'Vyzio ne répond pas' })
+    network.answer(STATE, ok(installed))
+    network.answer(SESSION, ok(session))
+
+    // Act
+    await act(() => vi.advanceTimersByTimeAsync(5000))
+
+    // Assert
+    expect(await screen.findByText('Interface ouverte')).toBeInTheDocument()
+    vi.useRealTimers()
+  })
+
+  it('onRetry_ShouldKeepTheScreenWithoutABlank_WhenTheUserRetriesAndVyzioStillDoesNotAnswer', async () => {
+    // Arrange
+    const network = fakeNetwork({ [STATE]: failure(503) })
+    renderGate()
+    await screen.findByRole('heading', { name: 'Vyzio ne répond pas' })
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Réessayer' }))
+
+    // Assert
+    expect(screen.getByRole('heading', { name: 'Vyzio ne répond pas' })).toBeInTheDocument()
+    expect(network.sent.filter((request) => request.route === STATE)).toHaveLength(2)
   })
 
   it('onWatchSession_ShouldReturnToSignInSayingSo_WhenTheSessionEndsOnAnotherCall', async () => {

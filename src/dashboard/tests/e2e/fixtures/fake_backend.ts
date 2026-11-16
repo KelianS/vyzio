@@ -30,6 +30,7 @@ export interface FakeCamera {
   privacyStrategy: string
   /** Surveillance resumed by hand inside a Privacy range, and when the ranges end (PRIV-07). */
   privacyResume: { until: { dayOfWeek: number; time: string } | null } | null
+  privacyCutUntil: FakeHouseMoment | null
   verifiedCapabilities: string[]
   /** The live view's qualities (ADR-07). */
   liveQualities: string[]
@@ -168,6 +169,7 @@ export function makeFakeCamera(overrides: Partial<FakeCamera> = {}): FakeCamera 
     ptzSupported: false,
     privacyStrategy: 'software_blur',
     privacyResume: null,
+    privacyCutUntil: null,
     verifiedCapabilities: [],
     liveQualities: ['low', 'high'],
     detectedAt: '2026-01-01T00:00:00Z',
@@ -199,7 +201,6 @@ interface FakeCommandJournalEntry {
 export interface FakeChannelConfig {
   channel: string
   displayName: string
-  isEnabled: boolean
   isConfigured: boolean
   credentials: { field: string; secret: boolean; isSet: boolean; value: string | null }[]
   capabilities: {
@@ -249,7 +250,6 @@ export function makeFakeChannel(
   const base = unconfiguredChannel(channel)
   return {
     ...base,
-    isEnabled: true,
     isConfigured: true,
     credentials: base.credentials.map((credential) => ({ ...credential, isSet: true })),
     configuredAt: new Date().toISOString(),
@@ -261,7 +261,6 @@ function unconfiguredChannel(channel: string): FakeChannelConfig {
   return {
     channel,
     displayName: CHANNEL_CATALOGUE[channel].displayName,
-    isEnabled: false,
     isConfigured: false,
     credentials: CHANNEL_CATALOGUE[channel].credentials.map((credential) => ({
       ...credential,
@@ -316,6 +315,26 @@ function scheduleRefusal(body: Pick<FakeScheduleRule, 'targetIds' | 'startTime' 
   return null
 }
 
+/** A moment in the house's clock, as the API sends it (SCHED-03). */
+interface FakeHouseMoment {
+  at: string
+  dayOfWeek: number
+  time: string
+}
+
+interface FakeSilence {
+  active: boolean
+  until: FakeHouseMoment | null
+  scheduleNextChange: FakeHouseMoment | null
+}
+
+/** A house moment `minutes` from now, the house being in this machine's zone. */
+export function fakeHouseMomentIn(minutes: number): FakeHouseMoment {
+  const at = new Date(Date.now() + minutes * 60 * 1000)
+  const time = `${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}`
+  return { at: at.toISOString(), dayOfWeek: at.getDay(), time }
+}
+
 export interface FakeBackendState {
   cameras: FakeCamera[]
   /** Every live socket the interface opened, by address (ADR-07). */
@@ -331,6 +350,8 @@ export interface FakeBackendState {
   /** Saved settings that surveillance has not picked up yet (ADR-15). */
   pendingChanges: boolean
   restartFails: boolean
+  /** Set, every camera the user cuts or resumes misses as told, until asked again (PRIV-05). */
+  privacyMissOnToggle?: { miss: string; detail: string }
   /** The API itself breaks on the restart, instead of reporting a restart that did not take. */
   restartBreaks: boolean
   scheduleRules: FakeScheduleRule[]
@@ -352,6 +373,10 @@ export interface FakeBackendState {
   /** A linked conversation, where a test needs one; none means nothing is linked. */
   channelPairing: Record<string, FakeChannelPairing>
   commandJournal: Record<string, FakeCommandJournalEntry[]>
+  /** The household's Silence (NOTIF-33), and when the mute ranges next change; none by default. */
+  silence: FakeSilence
+  /** When the privacy ranges next change, the cut sheet's « Jusqu'à » option (PRIV-22); none by default. */
+  camerasCutNextChange: FakeHouseMoment | null
   /** The cameras each person is restricted to, by profile id; none means every camera. */
   profileCameraLinks: Record<string, string[]>
   detectionHistory: FakeDetectionEvent[]
@@ -448,6 +473,8 @@ export function createFakeBackendState(
     channelListening: {},
     channelPairing: {},
     commandJournal: {},
+    silence: { active: false, until: null, scheduleNextChange: null },
+    camerasCutNextChange: null,
     profileCameraLinks: {},
     detectionHistory: [],
     clipsGone: [],
@@ -787,9 +814,8 @@ export async function installFakeBackend(
         profiles: state.profiles,
         // Counted from the channels set up, so the hub and the Notifications screen tell the same story.
         notifications: {
-          activeChannels: Object.values(state.notificationChannels).filter(
-            (c) => c.isEnabled && c.isConfigured,
-          ).length,
+          activeChannels: Object.values(state.notificationChannels).filter((c) => c.isConfigured)
+            .length,
           sentCount: 0,
           lastSentAt: null,
         },
@@ -913,12 +939,39 @@ export async function installFakeBackend(
       const ids = (postData?.cameraIds as string[]) ?? []
       const active = Boolean(postData?.active)
       state.cameras = state.cameras.map((c) =>
-        ids.includes(c.id) ? { ...c, privacyModeActive: active } : c,
+        ids.includes(c.id)
+          ? {
+              ...c,
+              privacyModeActive: active,
+              privacyCutUntil: null,
+              privacyMiss: state.privacyMissOnToggle?.miss ?? null,
+              privacyMissDetail: state.privacyMissOnToggle?.detail ?? null,
+            }
+          : c,
       )
       return json(
         route,
         state.cameras.filter((c) => ids.includes(c.id)),
       )
+    }
+    // Like the real one: every camera, until the chosen end or until resumed (PRIV-22).
+    if (path === '/api/cameras/privacy/cut') {
+      if (method === 'PUT') {
+        const until =
+          typeof postData?.until === 'string'
+            ? (state.camerasCutNextChange ?? fakeHouseMomentIn(60))
+            : postData?.minutes === undefined
+              ? null
+              : fakeHouseMomentIn(Number(postData.minutes))
+        state.cameras = state.cameras.map((c) => ({
+          ...c,
+          privacyModeActive: true,
+          privacyModeSource: 'manual',
+          privacyCutUntil: until,
+        }))
+        return json(route, state.cameras)
+      }
+      return json(route, { scheduleNextChange: state.camerasCutNextChange })
     }
 
     const cameraMatch = path.match(/^\/api\/cameras\/([^/]+)(\/.*)?$/)
@@ -970,6 +1023,11 @@ export async function installFakeBackend(
           lastReachabilityCheckAt: new Date().toISOString(),
           lastSuccessfulFrameAt: new Date().toISOString(),
         })
+      }
+      // Asked again, the fake camera follows: its last miss goes.
+      if (rest === '/privacy/retry' && method === 'POST') {
+        if (camera) Object.assign(camera, { privacyMiss: null, privacyMissDetail: null })
+        return json(route, camera)
       }
       if (rest === '/privacy/toggle' && method === 'POST') {
         if (camera) camera.privacyModeActive = Boolean(postData?.active)
@@ -1267,8 +1325,9 @@ export async function installFakeBackend(
     // --- Detection labels ---
     if (path === '/api/detection-labels/camera' || path === '/api/detection-labels/notifications') {
       return json(route, [
-        { value: 'person', displayName: 'Personne', emoji: '🧑' },
-        { value: 'car', displayName: 'Voiture', emoji: '🚗' },
+        { value: 'person', displayName: 'Personne' },
+        { value: 'car', displayName: 'Voiture' },
+        { value: 'dog', displayName: 'Chien' },
       ])
     }
 
@@ -1385,7 +1444,6 @@ export async function installFakeBackend(
             channel,
             displayName: CHANNEL_CATALOGUE[channel].displayName,
             isConfigured: config?.isConfigured ?? false,
-            isEnabled: config?.isEnabled ?? false,
             acceptsCommands: true,
           }
         }),
@@ -1414,7 +1472,6 @@ export async function installFakeBackend(
         })
         const config: FakeChannelConfig = {
           ...existing,
-          isEnabled: Boolean(postData?.isEnabled),
           credentials,
           isConfigured: credentials.every((credential) => credential.isSet),
           minimumConfidence: (postData?.minimumConfidence as number) ?? existing.minimumConfidence,
@@ -1431,6 +1488,20 @@ export async function installFakeBackend(
         delete state.notificationChannels[channel]
         return json(route, true)
       }
+    }
+    // Like the real one: every answer is the whole state, the stop included (NOTIF-34).
+    if (path === '/api/notifications/silence') {
+      if (method === 'PUT') {
+        const until =
+          typeof postData?.until === 'string'
+            ? (state.silence.scheduleNextChange ?? fakeHouseMomentIn(60))
+            : postData?.minutes === undefined
+              ? null
+              : fakeHouseMomentIn(Number(postData.minutes))
+        state.silence = { ...state.silence, active: true, until }
+      }
+      if (method === 'DELETE') state.silence = { ...state.silence, active: false, until: null }
+      return json(route, state.silence)
     }
     if (path.startsWith('/api/notifications/log/') && method === 'GET') {
       return json(route, [])
@@ -1472,18 +1543,23 @@ export async function installFakeBackend(
     // --- Detection history ---
     if (path === '/api/detection-events/history' && method === 'GET') {
       const limit = Number(url.searchParams.get('limit') ?? '20')
-      const label = url.searchParams.get('label')
-      const camera = url.searchParams.get('camera')
-      const profileId = url.searchParams.get('profileId')
+      // Each axis repeats its parameter, one value at a time; an event matches any of them.
+      const labels = url.searchParams.getAll('label')
+      const cameras = url.searchParams.getAll('camera')
+      const profileIds = url.searchParams.getAll('profileId')
       const from = url.searchParams.get('from')
       const to = url.searchParams.get('to')
       // The cursor is the last returned detection's date, in milliseconds (ADR-12).
       const cursor = url.searchParams.get('cursor')
 
       const matching = state.detectionHistory
-        .filter((event) => !label || event.label === label)
-        .filter((event) => !camera || event.camera.includes(camera))
-        .filter((event) => !profileId || event.profileId === profileId)
+        .filter((event) => labels.length === 0 || labels.includes(event.label))
+        .filter((event) => cameras.length === 0 || cameras.includes(event.camera))
+        .filter(
+          (event) =>
+            profileIds.length === 0 ||
+            (event.profileId !== null && profileIds.includes(event.profileId)),
+        )
         .filter((event) => !from || Date.parse(event.occurredAt) >= Date.parse(from))
         .filter((event) => !to || Date.parse(event.occurredAt) <= Date.parse(to))
         .filter((event) => !cursor || Date.parse(event.occurredAt) < Number(cursor))
@@ -1511,6 +1587,10 @@ export async function installFakeBackend(
     const clipMatch = path.match(/^\/api\/detection-events\/([^/]+)\/clip$/)
     if (clipMatch && method === 'GET' && state.clipsGone.includes(clipMatch[1])) {
       return problem(route, 404, 'not_found')
+    }
+    // Any other clip plays the entrance scene, the one the live picture shows.
+    if (clipMatch && method === 'GET') {
+      return route.fulfill({ status: 200, contentType: 'video/mp4', body: LIVE_CLIP })
     }
     const mediaMatch = path.match(/^\/api\/detection-events\/([^/]+)\/(thumbnail|snapshot)$/)
     if (mediaMatch && method === 'GET') {

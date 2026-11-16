@@ -7,12 +7,7 @@ import { useAppContainer } from '../../infrastructure/providers/app_container.co
 import { buildRestartSurveillancePresenter } from '../surveillance/restart_surveillance.presenter'
 import { useRestartState } from '../surveillance/use_restart_state'
 import { isLiveViewPath } from '../live_view/live_view.route'
-
-const SETTINGS_ROOT = '/settings'
-
-function isSettings(pathname: string) {
-  return pathname === SETTINGS_ROOT || pathname.startsWith(`${SETTINGS_ROOT}/`)
-}
+import { isSettingsPath } from '../settings/settings.rubrics'
 
 /**
  * The only navigation guard in the application.
@@ -36,9 +31,9 @@ export function NavigationGuard() {
     if (currentLocation.pathname === nextLocation.pathname) return false
     // Read at the moment of leaving: a page that just saved and leaves has not re-rendered the guard yet.
     if (useRootStore.getState().unsavedChanges) return true
-    // Driving the camera from its page is a detour, not leaving the settings (LIVE-07).
-    const leaving = !isSettings(nextLocation.pathname) && !isLiveViewPath(nextLocation.pathname)
-    return pending && isSettings(currentLocation.pathname) && leaving
+    // Driving the camera from its page is a detour, not leaving the settings (LIVE-19).
+    const leaving = !isSettingsPath(nextLocation.pathname) && !isLiveViewPath(nextLocation.pathname)
+    return pending && isSettingsPath(currentLocation.pathname) && leaving
   })
 
   // The block outlives its cause - typically a save in the meantime - and would
@@ -79,7 +74,7 @@ export function NavigationGuard() {
         void presenter.onRestart()
         blocker.proceed?.()
       }}
-      // Both answers let through: the gap is allowed, and the trigger stays in the header.
+      // Both answers let through: the gap is allowed, and the settings bar keeps the trigger (UI-28).
       onCancel={() => blocker.proceed?.()}
     />
   )

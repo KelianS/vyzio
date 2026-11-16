@@ -33,7 +33,7 @@
 
 ### A1 · Surcharger une durée pour une caméra
 
-1. Le propriétaire surcharge une durée sur l'onglet « Conservation » de la caméra (CAM-03) ; l'écran dit laquelle des deux portées s'applique (HIST-06, UI-08).
+1. Le propriétaire surcharge une durée sur l'onglet « Conservation » de la caméra (CAM-61) ; l'écran dit laquelle des deux portées s'applique (HIST-06, UI-08).
 2. Le chemin reprend à N1, pas 2.
 
 ### A2 · Activer l'enregistrement de la vidéo complète
@@ -47,7 +47,7 @@
 
 ## Règles locales
 
-- **HIST-06** · une duree de retention doit valoir pour toute l'installation par defaut, et rester surchargeable camera par camera ; une camera qui ne surcharge rien suit l'installation, et l'interface doit rendre visible lequel des deux s'applique ;
+- **HIST-06** · une duree de retention doit valoir pour toute l'installation par defaut, et rester surchargeable camera par camera ; une camera qui ne surcharge rien suit l'installation, et l'interface doit rendre visible lequel des deux s'applique ; une duree de l'installation qui s'ecarte de la valeur livree, recommandee, offre d'y revenir ;
 - **HIST-07** · l'enregistrement de la video complete doit rester un choix explicite, et l'ordre de grandeur de sa consommation disque doit etre annonce avant activation ;
 - **HIST-16** · la retention doit etre configurable, sur trois natures d'enregistrement distinctes : la video complete, les portions ou l'image bouge, et les clips rattaches a une detection ; chacune a sa propre duree ; une duree nulle signifie que rien n'est conserve pour la video complete ou les portions ou l'image bouge ; les clips rattaches a une detection, qui font l'historique, sont gardes au moins un jour, et l'ecran le dit avant la saisie ; ne plus garder de nouvelle video d'une camera se fait par le mode vie privee (PRIV-13), qui arrete les nouveaux enregistrements sans effacer les clips deja gardes, toujours soumis a ce minimum d'un jour ;
 - **HIST-09** · le systeme doit supprimer automatiquement les donnees arrivees au terme de retention.

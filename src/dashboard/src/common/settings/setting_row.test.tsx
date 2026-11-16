@@ -176,6 +176,30 @@ describe('SettingRow control', () => {
 })
 
 describe('SettingRow anatomy', () => {
+  it.each([
+    { kind: 'number', nature: { kind: 'number', unit: 'jours' }, value: 7 },
+    { kind: 'toggle', nature: { kind: 'toggle' }, value: true },
+  ] as const)(
+    'SettingRow_ShouldPutTheControlBesideTheName_WhenTheControlIsShort ($kind)',
+    ({ nature, value }) => {
+      // Arrange & Act
+      const { container } = render(<SettingRow setting={declare({ nature, value })} />)
+
+      // Assert
+      expect(container.firstElementChild?.className).toContain('grid-cols-[minmax(0,1fr)_auto]')
+    },
+  )
+
+  it('SettingRow_ShouldPutTheControlUnderTheName_WhenTheControlIsLong', () => {
+    // Arrange & Act
+    const { container } = render(
+      <SettingRow setting={declare({ nature: { kind: 'text' }, value: 'Salon' })} />,
+    )
+
+    // Assert
+    expect(container.firstElementChild?.className).toContain('grid-cols-1')
+  })
+
   it('SettingRow_ShouldKeepTheHelpBehindATrigger_WhenHelpIsDeclared', () => {
     // Arrange & Act
     render(<SettingRow setting={declare({ help: 'Explication longue.' })} />)
@@ -203,55 +227,90 @@ describe('SettingRow anatomy', () => {
     expect(screen.getByText('Compter 1 à 3 Go par jour.')).toBeInTheDocument()
   })
 
-  it('SettingRow_ShouldOfferNothingToUndo_WhenTheValueIsInherited', () => {
+  it('SettingRow_ShouldMarkTheValueWithAClosedLockAndOfferNoWayBack_WhenItIsInherited', () => {
     // Arrange & Act
     render(
       <SettingRow
         setting={declare({
           nature: { kind: 'number', unit: 'jours' },
           value: 7,
-          provenance: {
-            following: true,
-            fallbackLabel: '7 jours',
-            revertLabel: 'Revenir à la valeur d’origine',
-            onRevert: vi.fn(),
-          },
+          inherits: { inherited: true, valueLabel: '7 jours', onRevert: vi.fn() },
         })}
       />,
     )
 
     // Assert
+    expect(screen.getByRole('img', { name: 'Valeur de l’ensemble' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /revenir/i })).not.toBeInTheDocument()
-    // Dimmed for as long as it follows: provenance reads from how the value looks,
-    // not from a caption repeated under every row.
-    expect(screen.getByRole('spinbutton').className).toContain('text-muted-foreground')
   })
 
-  it('SettingRow_ShouldNameWhatTheUndoRestores_WhenTheValueIsTheLevelsOwn', () => {
+  it('SettingRow_ShouldOfferAnOpenLockNamingWhatItRestores_WhenTheValueIsSetHere', () => {
     // Arrange & Act
     render(
       <SettingRow
         setting={declare({
           nature: { kind: 'number', unit: 'jours' },
           value: 30,
-          provenance: {
-            following: false,
-            fallbackLabel: '7 jours',
-            revertLabel: 'Revenir à la valeur d’origine',
-            onRevert: vi.fn(),
-          },
+          inherits: { inherited: false, valueLabel: '7 jours', onRevert: vi.fn() },
         })}
       />,
     )
 
     // Assert
-    // Names the restored value rather than announcing a reset.
     expect(
-      screen.getAllByRole('button', { name: 'Revenir à la valeur d’origine : 7 jours' }).length,
-    ).toBeGreaterThan(0)
+      screen.getByRole('button', { name: 'Revenir à la valeur de l’ensemble (7 jours)' }),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('img', { name: 'Valeur de l’ensemble' })).not.toBeInTheDocument()
   })
 
-  it('SettingRow_ShouldRestoreTheInheritedValue_WhenTheUserClicksTheUndo', async () => {
+  it('SettingRow_ShouldShowNoLock_WhenTheValueHasNoParent', () => {
+    // Arrange & Act
+    render(
+      <SettingRow setting={declare({ nature: { kind: 'number', unit: 'jours' }, value: 7 })} />,
+    )
+
+    // Assert
+    expect(screen.queryByRole('img', { name: 'Valeur de l’ensemble' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /revenir/i })).not.toBeInTheDocument()
+  })
+
+  it('SettingRow_ShouldShowNothingBesideTheField_WhenTheValueIsTheRecommendedOne', () => {
+    // Arrange & Act
+    render(
+      <SettingRow
+        setting={declare({
+          nature: { kind: 'number', unit: 'jours' },
+          value: 7,
+          recommended: { atRecommendation: true, valueLabel: '7 jours', onRevert: vi.fn() },
+        })}
+      />,
+    )
+
+    // Assert
+    expect(screen.queryByRole('button', { name: /revenir/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('img', { name: 'Valeur de l’ensemble' })).not.toBeInTheDocument()
+  })
+
+  it('SettingRow_ShouldOfferARevertNamingTheRecommendedValueWithoutALock_WhenTheValueDiffers', () => {
+    // Arrange & Act
+    render(
+      <SettingRow
+        setting={declare({
+          nature: { kind: 'number', unit: 'jours' },
+          value: 30,
+          recommended: { atRecommendation: false, valueLabel: '7 jours', onRevert: vi.fn() },
+        })}
+      />,
+    )
+
+    // Assert
+    expect(
+      screen.getByRole('button', { name: 'Revenir à la valeur recommandée (7 jours)' }),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('img', { name: 'Valeur de l’ensemble' })).not.toBeInTheDocument()
+  })
+
+  it('SettingRow_ShouldGoBackToTheRecommendedValue_WhenTheRevertIsTapped', async () => {
     // Arrange
     const onRevert = vi.fn()
     render(
@@ -259,24 +318,78 @@ describe('SettingRow anatomy', () => {
         setting={declare({
           nature: { kind: 'number', unit: 'jours' },
           value: 30,
-          provenance: {
-            following: false,
-            fallbackLabel: '7 jours',
-            revertLabel: 'Revenir à la valeur d’origine',
-            onRevert,
+          recommended: { atRecommendation: false, valueLabel: '7 jours', onRevert },
+        })}
+      />,
+    )
+
+    // Act
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Revenir à la valeur recommandée (7 jours)' }),
+    )
+
+    // Assert
+    expect(onRevert).toHaveBeenCalledOnce()
+  })
+
+  it('SettingRow_ShouldSayNoProvenanceUnderTheName_WhenTheValueIsInherited', () => {
+    // Arrange & Act
+    const { container } = render(
+      <SettingRow
+        setting={declare({
+          nature: { kind: 'number', unit: 'jours' },
+          value: 7,
+          inherits: {
+            inherited: true,
+            valueLabel: '7 jours',
+            onRevert: vi.fn(),
           },
         })}
       />,
     )
-    const [revert] = screen.getAllByRole('button', {
-      name: 'Revenir à la valeur d’origine : 7 jours',
-    })
-
-    // Act
-    await userEvent.click(revert)
 
     // Assert
-    expect(onRevert).toHaveBeenCalled()
+    // A list reads as names: the lock says it, never a nominal subtitle.
+    expect(container.querySelectorAll('p')).toHaveLength(0)
+  })
+
+  it('SettingRow_ShouldReadTheValueInFullInk_WhenItIsInherited', () => {
+    // Arrange & Act
+    render(
+      <SettingRow
+        setting={declare({
+          nature: { kind: 'number', unit: 'jours' },
+          value: 7,
+          inherits: { inherited: true, valueLabel: '7 jours', onRevert: vi.fn() },
+        })}
+      />,
+    )
+
+    // Assert
+    // A greyed value reads as a placeholder: the lock says the inheritance, never the ink.
+    expect(screen.getByRole('spinbutton')).not.toHaveClass('text-muted-foreground')
+  })
+
+  it('SettingRow_ShouldRestoreTheInheritedValue_WhenTheUserTapsTheOpenLock', async () => {
+    // Arrange
+    const onRevert = vi.fn()
+    render(
+      <SettingRow
+        setting={declare({
+          nature: { kind: 'number', unit: 'jours' },
+          value: 30,
+          inherits: { inherited: false, valueLabel: '7 jours', onRevert },
+        })}
+      />,
+    )
+
+    // Act
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Revenir à la valeur de l’ensemble (7 jours)' }),
+    )
+
+    // Assert
+    expect(onRevert).toHaveBeenCalledOnce()
   })
 })
 

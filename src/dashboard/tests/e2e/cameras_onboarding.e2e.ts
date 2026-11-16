@@ -29,7 +29,7 @@ test.describe('AddCameraView', () => {
   }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [] }))
 
-    await page.goto('/settings/cameras/ajout')
+    await page.goto('/settings/cameras/add')
     await expect(page.getByRole('heading', { name: 'Ajouter une caméra' })).toBeVisible()
 
     // The cost of the search and every range it will sweep are announced before starting it (ADR-05).
@@ -48,12 +48,12 @@ test.describe('AddCameraView', () => {
     await expect(page.getByRole('textbox', { name: 'Nom' })).toHaveValue('Caméra détectée')
     await expect(page.getByRole('textbox', { name: 'Chemin du flux' })).toHaveCount(0)
     await expect(page.getByRole('button', { name: 'Vérifier la connexion' })).toHaveCount(0)
-    await page.getByRole('textbox', { name: 'Identifiant' }).fill('viewer')
-    await page.getByLabel('Mot de passe').fill('not-a-real-secret')
-    await page.getByRole('button', { name: 'Ajouter la caméra' }).click()
+    await page.getByRole('textbox', { name: 'Identifiant de la caméra' }).fill('viewer')
+    await page.getByLabel('Mot de passe de la caméra').fill('not-a-real-secret')
+    await page.getByRole('button', { name: 'Ajouter', exact: true }).click()
 
     // Adding opens the camera's page, which detects it on arrival (ADR-04).
-    await expect(page).toHaveURL(/\/settings\/cameras\/camera-\d+\/connexion$/)
+    await expect(page).toHaveURL(/\/settings\/cameras\/camera-\d+\/connection$/)
     // The page says what detection found, in plain words, and keeps it on screen.
     await expect(
       page.getByText('Détection terminée : le flux vidéo de la caméra fonctionne.'),
@@ -62,9 +62,9 @@ test.describe('AddCameraView', () => {
       .getByRole('list', { name: 'Capacités' })
       .getByRole('listitem')
       .filter({ hasText: 'Flux vidéo' })
-    await expect(stream.getByText('Fonctionne')).toBeVisible()
+    await expect(stream.getByRole('img', { name: 'Fonctionne' })).toBeVisible()
     // Its stream works, but it stays to set up until the restart takes it in (ADR-04).
-    await expect(page.getByText('À configurer')).toBeVisible()
+    await expect(page.getByRole('img', { name: 'À configurer' })).toBeVisible()
     await expect(page.getByRole('button', { name: /Appliquer les changements/ })).toBeVisible()
   })
 
@@ -79,23 +79,23 @@ test.describe('AddCameraView', () => {
         protocols: [makeFakeProtocol({ status: 'unreachable' })],
       }),
     )
-    await page.goto('/settings/cameras/ajout')
+    await page.goto('/settings/cameras/add')
 
-    await page.getByRole('button', { name: 'Saisir l’adresse moi-même' }).click()
+    await page.getByRole('button', { name: 'Saisir son adresse' }).click()
     await page.getByRole('textbox', { name: 'Nom' }).fill('Garage')
     await page.getByRole('textbox', { name: 'Adresse' }).fill('192.168.1.90')
-    await page.getByRole('button', { name: 'Ajouter la caméra' }).click()
+    await page.getByRole('button', { name: 'Ajouter', exact: true }).click()
 
     // Nothing answers at that address: the page says so, never that detection simply finished.
     await expect(page.getByText(/^Rien ne répond à cette adresse/)).toBeVisible()
     // The page header first, then the stream card, each saying it with its own meaning.
-    await expect(page.getByText('À configurer').first()).toBeVisible()
+    await expect(page.getByRole('img', { name: 'À configurer' }).first()).toBeVisible()
     // No restart: the camera stays out of surveillance until its stream works.
     await expect(page.getByRole('button', { name: /Appliquer les changements/ })).toHaveCount(0)
 
     await page.goto('/')
     await page.getByRole('link', { name: 'À configurer : Garage' }).click()
-    await expect(page).toHaveURL(/\/settings\/cameras\/camera-\d+\/connexion$/)
+    await expect(page).toHaveURL(/\/settings\/cameras\/camera-\d+\/connection$/)
   })
 
   test('AddCameraView_ShouldAddACameraOverDvripDirectly_WhenItsStreamIsReadyOverDvripOnly', async ({
@@ -106,27 +106,27 @@ test.describe('AddCameraView', () => {
     await page.route('**/api/cameras/discovery', (route) =>
       route.fulfill({ json: [dvripOnlyCandidate] }),
     )
-    await page.goto('/settings/cameras/ajout')
+    await page.goto('/settings/cameras/add')
 
     await page.getByRole('button', { name: 'Rechercher sur le réseau' }).click()
     await page.getByRole('alertdialog').getByRole('button', { name: 'Rechercher' }).click()
 
     const candidate = page.getByRole('button', { name: /Caméra ICSee/ })
-    await expect(candidate).toContainText('Prête')
+    await expect(candidate).not.toContainText('À préparer')
     await candidate.click()
 
     await expect(page.getByRole('textbox', { name: 'Nom' })).toHaveValue('Caméra ICSee')
-    await page.getByRole('button', { name: 'Ajouter la caméra' }).click()
+    await page.getByRole('button', { name: 'Ajouter', exact: true }).click()
 
-    await expect(page).toHaveURL(/\/settings\/cameras\/camera-\d+\/connexion$/)
+    await expect(page).toHaveURL(/\/settings\/cameras\/camera-\d+\/connection$/)
   })
 
   test('AddCameraView_ShouldOfferManualEntry_WhenNoSearchHasRun', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [] }))
-    await page.goto('/settings/cameras/ajout')
+    await page.goto('/settings/cameras/add')
 
     // Manual entry is offered right away, without having to search first.
-    await page.getByRole('button', { name: 'Saisir l’adresse moi-même' }).click()
+    await page.getByRole('button', { name: 'Saisir son adresse' }).click()
     await expect(page.getByRole('textbox', { name: 'Nom' })).toBeVisible()
     await expect(page.getByRole('textbox', { name: 'Adresse' })).toBeVisible()
     await expect(page.getByRole('spinbutton', { name: 'Port' })).toHaveCount(0)
@@ -136,36 +136,37 @@ test.describe('AddCameraView', () => {
     page,
   }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [] }))
-    await page.goto('/settings/cameras/ajout')
+    await page.goto('/settings/cameras/add')
 
-    await page.getByRole('button', { name: 'Saisir l’adresse moi-même' }).click()
+    await page.getByRole('button', { name: 'Saisir son adresse' }).click()
+    await page.getByText('Où trouver ces identifiants').click()
     await page.getByRole('combobox', { name: 'Marque' }).click()
     await page.getByRole('option', { name: 'V380 PRO' }).click()
 
     await expect(page.getByText('Créez le compte caméra dans l’application')).toBeVisible()
   })
 
-  test('AddCameraView_ShouldFoldTheListAndLetItReopen_WhenTheUserChoosesACamera', async ({
+  test('AddCameraView_ShouldAskTheAccessThenReturnToTheList_WhenTheUserChoosesACameraThenGoesBack', async ({
     page,
   }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [] }))
-    await page.goto('/settings/cameras/ajout')
+    await page.goto('/settings/cameras/add')
 
     await page.getByRole('button', { name: 'Rechercher sur le réseau' }).click()
     await page.getByRole('alertdialog').getByRole('button', { name: 'Rechercher' }).click()
 
     // Readiness reads without opening; an unrecognised vendor shows nothing (#274).
     const candidate = page.getByRole('button', { name: /Caméra détectée/ })
-    await expect(candidate).toContainText('Prête')
+    await expect(candidate).not.toContainText('À préparer')
     await expect(candidate).not.toContainText('Marque')
 
     await candidate.click()
 
-    // Folded, the list makes room for the access - on a phone it used to push it out of sight.
+    // The access is its own step: the list gives way to it (CAM-62).
     await expect(candidate).toHaveCount(0)
     await expect(page.getByRole('textbox', { name: 'Nom' })).toBeVisible()
 
-    await page.getByRole('button', { name: 'Changer' }).click()
+    await page.getByRole('button', { name: 'Retour' }).click()
     await expect(candidate).toBeVisible()
     await expect(page.getByRole('textbox', { name: 'Nom' })).toHaveCount(0)
   })
@@ -178,13 +179,13 @@ test.describe('AddCameraView', () => {
       page,
       createFakeBackendState({ cameras: [makeFakeCamera({ host: '192.168.1.77' })] }),
     )
-    await page.goto('/settings/cameras/ajout')
+    await page.goto('/settings/cameras/add')
 
     await page.getByRole('button', { name: 'Rechercher sur le réseau' }).click()
     await page.getByRole('alertdialog').getByRole('button', { name: 'Rechercher' }).click()
 
     // The search did happen - it is its result that is set aside.
-    await expect(page.getByText('1 caméra(s) trouvée(s).')).toBeVisible()
+    await expect(page.getByText('1 caméra trouvée.')).toBeVisible()
     await expect(page.getByRole('button', { name: /Caméra détectée/ })).toHaveCount(0)
   })
 })

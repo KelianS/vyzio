@@ -71,7 +71,7 @@ public class GetProfileDetectionEventsUseCaseTests : DetectionReadTestBase
 
         Assert.Single(result);
         await Events.Received(1).QueryAsync(
-            Arg.Is<FrigateDetectionQuery>(query => query.Identity == "Alice" && query.Limit == 5),
+            Arg.Is<FrigateDetectionQuery>(query => string.Join(',', query.Identities!) == "Alice" && query.Limit == 5),
             Arg.Any<CancellationToken>());
     }
 
@@ -138,15 +138,66 @@ public class GetDetectionHistoryUseCaseTests : DetectionReadTestBase
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldFilterOnTheNameFrigateRecognizes_WhenAProfileFilterIsGiven()
+    public async Task ExecuteAsync_ShouldFilterOnTheNamesFrigateRecognizes_WhenSeveralPeopleAreAsked()
     {
-        var profile = new Profile { Name = "Alice" };
-        Profiles.GetByIdAsync(profile.Id, Arg.Any<CancellationToken>()).Returns(profile);
+        // Arrange
+        var alice = new Profile { Name = "Alice" };
+        var bob = new Profile { Name = "Bob" };
+        Profiles.GetByIdAsync(alice.Id, Arg.Any<CancellationToken>()).Returns(alice);
+        Profiles.GetByIdAsync(bob.Id, Arg.Any<CancellationToken>()).Returns(bob);
 
-        await CreateSut().ExecuteAsync(new DetectionHistoryQuery(ProfileId: profile.Id));
+        // Act
+        await CreateSut().ExecuteAsync(new DetectionHistoryQuery(ProfileIds: [alice.Id, bob.Id]));
 
+        // Assert
         await Events.Received(1).QueryAsync(
-            Arg.Is<FrigateDetectionQuery>(query => query.Identity == "Alice"),
+            Arg.Is<FrigateDetectionQuery>(query => string.Join(',', query.Identities!) == "Alice,Bob"),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldKeepThePeopleStillKnown_WhenOneOfThoseAskedIsGone()
+    {
+        // Arrange
+        var alice = new Profile { Name = "Alice" };
+        Profiles.GetByIdAsync(alice.Id, Arg.Any<CancellationToken>()).Returns(alice);
+        Profiles.GetByIdAsync("profile-404", Arg.Any<CancellationToken>()).Returns((Profile?)null);
+
+        // Act
+        await CreateSut().ExecuteAsync(new DetectionHistoryQuery(ProfileIds: [alice.Id, "profile-404"]));
+
+        // Assert
+        await Events.Received(1).QueryAsync(
+            Arg.Is<FrigateDetectionQuery>(query => string.Join(',', query.Identities!) == "Alice"),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldAnswerAnEmptyPageWithoutAskingFrigate_WhenEveryPersonAskedIsGone()
+    {
+        // Arrange
+        Profiles.GetByIdAsync("profile-404", Arg.Any<CancellationToken>()).Returns((Profile?)null);
+
+        // Act
+        var page = await CreateSut().ExecuteAsync(new DetectionHistoryQuery(ProfileIds: ["profile-404"]));
+
+        // Assert
+        Assert.Empty(page.Items);
+        await Events.DidNotReceive().QueryAsync(Arg.Any<FrigateDetectionQuery>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldAskFrigateForEveryCameraAndType_WhenSeveralAreAsked()
+    {
+        // Act
+        await CreateSut().ExecuteAsync(
+            new DetectionHistoryQuery(Cameras: ["front_door", "garage"], Labels: ["car", "dog"]));
+
+        // Assert
+        await Events.Received(1).QueryAsync(
+            Arg.Is<FrigateDetectionQuery>(query =>
+                string.Join(',', query.Cameras!) == "front_door,garage"
+                && string.Join(',', query.Labels!) == "car,dog"),
             Arg.Any<CancellationToken>());
     }
 }

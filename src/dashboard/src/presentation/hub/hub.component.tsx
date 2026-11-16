@@ -1,46 +1,57 @@
-import { useEffect, useReducer, useState, type ReactNode } from 'react'
+import { useEffect, useReducer } from 'react'
 import { Link } from 'react-router'
-import { Bell, Eye, EyeOff, History, Settings2, TriangleAlert } from 'lucide-react'
+import { Bell, ChevronRight, History, Plus } from 'lucide-react'
 import type { AppError } from '../../common/errors/app_error'
-import { ErrorMessage, ReadFailure } from '../../common/components/error_message'
+import { ReadFailure } from '../../common/components/error_message'
 import { Button } from '../../common/ui/button'
-import { SecondaryButton } from '../../common/components/secondary_button'
-import { cn } from '../../common/ui/utils'
-import { ConfirmModal } from '../../common/components/confirm_modal'
-import { Overlay } from '../../common/components/overlay'
-import { SurveillanceEntry, surveillanceEntryOf } from '../../common/camera/camera_status'
-import { CameraLiveThumbnail } from '../../common/components/camera_live_thumbnail'
+import { Surface } from '../../common/components/surface'
+import { Loading } from '../../common/components/loading'
+import { Skeleton } from '../../common/ui/skeleton'
+import { CameraCard } from '../../common/components/camera_card'
+import { PressableSurface } from '../../common/components/pressable'
 import { useToast } from '../../common/components/toast'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import { useRootStore } from '../../infrastructure/store/root.store'
 import type { Camera } from '../../domain/entities/camera.entity'
-import type { DetectionLabel } from '../../domain/entities/detection_label.entity'
-import type { HubOverview } from '../../domain/entities/hub_overview.entity'
-import type { SystemStats } from '../../domain/entities/system_stats.entity'
-import { DetectionList } from '../../common/detection/detection_list'
 import { liveViewPath } from '../live_view/live_view.route'
-import { DetectionPreview, type DetectionMedia } from '../../common/detection/detection_preview'
-import { SystemMonitorPanel } from './system_monitor_panel'
+import { CAMERA_WALL_ROUTE } from '../camera_wall/camera_wall.route'
 import { buildHubPresenter } from './hub.presenter'
 import { hubReducer } from './hub.reducer'
-import { buildInitialHubUido } from './hub.uido'
-import { privacyWording, type PrivacyRequest } from './privacy_request'
-import { alertsSummary } from './alerts_summary'
+import { buildInitialHubUido, type HubUido } from './hub.uido'
+import { recentDetectionsLine } from './home_wording'
+import { formatHouseEnd } from '../../common/schedule/house_moment'
+import { SilenceButton } from './components/silence_button'
+import { SilenceSheet } from './components/silence_sheet'
+import { CutCamerasButton } from './components/cut_cameras_button'
+import { CutSheet } from './components/cut_sheet'
+import type { ChosenEnd } from '../../domain/entities/chosen_end.entity'
+import { HomeTile } from './components/home_tile'
 
-/** Home shows only the latest ones; the history shows the same ones, all of them. */
-const RECENT_EVENTS_MAX = 5
+/** From this many cameras, the home shows the first four as a grid (UI-32). */
+const GRID_FROM = 4
 
-// The live view is a screen of its own (LIVE-07): only a detection's media opens here.
-type ModalMedia = DetectionMedia
+/** Where the home's one action leads while no camera is added (UI-33). */
+const ADD_CAMERA_PATH = '/settings/cameras/add'
+
+/** The scheduler lifts a cut on the minute: the cards are read again once it had time to. */
+const CUT_END_GRACE_MS = 5000
+/** A cut end older than this is not waited on any more: the cards keep what the server says. */
+const CUT_END_PATIENCE_MS = 2 * 60 * 1000
 
 export function HubView() {
-  const { apiBaseUrl, hub: container, cameras: camerasContainer } = useAppContainer()
+  const {
+    apiBaseUrl,
+    hub: container,
+    cameras: camerasContainer,
+    notifications: notificationsContainer,
+  } = useAppContainer()
   const { toast } = useToast()
   const [uido, dispatch] = useReducer(hubReducer, undefined, buildInitialHubUido)
   const presenter = usePresenter(buildHubPresenter, {
     container,
     camerasContainer,
+    notificationsContainer,
     dispatch,
     toast,
   })
@@ -48,99 +59,101 @@ export function HubView() {
   const cameras = useRootStore((s) => s.cameras)
   const camerasLoading = useRootStore((s) => s.camerasLoading)
   const camerasError = useRootStore((s) => s.camerasError)
-  const systemStats = useRootStore((s) => s.systemStats)
-
-  const [modalMedia, setModalMedia] = useState<ModalMedia | null>(null)
+  const frigateStatus = useRootStore((s) => s.systemStats?.status ?? 'active')
 
   useEffect(() => {
     presenter.onMount()
   }, [presenter])
 
-  if (uido.loading || camerasLoading) return <HubLoading />
-  if (uido.error || !uido.data?.systemHealthy) return <HubUnreachable error={uido.error} />
-  // An unread list is not an empty one: onboarding would invite adding cameras that exist.
+  // A Silence ends by itself at its hour (UC-NOTIF-06 A3): the pill follows without a reload.
+  const silenceEnd = uido.silence?.active ? uido.silence.until?.at : undefined
+  useEffect(() => {
+    if (!silenceEnd) return
+    const timer = setTimeout(
+      () => void presenter.onSilenceEnded(),
+      Math.max(0, Date.parse(silenceEnd) - Date.now()),
+    )
+    return () => clearTimeout(timer)
+  }, [presenter, silenceEnd])
+
+  // A cut ends by itself at its hour (PRIV-20, PRIV-22): the cards follow, read again until the server lifted it.
+  useEffect(() => {
+    const now = Date.now()
+    const ends = cameras
+      .filter((camera) => camera.privacyModeActive && camera.privacyCutUntil)
+      .map((camera) => Date.parse(camera.privacyCutUntil!.at))
+      .filter((end) => end > now - CUT_END_PATIENCE_MS)
+    if (ends.length === 0) return
+    const timer = setTimeout(
+      () => presenter.onCutEnded(),
+      Math.max(0, Math.min(...ends) - now) + CUT_END_GRACE_MS,
+    )
+    return () => clearTimeout(timer)
+  }, [presenter, cameras])
+
+  // An unread list is not an empty one: the first run would invite adding cameras that exist.
   if (camerasError && cameras.length === 0)
     return <HubCamerasUnread error={camerasError} onRetry={presenter.onReloadCameras} />
-  if (cameras.length === 0) return <HubWelcome />
+  // A reload keeps the cards on screen; only the first read shows the home's shape.
+  if ((camerasLoading && cameras.length === 0) || !uido.silenceSettled) return <HubLoading />
+  if (cameras.length === 0) return <HubNoCamera />
 
   return (
-    <>
-      <HubOperational
-        data={uido.data}
-        detectionLabels={uido.detectionLabels}
-        cameras={cameras}
-        apiBaseUrl={apiBaseUrl}
-        systemStats={systemStats}
-        privacyPending={uido.privacyPending}
-        privacyLoading={uido.privacyLoading}
-        onPrivacyPendingSet={presenter.onPrivacyPendingSet}
-        onTogglePrivacy={presenter.onTogglePrivacy}
-        onOpenMedia={setModalMedia}
-      />
-
-      {modalMedia && (
-        <Overlay label="Aperçu" onClose={() => setModalMedia(null)}>
-          <DetectionPreview
-            media={modalMedia}
-            clipGone={uido.clipGoneEventId === modalMedia.eventId}
-            onVideoError={() => presenter.onVideoFailed(modalMedia.eventId)}
-          />
-        </Overlay>
-      )}
-    </>
+    <HubOperational
+      uido={uido}
+      cameras={cameras}
+      apiBaseUrl={apiBaseUrl}
+      frigateStatus={frigateStatus}
+      onTogglePrivacy={(ids, active) => void presenter.onTogglePrivacy(ids, active)}
+      onOpenCut={presenter.onOpenCut}
+      onCloseCut={presenter.onCloseCut}
+      onCutCameras={(ids, end) => void presenter.onCutCameras(ids, end)}
+      onOpenSilence={presenter.onOpenSilence}
+      onCloseSilence={presenter.onCloseSilence}
+      onStartSilence={(request) => void presenter.onStartSilence(request)}
+      onStopSilence={() => void presenter.onStopSilence()}
+    />
   )
 }
 
-function Card({ className, children }: { className?: string; children: ReactNode }) {
-  return (
-    <section
-      className={cn(
-        'rounded-card bg-card p-5 text-card-foreground shadow-elevated sm:p-6',
-        className,
-      )}
-    >
-      {children}
-    </section>
-  )
-}
-
+/** The home's shape while it is read: the two pills, two pictures, the two tiles. */
 function HubLoading() {
   return (
-    <main className="flex flex-col gap-4 py-4" aria-label="Chargement">
-      <div className="h-24 animate-pulse rounded-card bg-card" />
-      <div className="grid gap-4 sm:grid-cols-3">
-        <div className="h-40 animate-pulse rounded-card bg-card" />
-        <div className="h-40 animate-pulse rounded-card bg-card" />
-        <div className="h-40 animate-pulse rounded-card bg-card" />
-      </div>
+    <main>
+      <h1 className="sr-only">Accueil</h1>
+      <Loading className="gap-5 py-0">
+        <div className="flex gap-2">
+          <Skeleton className="h-11 w-49 rounded-full bg-card" />
+          <Skeleton className="h-11 w-28 rounded-full bg-card" />
+        </div>
+        {[0, 1].map((index) => (
+          <div key={index} className="overflow-hidden rounded-card bg-card">
+            <Skeleton className="aspect-video rounded-none bg-secondary" />
+            <div className="flex h-15 items-center px-4">
+              <Skeleton className="h-3.5 w-36 rounded-full bg-icon-circle" />
+            </div>
+          </div>
+        ))}
+        <div className="grid grid-cols-2 gap-3">
+          <Skeleton className="h-30 rounded-card bg-card" />
+          <Skeleton className="h-30 rounded-card bg-card" />
+        </div>
+      </Loading>
     </main>
   )
 }
 
-/** Vyzio unreachable: name the failure and what to check. */
-function HubUnreachable({ error }: { error: AppError | null }) {
+/** No camera yet: the home is one way to add one, no welcome screen of its own (UI-33). */
+function HubNoCamera() {
   return (
-    <main className="py-4">
-      <Card>
-        <div className="flex items-start gap-3">
-          <TriangleAlert className="mt-1 size-5 shrink-0 text-destructive" aria-hidden="true" />
-          <div>
-            <h1 className="font-serif text-3xl">Vyzio ne répond pas</h1>
-            <p className="mt-1 text-muted-foreground">
-              La surveillance continue peut-être, mais cette page ne peut pas le confirmer.
-            </p>
-
-            <p className="mt-5 font-medium">À vérifier :</p>
-            <ol className="mt-1 list-decimal space-y-1 pl-5 text-muted-foreground">
-              <li>Le boîtier Vyzio est allumé et connecté au réseau.</li>
-              <li>Vous êtes sur le même réseau que lui.</li>
-              <li>Son adresse n’a pas changé.</li>
-            </ol>
-
-            {error && <ErrorMessage error={error} className="mt-4" />}
-          </div>
-        </div>
-      </Card>
+    <main className="flex flex-col gap-3">
+      <h1 className="sr-only">Accueil</h1>
+      <Button asChild size="lg" className="w-full">
+        <Link to={ADD_CAMERA_PATH}>
+          <Plus aria-hidden="true" />
+          Ajouter une caméra
+        </Link>
+      </Button>
     </main>
   )
 }
@@ -148,227 +161,164 @@ function HubUnreachable({ error }: { error: AppError | null }) {
 /** The camera list could not be read: why is in the error, and retrying is the one thing to do. */
 function HubCamerasUnread({ error, onRetry }: { error: AppError; onRetry: () => void }) {
   return (
-    <main className="py-4">
-      <Card>
-        <h1 className="font-serif text-3xl">Vos caméras ne s’affichent pas</h1>
-        <p className="mt-1 text-muted-foreground">La liste de vos caméras n’a pas pu être lue.</p>
-        <ReadFailure error={error} onRetry={onRetry} className="mt-4" />
-      </Card>
-    </main>
-  )
-}
-
-const WELCOME_STEPS = [
-  {
-    title: 'Ajouter une caméra',
-    body: 'Vyzio la cherche sur votre réseau, ou vous donnez son adresse.',
-  },
-  {
-    title: 'Choisir ce qui compte',
-    body: 'Personnes, animaux, véhicules : à vous de dire ce qui mérite une notification.',
-  },
-  {
-    title: 'Recevoir les notifications',
-    body: 'Sur Telegram ou Discord, aux heures que vous fixez.',
-  },
-]
-
-function HubWelcome() {
-  return (
-    <main className="py-4">
-      <Card>
-        <h1 className="font-serif text-3xl">Bienvenue</h1>
-        <p className="mt-1 text-muted-foreground">
-          Trois étapes, et vos caméras sont sous surveillance.
-        </p>
-
-        <ol className="mt-6 grid gap-5 sm:grid-cols-3">
-          {WELCOME_STEPS.map((step, index) => (
-            <li key={step.title}>
-              <span className="flex size-8 items-center justify-center rounded-full bg-muted font-medium">
-                {index + 1}
-              </span>
-              <p className="mt-2 font-medium">{step.title}</p>
-              <p className="text-sm text-muted-foreground">{step.body}</p>
-            </li>
-          ))}
-        </ol>
-
-        <div className="mt-6 flex flex-wrap gap-2">
-          <Button asChild>
-            <Link to="/settings/cameras/ajout">Ajouter une caméra</Link>
-          </Button>
-          <SecondaryButton icon={Bell} to="/settings/notifications">
-            Configurer les notifications
-          </SecondaryButton>
-        </div>
-      </Card>
+    <main>
+      <h1 className="sr-only">Accueil</h1>
+      <Surface>
+        <ReadFailure
+          error={error}
+          onRetry={onRetry}
+          subject="La liste de vos caméras n’a pas pu être lue."
+        />
+      </Surface>
     </main>
   )
 }
 
 interface HubOperationalProps {
-  data: HubOverview
-  detectionLabels: readonly DetectionLabel[]
+  uido: HubUido
   cameras: Camera[]
   apiBaseUrl: string
-  systemStats: SystemStats | null
-  privacyPending: PrivacyRequest | null
-  privacyLoading: boolean
-  onPrivacyPendingSet: (request: PrivacyRequest | null) => void
-  onTogglePrivacy: (request: PrivacyRequest) => void
-  onOpenMedia: (media: DetectionMedia) => void
+  frigateStatus: 'active' | 'restarting' | 'unavailable'
+  onTogglePrivacy: (cameraIds: readonly string[], active: boolean) => void
+  onOpenCut: () => void
+  onCloseCut: () => void
+  onCutCameras: (cameraIds: readonly string[], end: ChosenEnd) => void
+  onOpenSilence: () => void
+  onCloseSilence: () => void
+  onStartSilence: Parameters<typeof SilenceSheet>[0]['onStart']
+  onStopSilence: () => void
 }
 
 function HubOperational({
-  data,
-  detectionLabels,
+  uido,
   cameras,
   apiBaseUrl,
-  systemStats,
-  privacyPending,
-  privacyLoading,
-  onPrivacyPendingSet,
+  frigateStatus,
   onTogglePrivacy,
-  onOpenMedia,
+  onOpenCut,
+  onCloseCut,
+  onCutCameras,
+  onOpenSilence,
+  onCloseSilence,
+  onStartSilence,
+  onStopSilence,
 }: HubOperationalProps) {
-  const frigateStatus = systemStats?.status ?? 'active'
-  const allPrivate = cameras.every((camera) => camera.privacyModeActive)
-  // The wait shows on the thumbnail concerned, not only in the modal: cutting reaches the camera
-  // itself, and nothing moves on screen before it has answered.
-  const privacyBusyIds = new Set(privacyLoading ? (privacyPending?.cameraIds ?? []) : [])
-  // A camera surveillance has not taken in yet watches nothing (ADR-04).
-  const watched = cameras.filter(
-    (camera) =>
-      camera.isEnabled &&
-      !camera.privacyModeActive &&
-      surveillanceEntryOf(camera) === SurveillanceEntry.Watched,
-  ).length
+  const allCut = cameras.every((camera) => camera.privacyModeActive)
+  const allIds = cameras.map((camera) => camera.id)
+  const busy = new Set(uido.privacyBusyIds)
+  const grid = cameras.length >= GRID_FROM
+  const shown = grid ? cameras.slice(0, GRID_FROM) : cameras
+  const now = new Date()
+  const silenceActive = uido.silence?.active === true
+  const silenceUntil =
+    silenceActive && uido.silence?.until ? formatHouseEnd(uido.silence.until, now) : null
+  const cutUntil = allCut ? sharedCutEnd(cameras) : null
 
   return (
-    <main className="flex flex-col gap-4 py-4">
-      {/* Une phrase, pas une rangee de compteurs : ce que l'on vient verifier en
-          arrivant, c'est que la surveillance tourne. */}
-      <div>
-        <h1 className="font-serif text-3xl">
-          {allPrivate
-            ? 'Surveillance coupée'
-            : watched === 0
-              ? 'Aucune caméra surveillée'
-              : `${watched} caméra${watched > 1 ? 's' : ''} sous surveillance`}
-        </h1>
-        {data.warnings.length > 0 && (
-          <ul className="mt-2 space-y-1">
-            {data.warnings.map((warning) => (
-              <li key={warning} className="flex items-start gap-2 text-sm text-destructive">
-                <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-                {warning}
-              </li>
-            ))}
-          </ul>
-        )}
+    <main className="flex flex-col gap-5">
+      <h1 className="sr-only">Accueil</h1>
+      <div className="flex flex-wrap gap-2">
+        <CutCamerasButton
+          allCut={allCut}
+          until={cutUntil ? formatHouseEnd(cutUntil, now) : null}
+          busy={allIds.some((id) => busy.has(id))}
+          onCut={onOpenCut}
+          onResume={() => onTogglePrivacy(allIds, false)}
+        />
+        <SilenceButton
+          active={silenceActive}
+          until={silenceUntil}
+          busy={uido.silenceBusy}
+          onStart={onOpenSilence}
+          onStop={onStopSilence}
+        />
       </div>
 
-      <section className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="font-serif text-2xl">En direct</h2>
-          <div className="flex flex-wrap items-center gap-2">
-            <SecondaryButton
-              icon={allPrivate ? Eye : EyeOff}
-              type="button"
-              active={allPrivate}
-              size="sm"
-              onClick={() =>
-                onPrivacyPendingSet({
-                  cameraIds: cameras.map((camera) => camera.id),
-                  active: !allPrivate,
-                  cameraLabel: null,
-                })
-              }
-            >
-              {allPrivate ? 'Reprendre la surveillance' : 'Tout couper'}
-            </SecondaryButton>
-            <SecondaryButton icon={Settings2} to="/settings/cameras" size="sm">
-              Gérer les caméras
-            </SecondaryButton>
-          </div>
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {cameras.map((camera) => (
-            <CameraLiveThumbnail
+      <section aria-label="Caméras" className="flex flex-col gap-3">
+        <div className={grid ? 'grid grid-cols-2 gap-3' : 'flex flex-col gap-5'}>
+          {shown.map((camera) => (
+            <CameraCard
               key={camera.id}
               camera={camera}
               apiBaseUrl={apiBaseUrl}
               frigateStatus={frigateStatus}
+              compact={grid}
               liveTo={liveViewPath(camera.id)}
-              busy={privacyBusyIds.has(camera.id)}
-              onTogglePrivacy={(target, active) =>
-                onPrivacyPendingSet({
-                  cameraIds: [target.id],
-                  active,
-                  cameraLabel: target.displayName,
-                })
-              }
+              busy={busy.has(camera.id)}
+              onTogglePrivacy={(target, active) => onTogglePrivacy([target.id], active)}
             />
           ))}
         </div>
+        {grid && (
+          <PressableSurface>
+            <Link
+              to={CAMERA_WALL_ROUTE}
+              className="flex h-13 items-center justify-between rounded-inset bg-card px-4 text-body font-semibold outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            >
+              Voir les {cameras.length} caméras
+              <ChevronRight className="size-5 text-muted-foreground" aria-hidden="true" />
+            </Link>
+          </PressableSurface>
+        )}
       </section>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)] lg:items-start">
-        <Card>
-          <h2 className="font-serif text-2xl">Dernières détections</h2>
+      <nav aria-label="Raccourcis" className="mt-1 grid grid-cols-2 gap-3">
+        <HomeTile
+          to="/detections"
+          icon={History}
+          title="Détections"
+          subtitle={recentDetectionsLine(uido.recentDetections)}
+        />
+        <HomeTile
+          to="/settings/notifications"
+          icon={Bell}
+          title="Notifications"
+          subtitle={
+            silenceActive
+              ? {
+                  text: silenceUntil
+                    ? `En silence jusqu’à ${keepTogether(silenceUntil)}`
+                    : 'En silence',
+                  silence: true,
+                }
+              : uido.notificationsToConfigure
+                ? 'À configurer'
+                : null
+          }
+        />
+      </nav>
 
-          {data.recentEvents.length > 0 ? (
-            <div className="mt-3">
-              <DetectionList
-                events={data.recentEvents.slice(0, RECENT_EVENTS_MAX)}
-                labels={detectionLabels}
-                apiBaseUrl={apiBaseUrl}
-                onOpenMedia={onOpenMedia}
-              />
-            </div>
-          ) : (
-            <p className="mt-3 text-muted-foreground">
-              Rien à signaler. Les détections apparaîtront ici.
-            </p>
-          )}
+      {uido.cutSheetOpen && (
+        <CutSheet
+          scheduleNextChange={uido.cut?.scheduleNextChange ?? null}
+          now={now}
+          onCut={(end) => onCutCameras(allIds, end)}
+          onClose={onCloseCut}
+        />
+      )}
 
-          <div className="mt-4">
-            <SecondaryButton icon={History} to="/history" size="sm">
-              Tout l’historique
-            </SecondaryButton>
-          </div>
-        </Card>
-
-        <div className="flex flex-col gap-4">
-          <Card>
-            <h2 className="font-serif text-2xl">Notifications</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {alertsSummary(data.notifications)}
-            </p>
-            <div className="mt-4">
-              <SecondaryButton icon={Bell} to="/settings/notifications" size="sm">
-                Configurer les notifications
-              </SecondaryButton>
-            </div>
-          </Card>
-
-          {systemStats && <SystemMonitorPanel stats={systemStats} cameras={cameras} />}
-        </div>
-      </div>
-
-      {privacyPending && (
-        <ConfirmModal
-          title={privacyWording(privacyPending).title}
-          body={privacyWording(privacyPending).body}
-          confirmLabel={privacyWording(privacyPending).confirmLabel}
-          tone={privacyPending.active ? 'warn' : 'default'}
-          loading={privacyLoading}
-          onConfirm={() => onTogglePrivacy(privacyPending)}
-          onCancel={() => onPrivacyPendingSet(null)}
+      {uido.silenceSheetOpen && (
+        <SilenceSheet
+          scheduleNextChange={uido.silence?.scheduleNextChange ?? null}
+          now={now}
+          onStart={onStartSilence}
+          onClose={onCloseSilence}
         />
       )}
     </main>
   )
+}
+
+/** The end every camera's cut shares, or null when one holds until resumed or they differ (PRIV-22). */
+function sharedCutEnd(cameras: readonly Camera[]): Camera['privacyCutUntil'] {
+  const [first, ...others] = cameras.map((camera) => camera.privacyCutUntil)
+  if (!first || others.some((end) => end?.at !== first.at)) return null
+  return first
+}
+
+const NBSP = ' '
+
+/** A narrow tile wraps before the end, never inside « 4 h 39 ». */
+function keepTogether(text: string): string {
+  return text.replaceAll(' ', NBSP)
 }

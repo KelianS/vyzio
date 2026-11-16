@@ -14,16 +14,34 @@ describe('SettingsView', () => {
     expect(screen.getByText('Choisissez une rubrique.')).toBeInTheDocument()
   })
 
-  it('SettingsView_ShouldNameTheRubricAndLeadBack_WhenARubricIsOpen', () => {
+  it('SettingsView_ShouldNameTheRubricAndMarkItInTheList_WhenARubricIsOpen', () => {
     // Arrange & Act
-    renderScreen(<SettingsView />, { path: '/settings/*', url: '/settings/conservation' })
+    renderScreen(<SettingsView />, { path: '/settings/*', url: '/settings/retention' })
 
     // Assert
     expect(screen.getByRole('heading', { level: 1, name: 'Conservation' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /Durée des enregistrements/ })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Conservation' })).toHaveAttribute(
       'aria-current',
       'page',
     )
-    expect(screen.getByRole('link', { name: 'Réglages' })).toHaveAttribute('href', '/settings')
+  })
+
+  it('SettingsView_ShouldGroupTheRubricsUnderSurveillanceAndSysteme_WhenOpened', () => {
+    // Arrange & Act
+    renderScreen(<SettingsView />, { path: '/settings/*', url: '/settings' })
+
+    // Assert
+    const surveillance = screen.getByRole('region', { name: 'Surveillance' })
+    const system = screen.getByRole('region', { name: 'Système' })
+    expect(
+      within(surveillance)
+        .getAllByRole('link')
+        .map((link) => link.textContent),
+    ).toEqual(['Caméras', 'Personnes', 'Planification', 'Notifications'])
+    expect(
+      within(system)
+        .getAllByRole('link')
+        .map((link) => link.textContent),
+    ).toEqual(['Conservation', 'Accès', 'Matériel'])
   })
 })

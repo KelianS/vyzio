@@ -41,14 +41,14 @@ export function PasswordScreen({
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center gap-6 px-4 py-10">
       <div className="space-y-2">
-        <p className="font-serif text-xl tracking-tight text-muted-foreground">Vyzio</p>
-        <h1 className="font-serif text-3xl">{title}</h1>
-        <p className="text-sm text-muted-foreground">{lede}</p>
+        <p className="text-row tracking-tight text-muted-foreground">Vyzio</p>
+        <h1 className="text-title">{title}</h1>
+        <p className="text-body text-muted-foreground">{lede}</p>
       </div>
 
       <form onSubmit={submit} className="space-y-4">
         <div className="space-y-2">
-          <label htmlFor="password" className="block text-sm font-medium">
+          <label htmlFor="password" className="block font-medium">
             {label}
           </label>
           <Input
@@ -61,15 +61,15 @@ export function PasswordScreen({
             aria-invalid={error !== undefined || tooShort}
             aria-describedby="password-hint"
           />
-          <p id="password-hint" className="text-sm text-muted-foreground">
+          <p id="password-hint" className="text-body text-muted-foreground">
             {tooShort ? `Au moins ${minLength} caractères.` : hint}
           </p>
         </div>
 
         {/* A refusal is read beside the field it refused, in a line kept so the button never jumps. */}
-        <div className="min-h-5">
+        <div className="min-h-lh text-body">
           {error !== undefined && (
-            <p role="alert" className="text-sm font-medium text-destructive">
+            <p role="alert" className="text-body font-medium text-destructive">
               {error}
             </p>
           )}

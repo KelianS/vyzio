@@ -61,6 +61,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<PrivacyResumes>();
         services.AddScoped<ToggleCameraPrivacyModeUseCase>();
         services.AddScoped<BatchToggleCameraPrivacyModeUseCase>();
+        services.AddScoped<RetryCameraPrivacyAnswerUseCase>();
         services.AddScoped<ScheduleRuleValidator>();
         services.AddScoped<ListScheduleRulesUseCase>();
         services.AddScoped<GetScheduleRuleUseCase>();
@@ -131,6 +132,12 @@ public static class ServiceCollectionExtensions
         services.AddScoped<DeleteNotificationChannelConfigUseCase>();
         services.AddScoped<TestNotificationChannelUseCase>();
         services.AddScoped<GetNotificationLogUseCase>();
+        services.AddScoped<GetSilenceUseCase>();
+        services.AddScoped<StartSilenceUseCase>();
+        services.AddScoped<StopSilenceUseCase>();
+        services.AddScoped<GetCamerasCutUseCase>();
+        services.AddScoped<CutCamerasUseCase>();
+        services.AddScoped<ScheduleNextChange>();
 
         // Remote commands — one registration per command, nothing else to edit (ADR-14)
         services.AddScoped<IRemoteCommandHandler, Commands.SystemStateCommandHandler>();

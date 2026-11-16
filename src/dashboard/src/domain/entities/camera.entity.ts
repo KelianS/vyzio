@@ -1,4 +1,4 @@
-import type { HouseClock } from './schedule_rule.entity'
+import type { HouseClock, HouseMoment } from './schedule_rule.entity'
 /** Why the camera's part of the last privacy toggle is not confirmed (PRIV-05); null when it followed. */
 export const PrivacyMiss = {
   PositionMissing: 'position_missing',
@@ -70,6 +70,8 @@ export interface Camera {
   privacyStrategy: PrivacyStrategy
   /** Surveillance resumed by hand inside a Privacy range; null when it is not (PRIV-07). */
   privacyResume: PrivacyResume | null
+  /** When the ranges that cut it let it out; null when cut by hand, or not cut by a range (PRIV-20). */
+  privacyCutUntil: HouseMoment | null
   verifiedCapabilities: string[]
   /** The qualities its live view offers; empty while it is not in surveillance. */
   liveQualities: LiveQuality[]

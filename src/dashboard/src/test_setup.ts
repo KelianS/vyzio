@@ -17,4 +17,6 @@ globalThis.ResizeObserver ??= class {
 
 afterEach(() => {
   cleanup()
+  // What a device keeps (a dismissed alert) never leaks from one test into the next.
+  localStorage.clear()
 })

@@ -1,5 +1,5 @@
-// One installation-wide retention window (ADR-15). `default` is the value Vyzio ships with, which
-// is what lets the interface offer a way back to it and name it.
+// One installation-wide retention window (ADR-15): the top level, with nothing above it to follow.
+// `default` is the value Vyzio ships with and recommends, the one the interface offers to return to.
 interface RetentionSetting {
   days: number
   default: number

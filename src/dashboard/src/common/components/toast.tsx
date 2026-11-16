@@ -7,23 +7,38 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { CheckCircle2, Info, X, XCircle } from 'lucide-react'
+import { CheckCircle2, Info, RotateCw, X, XCircle } from 'lucide-react'
 import { cn } from '../ui/utils'
 import { whenStill } from './layer_exit'
 import { PressableControl } from './pressable'
+import { SecondaryButton } from './secondary_button'
 
 export type ToastTone = 'success' | 'error' | 'info'
+
+/** The one thing a toast may offer: doing the act again (DESIGN SYSTEM § Where feedback goes). */
+interface ToastAction {
+  readonly label: string
+  readonly onClick: () => void
+}
+
+export type Toast = (
+  message: string,
+  tone?: ToastTone,
+  diagnostic?: string,
+  action?: ToastAction,
+) => void
 
 interface ToastItem {
   id: number
   message: string
   tone: ToastTone
   diagnostic?: string
+  action?: ToastAction
   leaving?: boolean
 }
 
 interface ToastContextValue {
-  toast: (message: string, tone?: ToastTone, diagnostic?: string) => void
+  toast: Toast
 }
 
 const ToastContext = createContext<ToastContextValue>({ toast: () => undefined })
@@ -33,7 +48,7 @@ let nextId = 0
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([])
 
-  const toast = useCallback((message: string, tone: ToastTone = 'info', diagnostic?: string) => {
+  const toast = useCallback<Toast>((message, tone = 'info', diagnostic, action) => {
     const id = nextId++
     // The same failure raised twice in a row is one thing to read, not a pile to close one by one:
     // raised again while it fades out, it comes back.
@@ -41,7 +56,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       const same = prev.find(
         (item) => item.message === message && item.tone === tone && item.diagnostic === diagnostic,
       )
-      if (!same) return [...prev, { id, message, tone, diagnostic }]
+      if (!same) return [...prev, { id, message, tone, diagnostic, action }]
       if (!same.leaving) return prev
       return prev.map((item) => (item === same ? { ...item, leaving: false } : item))
     })
@@ -82,7 +97,7 @@ const TONE_ICON: Record<ToastTone, typeof Info> = {
 const TONE_ICON_CLASS: Record<ToastTone, string> = {
   success: 'text-success',
   error: 'text-destructive',
-  info: 'text-surface-inverse-foreground',
+  info: 'text-ink-muted',
 }
 
 function ToastChip({
@@ -95,8 +110,8 @@ function ToastChip({
   onGone: (id: number) => void
 }) {
   const chipRef = useRef<HTMLDivElement>(null)
-  // A failure with a diagnostic stays until dismissed: it may have to be photographed (UI-03).
-  const closesItself = item.diagnostic === undefined
+  // A diagnostic may have to be photographed (UI-03), an action needs the time to be taken.
+  const closesItself = item.diagnostic === undefined && item.action === undefined
   useEffect(() => {
     if (!closesItself || item.leaving) return
     const timer = setTimeout(() => onDismiss(item.id), 4000)
@@ -116,7 +131,7 @@ function ToastChip({
       ref={chipRef}
       role="status"
       className={cn(
-        'pointer-events-auto flex min-w-60 max-w-sm items-start gap-3 rounded-lg bg-surface-inverse px-4 py-3 text-surface-inverse-foreground shadow-elevated',
+        'pointer-events-auto flex min-w-60 max-w-sm items-start gap-3 rounded-card bg-picture px-4 py-3 text-ink-muted',
         // Transitions, not keyframes: a toast raised mid-fade picks up from where it stands.
         'transition-[opacity,translate] starting:opacity-0 motion-safe:starting:translate-y-2',
         item.leaving
@@ -129,11 +144,25 @@ function ToastChip({
         aria-hidden="true"
       />
       <div className="flex-1">
-        <p className="text-sm">{item.message}</p>
+        <p className="text-body">{item.message}</p>
         {item.diagnostic && (
-          <p className="mt-1 font-mono text-xs break-all text-surface-inverse-foreground/70 select-text">
+          <p className="mt-1 font-mono text-label break-all text-ink-muted/70 select-text">
             {item.diagnostic}
           </p>
+        )}
+        {item.action && (
+          <SecondaryButton
+            icon={RotateCw}
+            type="button"
+            size="sm"
+            className="mt-2"
+            onClick={() => {
+              onDismiss(item.id)
+              item.action?.onClick()
+            }}
+          >
+            {item.action.label}
+          </SecondaryButton>
         )}
       </div>
       <PressableControl>

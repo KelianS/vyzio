@@ -14,9 +14,9 @@ function optionsOf(setting: SettingDeclaration): readonly SettingOption[] {
 }
 
 const ALL_LABELS: DetectionLabel[] = [
-  { value: 'person', displayName: 'Personne', emoji: '🧑' },
-  { value: 'car', displayName: 'Voiture', emoji: '🚗' },
-  { value: 'dog', displayName: 'Chien', emoji: '🐕' },
+  { value: 'person', displayName: 'Personne' },
+  { value: 'car', displayName: 'Voiture' },
+  { value: 'dog', displayName: 'Chien' },
 ]
 
 function config(overrides: Partial<DetectionConfig> = {}): DetectionConfig {
@@ -76,6 +76,19 @@ describe('buildDetectionSettings', () => {
     // Better to offer everything than nothing: a camera silent about its capabilities
     // must not deprive the user of the setting.
     expect(options).toHaveLength(3)
+  })
+
+  it('buildDetectionSettings_ShouldNameEachCategoryInWordsAlone_WhenTheCatalogueIsRead', () => {
+    // Arrange & Act
+    const { settings } = build(config())
+    const labels = settings.find((setting) => setting.id === 'detection-labels')!
+
+    // Assert
+    expect(optionsOf(labels).map((option) => option.label)).toEqual([
+      'Personne',
+      'Voiture',
+      'Chien',
+    ])
   })
 
   it('buildDetectionSettings_ShouldReadAsAutomatic_WhenNoSensitivityIsPinned', () => {

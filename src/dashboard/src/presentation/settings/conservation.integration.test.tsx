@@ -8,7 +8,7 @@ import { ConservationView } from './conservation.component'
 
 const SETTINGS = 'GET /api/settings/recording'
 const SAVE = 'PUT /api/settings/recording'
-const CONSERVATION = { path: '/settings/conservation', url: '/settings/conservation' }
+const CONSERVATION = { path: '/settings/retention', url: '/settings/retention' }
 
 const settings: RecordingSettings = {
   continuous: { days: 0, default: 0 },
@@ -50,7 +50,7 @@ describe('ConservationView', () => {
     expect(network.sent).toContainEqual(expect.objectContaining({ route: 'GET /api/system/stats' }))
   })
 
-  it('onOpenHelp_ShouldPointToPrivacyModeToRecordNothing_WhenTheUserAsksWhenSpaceIsFreed', async () => {
+  it('onOpenHelp_ShouldPointToTheCutToRecordNothing_WhenTheUserAsksWhenSpaceIsFreed', async () => {
     // Arrange
     fakeNetwork({ [SETTINGS]: ok(settings) })
     renderScreen(<ConservationView />, CONSERVATION)
@@ -60,8 +60,45 @@ describe('ConservationView', () => {
     await userEvent.click(screen.getByText('Quand la place est-elle vraiment libérée ?'))
 
     // Assert
-    expect(screen.getByText(/activez sa vie privée/)).toBeVisible()
+    expect(screen.getByText(/coupez-la/)).toBeVisible()
     expect(screen.queryByText(/désactivez-la/)).not.toBeInTheDocument()
+  })
+
+  it('Conservation_ShouldOfferTheRecommendedDurationWithoutALock_WhenTheUserChangesOne', async () => {
+    // Arrange
+    fakeNetwork({ [SETTINGS]: ok(settings) })
+    renderScreen(<ConservationView />, CONSERVATION)
+    await screen.findByLabelText('Séquences de mouvement')
+
+    // Act
+    await setMotionToTenDays()
+
+    // Assert
+    expect(
+      screen.getAllByRole('button', { name: /^Revenir à la valeur recommandée/ }),
+    ).toHaveLength(1)
+    expect(
+      screen.getByRole('button', { name: 'Revenir à la valeur recommandée (7 jours)' }),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('img', { name: 'Valeur de l’ensemble' })).not.toBeInTheDocument()
+  })
+
+  it('Conservation_ShouldGoBackToTheRecommendedDuration_WhenTheUserTapsTheRevert', async () => {
+    // Arrange
+    fakeNetwork({ [SETTINGS]: ok(settings) })
+    renderScreen(<ConservationView />, CONSERVATION)
+    await setMotionToTenDays()
+
+    // Act
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Revenir à la valeur recommandée (7 jours)' }),
+    )
+
+    // Assert
+    expect(screen.getByLabelText('Séquences de mouvement')).toHaveValue(7)
+    expect(
+      screen.queryByRole('button', { name: /^Revenir à la valeur recommandée/ }),
+    ).not.toBeInTheDocument()
   })
 
   it('onSave_ShouldKeepTheDraftAndSayWhy_WhenTheSaveFails', async () => {

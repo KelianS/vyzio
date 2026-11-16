@@ -9,7 +9,7 @@ const STATE = 'GET /api/access/state'
 const PASSWORD = 'PUT /api/access/password'
 const SIGN_OUT = 'DELETE /api/access/session'
 const SIGN_OUT_EVERYWHERE = 'DELETE /api/access/sessions'
-const ACCESS = { path: '/settings/acces', url: '/settings/acces' }
+const ACCESS = { path: '/settings/access', url: '/settings/access' }
 
 const state = { installed: true, awaitingReset: false, minimumPasswordLength: 8 }
 

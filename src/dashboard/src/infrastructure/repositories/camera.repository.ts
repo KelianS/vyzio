@@ -18,6 +18,7 @@ import type {
   DiscoveryRange,
 } from '../../domain/entities/discovered_camera.entity'
 import type { VendorAssistance } from '../../domain/entities/vendor_assistance.entity'
+import type { HouseMoment } from '../../domain/entities/schedule_rule.entity'
 import type { CameraRepository } from '../../domain/ports/camera.port'
 import type { DiscoveryRequest } from '../../domain/ports/camera.port'
 import type { VendorAssistanceRequest } from '../../domain/ports/camera.port'
@@ -54,6 +55,7 @@ interface CameraDto {
   ptzSupported: boolean
   privacyStrategy: string
   privacyResume?: PrivacyResume | null
+  privacyCutUntil?: HouseMoment | null
   verifiedCapabilities: string[]
   liveQualities: LiveQuality[]
   detectedAt: string | null
@@ -191,6 +193,14 @@ export class HttpCameraRepository implements CameraRepository {
     const payload = await postJson<CameraDto>(
       `${this.apiBaseUrl}/api/cameras/${cameraId}/privacy/toggle`,
       { active },
+    )
+    return mapCamera(payload)
+  }
+
+  async retryPrivacy(cameraId: string): Promise<Camera> {
+    const payload = await postJson<CameraDto>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/privacy/retry`,
+      {},
     )
     return mapCamera(payload)
   }
@@ -402,6 +412,7 @@ function mapCamera(camera: CameraDto): Camera {
     ptzSupported: camera.ptzSupported ?? false,
     privacyStrategy: camera.privacyStrategy as Camera['privacyStrategy'],
     privacyResume: camera.privacyResume ?? null,
+    privacyCutUntil: camera.privacyCutUntil ?? null,
     verifiedCapabilities: camera.verifiedCapabilities ?? [],
     liveQualities: camera.liveQualities,
     detectedAt: camera.detectedAt,

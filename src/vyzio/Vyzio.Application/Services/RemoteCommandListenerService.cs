@@ -66,8 +66,7 @@ internal sealed class RemoteCommandListenerService(
             .GetAllAsync(ct);
 
         var wanted = configs
-            .Where(config => config.IsEnabled
-                             && catalog.Describe(config.Channel)?.CanListen(config.Credentials) == true
+            .Where(config => catalog.Describe(config.Channel)?.CanListen(config.Credentials) == true
                              && receivers.ReceiverFor(config.Channel) is not null)
             .ToDictionary(config => config.Channel);
 

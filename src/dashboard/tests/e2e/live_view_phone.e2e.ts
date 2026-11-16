@@ -96,8 +96,11 @@ test.describe('Live view on a phone', () => {
     await page.setViewportSize({ width: 320, height: 568 })
     await openTheLiveView(page, fourPositions())
     const last = page.getByTitle(/^Position 4 \(appui/)
+    await page.getByTitle(/^Position 1 \(appui/).scrollIntoViewIfNeeded()
 
+    // Each position is a wide thumbnail: two swipes reach the fourth.
     await swipeLeftFrom(page, page.getByTitle(/^Position 1 \(appui/))
+    await swipeLeftFrom(page, page.getByTitle(/^Position 2 \(appui/))
 
     await expect(last).toBeInViewport({ ratio: 1 })
     await expect.poll(() => isOnTop(last)).toBe(true)
@@ -111,35 +114,45 @@ test.describe('Live view on a phone', () => {
     const first = page.getByTitle(/^Position 1 \(appui/)
     const last = page.getByTitle(/^Position 4 \(appui/)
 
+    // Each position is a wide thumbnail: two swipes reach the fourth.
     await swipeLeftFrom(page, first)
+    await swipeLeftFrom(page, page.getByTitle(/^Position 2 \(appui/))
 
     await expect(last).toBeInViewport({ ratio: 1 })
     await expect.poll(() => isOnTop(last)).toBe(true)
-    const row = await first.locator('xpath=../..').boundingBox()
-    const joystick = await page.getByTitle('Gauche').boundingBox()
-    expect((row?.x ?? 0) + (row?.width ?? 0)).toBeLessThan(joystick?.x ?? 0)
+    const row = await first.locator('xpath=..').boundingBox()
+    const pad = await page.getByRole('group', { name: 'Orienter la caméra' }).boundingBox()
+    expect((row?.x ?? 0) + (row?.width ?? 0)).toBeLessThan(pad?.x ?? 0)
   })
 })
 
-// `--bg-muted` and `--bg-sunken` of `src/index.css`: translucent over the picture, opaque below it.
+// `--glass` and `--surface` of `src/index.css`: translucent over the picture, opaque below it.
 test.describe('PTZ controls fill', () => {
-  test('DirectionKeysAndPositions_ShouldStayTranslucent_WhenLaidOverThePictureOnAPhoneOnItsSide', async ({
+  test('PadAndPositions_ShouldStayTranslucent_WhenLaidOverThePictureOnAPhoneOnItsSide', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 844, height: 390 })
     await openTheLiveView(page, fourPositions())
 
-    await expect(page.getByTitle('Haut')).toHaveCSS('background-color', 'rgba(255, 250, 242, 0.72)')
-    await expect(page.getByTitle(/^Position 1 \(appui/)).toHaveCSS(
+    await expect(page.getByRole('group', { name: 'Orienter la caméra' })).toHaveCSS(
       'background-color',
-      'rgba(255, 250, 242, 0.72)',
+      'rgba(16, 20, 18, 0.6)',
     )
+    await expect(
+      page
+        .getByTitle(/^Position 1 \(appui/)
+        .locator('span')
+        .first(),
+    ).toHaveCSS('background-color', 'rgba(16, 20, 18, 0.6)')
   })
 
-  test('DirectionKeys_ShouldSitOnTheSunkenSurface_WhenBelowThePicture', async ({ page }) => {
+  test('Pad_ShouldSitOnTheSurface_WhenBelowThePicture', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
     await openTheLiveView(page, fourPositions())
 
-    await expect(page.getByTitle('Haut')).toHaveCSS('background-color', 'rgb(242, 235, 223)')
+    await expect(page.getByRole('group', { name: 'Orienter la caméra' })).toHaveCSS(
+      'background-color',
+      'rgb(27, 32, 29)',
+    )
   })
 })

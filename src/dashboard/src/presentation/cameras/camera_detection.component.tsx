@@ -10,7 +10,7 @@ import { useAppContainer } from '../../infrastructure/providers/app_container.co
 import type { DetectionConfig } from '../../domain/entities/detection_config.entity'
 import type { DetectionLabel } from '../../domain/entities/detection_label.entity'
 import { SettingsPage } from '../../common/settings/settings_page'
-import { HelpPanel } from '../../common/components/help_panel'
+import { HelpNotes, HelpQuestion } from '../../common/components/help_notes'
 import { ReadFailure } from '../../common/components/error_message'
 import { CameraNotFound } from './components/camera_not_found'
 import {
@@ -21,6 +21,7 @@ import {
 import { buildCameraDetectionPresenter } from './camera_detection.presenter'
 import { cameraDetectionReducer } from './camera_detection.reducer'
 import { buildInitialCameraDetectionUido } from './camera_detection.uido'
+import { Loading } from '../../common/components/loading'
 
 export function CameraDetectionView() {
   const { cameraId } = useParams()
@@ -42,7 +43,12 @@ export function CameraDetectionView() {
     presenter.onLoad(cameraId!)
   }, [presenter, cameraId])
 
-  if (uido.loading) return <SettingsPage>Chargement…</SettingsPage>
+  if (uido.loading)
+    return (
+      <SettingsPage>
+        <Loading />
+      </SettingsPage>
+    )
   if (uido.error)
     return (
       <SettingsPage>
@@ -105,20 +111,22 @@ function DetectionForm({
       <SettingsPage>
         <SettingsList settings={declarations} />
 
-        <HelpPanel title="Pourquoi la sensibilité met-elle du temps à s’ajuster ?">
-          <p>
-            En automatique, Vyzio observe une caméra pendant au moins une douzaine d’heures avant de
-            changer quoi que ce soit : c’est ce qui l’empêche de confondre une nuit calme avec une
-            scène paisible. Ne rien voir bouger le premier jour est donc normal, et il ne descend
-            jamais en dessous de <em>Réduite</em> : l’objectif est de garder le système fluide, pas
-            d’aveugler une caméra.
-          </p>
-          <p>
-            Si une caméra rate des choses, passez-la en <em>Élevée</em>. Si cela ne suffit pas, le
-            sujet est trop petit ou trop peu contrasté dans l’image : c’est affaire de cadrage, ou
-            du flux qui a le rôle <em>Détection</em> dans Connexion, plus de sensibilité.
-          </p>
-        </HelpPanel>
+        <HelpNotes>
+          <HelpQuestion title="Pourquoi la sensibilité met-elle du temps à s’ajuster ?">
+            <p>
+              En automatique, Vyzio observe une caméra pendant au moins une douzaine d’heures avant
+              de changer quoi que ce soit : c’est ce qui l’empêche de confondre une nuit calme avec
+              une scène paisible. Ne rien voir bouger le premier jour est donc normal, et il ne
+              descend jamais en dessous de <em>Réduite</em> : l’objectif est de garder le système
+              fluide, pas d’aveugler une caméra.
+            </p>
+            <p>
+              Si une caméra rate des choses, passez-la en <em>Élevée</em>. Si cela ne suffit pas, le
+              sujet est trop petit ou trop peu contrasté dans l’image : c’est affaire de cadrage, ou
+              du flux qui a le rôle <em>Détection</em> dans Connexion, plus de sensibilité.
+            </p>
+          </HelpQuestion>
+        </HelpNotes>
       </SettingsPage>
 
       <SettingsDraftBar

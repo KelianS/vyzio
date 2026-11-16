@@ -9,7 +9,7 @@ import { useAppContainer } from '../../infrastructure/providers/app_container.co
 import { buildRestartSurveillancePresenter } from './restart_surveillance.presenter'
 import { useRestartState } from './use_restart_state'
 
-// Shown only when something is actually waiting, so its absence is a positive statement (ADR-15).
+// Shown only when something is actually waiting, so its absence is a positive statement (ADR-15, UI-28).
 export function RestartSurveillanceTrigger() {
   const { cameras: camerasContainer, hub: hubContainer } = useAppContainer()
   const presenter = usePresenter(buildRestartSurveillancePresenter, {
@@ -26,12 +26,11 @@ export function RestartSurveillanceTrigger() {
     <>
       <Button
         type="button"
-        size="sm"
         variant={failure ? 'destructive' : 'default'}
         disabled={restarting}
         onClick={() => setAsking(true)}
-        // Own line on small screens: beside the nav it squeezed it into a vertical stack.
-        className="basis-full sm:basis-auto"
+        // The bar's main action, on its own line under the title (DESIGN SYSTEM § Top bar).
+        className="h-12 w-full"
       >
         {failure ? (
           <TriangleAlert aria-hidden="true" />

@@ -9,7 +9,7 @@ test.describe('Capability to confirm', () => {
     const state = createFakeBackendState({ cameras: [makeFakeCamera({ ptzSupported: false })] })
     state.ptzBinding = { protocol: 'v380', configJson: null, status: 'to_confirm' }
     await installFakeBackend(page, state)
-    await page.goto('/settings/cameras/camera-1/connexion')
+    await page.goto('/settings/cameras/camera-1/connection')
     const orientation = page
       .getByRole('list', { name: 'Capacités' })
       .getByRole('listitem')
@@ -20,7 +20,7 @@ test.describe('Capability to confirm', () => {
     await expect(orientation.getByText('La caméra a bougé ?')).toBeVisible()
     await orientation.getByRole('button', { name: 'Oui' }).click()
 
-    await expect(orientation.getByText('Fonctionne')).toBeVisible()
+    await expect(orientation.getByRole('img', { name: 'Fonctionne' })).toBeVisible()
     await expect(orientation.getByText(/^Confirmé par vous le/)).toBeVisible()
     expect(state.ptzBinding.status).toBe('verified')
   })
@@ -30,7 +30,7 @@ test.describe('Capability to confirm', () => {
     const state = createFakeBackendState({ cameras: [makeFakeCamera({ ptzSupported: false })] })
     state.ptzBinding = { protocol: 'dvrip', configJson: null, status: 'to_confirm' }
     await installFakeBackend(page, state)
-    await page.goto('/settings/cameras/camera-1/connexion')
+    await page.goto('/settings/cameras/camera-1/connection')
     const orientation = page
       .getByRole('list', { name: 'Capacités' })
       .getByRole('listitem')
@@ -72,10 +72,10 @@ test.describe('Capability to confirm', () => {
       .filter({ hasText: 'Orientation' })
     await orientation.getByRole('button', { name: 'Essayer' }).click()
     await orientation.getByRole('button', { name: 'Oui' }).click()
-    await expect(orientation.getByText('Fonctionne')).toBeVisible()
+    await expect(orientation.getByRole('img', { name: 'Fonctionne' })).toBeVisible()
 
-    await page.getByRole('link', { name: 'Accueil' }).click()
-    await page.getByRole('link', { name: 'Porte d’entrée' }).click()
+    // Back from the camera's settings to its view.
+    await page.getByRole('banner').getByRole('button', { name: 'Retour' }).click()
     await expect(page.getByTitle('Haut')).toBeVisible()
   })
 })

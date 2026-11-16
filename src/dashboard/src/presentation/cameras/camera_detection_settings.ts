@@ -65,7 +65,7 @@ export function buildDetectionSettings({
         kind: 'multiChoice',
         options: displayLabels.map((label) => ({
           value: label.value,
-          label: `${label.emoji} ${label.displayName}`,
+          label: label.displayName,
         })),
       },
       help: 'Vyzio ne détecte que ce qui est coché. Décocher une catégorie ne supprime rien de ce qui a déjà été enregistré.',

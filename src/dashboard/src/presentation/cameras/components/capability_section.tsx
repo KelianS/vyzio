@@ -1,4 +1,16 @@
-import { Play, Power, RefreshCw, ScanSearch, Settings2, X } from 'lucide-react'
+import {
+  EyeOff,
+  Move,
+  Play,
+  Power,
+  RefreshCw,
+  ScanSearch,
+  Settings2,
+  SlidersHorizontal,
+  Video,
+  X,
+  type LucideIcon,
+} from 'lucide-react'
 import { useState } from 'react'
 import { DiagnosticLine, ReadFailure } from '../../../common/components/error_message'
 import type { AppError } from '../../../common/errors/app_error'
@@ -31,9 +43,8 @@ import {
   formatStreamWorkingLine,
 } from '../cameras.formatters'
 import { CapabilityTask, type StreamTask } from '../camera_connection.uido'
-import { DETECTION_SENTENCES, DetectionOutcome, type DetectionResult } from '../detection_outcome'
 import {
-  CAPABILITY_STATE_PILLS,
+  capabilityMark,
   CapabilityState,
   IS_STREAM,
   SWITCHED_ON_AND_OFF,
@@ -57,15 +68,9 @@ import {
   streamCoverageLine,
   streamNotListed,
 } from '../stream_lines'
+import { Loading } from '../../../common/components/loading'
 
 /** A stream found reads as success; anything else is what the user has to act on. */
-const DETECTION_TONE: Record<DetectionOutcome, string> = {
-  [DetectionOutcome.StreamWorks]: 'text-success',
-  [DetectionOutcome.StreamNotWorking]: 'text-foreground',
-  [DetectionOutcome.AccountRefused]: 'text-destructive',
-  [DetectionOutcome.NothingAnswers]: 'text-destructive',
-}
-
 /** What the capability cards ask of their screen. */
 interface CapabilityIntents {
   onRetryRead: () => void
@@ -99,8 +104,6 @@ interface CapabilitySectionProps {
   detecting: boolean
   /** Detection ran since the page opened: a stream it left unchosen says why. */
   detected: boolean
-  /** What the last detection found, kept under its button to be read and photographed (UI-03). */
-  detection: DetectionResult | null
   verifyingStream: boolean
   /** Every other test goes through the stream's camera: while its check does not pass, they wait (CAM-08). */
   testsSuspended: boolean
@@ -129,6 +132,14 @@ interface StreamLinesState {
   intents: StreamLineIntents
 }
 
+/** Each capability's neutral icon, beside its name in the list. */
+const CAPABILITY_ICONS: Record<Capability, LucideIcon> = {
+  stream: Video,
+  ptz: Move,
+  hardware_privacy: EyeOff,
+  image_settings: SlidersHorizontal,
+}
+
 export function CapabilitySection({
   camera,
   bindings,
@@ -138,7 +149,6 @@ export function CapabilitySection({
   readError,
   detecting,
   detected,
-  detection,
   verifyingStream,
   testsSuspended,
   pending,
@@ -153,7 +163,7 @@ export function CapabilitySection({
 
   return (
     <div className="flex flex-col gap-3">
-      <ul aria-label="Capacités" className="flex flex-col gap-3">
+      <ul aria-label="Capacités" className="overflow-hidden rounded-card bg-card">
         <StreamCard
           camera={camera}
           binding={stream}
@@ -186,7 +196,7 @@ export function CapabilitySection({
             ))}
       </ul>
 
-      {loading && <p className="text-muted-foreground">Chargement…</p>}
+      {loading && <Loading />}
       {readError && (
         <ReadFailure
           error={readError}
@@ -220,16 +230,9 @@ export function CapabilitySection({
         </SecondaryButton>
       </div>
 
-      {detection && (
-        <div role="status" className={cn('text-sm', DETECTION_TONE[detection.outcome])}>
-          <p>{DETECTION_SENTENCES[detection.outcome]}</p>
-          {detection.diagnostic && <DiagnosticLine text={detection.diagnostic} />}
-        </div>
-      )}
-
       {/* A stream never chosen is not waited for: its card already says what to do. */}
       {testsSuspended && stream?.isConfigured !== false && (
-        <p className="text-sm text-muted-foreground">{TESTS_SUSPENDED}</p>
+        <p className="text-body text-muted-foreground">{TESTS_SUSPENDED}</p>
       )}
     </div>
   )
@@ -286,16 +289,16 @@ function StreamCard({
     const coverage = streamCoverageLine(streams.lineup)
     switch (shown) {
       case CapabilityState.Unconfigured:
-        return <p className="text-sm text-muted-foreground">{unconfiguredLine()}</p>
+        return <p className="text-body text-muted-foreground">{unconfiguredLine()}</p>
       case CapabilityState.Unchecked:
-        return <p className="text-sm text-muted-foreground">{STREAM_UNCHECKED}</p>
+        return <p className="text-body text-muted-foreground">{STREAM_UNCHECKED}</p>
       case CapabilityState.Working:
       case CapabilityState.Failed: {
         const working = formatStreamWorkingLine(camera, binding?.verifiedAt ?? null)
         // Each sentence in its own tone: what still works is never said in red (principle 4).
         const failing = shown === CapabilityState.Failed
         return (
-          <div className="text-sm text-muted-foreground">
+          <div className="text-body text-muted-foreground">
             {check === CapabilityState.Failed ? (
               <div className="text-destructive">
                 <p>
@@ -327,14 +330,15 @@ function StreamCard({
 
   return (
     <CapabilityCard
+      icon={CAPABILITY_ICONS.stream}
       title={STREAM_LABEL}
-      pill={state && CAPABILITY_STATE_PILLS[state]}
+      mark={state && capabilityMark(state)}
       options={
         binding &&
         choices.length > 0 && (
           <>
             {binding.isConfigured && (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-body text-muted-foreground">
                 Changer de protocole remplace la liste des flux, y compris ceux que vous avez
                 ajoutés.
               </p>
@@ -500,25 +504,25 @@ function BindingCard({
         // Confirmed by the user rests on their word, and says so (ADR-04).
         if (binding.confirmedAt)
           return (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-body text-muted-foreground">
               Confirmé par vous le {formatCheckedAt(binding.confirmedAt)}
             </p>
           )
         return verifiedAtLabel ? (
-          <p className="text-sm text-muted-foreground">Vérifié le {verifiedAtLabel}</p>
+          <p className="text-body text-muted-foreground">Vérifié le {verifiedAtLabel}</p>
         ) : null
       case CapabilityState.ToConfirm:
         if (asking)
-          return <p className="text-sm font-medium">{TRY_QUESTIONS[binding.capability]}</p>
+          return <p className="text-body font-medium">{TRY_QUESTIONS[binding.capability]}</p>
         // The try acts on the camera without a confirmation: its cost is said above the button (DESIGN SYSTEM § Help).
         return (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-body text-muted-foreground">
             {camera.privacyModeActive ? TRY_REFUSED_IN_PRIVACY : TRY_COSTS[binding.capability]}
           </p>
         )
       case CapabilityState.Rejected:
         return (
-          <div className="text-sm text-muted-foreground">
+          <div className="text-body text-muted-foreground">
             <p>{USERS_NO[binding.capability]}</p>
             {/* Trying again acts on the camera too: its cost stays above the button (DESIGN SYSTEM § Help). */}
             <p>
@@ -529,7 +533,7 @@ function BindingCard({
       case CapabilityState.Failed:
         // The camera's answer is support detail: a plain sentence leads (UI-01).
         return (
-          <div className="text-sm text-destructive">
+          <div className="text-body text-destructive">
             {/* Silence, a refused account or a failed test each have their own way out (ADR-04). */}
             <p>{capabilityFailureLine(protocol?.status ?? null, binding.status)}</p>
             {binding.lastError && <DiagnosticLine text={scrubSecrets(binding.lastError)} />}
@@ -537,7 +541,7 @@ function BindingCard({
         )
       case CapabilityState.Unconfigured:
         return suggested || !protocolsRead ? null : (
-          <p className="text-sm text-muted-foreground">{NO_PROTOCOL_YET}</p>
+          <p className="text-body text-muted-foreground">{NO_PROTOCOL_YET}</p>
         )
       // Only the stream is ever unchecked.
       case CapabilityState.Unchecked:
@@ -689,8 +693,9 @@ function BindingCard({
   return (
     <>
       <CapabilityCard
+        icon={CAPABILITY_ICONS[binding.capability]}
         title={label}
-        pill={CAPABILITY_STATE_PILLS[state]}
+        mark={capabilityMark(state)}
         actions={actions()}
         options={
           choices.length > 0 && (
@@ -714,7 +719,7 @@ function BindingCard({
                 />
               )}
               {binding.isConfigured && binding.nativePositions !== null && (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-body text-muted-foreground">
                   {binding.nativePositions ? POSITIONS_IN_CAMERA : POSITIONS_KEPT_BY_VYZIO}
                 </p>
               )}

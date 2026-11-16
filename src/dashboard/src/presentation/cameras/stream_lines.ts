@@ -10,10 +10,11 @@ import type {
   CameraCapabilityBinding,
   SupportedProtocol,
 } from '../../domain/entities/camera_capability_binding.entity'
-import { CAPABILITY_STATE_PILLS, CapabilityState, type StatePill } from './capability_state'
+import type { StatusMarkState } from '../../common/components/status_mark_state'
+import { capabilityMark, CapabilityState } from './capability_state'
 import { PROTOCOL_LABELS } from './protocol_labels'
 
-/** Where a stream line stands, its pill (CAM-21). */
+/** Where a stream line stands, its mark (CAM-21). */
 export const StreamLineState = {
   Working: 'working',
   Failed: 'failed',
@@ -21,11 +22,15 @@ export const StreamLineState = {
 } as const
 export type StreamLineState = (typeof StreamLineState)[keyof typeof StreamLineState]
 
-/** A stream line speaks the capability level's words (CAM-21). */
-export const STREAM_LINE_PILLS: Record<StreamLineState, StatePill> = {
-  working: CAPABILITY_STATE_PILLS.working,
-  failed: CAPABILITY_STATE_PILLS.failed,
-  unchecked: CAPABILITY_STATE_PILLS.unchecked,
+const STREAM_LINE_CAPABILITY_STATES: Record<StreamLineState, CapabilityState> = {
+  working: CapabilityState.Working,
+  failed: CapabilityState.Failed,
+  unchecked: CapabilityState.Unchecked,
+}
+
+/** A stream line speaks the capability level's words and marks (CAM-21). */
+export function streamLineMark(state: StreamLineState): StatusMarkState {
+  return capabilityMark(STREAM_LINE_CAPABILITY_STATES[state])
 }
 
 export function streamLineState(stream: CameraStream): StreamLineState {

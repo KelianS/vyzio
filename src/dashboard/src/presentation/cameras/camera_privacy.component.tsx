@@ -9,8 +9,9 @@ import { useToast } from '../../common/components/toast'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import type { Camera, PrivacyStrategy } from '../../domain/entities/camera.entity'
-import { SettingsPage, SettingsSection } from '../../common/settings/settings_page'
-import { HelpPanel } from '../../common/components/help_panel'
+import { SettingsPage } from '../../common/settings/settings_page'
+import { GroupedList } from '../../common/components/grouped_list'
+import { HelpNotes, HelpQuestion } from '../../common/components/help_notes'
 import { ScheduleCountLine } from '../../common/schedule/schedule_count_line'
 import { ScheduleRuleKind } from '../../domain/entities/schedule_rule.entity'
 import { PrivacyAnswerNotice } from './components/privacy_answer_notice'
@@ -69,19 +70,25 @@ export function CameraPrivacyView() {
           />
         )}
 
-        <SettingsSection title="Plages horaires">
-          <ScheduleCountLine
-            rules={uido.rules}
-            kind={ScheduleRuleKind.Privacy}
-            targetId={camera.id}
-            error={uido.rulesError}
-            onRetry={presenter.onRetryRules}
-          />
+        <div className="flex flex-col gap-2">
+          <GroupedList label="Plages horaires">
+            <ScheduleCountLine
+              rules={uido.rules}
+              kind={ScheduleRuleKind.Privacy}
+              targetId={camera.id}
+              error={uido.rulesError}
+              onRetry={presenter.onRetryRules}
+            />
+          </GroupedList>
           {camera.privacyResume && (
-            <p className="pb-3 text-sm">{formatPrivacyResume(camera.privacyResume)}</p>
+            <p className="mx-1 text-body text-muted-foreground">
+              {formatPrivacyResume(camera.privacyResume)}
+            </p>
           )}
+        </div>
 
-          <HelpPanel title="Comment les plages et la coupure manuelle s’articulent-elles ?">
+        <HelpNotes>
+          <HelpQuestion title="Comment les plages et la coupure manuelle s’articulent-elles ?">
             <p>
               Une plage coupe la caméra à son entrée et la rétablit à sa sortie. Si vous avez coupé
               la caméra vous-même, la plage ne la rétablira pas : ce que vous avez décidé à la main
@@ -94,8 +101,8 @@ export function CameraPrivacyView() {
               quelle, et les plages sont réévaluées : si l’heure courante tombe dans l’une d’elles,
               la caméra repart coupée, même si vous aviez repris la surveillance.
             </p>
-          </HelpPanel>
-        </SettingsSection>
+          </HelpQuestion>
+        </HelpNotes>
       </SettingsPage>
 
       <SettingsDraftBar

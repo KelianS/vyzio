@@ -32,6 +32,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<INotificationChannelConfigRepository, NotificationChannelConfigRepository>();
         services.AddScoped<IRecordingSettingsRepository, RecordingSettingsRepository>();
+        services.AddScoped<INotificationSilenceRepository, NotificationSilenceRepository>();
         services.AddScoped<ICommandJournalRepository, CommandJournalRepository>();
         services.AddScoped<IChannelPairingRepository, ChannelPairingRepository>();
         services.AddScoped<IAccountRepository, AccountRepository>();

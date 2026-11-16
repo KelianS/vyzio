@@ -11,7 +11,7 @@
 
 - au moins un canal est configuré (UC-NOTIF-02).
 
-**Résultat en succès** : les notifications suivent les destinations, catégories, certitude, plages et format choisis (NOTIF-21, NOTIF-22).
+**Résultat en succès** : les notifications suivent, pour chaque canal, les catégories, certitude, plages et format choisis (NOTIF-21, NOTIF-22).
 
 **Résultats en échec** : aucun propre à ce cas.
 
@@ -20,19 +20,19 @@
 | ID | Libellé | Type | Déclencheur |
 | --- | --- | --- | --- |
 | N1 | Choisir les catégories et la certitude minimale | Nominal | Le propriétaire ouvre le réglage des notifications |
-| A1 | Planifier des plages sans notification | Alternative | Le propriétaire veut faire taire un canal à heure fixe |
+| A1 | Planifier des plages Silence | Alternative | Le propriétaire veut faire taire un canal à heure fixe |
 | A2 | Choisir le format du message | Alternative | Le propriétaire veut changer ce que dit le message |
 
 ## Détail des chemins
 
 ### N1 · Choisir les catégories et la certitude minimale
 
-1. Le propriétaire choisit les destinations actives, les catégories notifiées et la certitude minimale (NOTIF-20, NOTIF-21).
+1. Le propriétaire choisit, pour chaque canal configuré (NOTIF-35), les catégories notifiées et la certitude minimale (NOTIF-20, NOTIF-21).
 2. Il voit ce qu'il a modifié et enregistre (UI-11).
 
-### A1 · Planifier des plages sans notification
+### A1 · Planifier des plages Silence
 
-1. Le propriétaire planifie une plage sans notification dans la Planification (NOTIF-20, UC-SCHED-01).
+1. Le propriétaire planifie une plage Silence dans la Planification (NOTIF-20, UC-SCHED-01) ; pour faire taire les notifications tout de suite, il lance un Silence (UC-NOTIF-06).
 
 ### A2 · Choisir le format du message
 
@@ -40,8 +40,8 @@
 
 ## Règles locales
 
-- **NOTIF-20** · l'utilisateur doit pouvoir regler une certitude minimale de notification, et planifier des plages **sans notification** dans la planification de la maison (SCHED-01), qui suivent NOTIF-07 ;
-- **NOTIF-21** · le produit doit permettre de regler au minimum les destinations actives, les categories d'evenements notifiees, la certitude minimale et les plages sans notification ;
+- **NOTIF-20** · l'utilisateur doit pouvoir regler une certitude minimale de notification, et planifier des plages **Silence** dans la planification de la maison (SCHED-01), qui suivent NOTIF-33 ;
+- **NOTIF-21** · le produit doit permettre de regler au minimum, pour chaque canal configure, les categories d'evenements notifiees, la certitude minimale et les plages Silence ;
 - **NOTIF-22** · le produit doit permettre de choisir un format de message simple, avec au minimum camera, heure, type d'evenement, identite si connue et apercu si autorise.
 
 ## Points ouverts

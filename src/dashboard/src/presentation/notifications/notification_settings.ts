@@ -9,7 +9,6 @@ import type {
 
 /** Screen-facing values and their API translation, one place for every fractional/null quirk. */
 export type NotificationValues = {
-  enabled: boolean
   minimumConfidence: number
   allowedLabels: string[]
   limitRepeats: boolean
@@ -73,7 +72,6 @@ export function notificationDraftLabels(
   channel: NotificationChannelName,
 ): Record<keyof NotificationValues, string> {
   return {
-    enabled: 'Envoi des notifications',
     bot_token: credentialCopy(channel, 'bot_token').label,
     chat_id: credentialCopy(channel, 'chat_id').label,
     minimumConfidence: 'Certitude minimale',
@@ -95,7 +93,6 @@ const EMPTY_CREDENTIALS: Record<ChannelCredentialField, string> = {
 
 export const DEFAULT_NOTIFICATION_VALUES: NotificationValues = {
   ...EMPTY_CREDENTIALS,
-  enabled: false,
   minimumConfidence: 75,
   allowedLabels: DEFAULT_LABELS,
   limitRepeats: false,
@@ -111,7 +108,6 @@ export function toNotificationValues(config: NotificationChannelConfig): Notific
     ...Object.fromEntries(
       config.credentials.map((credential) => [credential.field, credential.value ?? '']),
     ),
-    enabled: config.isEnabled,
     minimumConfidence: Math.round(config.minimumConfidence * 100),
     allowedLabels: config.allowedLabels.length > 0 ? config.allowedLabels : DEFAULT_LABELS,
     limitRepeats: config.cooldownMinutes !== null,
@@ -126,7 +122,6 @@ export function toSaveRequest(
   credentials: readonly ChannelCredential[],
 ): SaveNotificationChannelConfigRequest {
   return {
-    isEnabled: values.enabled,
     // Only the fields this channel declared, and only those actually filled in.
     credentials: Object.fromEntries(
       credentials

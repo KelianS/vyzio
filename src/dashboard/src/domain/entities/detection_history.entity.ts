@@ -6,10 +6,12 @@ export interface DetectionHistoryPage {
   nextCursor: string | null
 }
 
+/** Each list keeps a detection matching any of its values; an empty or missing one filters nothing. */
 export interface DetectionHistoryQuery {
-  camera?: string
-  label?: string
-  profileId?: string
+  /** The engine's names of the cameras. */
+  cameras?: readonly string[]
+  labels?: readonly string[]
+  profileIds?: readonly string[]
   from?: string
   to?: string
   cursor?: string

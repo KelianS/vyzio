@@ -5,7 +5,7 @@ import type {
   DiscoveryRange,
 } from '../../domain/entities/discovered_camera.entity'
 
-/** What's being added: a discovered camera, or a manually typed address (CAM-39). */
+/** What's being added: a discovered camera, or a manually typed address (CAM-62). */
 type AddCameraSelection =
   /** Nothing chosen yet. */
   { kind: 'none' } | { kind: 'manual' } | { kind: 'candidate'; index: number }
@@ -29,15 +29,12 @@ export interface AddCameraUido {
   refreshing: boolean
   creating: boolean
 
-  message: string | null
-  /** A failure: its sentence, and the diagnostic line when a call failed (UI-01). */
-  error: { message: string; diagnostic?: string } | null
   confirmScan: boolean
   /** The ranges the search will sweep, read when its confirmation opens so it can name them (ADR-05). */
   rangesToSweep: {
     loading: boolean
     ranges: DiscoveryRange[]
-    error: { message: string; diagnostic?: string } | null
+    error: AppError | null
   }
 
   /** Which vendor's help sheet shows: discovery's vendor, or the user's pick; never stored nor sent (#274). */
@@ -56,8 +53,6 @@ export function buildInitialAddCameraUido(): AddCameraUido {
     refreshing: false,
     creating: false,
 
-    message: null,
-    error: null,
     confirmScan: false,
     rangesToSweep: { loading: false, ranges: [], error: null },
 

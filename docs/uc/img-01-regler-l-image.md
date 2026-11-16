@@ -31,7 +31,7 @@
 
 ### N1 · Régler un paramètre de l'image
 
-1. L'utilisateur ouvre l'onglet « Image et pilotage » de la caméra (CAM-03) ; Vyzio y affiche les valeurs lues sur la caméra (IMG-02).
+1. L'utilisateur ouvre l'onglet « Image et pilotage » de la caméra (CAM-61) ; Vyzio y affiche les valeurs lues sur la caméra (IMG-02).
 2. L'utilisateur change une valeur ; Vyzio l'écrit sur la caméra (IMG-02).
 
 ### A1 · Régler la vision nocturne

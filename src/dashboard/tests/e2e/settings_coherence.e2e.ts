@@ -12,15 +12,15 @@ import { installFakeBackend, createFakeBackendState, makeFakeCamera } from './fi
 
 const SETTINGS_ROUTES = [
   '/settings/cameras/camera-1/detection',
-  '/settings/cameras/camera-1/conservation',
-  '/settings/cameras/camera-1/vie-privee',
+  '/settings/cameras/camera-1/retention',
+  '/settings/cameras/camera-1/privacy',
   '/settings/cameras/camera-1/image',
-  '/settings/cameras/camera-1/connexion',
-  '/settings/conservation',
+  '/settings/cameras/camera-1/connection',
+  '/settings/retention',
   // The settings are in the channel, not in the list leading to it.
   '/settings/notifications/telegram',
   '/settings/notifications/discord',
-  '/settings/detection/personnes/profile-1/identite',
+  '/settings/face-recognition/profile-1/identity',
 ]
 
 interface FieldMeasure {
@@ -121,8 +121,8 @@ test.describe('Settings screens coherence', () => {
   test('SettingsSection_ShouldSetItsTitleApartFromLabels_WhenAPageGroupsItsSettings', async ({
     page,
   }) => {
-    // A section title and a setting label rendered alike make a page where everything
-    // sits at the same level: the sections then separate nothing.
+    // A section label and a setting label rendered alike make a page where everything
+    // sits at the same level: the label sits above its list, smaller, bold and quieter (DESIGN SYSTEM § Typography).
     for (const path of SETTINGS_ROUTES) {
       await page.goto(path)
       await page.waitForLoadState('networkidle')
@@ -132,7 +132,8 @@ test.describe('Settings screens coherence', () => {
           nodes.map((node) => ({
             text: node.textContent ?? '',
             size: Number.parseFloat(getComputedStyle(node).fontSize),
-            serif: getComputedStyle(node).fontFamily.includes('Iowan'),
+            weight: Number.parseFloat(getComputedStyle(node).fontWeight),
+            color: getComputedStyle(node).color,
           })),
         )
 
@@ -140,31 +141,44 @@ test.describe('Settings screens coherence', () => {
       const labels = await typography('label[id$="-label"]')
       if (titles.length === 0) continue
 
-      const biggestLabel = Math.max(...labels.map((entry) => entry.size))
+      const smallestLabel = Math.min(...labels.map((entry) => entry.size))
+      const labelColours = labels.map((entry) => entry.color)
       for (const title of titles) {
-        expect(title.serif, `${path}: "${title.text}" is not in the heading serif`).toBe(true)
-        expect(
-          title.size,
-          `${path}: "${title.text}" is the size of a setting label`,
-        ).toBeGreaterThan(biggestLabel)
+        expect(title.weight, `${path}: "${title.text}" is not set bold`).toBeGreaterThanOrEqual(600)
+        expect(title.size, `${path}: "${title.text}" is the size of a setting label`).toBeLessThan(
+          smallestLabel,
+        )
+        expect(labelColours, `${path}: "${title.text}" has a setting label's colour`).not.toContain(
+          title.color,
+        )
       }
     }
   })
 
-  const FOLD_ROUTES = ['/settings/systeme', '/settings/detection/personnes/profile-1/photos']
+  const ADVANCED_ROUTES = [
+    {
+      path: '/settings/face-recognition/profile-1/photos',
+      advanced: '/settings/face-recognition/profile-1/photos/advanced',
+    },
+    {
+      path: '/settings/cameras/camera-1/connection',
+      advanced: '/settings/cameras/camera-1/connection/advanced',
+    },
+  ]
 
-  for (const path of FOLD_ROUTES) {
-    test(`AdvancedFold_ShouldBeClosed_WhenThePageOpens (${path})`, async ({ page }) => {
+  for (const { path, advanced } of ADVANCED_ROUTES) {
+    test(`AdvancedRow_ShouldOpenItsOwnAdvancedPage_WhenTheUserFollowsIt (${path})`, async ({
+      page,
+    }) => {
       await page.goto(path)
-      await page.waitForLoadState('networkidle')
 
-      // "Avance" is a position, not a mode (UI-09): hence a fold, closed on load.
-      const fold = page.locator('details', { has: page.getByText('Avancé', { exact: true }) })
-      await expect(fold).toHaveCount(1)
-      await expect(fold).not.toHaveAttribute('open', /.*/)
+      // "Avance" is a position, not a mode (UI-09): one row of its own, leading to its own page.
+      await page.getByRole('link', { name: 'Avancé' }).click()
+      await expect(page).toHaveURL(advanced)
+      await expect(page.getByRole('heading', { level: 1, name: 'Avancé' })).toBeVisible()
 
-      await fold.getByText('Avancé', { exact: true }).click()
-      await expect(fold).toHaveAttribute('open', /.*/)
+      await page.getByRole('button', { name: 'Retour' }).click()
+      await expect(page).toHaveURL(path)
     })
   }
 })

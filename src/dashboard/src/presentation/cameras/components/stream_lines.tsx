@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { Check, Plus, RefreshCw } from 'lucide-react'
-import { Badge } from '../../../common/components/badge'
+import { StatusMark } from '../../../common/components/status_mark'
+import { markSubtitle } from '../../../common/components/status_mark_state'
 import { ConfirmModal } from '../../../common/components/confirm_modal'
 import { DiagnosticLine, ReadFailure } from '../../../common/components/error_message'
-import { HelpPanel } from '../../../common/components/help_panel'
 import { HelpTrigger } from '../../../common/components/help_trigger'
 import type { AppError } from '../../../common/errors/app_error'
 import { scrubSecrets } from '../../../common/errors/scrub_secrets'
@@ -27,7 +27,7 @@ import {
   RECORDING_STREAM_KEPT,
   ROLE_CONSEQUENCES,
   ROLE_LABELS,
-  STREAM_LINE_PILLS,
+  streamLineMark,
   StreamLineState,
   addChoices,
   choiceOptions,
@@ -39,6 +39,9 @@ import {
   type StreamChoice,
 } from '../stream_lines'
 import { Picker } from './protocol_choice'
+import { Field } from '../../../common/components/field'
+import { Loading } from '../../../common/components/loading'
+import { EmptyState } from '../../../common/components/empty_state'
 
 /** What the stream lines ask of their screen. */
 export interface StreamLineIntents {
@@ -82,7 +85,7 @@ export function StreamLines({
   return (
     <div className="flex flex-col gap-3">
       <h4 className="font-medium">Flux</h4>
-      {loading && <p className="text-muted-foreground">Chargement…</p>}
+      {loading && <Loading />}
       {readError && (
         <ReadFailure
           error={readError}
@@ -91,7 +94,7 @@ export function StreamLines({
         />
       )}
       {lineup && (
-        <ul aria-label="Flux" className="flex flex-col gap-3">
+        <ul aria-label="Flux" className="divide-y divide-border">
           {lineup.streams.map((stream) => (
             <StreamLine
               key={stream.id}
@@ -114,40 +117,6 @@ export function StreamLines({
           intents={intents}
         />
       )}
-      <HelpPanel title="Quel rôle donner à chaque flux ?">
-        <p>
-          Par défaut, le flux le plus détaillé enregistre et le plus léger est analysé : Vyzio
-          réduit de toute façon l’image avant de l’analyser.
-        </p>
-        <p>
-          Sur une caméra large, jardin, garage, allée, gardez le flux le plus léger en détection.
-          Pour reconnaître les gens, entrée, couloir, salon, donnez « Enregistrement et détection »
-          au flux le plus détaillé, surtout si les visages y apparaissent à plusieurs mètres. Si
-          Vyzio devient lent, vérifiez qu’aucune caméra n’analyse son flux le plus détaillé sans
-          raison.
-        </p>
-        <p>
-          Un seul flux enregistre. Donner un rôle à un flux le retire à celui qui l’avait. Un flux
-          gardé sans servir a le rôle « Aucun ».
-        </p>
-        <p>
-          Changer de protocole remplace les flux par ceux que la caméra sert par ce protocole. «
-          Ajouter un flux » propose ceux qu’elle sert et qui ne sont pas dans la liste, y compris un
-          flux retiré.
-        </p>
-        <p>
-          Un chemin erroné se corrige en ajoutant le bon flux avec le rôle « Enregistrement », puis
-          en retirant l’ancien.
-        </p>
-        <p>
-          Si la liste ne propose que « Autre chemin… », la caméra ne dit pas quels flux elle sert,
-          ou ne répond pas : saisissez le chemin donné par le fabricant.
-        </p>
-        <p>
-          Une caméra qui ne donne pas les dimensions de ses flux les voit nommés « Flux principal »
-          ou « Flux secondaire » plutôt qu’avec un chiffre faux.
-        </p>
-      </HelpPanel>
     </div>
   )
 }
@@ -165,26 +134,28 @@ function StreamLine({
 }) {
   const [confirmRemove, setConfirmRemove] = useState(false)
   const state = streamLineState(stream)
+  const mark = streamLineMark(state)
   const records = stream.id === lineup.recordStreamId
   const fallback = stream.id === lineup.detectStreamId ? ` ${DETECTION_FALLS_BACK}` : ''
   const quality = streamQuality(stream)
 
   return (
-    <li aria-label={quality} className="rounded-inset border border-border p-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-1">
-          <p className="font-medium">{quality}</p>
-          <HelpTrigger question="Comment Vyzio reçoit-il ce flux ?" help={streamReach(stream)} />
-        </div>
-        <Badge tone={STREAM_LINE_PILLS[state].tone}>{STREAM_LINE_PILLS[state].label}</Badge>
+    <li aria-label={quality} className="py-3">
+      <div className="flex items-center gap-2">
+        <p className="font-medium">{quality}</p>
+        <StatusMark {...mark} />
+        <HelpTrigger question="Comment Vyzio reçoit-il ce flux ?" help={streamReach(stream)} />
       </div>
+      {markSubtitle(mark) && (
+        <p className="text-body text-muted-foreground">{markSubtitle(mark)}</p>
+      )}
       {state === StreamLineState.Failed && (
-        <div className="text-sm text-destructive">
+        <div className="text-body text-destructive">
           <p>{streamFailure(records)}</p>
           {stream.lastError && <DiagnosticLine text={scrubSecrets(stream.lastError)} />}
         </div>
       )}
-      <div className="mt-2 flex flex-col gap-1 text-sm">
+      <div className="mt-2 flex flex-col gap-1 text-body">
         <div className="flex items-center gap-1">
           <span id={`${stream.id}-role`} className="text-muted-foreground">
             Rôle
@@ -341,8 +312,7 @@ function AddStreamForm({
     >
       <p className="font-medium">Ajouter un flux</p>
       <div className="mt-2 flex flex-col gap-3">
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-muted-foreground">Protocole</span>
+        <Field label="Protocole">
           <Picker
             value={protocol}
             options={protocols}
@@ -352,7 +322,7 @@ function AddStreamForm({
               onList(value as StreamProtocol)
             }}
           />
-        </label>
+        </Field>
         <StreamPicker
           choices={choices}
           selected={selected}
@@ -365,8 +335,7 @@ function AddStreamForm({
           }}
           onRetry={() => onList(protocol)}
         />
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-muted-foreground">Rôle</span>
+        <Field label="Rôle">
           <Picker
             value={role}
             options={Object.values(StreamRole).map((value) => ({
@@ -375,7 +344,7 @@ function AddStreamForm({
             }))}
             onChange={(value) => setRole(value as StreamRole)}
           />
-        </label>
+        </Field>
         <div className="flex flex-wrap gap-2">
           <SecondaryButton
             icon={Check}
@@ -416,28 +385,26 @@ export function StreamPicker({
   return (
     <>
       {choices.length > 0 ? (
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-muted-foreground">Flux</span>
+        <Field label="Flux">
           <Picker
             value={(selected ?? choices[0]).key}
             options={choiceOptions(choices)}
             onChange={onPick}
           />
-        </label>
+        </Field>
       ) : (
-        !error && <p className="text-sm text-muted-foreground">Aucun autre flux à ajouter.</p>
+        !error && <EmptyState>Aucun autre flux à ajouter.</EmptyState>
       )}
       {error && onRetry && <ListFailure error={error} onRetry={onRetry} />}
       {selected?.other && (
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-muted-foreground">Chemin du flux</span>
+        <Field label="Chemin du flux">
           <Input
             {...TEXT_KEYBOARD.identifier}
             placeholder="/stream2"
             value={typed}
             onChange={(event) => onType(event.target.value)}
           />
-        </label>
+        </Field>
       )}
     </>
   )

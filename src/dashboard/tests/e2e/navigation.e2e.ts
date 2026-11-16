@@ -13,26 +13,28 @@ test.describe('Navigation', () => {
 
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
 
-    const mainNav = page.getByRole('navigation', { name: 'Navigation principale' })
+    const bar = page.getByRole('banner')
     const rubrics = page.getByRole('navigation', { name: 'Rubriques de réglages' })
 
     await page.goto('/')
-    await expect(page.getByRole('heading', { name: /sous surveillance|Bienvenue/ })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Couper les caméras' })).toBeVisible()
 
-    // The main bar carries viewing only, plus one way into the settings.
-    await mainNav.getByRole('link', { name: 'Historique', exact: true }).click()
-    await expect(page.getByRole('heading', { name: 'Historique' })).toBeVisible()
+    // No navigation bar: the home leads to the detections, the bar's gear to the settings.
+    await page.getByRole('link', { name: 'Détections' }).click()
+    await expect(bar.getByRole('heading', { name: 'Détections' })).toBeVisible()
+    await bar.getByRole('button', { name: 'Retour' }).click()
+    await expect(page).toHaveURL('/')
 
     // Every settings section is reachable from the first level.
-    await mainNav.getByRole('link', { name: 'Réglages', exact: true }).click()
+    await bar.getByRole('link', { name: 'Réglages' }).click()
 
     await rubrics.getByRole('link', { name: /Caméras/ }).click()
     // The section opens on the **list**; adding a camera is a distinct task,
     // with a page of its own.
     await expect(page.getByRole('heading', { name: 'Caméras' })).toBeVisible()
 
-    await rubrics.getByRole('link', { name: /Détection/ }).click()
-    await expect(page.getByRole('heading', { name: 'Détection' })).toBeVisible()
+    await rubrics.getByRole('link', { name: /Personnes/ }).click()
+    await expect(page.getByRole('heading', { name: 'Personnes' })).toBeVisible()
 
     await rubrics.getByRole('link', { name: /Conservation/ }).click()
     await expect(page.getByRole('heading', { name: 'Conservation' })).toBeVisible()
@@ -40,14 +42,12 @@ test.describe('Navigation', () => {
     await rubrics.getByRole('link', { name: /Notifications/ }).click()
     await expect(page.getByRole('heading', { name: 'Notifications' })).toBeVisible()
 
-    await rubrics.getByRole('link', { name: /Système/ }).click()
-    await expect(page.getByRole('heading', { name: 'Système' })).toBeVisible()
+    await rubrics.getByRole('link', { name: /Matériel/ }).click()
+    await expect(page.getByRole('heading', { name: 'Matériel' })).toBeVisible()
 
-    // The niche one is put deep, not hidden: the technical interface is only
-    // reachable by unfolding "Avance", and it always is.
-    await expect(page.getByRole('link', { name: /interface technique/ })).toBeHidden()
-    await page.getByRole('group').filter({ hasText: 'Avancé' }).getByText('Avancé').click()
-    await page.getByRole('link', { name: /interface technique/ }).click()
+    // The niche one is put deep, not hidden: the technical interface is the Avancé row's destination.
+    await page.getByRole('link', { name: /Avancé/ }).click()
+    await expect(page).toHaveURL('/settings/hardware/advanced')
     await expect(
       page
         .getByRole('status', { name: 'Chargement de Frigate…' })
@@ -56,28 +56,13 @@ test.describe('Navigation', () => {
         .first(),
     ).toBeVisible()
 
-    await mainNav.getByRole('link', { name: 'Accueil', exact: true }).click()
+    await page.goto('/settings')
+    await bar.getByRole('button', { name: 'Retour' }).click()
     await expect(page).toHaveURL('/')
 
     expect(consoleErrors, `Console errors while navigating:\n${consoleErrors.join('\n')}`).toEqual(
       [],
     )
-  })
-
-  test('AppShell_ShouldRedirectToTheNewAddress_WhenTheUserFollowsAnOldLink', async ({ page }) => {
-    await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
-
-    // A bookmark or a kept link must not fall into the void because the tree
-    // changed.
-    for (const [old, expected] of [
-      ['/cameras', '/settings/cameras'],
-      ['/profiles', '/settings/detection/personnes'],
-      ['/notifications', '/settings/notifications'],
-      ['/expert', '/settings/systeme/avance'],
-    ]) {
-      await page.goto(old)
-      await expect(page).toHaveURL(expected)
-    }
   })
 
   test('CamerasView_ShouldOpenOnConnexionWithTabsInSetupOrder_WhenACameraIsPickedFromTheList', async ({
@@ -88,7 +73,7 @@ test.describe('Navigation', () => {
 
     await page.getByRole('link', { name: /Porte d’entrée/ }).click()
 
-    await expect(page).toHaveURL('/settings/cameras/camera-1/connexion')
+    await expect(page).toHaveURL('/settings/cameras/camera-1/connection')
     const tabs = page.getByRole('navigation', { name: 'Réglages de la caméra' })
     await expect(tabs.getByRole('link', { name: 'Connexion' })).toHaveAttribute(
       'aria-current',
@@ -125,7 +110,7 @@ test.describe('Navigation', () => {
       createFakeBackendState({ cameras: [makeFakeCamera({ id: 'camera-1' })] }),
     )
 
-    await page.goto('/settings/cameras/camera-1/conservation')
+    await page.goto('/settings/cameras/camera-1/retention')
 
     const tabs = page.getByRole('navigation', { name: 'Réglages de la caméra' })
     // One row that scrolls: landing on the last tab must still show it.

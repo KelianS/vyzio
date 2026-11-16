@@ -18,7 +18,7 @@ usable by a non-technical household and keeps it invisible.
 | Offline | Detection, recording, history and the interface work without internet ([SPECS](SPECS.md) SYS-03, SYS-04) | No cloud service in any critical path; the messaging channels and remote access need internet; no model is downloaded at run time, those Frigate does not carry ship with Vyzio | ADR-01, ADR-02, ADR-03, ADR-08, ADR-14 |
 | Target hardware | A modest machine at home: a mini PC, a Raspberry Pi 5, a NAS | One Compose stack, one database file, the detector picked from the hardware found, with a CPU fallback | ADR-01, ADR-07, ADR-08 |
 | Latency | A person signalled while still in view ([SPECS](SPECS.md) NOTIF-15, NOTIF-12); the live view's delay behind the scene ([SPECS](SPECS.md) LIVE-01) | Vyzio adds no step on the detection path: detection and recognition stay in Frigate, Vyzio reacts to its events and fetches the media afterwards. The live view's only step is the API's relay, which copies go2rtc's stream without decoding it | ADR-02, ADR-07, ADR-13 |
-| Plug and play | No YAML, no network or protocol knowledge ([SPECS](SPECS.md) UI-04, CAM-39) | Vyzio writes and applies the whole Frigate configuration; cameras are reached through five protocols, their capabilities detected and proven, whatever the brand | ADR-04, ADR-15 |
+| Plug and play | No YAML, no network or protocol knowledge ([SPECS](SPECS.md) UI-04, CAM-62) | Vyzio writes and applies the whole Frigate configuration; cameras are reached through five protocols, their capabilities detected and proven, whatever the brand | ADR-04, ADR-15 |
 | Resilience | A lost camera or a restarting Frigate is visible, never silent ([SPECS](SPECS.md) CAM-07, SYS-01) | The API stays alive while Frigate restarts; camera reachability is watched apart from Frigate; Vyzio observes and shows, it never removes or reloads a camera on its own; go2rtc carries every camera, so its stop stops them all | ADR-01, ADR-05, ADR-07 |
 | Diagnosable errors | A plain sentence, then the detail support needs ([SPECS](SPECS.md) UI-01) | A camera that refuses is told apart from one that cannot be reached, from the protocol client up to the screen | ADR-04 |
 
@@ -237,6 +237,7 @@ a live tuning that needs no restart goes over MQTT (ADR-08).
 | Cameras, their protocols, capabilities and streams | Vyzio | Database | Until the camera is removed |
 | Profiles and their reference photos | Vyzio, synced to Frigate's face library (ADR-13) | Database, the photos as files beside it | Until removed |
 | Schedule rules, channel settings and pairings, retention settings | Vyzio | Database | Until changed |
+| The household Silence | Vyzio (ADR-15) | Database | Until ended or replaced; inactive once its end instant passes, when it has one |
 | Notification log, command journal | Vyzio, anchored on the Frigate event | Database | No expiry; a notification row goes with its detection ([SPECS](SPECS.md) HIST-10) |
 | Owner account and sessions | Vyzio | Database; the password only hashed (ADR-16) | Sessions until revoked |
 | PTZ positions counted by Vyzio, the thumbnails and slot labels | Vyzio (ADR-09) | Database, the thumbnails as files beside it | Until removed |

@@ -1,10 +1,9 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import '@fontsource-variable/inter'
 import './index.css'
 import App from './app.tsx'
 
-// No dark-theme sync: tried on 2026-08-03, several surfaces stayed unreadable, and the
-// tokens have to be finished before the class is put back on <html> (ADR-01).
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />

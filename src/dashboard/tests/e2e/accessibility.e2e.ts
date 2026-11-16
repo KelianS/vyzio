@@ -4,6 +4,7 @@ import {
   installFakeBackend,
   createFakeBackendState,
   makeFakeCamera,
+  makeFakeChannel,
   makeFakeDetectionEvent,
 } from './fixtures/fake_backend'
 
@@ -62,31 +63,84 @@ test.describe('Accessibility, WCAG 2.1 A/AA', () => {
             hasClip: true,
           }),
         ],
+        notificationChannels: { telegram: makeFakeChannel('telegram') },
+        scheduleRules: [
+          {
+            id: 'rule-1',
+            kind: 'privacy',
+            targetIds: ['camera-1'],
+            daysOfWeek: [1, 2],
+            startTime: '22:00',
+            endTime: '07:00',
+            createdAt: '2026-01-01T00:00:00Z',
+          },
+        ],
       }),
     )
   })
 
   const routes = [
     '/',
-    '/history',
-    '/cameras/camera-1/direct',
+    '/cameras',
+    '/detections',
+    '/cameras/camera-1',
+    '/cameras/camera-1?tab=detections',
+    '/cameras/camera-2',
     '/settings',
     '/settings/cameras',
-    '/settings/cameras/ajout',
+    '/settings/cameras/add',
     '/settings/cameras/camera-1/detection',
-    '/settings/cameras/camera-1/conservation',
-    '/settings/cameras/camera-1/vie-privee',
+    '/settings/cameras/camera-1/retention',
+    '/settings/cameras/camera-1/privacy',
     '/settings/cameras/camera-1/image',
-    '/settings/cameras/camera-1/connexion',
-    '/settings/conservation',
+    '/settings/cameras/camera-1/connection',
+    '/settings/cameras/camera-1/connection/advanced',
+    '/settings/cameras/camera-1/connection/advanced/protocols/rtsp',
+    '/settings/retention',
     '/settings/notifications',
-    '/settings/detection/personnes',
-    '/settings/detection/personnes/ajout',
-    '/settings/detection/personnes/profile-1/identite',
-    '/settings/detection/personnes/profile-1/photos',
-    '/settings/detection/personnes/profile-1/cameras',
-    '/settings/systeme',
+    '/settings/notifications/telegram',
+    '/settings/notifications/telegram/advanced',
+    '/settings/schedule',
+    '/settings/schedule/rule-1',
+    '/settings/access',
+    '/settings/face-recognition',
+    '/settings/face-recognition/add',
+    '/settings/face-recognition/profile-1/identity',
+    '/settings/face-recognition/profile-1/photos',
+    '/settings/face-recognition/profile-1/photos/advanced',
+    '/settings/face-recognition/profile-1/cameras',
+    '/settings/hardware',
   ]
+
+  test('Screen_ShouldPassTheWcagScan_WhenADurationLeavesItsRecommendation (/settings/retention)', async ({
+    page,
+  }) => {
+    await page.goto('/settings/retention')
+    const motion = page.getByRole('spinbutton', { name: 'Séquences de mouvement' })
+    await motion.fill('10')
+    await motion.blur()
+    await expect(
+      page.getByRole('button', { name: /^Revenir à la valeur recommandée/ }),
+    ).toBeVisible()
+
+    const violations = await scan(page)
+    expect(violations, describeViolations(violations)).toEqual([])
+  })
+
+  test('Screen_ShouldPassTheWcagScan_WhenACameraSetsItsOwnDuration (/settings/cameras/camera-1/retention)', async ({
+    page,
+  }) => {
+    await page.goto('/settings/cameras/camera-1/retention')
+    const motion = page.getByRole('spinbutton', { name: 'Séquences de mouvement' })
+    await motion.fill('10')
+    await motion.blur()
+    await expect(
+      page.getByRole('button', { name: /^Revenir à la valeur de l’ensemble/ }),
+    ).toBeVisible()
+
+    const violations = await scan(page)
+    expect(violations, describeViolations(violations)).toEqual([])
+  })
 
   for (const path of routes) {
     test(`Screen_ShouldPassTheWcagScan_WhenFilledWithContent (${path})`, async ({ page }) => {

@@ -5,8 +5,10 @@ import type { DetectionHistoryQuery } from '../../domain/entities/detection_hist
 import type { Profile } from '../../domain/entities/profile.entity'
 import type { DetectionHistoryContainer } from '../../infrastructure/providers/detection_history.container'
 import type { DetectionHistoryAction } from './detection_history.actions'
-import type { DetectionMedia } from '../../common/detection/detection_preview'
+import type { DayFilter } from './day_filter'
+import type { DetectionSheet, FilterAxis } from './detection_history.uido'
 import { explainVideoFailure } from '../../common/detection/explain_video_failure'
+import { latestOnly } from '../../common/presenter/latest_only'
 
 export interface DetectionHistoryPresenterContext {
   container: DetectionHistoryContainer
@@ -19,6 +21,11 @@ export function buildDetectionHistoryPresenter({
   dispatch,
   toast,
 }: DetectionHistoryPresenterContext) {
+  // The filter sheet stays open while the list follows: an earlier filter's answer must not land last.
+  const nextHistoryRead = latestOnly()
+  // The list on screen: an older page read for a list since replaced must not be added to the new one.
+  let shownList = 0
+
   return {
     onMount() {
       container.getProfiles
@@ -33,51 +40,62 @@ export function buildDetectionHistoryPresenter({
     },
 
     onLoadHistory(query: DetectionHistoryQuery) {
+      const isLatest = nextHistoryRead()
+      shownList += 1
       dispatch({ type: 'HISTORY_LOAD_STARTED' })
       container.getDetectionHistory
         .execute(query)
-        .then((page) => dispatch({ type: 'HISTORY_LOAD_SUCCEEDED', page }))
-        .catch((e: unknown) => dispatch({ type: 'HISTORY_LOAD_FAILED', error: toAppError(e) }))
+        .then((page) => {
+          if (isLatest()) dispatch({ type: 'HISTORY_LOAD_SUCCEEDED', page })
+        })
+        .catch((e: unknown) => {
+          if (isLatest()) dispatch({ type: 'HISTORY_LOAD_FAILED', error: toAppError(e) })
+        })
     },
 
     onLoadMore(query: DetectionHistoryQuery, cursor: string) {
+      const listOfThisPage = shownList
+      const sameList = () => listOfThisPage === shownList
       dispatch({ type: 'HISTORY_MORE_STARTED' })
       container.getDetectionHistory
         .execute({ ...query, cursor })
-        .then((page) => dispatch({ type: 'HISTORY_MORE_SUCCEEDED', page }))
+        .then((page) => {
+          if (sameList()) dispatch({ type: 'HISTORY_MORE_SUCCEEDED', page })
+        })
         .catch((e: unknown) => {
+          if (!sameList()) return
           dispatch({ type: 'HISTORY_MORE_FAILED' })
           toastError(toast, toAppError(e))
         })
     },
 
-    onFilterCameraChange(value: string) {
-      dispatch({ type: 'FILTER_CAMERA_SET', value })
+    onToggleFilter(axis: FilterAxis, value: string) {
+      dispatch({ type: 'FILTER_TOGGLED', axis, value })
     },
-    onFilterLabelChange(value: string) {
-      dispatch({ type: 'FILTER_LABEL_SET', value })
+    onClearFilter(axis: FilterAxis) {
+      dispatch({ type: 'FILTER_CLEARED', axis })
     },
-    onFilterProfileChange(value: string) {
-      dispatch({ type: 'FILTER_PROFILE_SET', value })
-    },
-    onFilterFromChange(value: string) {
-      dispatch({ type: 'FILTER_FROM_SET', value })
-    },
-    onFilterToChange(value: string) {
-      dispatch({ type: 'FILTER_TO_SET', value })
+    onFilterDay(day: DayFilter) {
+      dispatch({ type: 'FILTER_DAY_SET', day })
     },
     onResetFilters() {
       dispatch({ type: 'FILTERS_RESET' })
     },
-    onMediaSet(media: DetectionMedia | null) {
-      dispatch({ type: 'MEDIA_SET', media })
+    onPlay(eventId: string) {
+      dispatch({ type: 'CLIP_PLAYED', eventId })
     },
-    onFiltersToggle() {
-      dispatch({ type: 'FILTERS_TOGGLED' })
+    onClipEnded(eventId: string) {
+      dispatch({ type: 'CLIP_ENDED', eventId })
+    },
+    onOpenSheet(sheet: DetectionSheet) {
+      dispatch({ type: 'SHEET_OPENED', sheet })
+    },
+    onCloseSheet() {
+      dispatch({ type: 'SHEET_CLOSED' })
     },
 
     async onCorrect(eventId: string, profile: Profile | null): Promise<void> {
-      dispatch({ type: 'CORRECT_STARTED', eventId })
+      dispatch({ type: 'SHEET_CLOSED' })
       try {
         await container.correctDetectionIdentity.execute(eventId, profile?.id ?? null)
         dispatch({
@@ -88,7 +106,6 @@ export function buildDetectionHistoryPresenter({
         })
         toast(profile ? 'Reconnaissance corrigée' : 'Identité retirée', 'success')
       } catch (e) {
-        dispatch({ type: 'CORRECT_FAILED' })
         toastError(toast, toAppError(e), 'La correction de l’identité n’a pas abouti.')
       }
     },

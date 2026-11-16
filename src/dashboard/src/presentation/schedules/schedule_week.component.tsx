@@ -1,10 +1,10 @@
 import { useEffect, useReducer } from 'react'
 import { Link } from 'react-router'
 import { Plus } from 'lucide-react'
-import { Button } from '../../common/ui/button'
+import { GroupedList, GroupedRow } from '../../common/components/grouped_list'
 import { cn } from '../../common/ui/utils'
 import { SettingsPage } from '../../common/settings/settings_page'
-import { HelpPanel } from '../../common/components/help_panel'
+import { HelpNotes, HelpQuestion } from '../../common/components/help_notes'
 import { ReadFailure } from '../../common/components/error_message'
 import { SCHEDULES_UNREAD } from '../../common/schedule/schedule_count_line'
 import {
@@ -12,6 +12,7 @@ import {
   SCHEDULE_KINDS,
   SCHEDULE_TYPES,
   SCHEDULES_PATH,
+  KIND_PARAM,
 } from '../../common/schedule/schedule_types'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
@@ -28,12 +29,15 @@ import { buildInitialScheduleWeekUido } from './schedule_week.uido'
 import {
   barOf,
   DAY_MINUTES,
+  daysSummary,
   entryTimes,
+  rangeTimes,
   targetSummary,
   weekOf,
   type BarBlock,
   type WeekDay,
 } from './schedule_week.formatters'
+import { Loading } from '../../common/components/loading'
 
 const NO_TARGET: Record<ScheduleTargetKind, string> = {
   [ScheduleTargetKind.Camera]: 'Plus aucune caméra visée',
@@ -41,7 +45,7 @@ const NO_TARGET: Record<ScheduleTargetKind, string> = {
 }
 
 /** A block's height plus the gap to the lane below, in pixels. */
-const LANE_PX = 28
+const LANE_PX = 33
 const HOUR_MARKS = [0, 6, 12, 18, 24]
 const GUIDE_HOURS = [6, 12, 18]
 
@@ -89,7 +93,11 @@ export function ScheduleWeekView() {
       </SettingsPage>
     )
   if (uido.loading || (camerasLoading && cameras.length === 0))
-    return <SettingsPage>Chargement…</SettingsPage>
+    return (
+      <SettingsPage>
+        <Loading />
+      </SettingsPage>
+    )
 
   const cameraNames = new Map(cameras.map((camera) => [camera.id, camera.displayName]))
   const channelNames = new Map<string, string>(
@@ -102,72 +110,76 @@ export function ScheduleWeekView() {
   const nameOf = (kind: ScheduleRuleKind, id: string) =>
     namesOf[SCHEDULE_TYPES[kind].targetKind].get(id)
   const targetsOf = (rule: ScheduleRule) => targetSummary(rule, nameOf)
-  const orphans = uido.rules.filter((rule) => targetsOf(rule) === null)
 
   return (
-    <SettingsPage lede="Aux heures de la maison.">
-      <HourMarks />
-      <ol className="mt-1 flex flex-col gap-2">
-        {weekOf(uido.rules).map((day) => (
-          <DayRow key={day.value} day={day} clock={uido.clock} targetsOf={targetsOf} />
-        ))}
-      </ol>
-
-      <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground">
-        {SCHEDULE_KINDS.map((kind) => {
-          const type = SCHEDULE_TYPES[kind]
-          const Icon = type.icon
-          return (
-            <li key={kind} className="flex items-center gap-2">
-              <span className={cn('inline-flex h-4 w-6 items-center justify-center', type.fill)}>
-                <Icon className="size-3" aria-hidden="true" />
-              </span>
-              {type.name}
-            </li>
-          )
-        })}
-      </ul>
-
-      {orphans.length > 0 && (
-        <ul className="mt-4 flex flex-col gap-1 text-sm">
-          {orphans.map((rule) => (
-            <li key={rule.id}>
-              <Link
-                to={`${SCHEDULES_PATH}/${rule.id}`}
-                className="underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-              >
-                {SCHEDULE_TYPES[rule.kind].name} ·{' '}
-                <span className="tabular-nums">{entryTimes({ rule, tail: false })}</span> ·{' '}
-                {NO_TARGET[SCHEDULE_TYPES[rule.kind].targetKind]}
-              </Link>
-            </li>
+    <SettingsPage>
+      <div className="flex flex-col gap-2">
+        <HourMarks />
+        <ol aria-label="Semaine" className="flex flex-col gap-2">
+          {weekOf(uido.rules).map((day) => (
+            <DayRow key={day.value} day={day} clock={uido.clock} targetsOf={targetsOf} />
           ))}
-        </ul>
-      )}
+        </ol>
 
-      <div className="mt-6">
-        <Button asChild>
-          <Link to={`${SCHEDULES_PATH}/ajout`}>
-            <Plus aria-hidden="true" />
-            Ajouter une plage
-          </Link>
-        </Button>
+        <ul className="mt-1 flex flex-wrap gap-x-5 gap-y-1 text-body text-muted-foreground">
+          {SCHEDULE_KINDS.map((kind) => {
+            const type = SCHEDULE_TYPES[kind]
+            const Icon = type.icon
+            return (
+              <li key={kind} className="flex items-center gap-2">
+                <span
+                  className={cn(
+                    'inline-flex h-4 w-6 items-center justify-center rounded-[5px]',
+                    type.fill,
+                  )}
+                >
+                  <Icon className="size-3" aria-hidden="true" />
+                </span>
+                {type.name}
+              </li>
+            )
+          })}
+        </ul>
       </div>
 
-      <HelpPanel title="Que fait chaque plage, et quand ?">
-        <p>
-          Une plage « Vie privée » coupe les caméras qu’elle vise : rien n’est enregistré ni
-          détecté, et aucune notification ne part. Une plage « Sans notification » laisse les
-          caméras filmer et enregistrer : seuls les canaux visés n’envoient rien, et les détections
-          restent dans l’historique.
-        </p>
-        <p>
-          Une plage peut passer minuit : 22:00 → 06:00 commence le soir des jours choisis et se
-          termine le lendemain à 06:00. Les heures sont celles de la maison, même quand vous
-          consultez Vyzio depuis un autre fuseau horaire.
-        </p>
-        <p>Une plage enregistrée s’applique dans la minute, même si elle est déjà commencée.</p>
-      </HelpPanel>
+      {SCHEDULE_KINDS.map((kind) => (
+        <GroupedList key={kind} label={SCHEDULE_TYPES[kind].name}>
+          {uido.rules
+            .filter((rule) => rule.kind === kind)
+            .map((rule) => (
+              <GroupedRow
+                key={rule.id}
+                to={`${SCHEDULES_PATH}/${rule.id}`}
+                title={rangeTimes(rule)}
+                subtitle={`${targetsOf(rule) ?? NO_TARGET[SCHEDULE_TYPES[kind].targetKind]} · ${daysSummary(rule.daysOfWeek)}`}
+              />
+            ))}
+          {/* A new range takes the type of the list it is added to (SCHED-10). */}
+          <GroupedRow
+            to={`${SCHEDULES_PATH}/add?${KIND_PARAM}=${kind}`}
+            icon={Plus}
+            title="Ajouter une plage"
+            trailing="none"
+          />
+        </GroupedList>
+      ))}
+
+      <HelpNotes>
+        <HelpQuestion title="Que fait chaque plage, et quand ?">
+          <p>
+            Une plage « Caméras coupées » coupe les caméras qu’elle vise : rien n’est enregistré ni
+            détecté, et aucune notification ne part. Une plage « Silence » laisse les caméras filmer
+            et enregistrer : seuls les canaux visés n’envoient rien, et les détections restent dans
+            l’historique.
+          </p>
+          <p>
+            Une plage peut passer minuit : 22 h – 6 h commence le soir des jours choisis et se
+            termine le lendemain à 6 h. Les heures sont celles de la maison, même quand vous
+            consultez Vyzio depuis un autre fuseau horaire.
+          </p>
+          <p>Une plage enregistrée s’applique dans la minute, même si elle est déjà commencée.</p>
+        </HelpQuestion>
+      </HelpNotes>
     </SettingsPage>
   )
 }
@@ -179,19 +191,19 @@ function HourMarks() {
   return (
     <div className={ROW_GRID} aria-hidden="true">
       <span />
-      <div className="relative h-4 text-xs text-muted-foreground tabular-nums">
+      <div className="relative h-4 text-label text-muted-foreground tabular-nums">
         {HOUR_MARKS.map((hour, index) => (
           <span
             key={hour}
             className={cn(
-              'absolute top-0',
+              'absolute top-0 whitespace-nowrap',
               index === 0 && 'translate-x-0',
               index === HOUR_MARKS.length - 1 && '-translate-x-full',
               index > 0 && index < HOUR_MARKS.length - 1 && '-translate-x-1/2',
             )}
             style={{ left: percentOf(hour * 60) }}
           >
-            {hour}
+            {hour} h
           </span>
         ))}
       </div>
@@ -217,18 +229,15 @@ function DayRow({
         <span
           aria-hidden="true"
           className={cn(
-            'font-sans text-sm',
-            today ? 'font-semibold text-primary' : 'text-muted-foreground',
+            'text-label',
+            today ? 'font-bold text-foreground' : 'font-medium text-muted-foreground',
           )}
         >
           {day.short}
         </span>
         <span className="sr-only">{day.name}</span>
       </h2>
-      <div
-        className="relative border border-border bg-muted"
-        style={{ height: lanes * LANE_PX + 4 }}
-      >
+      <div className="relative rounded-sm bg-card" style={{ height: lanes * LANE_PX + 3 }}>
         {GUIDE_HOURS.map((hour) => (
           <span
             key={hour}
@@ -252,7 +261,7 @@ function DayRow({
           <span
             role="img"
             aria-label={`Maintenant, ${clock.time}`}
-            className="absolute -inset-y-1 z-10 w-0.5 -translate-x-1/2 bg-primary ring-2 ring-card"
+            className="absolute -inset-y-1 z-10 w-0.5 -translate-x-1/2 rounded-full bg-foreground"
             style={{ left: percentOf(minutesOf(clock.time)) }}
           />
         )}
@@ -271,15 +280,15 @@ function RangeBlock({ block, targets }: { block: BarBlock; targets: string | nul
       to={`${SCHEDULES_PATH}/${entry.rule.id}`}
       aria-label={`${type.name} · ${entryTimes(entry)} · ${named}`}
       className={cn(
-        'absolute flex h-6 items-center overflow-hidden rounded-sm px-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+        'absolute flex h-7.5 items-center justify-center overflow-hidden rounded-xs px-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
         targets === null
-          ? 'border border-dashed border-muted-foreground bg-card text-muted-foreground'
+          ? 'border border-dashed border-muted-foreground text-muted-foreground'
           : type.fill,
         continues && 'rounded-r-none',
         entry.tail && 'rounded-l-none',
       )}
       style={{
-        top: lane * LANE_PX + 2,
+        top: lane * LANE_PX + 3,
         // Never narrower than its icon (SCHED-05), and never past the bar's end.
         left: `min(${percentOf(start)}, 100% - 1.5rem)`,
         width: `max(1.5rem, ${percentOf(end - start)})`,

@@ -30,28 +30,27 @@ test.describe('DetectionHistoryView retention', () => {
         ],
       }),
     )
-    await page.goto('/history')
+    await page.goto('/detections')
 
+    // An erased media is not a failure: the player says why, with no video to try.
     await expect(page.getByText(/Aperçu et vidéo effacés/)).toBeVisible()
-    // An erased media is not a failure: nothing to retry, so nothing to click.
-    await expect(page.getByRole('button', { name: /Voir l’aperçu/ })).toHaveCount(0)
-    await expect(page.getByRole('button', { name: 'Vidéo' })).toHaveCount(0)
+    await expect(page.locator('video')).toHaveCount(0)
   })
 
-  test('DetectionHistoryView_ShouldOfferThePreviewAndVideo_WhenTheDetectionIsStillKept', async ({
-    page,
-  }) => {
+  test('DetectionHistoryView_ShouldPlayTheVideo_WhenTheDetectionIsStillKept', async ({ page }) => {
     await installFakeBackend(
       page,
       createFakeBackendState({
         detectionHistory: [makeFakeDetectionEvent({ hasClip: true, hasSnapshot: true })],
       }),
     )
-    await page.goto('/history')
+    await page.goto('/detections')
 
     await expect(page.getByText(/Aperçu et vidéo effacés/)).toHaveCount(0)
-    await expect(page.getByRole('button', { name: /Voir l’aperçu/ })).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Vidéo' })).toBeVisible()
+    await expect(page.locator('video')).toHaveAttribute(
+      'src',
+      /\/api\/detection-events\/event-1\/clip$/,
+    )
   })
 })
 
@@ -69,16 +68,16 @@ test.describe('DetectionHistoryView older pages', () => {
       }),
     )
     await installFakeBackend(page, createFakeBackendState({ detectionHistory: history }))
-    await page.goto('/history')
+    await page.goto('/detections')
 
-    await expect(page.getByText(/camera 0 · /)).toBeVisible()
-    await expect(page.getByText(/camera 20 · /)).toHaveCount(0)
+    await expect(page.getByRole('button', { name: /camera 0 · / })).toBeVisible()
+    await expect(page.getByRole('button', { name: /camera 20 · / })).toHaveCount(0)
 
     await page.getByRole('button', { name: 'Voir plus ancien' }).click()
 
     // The next slice adds to what was already read, it does not replace it.
-    await expect(page.getByText(/camera 20 · /)).toBeVisible()
-    await expect(page.getByText(/camera 0 · /)).toBeVisible()
+    await expect(page.getByRole('button', { name: /camera 20 · / })).toBeVisible()
+    await expect(page.getByRole('button', { name: /camera 0 · / })).toBeVisible()
     // Nothing older left: the button has no reason to exist any more.
     await expect(page.getByRole('button', { name: 'Voir plus ancien' })).toHaveCount(0)
   })
@@ -90,7 +89,7 @@ test.describe('DetectionHistoryView older pages', () => {
       page,
       createFakeBackendState({ detectionHistory: [makeFakeDetectionEvent()] }),
     )
-    await page.goto('/history')
+    await page.goto('/detections')
 
     await expect(page.getByRole('button', { name: 'Voir plus ancien' })).toHaveCount(0)
   })

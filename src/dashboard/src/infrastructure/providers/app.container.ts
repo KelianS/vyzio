@@ -11,6 +11,8 @@ import { HttpNotificationSettingsRepository } from '../repositories/notification
 import { HttpProfileRepository } from '../repositories/profile.repository'
 import { HttpRecordingSettingsRepository } from '../repositories/recording_settings.repository'
 import { HttpScheduleRepository } from '../repositories/schedule.repository'
+import { HttpSilenceRepository } from '../repositories/silence.repository'
+import { HttpCamerasCutRepository } from '../repositories/cameras_cut.repository'
 import { HttpSystemRepository } from '../repositories/system.repository'
 import { makeAccessContainer, type AccessContainer } from './access.container'
 import { makeCamerasContainer, type CamerasContainer } from './cameras.container'
@@ -54,7 +56,12 @@ function makeAppContainer(): AppContainer {
     apiBaseUrl: runtime.apiBaseUrl,
     frigateBaseUrl: runtime.frigateBaseUrl,
     access: makeAccessContainer(accessRepository),
-    hub: makeHubContainer(hubRepository, systemRepository, profileRepository),
+    hub: makeHubContainer(
+      hubRepository,
+      systemRepository,
+      profileRepository,
+      new HttpCamerasCutRepository(runtime.apiBaseUrl),
+    ),
     cameras: makeCamerasContainer(
       cameraRepository,
       profileRepository,
@@ -67,6 +74,7 @@ function makeAppContainer(): AppContainer {
     notifications: makeNotificationsContainer(
       notificationSettingsRepository,
       notificationLabelsRepository,
+      new HttpSilenceRepository(runtime.apiBaseUrl),
     ),
     schedules: makeSchedulesContainer(scheduleRepository),
     detectionHistory: makeDetectionHistoryContainer(profileRepository, cameraLabelsRepository),

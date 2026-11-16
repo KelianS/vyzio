@@ -9,7 +9,7 @@
 
 **Préalables** :
 
-- la caméra existe (UC-CAM-01) et sa page est ouverte sur « Connexion » (CAM-03).
+- la caméra existe (UC-CAM-01) et sa page est ouverte sur « Connexion » (CAM-61).
 
 **Résultat en succès** : les protocoles qui répondent sont gardés, le flux vidéo est choisi s'il manquait, et chaque capacité que la caméra prouve, ou qu'elle laisse à confirmer, a sa carte (CAM-23).
 

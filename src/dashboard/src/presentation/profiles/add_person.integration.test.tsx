@@ -8,8 +8,8 @@ import { AddPersonView } from './add_person.component'
 
 const CREATE = 'POST /api/profiles'
 const ADD = {
-  path: '/settings/detection/personnes/ajout',
-  url: '/settings/detection/personnes/ajout',
+  path: '/settings/face-recognition/add',
+  url: '/settings/face-recognition/add',
 }
 
 async function typeTheName(name: string) {
@@ -28,7 +28,7 @@ describe('AddPersonView', () => {
 
     // Assert
     await waitFor(() =>
-      expect(router.state.location.pathname).toBe('/settings/detection/personnes/person-1/photos'),
+      expect(router.state.location.pathname).toBe('/settings/face-recognition/person-1/photos'),
     )
     expect(network.sent).toContainEqual(
       expect.objectContaining({
@@ -50,7 +50,7 @@ describe('AddPersonView', () => {
     // Assert
     expect(await screen.findByText(/Vyzio a rencontré une erreur/)).toBeInTheDocument()
     expect(screen.getByText(/POST \/api\/profiles · 500/)).toBeVisible()
-    expect(router.state.location.pathname).toBe('/settings/detection/personnes/ajout')
+    expect(router.state.location.pathname).toBe('/settings/face-recognition/add')
   })
 
   it('onNameChange_ShouldKeepAddingOff_WhenTheNameIsBlank', async () => {

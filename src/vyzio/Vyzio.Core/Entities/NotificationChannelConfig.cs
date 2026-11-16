@@ -16,8 +16,6 @@ public class NotificationChannelConfig
     [Required]
     public required NotificationChannel Channel { get; set; }
 
-    public bool IsEnabled { get; set; }
-
     /// <summary>Serialized <see cref="ChannelCredentials"/>; go through <see cref="Credentials"/> instead.</summary>
     public string? CredentialsJson { get; set; }
 
