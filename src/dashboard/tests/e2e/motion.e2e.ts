@@ -454,3 +454,52 @@ test.describe('Page transition', () => {
     expect(widths.scroll).toBe(widths.client)
   })
 })
+
+test.describe('Sheet', () => {
+  test.use({ reducedMotion: 'no-preference', viewport: { width: 390, height: 844 } })
+
+  /** From the tap on, frame by frame: where the sheet first shows, and how far the drawn sheet ever trails its spring. */
+  async function sampleTheSheet(page: Page) {
+    await page.evaluate(() => {
+      const record = window as unknown as { firstTop: number | null; largestLag: number }
+      record.firstTop = null
+      record.largestLag = 0
+      const start = performance.now()
+      const tick = () => {
+        const sheet = document.querySelector<HTMLElement>('[role="dialog"]')
+        if (sheet) {
+          record.firstTop ??= sheet.getBoundingClientRect().top
+          const spring = Number(/, (-?[\d.]+)px/.exec(sheet.style.transform)?.[1] ?? 0)
+          const drawn = new DOMMatrix(getComputedStyle(sheet).transform).m42
+          record.largestLag = Math.max(record.largestLag, Math.abs(drawn - spring))
+        }
+        if (performance.now() - start < 1500) requestAnimationFrame(tick)
+      }
+      requestAnimationFrame(tick)
+    })
+    await page.waitForTimeout(1600)
+    return page.evaluate(() => {
+      const { firstTop, largestLag } = window as unknown as {
+        firstTop: number | null
+        largestLag: number
+      }
+      return { firstTop, largestLag }
+    })
+  }
+
+  test('Sheet_ShouldStartBelowTheEdgeAndBeDrawnWhereItsSpringStands_WhenItOpens', async ({
+    page,
+  }) => {
+    await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
+    await page.goto('/')
+    const cut = page.getByRole('button', { name: 'Couper les caméras' })
+    await cut.waitFor()
+
+    const sampling = sampleTheSheet(page)
+    await cut.click()
+    const { firstTop, largestLag } = await sampling
+
+    expect(firstTop).toBeGreaterThanOrEqual(843)
+    expect(largestLag).toBeLessThan(1)
+  })
+})

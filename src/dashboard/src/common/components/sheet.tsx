@@ -176,8 +176,8 @@ export function Sheet({
         ref={setSheet}
         showCloseButton={false}
         {...drag}
-        // Anchored to the bottom edge; its springs, not the primitive's keyframes, move it.
-        className="[--tw-enter-scale:1]! [--tw-exit-scale:1]! top-auto bottom-0 max-h-[90dvh] overflow-y-auto left-1/2 flex max-w-none -translate-x-1/2 translate-y-0 flex-col gap-4 rounded-t-panel rounded-b-none px-4 pt-6 pb-[max(1.75rem,env(safe-area-inset-bottom))] data-[fits=true]:touch-none motion-safe:animate-none! sm:max-w-lg"
+        // Anchored to the bottom edge; its springs alone move it, never the primitive's keyframes or transition.
+        className="[--tw-enter-scale:1]! [--tw-exit-scale:1]! top-auto bottom-0 max-h-[90dvh] overflow-y-auto left-1/2 flex max-w-none -translate-x-1/2 translate-y-0 flex-col gap-4 rounded-t-panel rounded-b-none px-4 pt-6 pb-[max(1.75rem,env(safe-area-inset-bottom))] data-[fits=true]:touch-none motion-safe:animate-none! transition-none sm:max-w-lg"
       >
         <div data-sheet-head className="flex touch-none flex-col gap-1 px-1">
           <DialogTitle className="text-title font-bold">{title}</DialogTitle>
