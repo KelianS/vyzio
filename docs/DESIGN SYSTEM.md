@@ -262,7 +262,7 @@ takes its place, naming as a link the page where it is fixed.
 | --- | --- | --- |
 | `Options` | Inside a card, closed | That card's settings |
 | `Avancé` | The end of the page, closed, before a removal | Rare settings: a position, not a mode (UI-09) |
-| Help row | A row of the page's grouped list, leading to its help | Task help (§ Help) |
+| Help question | The end of the page, before `Avancé`, closed | Task help (§ Help) |
 | `Détails techniques` | The end of an error or a card, closed | Figures for support (§ Technical details) |
 
 None stands in for another: no setting in help or technical details, no help in `Avancé`.
@@ -271,10 +271,18 @@ None stands in for another: no setting in help or technical details, no help in 
 
 How to use a feature lives **in the screen that carries it**
 ([ADR-17](adr/0017-help-lives-in-the-interface-three-levels.md)), at three depths: what is
-**visible** (a label and its cost), a setting's **tooltip**, a **help row** whose title is the
+**visible** (a label and its cost), a setting's **tooltip**, a **help question** whose text is the
 question the reader asks (`Où trouver ces identifiants`, `Une vérification échoue`), never "En savoir
 plus". **A tooltip fits in two sentences**. A **cost** never moves down: it stays visible without a
 gesture.
+
+**A help question reads as a footnote**, quieter than every setting
+(`common/components/help_notes`): a `16px` help icon then the question, both `15px` regular in ink
+soft, at least `44px` tall, no surface, no section label, no line between questions, no chevron. Its
+answer opens in place under the question's text, `15px` in ink soft. A page's questions sit
+**together at its end**, after its content and its main action, before `Avancé`, the technical
+details and a removal; never inside a grouped list of real rows. The one exception is a question
+that opens by itself because its task is not done yet: it stays under the section it unblocks.
 
 An **action** says its cost once, before the effect ([SPECS](SPECS.md) UI-16, UI-19): in its
 confirmation when it asks one, otherwise in one line above its button. An action that costs nothing
