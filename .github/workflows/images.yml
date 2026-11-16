@@ -5,7 +5,7 @@ on:
   workflow_call:
     inputs:
       push:
-        description: Push the images to GHCR once scanned, tagged with the version and latest.
+        description: Push the images to GHCR once scanned, tagged with the version, and latest unless it is a pre-release.
         type: boolean
         default: false
       version:
@@ -157,5 +157,8 @@ jobs:
           set -euo pipefail
           for image in api dashboard; do
             repo="ghcr.io/kelians/vyzio-$image"
-            docker buildx imagetools create -t "$repo:$VERSION" -t "$repo:latest" "$repo@$(cat "digest-$image")"
+            tags=(-t "$repo:$VERSION")
+            # A pre-release (0.4.0-beta.1) never moves latest: an installation following it stays on the stable one.
+            [[ "$VERSION" == *-* ]] || tags+=(-t "$repo:latest")
+            docker buildx imagetools create "${tags[@]}" "$repo@$(cat "digest-$image")"
           done
