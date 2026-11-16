@@ -1,7 +1,10 @@
+import type { AppError } from '../../common/errors/app_error'
 import type { DetectionEvent } from '../../domain/entities/detection_event.entity'
 import type { DetectionLabel } from '../../domain/entities/detection_label.entity'
 import type { Profile } from '../../domain/entities/profile.entity'
-import type { DetectionMedia } from '../../common/detection/detection_preview'
+
+/** The sheet the page shows: its filter, the playing clip's actions, or who the clip shows. */
+export type DetectionSheet = 'filter' | 'actions' | 'identity'
 
 export interface DetectionHistoryUido {
   items: DetectionEvent[]
@@ -10,48 +13,41 @@ export interface DetectionHistoryUido {
   loaded: boolean
   profiles: Profile[]
   detectionLabels: DetectionLabel[]
-  loading: boolean
   loadingMore: boolean
-  /** A failed read: its sentence, and the diagnostic line support reads (UI-01). */
-  error: { message: string; diagnostic?: string } | null
-  media: DetectionMedia | null
-  /** Filters are an option, not the top of the screen: folded until they are asked for. */
-  filtersOpen: boolean
+  /** A failed read, shown with its diagnostic line (UI-01). */
+  error: AppError | null
+  /** The clip in the player; null holds the most recent one (HIST-18). */
+  playingId: string | null
+  sheet: DetectionSheet | null
 
-  filterCamera: string
+  /** A camera's id, never the engine's name for it: the page names cameras as the user does. */
+  filterCameraId: string
   filterLabel: string
   filterProfileId: string
-  filterFrom: string
-  filterTo: string
 
-  correctingEventId: string | null
   /** The detection whose deletion waits for its confirmation. */
   deletingEventId: string | null
   /** The detection whose video turned out erased with another one. */
   clipGoneEventId: string | null
 }
 
-/** `camera`: the camera the page opens filtered on, from a camera view's « Toutes ses détections ». */
-export function buildInitialDetectionHistoryUido(camera = ''): DetectionHistoryUido {
+/** `cameraId`: the camera the page opens filtered on, from a camera view's « Toutes ses détections ». */
+export function buildInitialDetectionHistoryUido(cameraId = ''): DetectionHistoryUido {
   return {
     items: [],
     nextCursor: null,
     loaded: false,
     profiles: [],
     detectionLabels: [],
-    loading: true,
     loadingMore: false,
     error: null,
-    media: null,
-    filtersOpen: false,
+    playingId: null,
+    sheet: null,
 
-    filterCamera: camera,
+    filterCameraId: cameraId,
     filterLabel: '',
     filterProfileId: '',
-    filterFrom: '',
-    filterTo: '',
 
-    correctingEventId: null,
     deletingEventId: null,
     clipGoneEventId: null,
   }

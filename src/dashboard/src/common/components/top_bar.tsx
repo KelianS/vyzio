@@ -48,6 +48,31 @@ export function TopBarIconLink({
   )
 }
 
+/** A round icon button of the bar that acts in the page, such as opening its filter. */
+export function TopBarIconButton({
+  label,
+  icon: Icon,
+  onClick,
+}: {
+  label: string
+  icon: typeof Settings
+  onClick: () => void
+}) {
+  return (
+    <PressableControl>
+      <button
+        type="button"
+        aria-label={label}
+        aria-haspopup="dialog"
+        className={ROUND_BUTTON}
+        onClick={onClick}
+      >
+        <Icon className="size-5" aria-hidden="true" />
+      </button>
+    </PressableControl>
+  )
+}
+
 /** Back to the previous page, home when the app opened here (UI-29). */
 function BackButton() {
   const goBack = useGoBack()

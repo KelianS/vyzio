@@ -1,38 +1,50 @@
-import { useEffect, useReducer, useState } from 'react'
+import { useEffect, useMemo, useReducer } from 'react'
 import { useSearchParams } from 'react-router'
-import { ChevronDown, SlidersHorizontal, Trash2, UserRoundPen } from 'lucide-react'
-import { Button } from '../../common/ui/button'
-import { SecondaryButton } from '../../common/components/secondary_button'
-import { Input } from '../../common/ui/input'
+import { ChevronDown, Ellipsis, ListFilter, X } from 'lucide-react'
 import { useToast } from '../../common/components/toast'
 import { HelpPanel } from '../../common/components/help_panel'
-import { Overlay } from '../../common/components/overlay'
 import { ConfirmModal } from '../../common/components/confirm_modal'
-import { DetectionList } from '../../common/detection/detection_list'
-import { carriesIdentity } from '../../common/detection/detection_formatters'
-import { DetectionPreview } from '../../common/detection/detection_preview'
-import { usePresenter } from '../../common/presenter/use_presenter'
-import { useAppContainer } from '../../infrastructure/providers/app_container.context'
-import type { DetectionEvent } from '../../domain/entities/detection_event.entity'
-import type { Profile } from '../../domain/entities/profile.entity'
-import { buildDetectionHistoryPresenter } from './detection_history.presenter'
-import { detectionHistoryReducer } from './detection_history.reducer'
-import { buildInitialDetectionHistoryUido } from './detection_history.uido'
-import { PickOne, UNKNOWN } from './history_pickers'
-import { DiagnosticLine } from '../../common/components/error_message'
-import { Field } from '../../common/components/field'
+import { ReadFailure } from '../../common/components/error_message'
 import { PageHeader } from '../../common/components/page_header'
-import { Surface } from '../../common/components/surface'
+import { PressableControl } from '../../common/components/pressable'
+import { SecondaryButton } from '../../common/components/secondary_button'
+import { TopBarIconButton } from '../../common/components/top_bar'
 import { EmptyState } from '../../common/components/empty_state'
 import { Loading } from '../../common/components/loading'
+import { ClipList } from '../../common/detection/clip_list'
+import { ClipPlayer } from '../../common/detection/clip_player'
+import { clipFileName, clipUrl } from '../../common/detection/detection_formatters'
+import { usePresenter } from '../../common/presenter/use_presenter'
+import { useAppContainer } from '../../infrastructure/providers/app_container.context'
+import { useRootStore } from '../../infrastructure/store/root.store'
+import type { DetectionEvent } from '../../domain/entities/detection_event.entity'
+import { buildDetectionHistoryPresenter } from './detection_history.presenter'
+import {
+  detectionHistoryReducer,
+  historyFailureSubject,
+  playingClip,
+} from './detection_history.reducer'
+import { buildInitialDetectionHistoryUido } from './detection_history.uido'
+import { FilterSheet } from './components/filter_sheet'
+import { ClipActionsSheet, IdentitySheet } from './components/clip_sheets'
 
-/** A detection without an identity isn't anonymous by mistake — it's unknown. */
-const UNIDENTIFIED = 'Inconnu'
+const PAGE_SIZE = 20
 
+/** Saved on this device by the browser, never through a third party (HIST-19). */
+function download(apiBaseUrl: string, event: DetectionEvent) {
+  const link = document.createElement('a')
+  link.href = clipUrl(apiBaseUrl, event.eventId)
+  link.download = clipFileName(event)
+  link.click()
+}
+
+/** The Détections page (HIST-18): the player on top, the clips by day below, one after another. */
 export function DetectionHistoryView() {
   const { apiBaseUrl, detectionHistory: container } = useAppContainer()
   const { toast } = useToast()
   const [params] = useSearchParams()
+  const cameras = useRootStore((s) => s.cameras)
+  const camerasLoading = useRootStore((s) => s.camerasLoading)
   const [uido, dispatch] = useReducer(
     detectionHistoryReducer,
     params.get('camera') ?? '',
@@ -40,198 +52,125 @@ export function DetectionHistoryView() {
   )
   const presenter = usePresenter(buildDetectionHistoryPresenter, { container, dispatch, toast })
 
-  const query = {
-    camera: uido.filterCamera || undefined,
-    label: uido.filterLabel || undefined,
-    profileId: uido.filterProfileId || undefined,
-    from: uido.filterFrom || undefined,
-    to: uido.filterTo || undefined,
-    limit: 20,
-  }
+  const camera = cameras.find((known) => known.id === uido.filterCameraId) ?? null
+  // A camera named in the address waits for the list that says which one it is.
+  const cameraPending = uido.filterCameraId !== '' && camera === null && camerasLoading
+  const engineCamera = camera?.frigateCameraName
+  const query = useMemo(
+    () => ({
+      camera: engineCamera,
+      label: uido.filterLabel || undefined,
+      profileId: uido.filterProfileId || undefined,
+      limit: PAGE_SIZE,
+    }),
+    [engineCamera, uido.filterLabel, uido.filterProfileId],
+  )
 
   useEffect(() => {
     presenter.onMount()
   }, [presenter])
 
   useEffect(() => {
-    presenter.onLoadHistory(query)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    presenter,
-    uido.filterCamera,
-    uido.filterLabel,
-    uido.filterProfileId,
-    uido.filterFrom,
-    uido.filterTo,
-  ])
+    if (!cameraPending) presenter.onLoadHistory(query)
+  }, [presenter, query, cameraPending])
 
-  const { media, deletingEventId } = uido
-
-  const filtered = Boolean(
-    uido.filterCamera ||
-    uido.filterLabel ||
-    uido.filterProfileId ||
-    uido.filterFrom ||
-    uido.filterTo,
-  )
+  const filters = [
+    camera?.displayName,
+    uido.profiles.find((profile) => profile.id === uido.filterProfileId)?.name,
+    uido.filterLabel &&
+      (uido.detectionLabels.find((label) => label.value === uido.filterLabel)?.displayName ??
+        uido.filterLabel),
+  ].filter((name): name is string => Boolean(name))
+  const filtered = filters.length > 0
   // Filtering an empty history finds nothing: the filter is offered once there is something to sift, or to take back.
-  const offersFilter = filtered || uido.filtersOpen || uido.items.length > 0
+  const offersFilter = filtered || uido.items.length > 0
+  const playing = playingClip(uido)
 
   return (
-    <main className="flex flex-col gap-4 py-4">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <PageHeader title="Détections" />
-          <p className="mt-1 text-body text-muted-foreground">
-            Ce que Vyzio a vu, et qui il a cru reconnaître.
-          </p>
-        </div>
+    <main className="flex flex-col gap-5 py-4">
+      <PageHeader
+        title="Détections"
+        action={
+          offersFilter && (
+            <TopBarIconButton
+              label="Filtrer"
+              icon={ListFilter}
+              onClick={() => presenter.onOpenSheet('filter')}
+            />
+          )
+        }
+      />
 
-        {/* Filtering is an option one opens, not the top of the screen: one comes to read detections. */}
-        {offersFilter && (
-          <SecondaryButton
-            icon={SlidersHorizontal}
-            type="button"
-            active={uido.filtersOpen || filtered}
-            size="sm"
-            aria-expanded={uido.filtersOpen}
-            aria-controls="history-filters"
-            onClick={presenter.onFiltersToggle}
-          >
-            Filtrer
+      {filtered && (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="ml-1 min-w-0 text-body text-muted-foreground">{filters.join(' · ')}</p>
+          <SecondaryButton icon={X} type="button" size="sm" onClick={presenter.onResetFilters}>
+            Tout afficher
           </SecondaryButton>
-        )}
-      </div>
-
-      {uido.filtersOpen && (
-        <Surface asChild>
-          <section id="history-filters" aria-label="Filtres">
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <Field label="Caméra">
-                <Input
-                  value={uido.filterCamera}
-                  placeholder="Toutes"
-                  onChange={(event) => presenter.onFilterCameraChange(event.target.value)}
-                />
-              </Field>
-
-              <Field label="Type">
-                <PickOne
-                  value={uido.filterLabel}
-                  anyLabel="Tous"
-                  options={uido.detectionLabels.map((label) => ({
-                    value: label.value,
-                    label: label.displayName,
-                  }))}
-                  onChange={presenter.onFilterLabelChange}
-                />
-              </Field>
-
-              <Field label="Personne">
-                <PickOne
-                  value={uido.filterProfileId}
-                  anyLabel="Toutes"
-                  options={uido.profiles.map((profile) => ({
-                    value: profile.id,
-                    label: profile.name,
-                  }))}
-                  onChange={presenter.onFilterProfileChange}
-                />
-              </Field>
-
-              <Field label="Depuis">
-                <Input
-                  type="datetime-local"
-                  value={toLocalInput(uido.filterFrom)}
-                  onChange={(event) =>
-                    presenter.onFilterFromChange(fromLocalInput(event.target.value))
-                  }
-                />
-              </Field>
-
-              <Field label="Jusqu’à">
-                <Input
-                  type="datetime-local"
-                  value={toLocalInput(uido.filterTo)}
-                  onChange={(event) =>
-                    presenter.onFilterToChange(fromLocalInput(event.target.value))
-                  }
-                />
-              </Field>
-            </div>
-
-            {/* Resetting exists only when there is something to reset. */}
-            {filtered && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="mt-3"
-                onClick={presenter.onResetFilters}
-              >
-                Tout afficher
-              </Button>
-            )}
-          </section>
-        </Surface>
-      )}
-
-      {uido.error && (
-        <div role="alert" className="text-destructive">
-          <p>{uido.error.message}</p>
-          {uido.error.diagnostic && <DiagnosticLine text={uido.error.diagnostic} />}
         </div>
       )}
 
-      {uido.loading && (
-        <Surface>
-          <Loading />
-        </Surface>
-      )}
+      {uido.error ? (
+        <ReadFailure
+          error={uido.error}
+          subject={historyFailureSubject(uido.error)}
+          onRetry={() => presenter.onLoadHistory(query)}
+        />
+      ) : !uido.loaded ? (
+        <Loading lines={4} />
+      ) : playing === null ? (
+        <EmptyState className="px-1">
+          {filtered ? 'Aucune détection avec ces filtres.' : 'Aucune détection pour l’instant.'}
+        </EmptyState>
+      ) : (
+        <>
+          <ClipPlayer
+            event={playing}
+            labels={uido.detectionLabels}
+            apiBaseUrl={apiBaseUrl}
+            clipGone={uido.clipGoneEventId === playing.eventId}
+            withCamera
+            className="aspect-video w-full rounded-card"
+            onVideoError={() => void presenter.onVideoFailed(playing.eventId)}
+            onEnded={() => presenter.onClipEnded(playing.eventId)}
+          >
+            <PressableControl>
+              <button
+                type="button"
+                aria-label="Plus d’actions"
+                aria-haspopup="dialog"
+                onClick={() => presenter.onOpenSheet('actions')}
+                className="absolute top-2.5 right-2.5 flex size-11 items-center justify-center rounded-full bg-glass outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              >
+                <Ellipsis className="size-5" aria-hidden="true" />
+              </button>
+            </PressableControl>
+          </ClipPlayer>
 
-      {!uido.loading && uido.loaded && uido.items.length === 0 && (
-        <Surface>
-          <EmptyState>
-            {filtered ? 'Aucune détection avec ces filtres.' : 'Aucune détection pour l’instant.'}
-          </EmptyState>
-        </Surface>
-      )}
-
-      {!uido.loading && uido.items.length > 0 && (
-        <Surface>
-          <DetectionList
+          <ClipList
             events={uido.items}
             labels={uido.detectionLabels}
             apiBaseUrl={apiBaseUrl}
-            onOpenMedia={presenter.onMediaSet}
-            openWithoutMedia
-            renderExtra={(event) =>
-              carriesIdentity(event) && (
-                <IdentityCorrection
-                  event={event}
-                  profiles={uido.profiles}
-                  correcting={uido.correctingEventId === event.eventId}
-                  onCorrect={(profile) => presenter.onCorrect(event.eventId, profile)}
-                />
-              )
-            }
+            playingId={playing.eventId}
+            withCamera
+            now={new Date()}
+            onPlay={(event) => presenter.onPlay(event.eventId)}
           />
-        </Surface>
-      )}
 
-      {/* The history is read back in time: a next page has no number. */}
-      {!uido.loading && uido.nextCursor && (
-        <div className="flex justify-center">
-          <SecondaryButton
-            icon={ChevronDown}
-            type="button"
-            size="sm"
-            disabled={uido.loadingMore}
-            onClick={() => presenter.onLoadMore(query, uido.nextCursor!)}
-          >
-            {uido.loadingMore ? 'Chargement…' : 'Voir plus ancien'}
-          </SecondaryButton>
-        </div>
+          {/* The history is read back in time: a next page has no number. */}
+          {uido.nextCursor && (
+            <SecondaryButton
+              icon={ChevronDown}
+              type="button"
+              size="sm"
+              className="self-center"
+              disabled={uido.loadingMore}
+              onClick={() => presenter.onLoadMore(query, uido.nextCursor!)}
+            >
+              {uido.loadingMore ? 'Chargement…' : 'Voir plus ancien'}
+            </SecondaryButton>
+          )}
+        </>
       )}
 
       <HelpPanel title="Jusqu’où cette page remonte-t-elle ?">
@@ -244,8 +183,8 @@ export function DetectionHistoryView() {
           Raccourcir la durée fait sortir les détections plus anciennes, avec leur aperçu et leur
           vidéo ; comptez jusqu’à une heure avant que le ménage soit passé. Elle ne peut pas valoir
           zéro : ce serait vider l’historique, pas le raccourcir. Pour ne plus rien enregistrer
-          d’une caméra, activez sa vie privée&nbsp;: les vidéos déjà gardées restent jusqu’à la fin
-          de leur durée de conservation.
+          d’une caméra, coupez-la&nbsp;: les vidéos déjà gardées restent jusqu’à la fin de leur
+          durée de conservation.
         </p>
         <p>
           Un aperçu qui met quelques secondes à venir juste après une détection est normal : l’image
@@ -253,105 +192,55 @@ export function DetectionHistoryView() {
         </p>
       </HelpPanel>
 
-      {media && (
-        <Overlay label="Aperçu de la détection" onClose={() => presenter.onMediaSet(null)}>
-          <DetectionPreview
-            media={media}
-            clipGone={uido.clipGoneEventId === media.eventId}
-            onVideoError={() => presenter.onVideoFailed(media.eventId)}
-          >
-            <SecondaryButton
-              icon={Trash2}
-              type="button"
-              size="sm"
-              onClick={() => presenter.onAskDelete(media.eventId)}
-            >
-              Supprimer
-            </SecondaryButton>
-          </DetectionPreview>
-        </Overlay>
+      {uido.sheet === 'filter' && (
+        <FilterSheet
+          cameras={cameras}
+          profiles={uido.profiles}
+          labels={uido.detectionLabels}
+          cameraId={uido.filterCameraId}
+          profileId={uido.filterProfileId}
+          label={uido.filterLabel}
+          onCamera={presenter.onFilterCamera}
+          onProfile={presenter.onFilterProfile}
+          onLabel={presenter.onFilterLabel}
+          onClose={presenter.onCloseSheet}
+        />
+      )}
+      {uido.sheet === 'actions' && playing && (
+        <ClipActionsSheet
+          event={playing}
+          labels={uido.detectionLabels}
+          downloadable={
+            playing.hasClip && !playing.mediaExpired && uido.clipGoneEventId !== playing.eventId
+          }
+          onCorrect={() => presenter.onOpenSheet('identity')}
+          onDownload={() => {
+            download(apiBaseUrl, playing)
+            presenter.onCloseSheet()
+          }}
+          onDelete={() => presenter.onAskDelete(playing.eventId)}
+          onClose={presenter.onCloseSheet}
+        />
+      )}
+      {uido.sheet === 'identity' && playing && (
+        <IdentitySheet
+          event={playing}
+          profiles={uido.profiles}
+          onPick={(profile) => void presenter.onCorrect(playing.eventId, profile)}
+          onClose={presenter.onCloseSheet}
+        />
       )}
 
-      {/* Rendered after the preview so the question stacks above it. */}
-      {deletingEventId && (
+      {uido.deletingEventId && (
         <ConfirmModal
           title="Supprimer cette détection ?"
           body="La détection et sa vidéo seront effacées."
           confirmLabel="Supprimer"
           tone="danger"
-          onConfirm={() => presenter.onDelete(deletingEventId)}
+          onConfirm={() => presenter.onDelete(uido.deletingEventId!)}
           onCancel={presenter.onDismissDelete}
         />
       )}
     </main>
   )
-}
-
-/** What the history adds to a detection row: saying who it really was. */
-function IdentityCorrection({
-  event,
-  profiles,
-  correcting,
-  onCorrect,
-}: {
-  event: DetectionEvent
-  profiles: Profile[]
-  correcting: boolean
-  onCorrect: (profile: Profile | null) => Promise<void>
-}) {
-  const [fixing, setFixing] = useState(false)
-  const [pickedProfileId, setPickedProfileId] = useState(event.profileId ?? '')
-
-  if (!fixing) {
-    return (
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        className="mt-0.5 -ml-3"
-        onClick={() => setFixing(true)}
-      >
-        <UserRoundPen aria-hidden="true" />
-        {event.identity ? 'Corriger' : 'Identifier'}
-      </Button>
-    )
-  }
-
-  return (
-    <span className="mt-1 flex flex-wrap items-center gap-2">
-      <PickOne
-        value={pickedProfileId}
-        anyLabel={UNIDENTIFIED}
-        anyValue={UNKNOWN}
-        options={profiles.map((profile) => ({ value: profile.id, label: profile.name }))}
-        onChange={setPickedProfileId}
-      />
-      <Button
-        type="button"
-        size="sm"
-        disabled={correcting}
-        onClick={async () => {
-          await onCorrect(profiles.find((profile) => profile.id === pickedProfileId) ?? null)
-          setFixing(false)
-        }}
-      >
-        {correcting ? 'Correction…' : 'Valider'}
-      </Button>
-      <Button type="button" variant="ghost" size="sm" onClick={() => setFixing(false)}>
-        Annuler
-      </Button>
-    </span>
-  )
-}
-
-/** `datetime-local` speaks local time with no timezone; the filter stores ISO. */
-function toLocalInput(iso: string): string {
-  if (!iso) return ''
-  const date = new Date(iso)
-  const pad = (value: number) => String(value).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
-}
-
-function fromLocalInput(value: string): string {
-  return value ? new Date(value).toISOString() : ''
 }

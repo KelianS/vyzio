@@ -19,6 +19,7 @@ export function ClipList({
   labels,
   apiBaseUrl,
   playingId,
+  withCamera = false,
   now,
   onPlay,
 }: {
@@ -28,6 +29,8 @@ export function ClipList({
   apiBaseUrl: string
   /** The clip the player holds, drawn as the current row. */
   playingId: string | null
+  /** The clips come from several cameras: each line says which. */
+  withCamera?: boolean
   now: Date
   onPlay: (event: DetectionEvent) => void
 }) {
@@ -77,7 +80,7 @@ export function ClipList({
                       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                         <span className="truncate text-row font-semibold">{title}</span>
                         <span className="text-body text-muted-foreground">
-                          {formatClipDetail(event)}
+                          {formatClipDetail(event, withCamera)}
                         </span>
                       </span>
                     </button>

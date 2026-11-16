@@ -24,29 +24,6 @@ export function clipUrl(apiBaseUrl: string, eventId: string): string {
   return `${apiBaseUrl}/api/detection-events/${encodeURIComponent(eventId)}/clip`
 }
 
-const timeFormatter = new Intl.DateTimeFormat('fr-FR', {
-  hour: '2-digit',
-  minute: '2-digit',
-})
-
-const dateTimeFormatter = new Intl.DateTimeFormat('fr-FR', {
-  day: '2-digit',
-  month: '2-digit',
-  hour: '2-digit',
-  minute: '2-digit',
-})
-
-/** Today, the time is enough; beyond that, the date places it. */
-function formatEventTime(value: string): string {
-  const date = new Date(value)
-  const now = new Date()
-  const isToday =
-    date.getFullYear() === now.getFullYear() &&
-    date.getMonth() === now.getMonth() &&
-    date.getDate() === now.getDate()
-  return isToday ? timeFormatter.format(date) : dateTimeFormatter.format(date)
-}
-
 /** The labels are the server's catalogue, the one home of their French names; an unknown one shows as sent. */
 export function formatEventTitle(event: DetectionEvent, labels: readonly DetectionLabel[]): string {
   // The name alone: a participle would need the person's gender, which Vyzio does not hold.
@@ -56,17 +33,6 @@ export function formatEventTitle(event: DetectionEvent, labels: readonly Detecti
 
   const name = labels.find((label) => label.value === event.label)?.displayName ?? event.label
   return `Détection « ${name} »`
-}
-
-/** Where, when, and how sure - the certainty only shows when the engine gave one. */
-export function formatEventDetail(event: DetectionEvent): string {
-  return [
-    event.cameraName,
-    formatEventTime(event.occurredAt),
-    event.confidence !== null ? `${Math.round(event.confidence * 100)} % de certitude` : null,
-  ]
-    .filter(Boolean)
-    .join(' · ')
 }
 
 const dayFormatter = new Intl.DateTimeFormat('fr-FR', {
@@ -90,14 +56,29 @@ export function formatClipDay(occurredAt: string, now: Date): string {
   return day.charAt(0).toUpperCase() + day.slice(1)
 }
 
-/** A clip's line under its name: its hour, and how sure the engine was when it said. */
-export function formatClipDetail(event: DetectionEvent): string {
+/**
+ * A clip's line under its name, the same on every screen: its camera when the list mixes them, its
+ * hour, and how sure the engine was when it said.
+ */
+export function formatClipDetail(event: DetectionEvent, withCamera = false): string {
   const date = new Date(event.occurredAt)
   const minutes = date.getMinutes()
   const hour = `${date.getHours()} h${minutes === 0 ? '' : ` ${String(minutes).padStart(2, '0')}`}`
-  return event.confidence !== null
-    ? `${hour} · sûr à ${Math.round(event.confidence * 100)} %`
-    : hour
+  return [
+    withCamera ? event.cameraName : null,
+    hour,
+    event.confidence !== null ? `sûr à ${Math.round(event.confidence * 100)} %` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+}
+
+/** The name a downloaded clip is saved under: its camera and its moment, readable in a file list. */
+export function clipFileName(event: DetectionEvent): string {
+  const date = new Date(event.occurredAt)
+  const pad = (value: number) => String(value).padStart(2, '0')
+  const moment = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}h${pad(date.getMinutes())}`
+  return `${event.cameraName} ${moment}.mp4`
 }
 
 /** The clips in the order given, gathered under the day each happened. */

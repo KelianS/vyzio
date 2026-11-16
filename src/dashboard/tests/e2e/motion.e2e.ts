@@ -197,6 +197,16 @@ test.describe('Press feedback on every kind of row', () => {
     expect(await pressed(page.getByRole('link', { name: /Telegram/ }))).toEqual(DIMMED)
   })
 
+  test('ClipRow_ShouldDimWithoutMoving_WhenItIsPressed', async ({ page }) => {
+    await installFakeBackend(
+      page,
+      createFakeBackendState({ detectionHistory: [makeFakeDetectionEvent()] }),
+    )
+    await page.goto('/detections')
+
+    expect(await pressed(page.getByRole('listitem').getByRole('button').first())).toEqual(DIMMED)
+  })
+
   test('SettingsRubricRow_ShouldDimWithoutMoving_WhenItIsPressed', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState())
     await page.goto('/settings')
@@ -247,14 +257,14 @@ test.describe('Press feedback on every kind of control', () => {
     expect(await pressed(page.getByRole('button', { name: 'Réessayer' }))).toEqual(SHRUNK)
   })
 
-  test('DetectionTile_ShouldShrinkSlightly_WhenItIsPressed', async ({ page }) => {
+  test('ClipActions_ShouldShrinkSlightly_WhenItIsPressed', async ({ page }) => {
     await installFakeBackend(
       page,
       createFakeBackendState({ detectionHistory: [makeFakeDetectionEvent()] }),
     )
     await page.goto('/detections')
 
-    expect(await pressed(page.getByRole('button', { name: /Voir l’aperçu/ }))).toEqual(SHRUNK)
+    expect(await pressed(page.getByRole('button', { name: 'Plus d’actions' }))).toEqual(SHRUNK)
   })
 
   test('PositionTile_ShouldShrinkSlightly_WhenItIsPressed', async ({ page }) => {
@@ -350,38 +360,6 @@ test.describe('Layers', () => {
     await page.getByRole('combobox', { name: 'Marque' }).click()
 
     expect(await frameOf(page.getByRole('listbox'), 'first')).toEqual({ opacity: 0, scale: 0.95 })
-  })
-
-  test('Overlay_ShouldOnlyFade_WhenItOpens', async ({ page }) => {
-    await installFakeBackend(
-      page,
-      createFakeBackendState({ detectionHistory: [makeFakeDetectionEvent()] }),
-    )
-    await page.goto('/detections')
-    await slowDownMotion(page)
-
-    await page.getByRole('button', { name: /Voir l’aperçu/ }).click()
-
-    expect(
-      await frameOf(page.getByRole('dialog', { name: 'Aperçu de la détection' }), 'first'),
-    ).toEqual({ opacity: 0, scale: 1 })
-  })
-
-  test('Overlay_ShouldOnlyFade_WhenItCloses', async ({ page }) => {
-    await installFakeBackend(
-      page,
-      createFakeBackendState({ detectionHistory: [makeFakeDetectionEvent()] }),
-    )
-    await page.goto('/detections')
-    await page.getByRole('button', { name: /Voir l’aperçu/ }).click()
-    const viewer = page.getByRole('dialog', { name: 'Aperçu de la détection' })
-    await expect(viewer).toBeVisible()
-    await expect.poll(() => viewer.evaluate((el) => el.getAnimations().length)).toBe(0)
-    await slowDownMotion(page)
-
-    await viewer.getByRole('button', { name: 'Fermer' }).first().click()
-
-    expect(await frameOf(viewer, 'last')).toEqual({ opacity: 0, scale: 1 })
   })
 
   test('ConfirmModal_ShouldOnlyFade_WhenThePhoneAsksForLessMotion', async ({ page }) => {

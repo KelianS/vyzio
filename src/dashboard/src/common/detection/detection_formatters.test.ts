@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { formatClipDay, formatClipDetail, formatEventTitle } from './detection_formatters'
+import {
+  clipFileName,
+  formatClipDay,
+  formatClipDetail,
+  formatEventTitle,
+} from './detection_formatters'
 import type { DetectionEvent } from '../../domain/entities/detection_event.entity'
 
 const event = (overrides: Partial<DetectionEvent>): DetectionEvent => ({
@@ -74,4 +79,27 @@ describe('formatClipDetail', () => {
       expect(detail).toBe(said)
     },
   )
+})
+
+describe('formatClipDetail with its camera', () => {
+  it('formatClipDetail_ShouldPutTheCameraFirst_WhenTheListMixesCameras', () => {
+    // Arrange & Act
+    const detail = formatClipDetail(
+      event({ occurredAt: '2026-11-16T17:46:00', confidence: 0.92 }),
+      true,
+    )
+
+    // Assert
+    expect(detail).toBe('Porte d’entrée · 17 h 46 · sûr à 92 %')
+  })
+})
+
+describe('clipFileName', () => {
+  it('clipFileName_ShouldNameTheFileAfterItsCameraAndMoment_WhenAClipIsDownloaded', () => {
+    // Arrange & Act
+    const name = clipFileName(event({ occurredAt: '2026-11-16T07:05:00' }))
+
+    // Assert
+    expect(name).toBe('Porte d’entrée 2026-11-16 07h05.mp4')
+  })
 })

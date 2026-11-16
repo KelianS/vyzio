@@ -4,7 +4,6 @@ import {
   createFakeBackendState,
   makeFakeCamera,
   makeFakeChannel,
-  makeFakeDetectionEvent,
 } from './fixtures/fake_backend'
 
 // The token values these read: `--alert`, `--ink` and `--action` of `src/index.css`.
@@ -128,20 +127,6 @@ test.describe('Action weight', () => {
     expect(await heightOf(apply)).toBe(48)
     await expect(apply).toHaveCSS('background-color', MOSS)
     await expect(apply).toHaveCSS('border-top-left-radius', /e\+|\d{3,}px/)
-  })
-
-  test('DetectionHistory_ShouldOfferItsRowActionAsAGhostButton_WhenADetectionCanBeIdentified', async ({
-    page,
-  }) => {
-    await installFakeBackend(
-      page,
-      createFakeBackendState({ detectionHistory: [makeFakeDetectionEvent({ eventId: 'e1' })] }),
-    )
-    await page.goto('/detections')
-
-    const identify = page.getByRole('button', { name: 'Identifier' })
-    await expect(identify).toHaveCSS('border-top-width', '0px')
-    await expect(identify).toHaveCSS('color', INK)
   })
 
   test('DurationSetting_ShouldReadItsUnitInsideAFieldSizedToItsValue_WhenItRenders', async ({

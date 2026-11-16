@@ -228,7 +228,7 @@ test.describe('DetectionHistoryView', () => {
     await page.goto('/detections')
   }
 
-  test('DetectionHistoryView_ShouldShowDetectionsWithFiltersFolded_WhenOpened', async ({
+  test('DetectionHistoryView_ShouldShowDetectionsWithTheFilterInTheBar_WhenOpened', async ({
     page,
   }) => {
     await openHistory(page)
@@ -236,9 +236,9 @@ test.describe('DetectionHistoryView', () => {
     await expect(page.getByRole('heading', { name: 'Détections' })).toBeVisible()
 
     // What one comes to read here is the detections - not a filter form.
-    await expect(page.getByRole('region', { name: 'Filtres' })).toBeHidden()
-    await page.getByRole('button', { name: 'Filtrer' }).click()
-    await expect(page.getByRole('region', { name: 'Filtres' })).toBeVisible()
+    await expect(page.getByRole('dialog', { name: 'Filtrer' })).toHaveCount(0)
+    await page.getByRole('banner').getByRole('button', { name: 'Filtrer' }).click()
+    await expect(page.getByRole('dialog', { name: 'Filtrer' })).toBeVisible()
   })
 
   test('DetectionHistoryView_ShouldShowTheThumbnailAndSummary_WhenItListsDetections', async ({
@@ -246,26 +246,8 @@ test.describe('DetectionHistoryView', () => {
   }) => {
     await openHistory(page)
 
-    // The home thumbnail was missing here, although it is the same list.
-    const preview = page.getByRole('button', { name: /Voir l’aperçu/ }).first()
-    await expect(preview).toBeVisible()
-    await expect(preview.locator('img')).toBeAttached()
-
-    await expect(page.getByText(/front door · .* · 92 % de certitude/).first()).toBeVisible()
-  })
-
-  test('DetectionHistoryView_ShouldOfferIdentifyingOnlyPeople_WhenADetectionCarriesNoIdentity', async ({
-    page,
-  }) => {
-    await installFakeBackend(
-      page,
-      createFakeBackendState({
-        detectionHistory: [makeEvent(), makeEvent({ eventId: 'event-2', label: 'cat' })],
-      }),
-    )
-    await page.goto('/detections')
-
-    // Only person detections carry an identity (person_known/person_unknown).
-    await expect(page.getByRole('button', { name: 'Identifier' })).toHaveCount(1)
+    const row = page.getByRole('listitem').first()
+    await expect(row.locator('img')).toBeAttached()
+    await expect(row).toContainText(/front door · .* · sûr à 92 %/)
   })
 })

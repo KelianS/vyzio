@@ -1,23 +1,86 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { makeCamera } from '../../testing/camera_fixture'
 import { makeDetectionEvent } from '../../testing/detection_fixture'
+import { makeProfile } from '../../testing/profile_fixture'
 import { failure, fakeNetwork, ok } from '../../testing/fake_network'
 import { renderScreen } from '../../testing/render_screen'
+import { readTheCameraList } from '../../testing/shared_reads'
 import { DetectionHistoryView } from './detection_history.component'
+
+const HISTORY = 'GET /api/detection-events/history'
 
 const reference = {
   'GET /api/profiles': ok([]),
-  'GET /api/detection-labels/camera': ok([]),
+  'GET /api/detection-labels/camera': ok([
+    { value: 'cat', displayName: 'Chat' },
+    { value: 'car', displayName: 'Voiture' },
+  ]),
+}
+
+const twoClips = {
+  ...reference,
+  [HISTORY]: ok({
+    items: [
+      makeDetectionEvent({ eventId: 'event-1', label: 'cat', hasClip: true }),
+      makeDetectionEvent({ eventId: 'event-2', label: 'car', hasClip: true }),
+    ],
+    nextCursor: null,
+  }),
+}
+
+const oneCat = {
+  ...reference,
+  [HISTORY]: ok({
+    items: [makeDetectionEvent({ label: 'cat', hasSnapshot: true, hasClip: true })],
+    nextCursor: null,
+  }),
+}
+
+/** The player on top of the page, holding one clip at a time. */
+function player() {
+  return screen.getByRole('group', { name: /^Détection :/ })
+}
+
+async function openActions() {
+  await userEvent.click(await screen.findByRole('button', { name: 'Plus d’actions' }))
+  return screen.findByRole('dialog')
+}
+
+async function confirmDeletion() {
+  const actions = await openActions()
+  await userEvent.click(within(actions).getByRole('button', { name: 'Supprimer' }))
+  const question = await screen.findByRole('alertdialog')
+  await userEvent.click(within(question).getByRole('button', { name: 'Supprimer' }))
 }
 
 describe('DetectionHistoryView', () => {
-  it('onLoadHistory_ShouldListTheDetections_WhenTheHistoryAnswers', async () => {
+  it('onLoadHistory_ShouldHoldTheMostRecentClipInThePlayerAboveTheList_WhenTheHistoryAnswers', async () => {
+    // Arrange
+    fakeNetwork(twoClips)
+
+    // Act
+    renderScreen(<DetectionHistoryView />)
+
+    // Assert
+    expect(
+      await screen.findByRole('group', { name: 'Détection : Détection « Chat »' }),
+    ).toBeVisible()
+    expect(screen.getByRole('button', { name: /Détection « Voiture »/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Détection « Chat »/ })).toHaveAttribute(
+      'aria-current',
+      'true',
+    )
+    expect(screen.queryByRole('button', { name: 'Voir plus ancien' })).not.toBeInTheDocument()
+  })
+
+  it('ClipList_ShouldSayTheCameraHourAndCertainty_WhenTheListMixesCameras', async () => {
     // Arrange
     fakeNetwork({
       ...reference,
-      'GET /api/detection-events/history': ok({
-        items: [makeDetectionEvent({ label: 'cat' })],
+      [HISTORY]: ok({
+        items: [makeDetectionEvent({ occurredAt: '2026-09-26T17:46:00', confidence: 0.92 })],
         nextCursor: null,
       }),
     })
@@ -26,30 +89,76 @@ describe('DetectionHistoryView', () => {
     renderScreen(<DetectionHistoryView />)
 
     // Assert
-    expect(await screen.findByText('Détection « cat »')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Voir plus ancien' })).not.toBeInTheDocument()
+    expect(
+      await screen.findByRole('button', { name: /Front Door · 17 h 46 · sûr à 92 %/ }),
+    ).toBeInTheDocument()
   })
 
-  it('onLoadHistory_ShouldSayItIsEmpty_WhenNothingWasDetected', async () => {
+  it('onPlay_ShouldPlayTheTappedClipInThePlayer_WhenTheUserTapsItsRow', async () => {
     // Arrange
-    fakeNetwork({
-      ...reference,
-      'GET /api/detection-events/history': ok({ items: [], nextCursor: null }),
-    })
-
-    // Act
+    fakeNetwork(twoClips)
     renderScreen(<DetectionHistoryView />)
 
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: /Détection « Voiture »/ }))
+
     // Assert
-    expect(await screen.findByText('Aucune détection pour l’instant.')).toBeInTheDocument()
+    expect(player()).toHaveAccessibleName('Détection : Détection « Voiture »')
+    expect(player().querySelector('video')).toHaveAttribute(
+      'src',
+      expect.stringMatching(/\/api\/detection-events\/event-2\/clip$/),
+    )
   })
 
-  it('onLoadHistory_ShouldOfferNoFilter_WhenNothingWasDetected', async () => {
+  it('onClipEnded_ShouldPlayTheNextClipWithNothingToTap_WhenTheClipInThePlayerEnds', async () => {
     // Arrange
-    fakeNetwork({
-      ...reference,
-      'GET /api/detection-events/history': ok({ items: [], nextCursor: null }),
-    })
+    fakeNetwork(twoClips)
+    renderScreen(<DetectionHistoryView />)
+    await screen.findByRole('group', { name: 'Détection : Détection « Chat »' })
+
+    // Act
+    fireEvent.ended(player().querySelector('video')!)
+
+    // Assert
+    expect(player()).toHaveAccessibleName('Détection : Détection « Voiture »')
+    expect(screen.getByRole('button', { name: /Détection « Voiture »/ })).toHaveAttribute(
+      'aria-current',
+      'true',
+    )
+  })
+
+  it('ClipPlayer_ShouldPauseTheClip_WhenTheUserTapsPauseWhileItPlays', async () => {
+    // Arrange
+    fakeNetwork(twoClips)
+    renderScreen(<DetectionHistoryView />)
+    await screen.findByRole('group', { name: /^Détection :/ })
+    fireEvent.play(player().querySelector('video')!)
+    const pause = vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => undefined)
+
+    // Act
+    await userEvent.click(within(player()).getByRole('button', { name: 'Pause' }))
+
+    // Assert
+    expect(pause).toHaveBeenCalledTimes(1)
+    pause.mockRestore()
+  })
+
+  it('onClipEnded_ShouldRestOnTheLastClip_WhenTheLastOneEnds', async () => {
+    // Arrange
+    fakeNetwork(twoClips)
+    renderScreen(<DetectionHistoryView />)
+    await userEvent.click(await screen.findByRole('button', { name: /Détection « Voiture »/ }))
+
+    // Act
+    fireEvent.ended(player().querySelector('video')!)
+
+    // Assert
+    expect(player()).toHaveAccessibleName('Détection : Détection « Voiture »')
+  })
+
+  it('onLoadHistory_ShouldSayItIsEmptyAndOfferNoFilter_WhenNothingWasDetected', async () => {
+    // Arrange
+    fakeNetwork({ ...reference, [HISTORY]: ok({ items: [], nextCursor: null }) })
 
     // Act
     renderScreen(<DetectionHistoryView />)
@@ -57,102 +166,172 @@ describe('DetectionHistoryView', () => {
     // Assert
     expect(await screen.findByText('Aucune détection pour l’instant.')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Filtrer' })).not.toBeInTheDocument()
-  })
-
-  it('onLoadHistory_ShouldOfferTheFilter_WhenTheHistoryListsDetections', async () => {
-    // Arrange
-    fakeNetwork({
-      ...reference,
-      'GET /api/detection-events/history': ok({
-        items: [makeDetectionEvent({ label: 'cat' })],
-        nextCursor: null,
-      }),
-    })
-
-    // Act
-    renderScreen(<DetectionHistoryView />)
-
-    // Assert
-    expect(await screen.findByRole('button', { name: 'Filtrer' })).toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: /^Détection :/ })).not.toBeInTheDocument()
   })
 
   it('onLoadHistory_ShouldSayWhyAndForSupport_WhenTheHistoryFails', async () => {
     // Arrange
-    fakeNetwork({ ...reference, 'GET /api/detection-events/history': failure(500) })
+    fakeNetwork({ ...reference, [HISTORY]: failure(500, undefined, 'events read timed out') })
 
     // Act
     renderScreen(<DetectionHistoryView />)
 
     // Assert
-    const alert = await screen.findByRole('alert')
-    expect(alert).toHaveTextContent("Impossible de charger l'historique.")
-    expect(alert).toHaveTextContent('GET /api/detection-events/history · 500')
+    expect(await screen.findByText('Les détections n’ont pas pu être lues.')).toBeInTheDocument()
+    expect(screen.getByText(/GET \/api\/detection-events\/history · 500/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Réessayer' })).toBeInTheDocument()
   })
 
-  it('onOpenHelp_ShouldPointToPrivacyModeToRecordNothing_WhenTheUserAsksHowFarTheHistoryGoes', async () => {
+  it('onOpenHelp_ShouldPointToCuttingTheCameraToRecordNothing_WhenTheUserAsksHowFarTheHistoryGoes', async () => {
     // Arrange
-    fakeNetwork({
-      ...reference,
-      'GET /api/detection-events/history': ok({ items: [], nextCursor: null }),
-    })
+    fakeNetwork({ ...reference, [HISTORY]: ok({ items: [], nextCursor: null }) })
     renderScreen(<DetectionHistoryView />)
 
     // Act
     await userEvent.click(await screen.findByText('Jusqu’où cette page remonte-t-elle ?'))
 
     // Assert
-    expect(screen.getByText(/activez sa vie privée/)).toBeVisible()
-    expect(screen.queryByText(/désactivez-la/)).not.toBeInTheDocument()
+    expect(screen.getByText(/coupez-la/)).toBeVisible()
   })
 
   it('onLoadMore_ShouldAppendTheOlderDetections_WhenTheUserAsksForMore', async () => {
     // Arrange
     const network = fakeNetwork({
       ...reference,
-      'GET /api/detection-events/history': ok({
-        items: [makeDetectionEvent({ label: 'cat' })],
-        nextCursor: 'older',
-      }),
+      [HISTORY]: ok({ items: [makeDetectionEvent({ label: 'cat' })], nextCursor: 'older' }),
     })
     renderScreen(<DetectionHistoryView />)
     const more = await screen.findByRole('button', { name: 'Voir plus ancien' })
     network.answer(
-      'GET /api/detection-events/history',
-      ok({ items: [makeDetectionEvent({ eventId: 'event-2', label: 'dog' })], nextCursor: null }),
+      HISTORY,
+      ok({ items: [makeDetectionEvent({ eventId: 'event-2', label: 'car' })], nextCursor: null }),
     )
 
     // Act
     await userEvent.click(more)
 
     // Assert
-    expect(await screen.findByText('Détection « dog »')).toBeInTheDocument()
-    expect(screen.getByText('Détection « cat »')).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /Détection « Voiture »/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Détection « Chat »/ })).toBeInTheDocument()
     expect(network.sent.at(-1)?.query).toContain('cursor=older')
   })
 
-  it('onCorrect_ShouldRemoveTheIdentityAndSaySo_WhenTheUserValidatesUnknown', async () => {
+  it('onFilterCamera_ShouldOfferTheCamerasByTheirNameAndAskForThatOne_WhenTheUserPicksOne', async () => {
+    // Arrange
+    const network = fakeNetwork({
+      ...twoClips,
+      'GET /api/cameras': ok([
+        makeCamera(),
+        makeCamera({ id: 'camera-2', displayName: 'Garage', frigateCameraName: 'cam_garage' }),
+      ]),
+    })
+    renderScreen(<DetectionHistoryView />)
+    await readTheCameraList()
+    await userEvent.click(await screen.findByRole('button', { name: 'Filtrer' }))
+    const sheet = await screen.findByRole('dialog', { name: 'Filtrer' })
+    expect(within(sheet).queryByText('cam_garage')).not.toBeInTheDocument()
+
+    // Act
+    await userEvent.click(within(sheet).getByRole('button', { name: 'Garage' }))
+
+    // Assert
+    expect(network.sent.at(-1)).toMatchObject({
+      route: HISTORY,
+      query: '?camera=cam_garage&limit=20',
+    })
+    expect(await screen.findByText('Garage')).toBeInTheDocument()
+    expect(screen.queryByRole('dialog', { name: 'Filtrer' })).not.toBeInTheDocument()
+  })
+
+  it('onLoadHistory_ShouldOpenFilteredOnTheCameraOfTheAddress_WhenArrivingFromACameraView', async () => {
+    // Arrange
+    const network = fakeNetwork({
+      ...twoClips,
+      'GET /api/cameras': ok([
+        makeCamera({ id: 'camera-2', displayName: 'Garage', frigateCameraName: 'cam_garage' }),
+      ]),
+    })
+
+    // Act
+    renderScreen(<DetectionHistoryView />, {
+      path: '/detections',
+      url: '/detections?camera=camera-2',
+    })
+    await readTheCameraList()
+
+    // Assert
+    expect(await screen.findByText('Garage')).toBeInTheDocument()
+    expect(network.sent.filter((request) => request.route === HISTORY)).toEqual([
+      expect.objectContaining({ query: '?camera=cam_garage&limit=20' }),
+    ])
+  })
+
+  it('onResetFilters_ShouldListEverythingAgain_WhenTheUserTapsToutAfficher', async () => {
+    // Arrange
+    const network = fakeNetwork(twoClips)
+    renderScreen(<DetectionHistoryView />)
+    await userEvent.click(await screen.findByRole('button', { name: 'Filtrer' }))
+    await userEvent.click(
+      within(await screen.findByRole('dialog', { name: 'Filtrer' })).getByRole('button', {
+        name: 'Voiture',
+      }),
+    )
+
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: 'Tout afficher' }))
+
+    // Assert
+    expect(network.sent.at(-1)).toMatchObject({ route: HISTORY, query: '?limit=20' })
+    expect(screen.queryByRole('button', { name: 'Tout afficher' })).not.toBeInTheDocument()
+  })
+
+  it('onLoadHistory_ShouldBlameTheFilters_WhenTheyMatchNothing', async () => {
+    // Arrange
+    const network = fakeNetwork(twoClips)
+    renderScreen(<DetectionHistoryView />)
+    await userEvent.click(await screen.findByRole('button', { name: 'Filtrer' }))
+    network.answer(HISTORY, ok({ items: [], nextCursor: null }))
+
+    // Act
+    await userEvent.click(
+      within(await screen.findByRole('dialog', { name: 'Filtrer' })).getByRole('button', {
+        name: 'Chat',
+      }),
+    )
+
+    // Assert
+    expect(await screen.findByText('Aucune détection avec ces filtres.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Filtrer' })).toBeInTheDocument()
+  })
+
+  it('onCorrect_ShouldNameThePersonAndSaySo_WhenTheUserPicksThemFromTheMenu', async () => {
     // Arrange
     const network = fakeNetwork({
       ...reference,
-      'GET /api/detection-events/history': ok({
-        items: [makeDetectionEvent({ identity: 'Alex' })],
-        nextCursor: null,
-      }),
+      'GET /api/profiles': ok([makeProfile({ id: 'profile-1', name: 'Alex' })]),
+      [HISTORY]: ok({ items: [makeDetectionEvent()], nextCursor: null }),
       'PATCH /api/detection-events/event-1/identity': ok(),
     })
     renderScreen(<DetectionHistoryView />)
-    await userEvent.click(await screen.findByRole('button', { name: 'Corriger' }))
+    const actions = await openActions()
+    await userEvent.click(
+      within(actions).getByRole('button', { name: 'Corriger la reconnaissance' }),
+    )
 
     // Act
-    await userEvent.click(screen.getByRole('button', { name: 'Valider' }))
+    await userEvent.click(
+      within(await screen.findByRole('dialog', { name: 'Qui est-ce ?' })).getByRole('button', {
+        name: 'Alex',
+      }),
+    )
 
     // Assert
-    expect(await screen.findByText('Identité retirée')).toBeInTheDocument()
-    expect(screen.getByText('Détection « person »')).toBeInTheDocument()
+    expect(await screen.findByText('Reconnaissance corrigée')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Alex/ })).toBeInTheDocument()
     expect(network.sent).toContainEqual({
       route: 'PATCH /api/detection-events/event-1/identity',
       query: '',
-      body: { profileId: null },
+      body: { profileId: 'profile-1' },
     })
   })
 
@@ -160,46 +339,99 @@ describe('DetectionHistoryView', () => {
     // Arrange
     fakeNetwork({
       ...reference,
-      'GET /api/detection-events/history': ok({
-        items: [makeDetectionEvent({ identity: 'Alex' })],
+      [HISTORY]: ok({
+        items: [makeDetectionEvent({ identity: 'Alex', profileId: 'profile-1' })],
         nextCursor: null,
       }),
       'PATCH /api/detection-events/event-1/identity': failure(500),
     })
     renderScreen(<DetectionHistoryView />)
-    await userEvent.click(await screen.findByRole('button', { name: 'Corriger' }))
+    const actions = await openActions()
+    await userEvent.click(
+      within(actions).getByRole('button', { name: 'Corriger la reconnaissance' }),
+    )
 
     // Act
-    await userEvent.click(screen.getByRole('button', { name: 'Valider' }))
+    await userEvent.click(
+      within(await screen.findByRole('dialog', { name: 'Qui est-ce ?' })).getByRole('button', {
+        name: /Inconnu/,
+      }),
+    )
 
     // Assert
     expect(
       await screen.findByText(/La correction de l’identité n’a pas abouti/),
     ).toBeInTheDocument()
-    expect(screen.getByText('Alex')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Alex/ })).toBeInTheDocument()
   })
 
-  const oneCat = {
-    ...reference,
-    'GET /api/detection-events/history': ok({
-      items: [makeDetectionEvent({ label: 'cat', hasSnapshot: true, hasClip: true })],
-      nextCursor: null,
-    }),
-  }
+  it('ClipActionsSheet_ShouldOfferNoCorrection_WhenTheDetectionCannotCarryAnIdentity', async () => {
+    // Arrange
+    fakeNetwork(oneCat)
+    renderScreen(<DetectionHistoryView />)
 
-  async function openPreview() {
-    await userEvent.click(await screen.findByRole('button', { name: /Voir l’aperçu/ }))
-    return screen.findByRole('dialog', { name: 'Aperçu de la détection' })
-  }
+    // Act
+    const actions = await openActions()
 
-  async function confirmDeletion() {
-    const preview = await openPreview()
-    await userEvent.click(within(preview).getByRole('button', { name: 'Supprimer' }))
-    const question = await screen.findByRole('alertdialog')
-    await userEvent.click(within(question).getByRole('button', { name: 'Supprimer' }))
-  }
+    // Assert
+    expect(
+      within(actions).queryByRole('button', { name: 'Corriger la reconnaissance' }),
+    ).not.toBeInTheDocument()
+    expect(
+      within(actions).getByRole('button', { name: /Télécharger la vidéo/ }),
+    ).toBeInTheDocument()
+  })
 
-  it('onDelete_ShouldRemoveTheDetectionAndCloseItsPreview_WhenTheUserConfirms', async () => {
+  it('onDownload_ShouldSaveTheClipOnThisDeviceUnderItsCameraAndMoment_WhenTheUserDownloadsIt', async () => {
+    // Arrange
+    fakeNetwork({
+      ...reference,
+      [HISTORY]: ok({
+        items: [makeDetectionEvent({ hasClip: true, occurredAt: '2026-09-26T08:05:00' })],
+        nextCursor: null,
+      }),
+    })
+    renderScreen(<DetectionHistoryView />)
+    // jsdom navigates on a link's click: the browser's save is what is watched, not done.
+    const save = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined)
+    const actions = await openActions()
+
+    // Act
+    await userEvent.click(within(actions).getByRole('button', { name: /Télécharger la vidéo/ }))
+
+    // Assert
+    expect(save.mock.contexts).toEqual([
+      expect.objectContaining({
+        href: expect.stringMatching(/\/api\/detection-events\/event-1\/clip$/),
+        download: 'Front Door 2026-09-26 08h05.mp4',
+      }),
+    ])
+    save.mockRestore()
+  })
+
+  it('ClipActionsSheet_ShouldOfferNoDownload_WhenTheVideoExpired', async () => {
+    // Arrange
+    fakeNetwork({
+      ...reference,
+      [HISTORY]: ok({
+        items: [makeDetectionEvent({ hasClip: true, mediaExpired: true })],
+        nextCursor: null,
+      }),
+    })
+    renderScreen(<DetectionHistoryView />)
+
+    // Act
+    const actions = await openActions()
+
+    // Assert
+    expect(screen.getByText(/au-delà de la durée de conservation/)).toBeInTheDocument()
+    expect(
+      within(actions).queryByRole('button', { name: /Télécharger la vidéo/ }),
+    ).not.toBeInTheDocument()
+    expect(within(actions).getByRole('button', { name: 'Supprimer' })).toBeInTheDocument()
+  })
+
+  it('onDelete_ShouldRemoveTheDetection_WhenTheUserConfirms', async () => {
     // Arrange
     const network = fakeNetwork({ ...oneCat, 'DELETE /api/detection-events/event-1': ok() })
     renderScreen(<DetectionHistoryView />)
@@ -209,21 +441,20 @@ describe('DetectionHistoryView', () => {
 
     // Assert
     expect(await screen.findByText('Détection supprimée.')).toBeInTheDocument()
-    expect(screen.queryByText('Détection « cat »')).not.toBeInTheDocument()
-    expect(screen.queryByRole('dialog', { name: 'Aperçu de la détection' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Détection « Chat »/ })).not.toBeInTheDocument()
     expect(network.sent).toContainEqual(
       expect.objectContaining({ route: 'DELETE /api/detection-events/event-1' }),
     )
   })
 
-  it('onAskDelete_ShouldSayInOneSentenceWhatGoes_WhenTheUserAsksFromThePreview', async () => {
+  it('onAskDelete_ShouldSayInOneSentenceWhatGoes_WhenTheUserAsksFromTheMenu', async () => {
     // Arrange
     fakeNetwork(oneCat)
     renderScreen(<DetectionHistoryView />)
-    const preview = await openPreview()
+    const actions = await openActions()
 
     // Act
-    await userEvent.click(within(preview).getByRole('button', { name: 'Supprimer' }))
+    await userEvent.click(within(actions).getByRole('button', { name: 'Supprimer' }))
 
     // Assert
     expect(await screen.findByRole('alertdialog')).toHaveTextContent(
@@ -235,8 +466,8 @@ describe('DetectionHistoryView', () => {
     // Arrange
     const network = fakeNetwork(oneCat)
     renderScreen(<DetectionHistoryView />)
-    const preview = await openPreview()
-    await userEvent.click(within(preview).getByRole('button', { name: 'Supprimer' }))
+    const actions = await openActions()
+    await userEvent.click(within(actions).getByRole('button', { name: 'Supprimer' }))
 
     // Act
     await userEvent.click(
@@ -245,7 +476,7 @@ describe('DetectionHistoryView', () => {
 
     // Assert
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
-    expect(screen.getByText('Détection « cat »')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Détection « Chat »/ })).toBeInTheDocument()
     expect(network.sent).not.toContainEqual(
       expect.objectContaining({ route: 'DELETE /api/detection-events/event-1' }),
     )
@@ -277,7 +508,7 @@ describe('DetectionHistoryView', () => {
       // Assert
       expect(await screen.findByText(sentence)).toBeInTheDocument()
       expect(screen.getByText(/DELETE \/api\/detection-events\/event-1 · 502/)).toBeInTheDocument()
-      expect(screen.getByText('Détection « cat »')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /Détection « Chat »/ })).toBeInTheDocument()
     },
   )
 
@@ -298,7 +529,7 @@ describe('DetectionHistoryView', () => {
         'L’enregistrement de ce moment est encore en cours. Réessayez dans quelques minutes.',
       ),
     ).toBeInTheDocument()
-    expect(screen.getByText('Détection « cat »')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Détection « Chat »/ })).toBeInTheDocument()
   })
 
   it('onDelete_ShouldDropTheRowAndSayItIsGone_WhenTheDetectionNoLongerExists', async () => {
@@ -314,36 +545,21 @@ describe('DetectionHistoryView', () => {
 
     // Assert
     expect(await screen.findByText('Cette détection n’existe plus.')).toBeInTheDocument()
-    expect(screen.queryByText('Détection « cat »')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Détection « Chat »/ })).not.toBeInTheDocument()
   })
 
   it('onVideoFailed_ShouldSayTheVideoWasDeleted_WhenItsRecordingNoLongerExists', async () => {
     // Arrange
     fakeNetwork({ ...oneCat, 'GET /api/detection-events/event-1/clip': failure(404) })
     renderScreen(<DetectionHistoryView />)
-    await userEvent.click(await screen.findByRole('button', { name: 'Vidéo' }))
-    const preview = await screen.findByRole('dialog', { name: 'Aperçu de la détection' })
+    await screen.findByRole('group', { name: /^Détection :/ })
 
     // Act
-    fireEvent.error(preview.querySelector('video')!)
+    fireEvent.error(player().querySelector('video')!)
 
     // Assert
     expect(await screen.findByText('La vidéo de ce moment a été supprimée.')).toBeInTheDocument()
-    expect(preview.querySelector('video')).toBeNull()
-  })
-
-  it('onVideoFailed_ShouldSayTheVideoCouldNotBePlayed_WhenItsRecordingStillExists', async () => {
-    // Arrange
-    fakeNetwork({ ...oneCat, 'GET /api/detection-events/event-1/clip': ok() })
-    renderScreen(<DetectionHistoryView />)
-    await userEvent.click(await screen.findByRole('button', { name: 'Vidéo' }))
-    const preview = await screen.findByRole('dialog', { name: 'Aperçu de la détection' })
-
-    // Act
-    fireEvent.error(preview.querySelector('video')!)
-
-    // Assert
-    expect(await screen.findByText('La vidéo n’a pas pu être lue.')).toBeInTheDocument()
+    expect(player().querySelector('video')).toBeNull()
   })
 
   it('onVideoFailed_ShouldSayItCouldNotBePlayedWithTheDetail_WhenTheSurveillanceFailsToServeIt', async () => {
@@ -357,46 +573,14 @@ describe('DetectionHistoryView', () => {
       ),
     })
     renderScreen(<DetectionHistoryView />)
-    await userEvent.click(await screen.findByRole('button', { name: 'Vidéo' }))
-    const preview = await screen.findByRole('dialog', { name: 'Aperçu de la détection' })
+    await screen.findByRole('group', { name: /^Détection :/ })
 
     // Act
-    fireEvent.error(preview.querySelector('video')!)
+    fireEvent.error(player().querySelector('video')!)
 
     // Assert
     expect(await screen.findByText('La vidéo n’a pas pu être lue.')).toBeInTheDocument()
     expect(screen.getByText(/GET \/api\/detection-events\/event-1\/clip · 502/)).toBeInTheDocument()
     expect(screen.queryByText('La vidéo de ce moment a été supprimée.')).not.toBeInTheDocument()
-  })
-
-  it.each([
-    [{ mediaExpired: true }, 'Aperçu et vidéo effacés — au-delà de la durée de conservation.'],
-    [{ hasSnapshot: false, hasClip: false }, 'Cette détection n’a ni aperçu ni vidéo.'],
-  ])('onDelete_ShouldStillBeOffered_WhenTheRowHasNoMediaToShow (%o)', async (media, sentence) => {
-    // Arrange
-    fakeNetwork({
-      ...reference,
-      'GET /api/detection-events/history': ok({
-        items: [makeDetectionEvent({ label: 'cat', ...media })],
-        nextCursor: null,
-      }),
-      'DELETE /api/detection-events/event-1': ok(),
-    })
-    renderScreen(<DetectionHistoryView />)
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Ouvrir la détection : Détection « cat »' }),
-    )
-    const preview = await screen.findByRole('dialog', { name: 'Aperçu de la détection' })
-    expect(within(preview).getByText(sentence)).toBeInTheDocument()
-
-    // Act
-    await userEvent.click(within(preview).getByRole('button', { name: 'Supprimer' }))
-    await userEvent.click(
-      within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Supprimer' }),
-    )
-
-    // Assert
-    expect(await screen.findByText('Détection supprimée.')).toBeInTheDocument()
-    expect(screen.queryByText('Détection « cat »')).not.toBeInTheDocument()
   })
 })

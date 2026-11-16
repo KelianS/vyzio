@@ -5,7 +5,7 @@ import type { DetectionHistoryQuery } from '../../domain/entities/detection_hist
 import type { Profile } from '../../domain/entities/profile.entity'
 import type { DetectionHistoryContainer } from '../../infrastructure/providers/detection_history.container'
 import type { DetectionHistoryAction } from './detection_history.actions'
-import type { DetectionMedia } from '../../common/detection/detection_preview'
+import type { DetectionSheet } from './detection_history.uido'
 import { explainVideoFailure } from '../../common/detection/explain_video_failure'
 
 export interface DetectionHistoryPresenterContext {
@@ -51,33 +51,33 @@ export function buildDetectionHistoryPresenter({
         })
     },
 
-    onFilterCameraChange(value: string) {
-      dispatch({ type: 'FILTER_CAMERA_SET', value })
+    onFilterCamera(cameraId: string) {
+      dispatch({ type: 'FILTER_CAMERA_SET', cameraId })
     },
-    onFilterLabelChange(value: string) {
+    onFilterLabel(value: string) {
       dispatch({ type: 'FILTER_LABEL_SET', value })
     },
-    onFilterProfileChange(value: string) {
+    onFilterProfile(value: string) {
       dispatch({ type: 'FILTER_PROFILE_SET', value })
-    },
-    onFilterFromChange(value: string) {
-      dispatch({ type: 'FILTER_FROM_SET', value })
-    },
-    onFilterToChange(value: string) {
-      dispatch({ type: 'FILTER_TO_SET', value })
     },
     onResetFilters() {
       dispatch({ type: 'FILTERS_RESET' })
     },
-    onMediaSet(media: DetectionMedia | null) {
-      dispatch({ type: 'MEDIA_SET', media })
+    onPlay(eventId: string) {
+      dispatch({ type: 'CLIP_PLAYED', eventId })
     },
-    onFiltersToggle() {
-      dispatch({ type: 'FILTERS_TOGGLED' })
+    onClipEnded(eventId: string) {
+      dispatch({ type: 'CLIP_ENDED', eventId })
+    },
+    onOpenSheet(sheet: DetectionSheet) {
+      dispatch({ type: 'SHEET_OPENED', sheet })
+    },
+    onCloseSheet() {
+      dispatch({ type: 'SHEET_CLOSED' })
     },
 
     async onCorrect(eventId: string, profile: Profile | null): Promise<void> {
-      dispatch({ type: 'CORRECT_STARTED', eventId })
+      dispatch({ type: 'SHEET_CLOSED' })
       try {
         await container.correctDetectionIdentity.execute(eventId, profile?.id ?? null)
         dispatch({
@@ -88,7 +88,6 @@ export function buildDetectionHistoryPresenter({
         })
         toast(profile ? 'Reconnaissance corrigée' : 'Identité retirée', 'success')
       } catch (e) {
-        dispatch({ type: 'CORRECT_FAILED' })
         toastError(toast, toAppError(e), 'La correction de l’identité n’a pas abouti.')
       }
     },

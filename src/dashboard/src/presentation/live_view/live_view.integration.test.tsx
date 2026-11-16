@@ -1305,7 +1305,7 @@ describe('LiveView detections', () => {
     )
     expect(screen.getByRole('link', { name: 'Toutes ses détections' })).toHaveAttribute(
       'href',
-      '/detections?camera=front_door',
+      '/detections?camera=camera-1',
     )
   })
 

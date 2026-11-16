@@ -1,9 +1,13 @@
-import { useState, type ReactNode } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
+import { Pause, Play } from 'lucide-react'
 import { cn } from '../ui/utils'
+import { PressableControl } from '../components/pressable'
 import type { DetectionEvent } from '../../domain/entities/detection_event.entity'
 import type { DetectionLabel } from '../../domain/entities/detection_label.entity'
-import { MEDIA_EXPIRED } from './detection_preview'
 import { clipUrl, formatClipDetail, formatEventTitle, snapshotUrl } from './detection_formatters'
+
+/** Expiry is not a failure: nothing to retry, said the same in the list and in the player (HIST-17). */
+const MEDIA_EXPIRED = 'Aperçu et vidéo effacés : au-delà de la durée de conservation.'
 
 /** What the player holds when the detection has no video to play. */
 function stillOf(event: DetectionEvent, clipGone: boolean): string | null {
@@ -22,6 +26,7 @@ export function ClipPlayer({
   labels,
   apiBaseUrl,
   clipGone,
+  withCamera = false,
   className,
   onVideoError,
   onEnded,
@@ -32,13 +37,14 @@ export function ClipPlayer({
   apiBaseUrl: string
   /** The video was erased with another detection: said as such, never as a broken player (HIST-11). */
   clipGone: boolean
+  /** The clips come from several cameras: the line under the name says which. */
+  withCamera?: boolean
   className?: string
   onVideoError: () => void
   onEnded?: () => void
   /** What the screen lays over the player, such as the way back to the live picture. */
   children?: ReactNode
 }) {
-  const [played, setPlayed] = useState(0)
   const still = stillOf(event, clipGone)
   const video = !still && event.hasClip
 
@@ -49,17 +55,11 @@ export function ClipPlayer({
       className={cn('relative overflow-hidden bg-picture', className)}
     >
       {video && (
-        <video
+        <ClipVideo
+          // A new clip starts from nothing: its progress and its pause are its own.
           key={event.eventId}
           src={clipUrl(apiBaseUrl, event.eventId)}
-          autoPlay
-          playsInline
-          aria-label={formatEventTitle(event, labels)}
-          className="absolute inset-0 size-full object-contain"
-          onTimeUpdate={(e) => {
-            const { currentTime, duration } = e.currentTarget
-            if (duration > 0) setPlayed(currentTime / duration)
-          }}
+          label={formatEventTitle(event, labels)}
           onEnded={onEnded}
           onError={onVideoError}
         />
@@ -79,14 +79,67 @@ export function ClipPlayer({
 
       <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-picture/80 to-transparent px-3 pt-8 pb-3">
         <p className="text-row font-semibold">{formatEventTitle(event, labels)}</p>
-        <p className="text-label font-semibold text-ink-muted">{formatClipDetail(event)}</p>
+        <p className="text-label font-semibold text-ink-muted">
+          {formatClipDetail(event, withCamera)}
+        </p>
       </div>
-      {video && (
-        <div className="absolute inset-x-0 bottom-0 h-0.75 bg-foreground/20" aria-hidden="true">
-          <div className="h-full bg-foreground" style={{ width: `${played * 100}%` }} />
-        </div>
-      )}
       {children}
     </div>
+  )
+}
+
+/** The video itself, the way to pause it, and how far it has played. */
+function ClipVideo({
+  src,
+  label,
+  onEnded,
+  onError,
+}: {
+  src: string
+  label: string
+  onEnded?: () => void
+  onError: () => void
+}) {
+  const ref = useRef<HTMLVideoElement>(null)
+  const [played, setPlayed] = useState(0)
+  // Until it really plays: a browser that refuses to start it alone leaves « Lire » to tap.
+  const [paused, setPaused] = useState(true)
+  const Icon = paused ? Play : Pause
+
+  return (
+    <>
+      <video
+        ref={ref}
+        src={src}
+        autoPlay
+        playsInline
+        aria-label={label}
+        className="absolute inset-0 size-full object-contain"
+        onTimeUpdate={(e) => {
+          const { currentTime, duration } = e.currentTarget
+          if (duration > 0) setPlayed(currentTime / duration)
+        }}
+        onPlay={() => setPaused(false)}
+        onPause={() => setPaused(true)}
+        onEnded={onEnded}
+        onError={onError}
+      />
+      <PressableControl>
+        <button
+          type="button"
+          aria-label={paused ? 'Lire' : 'Pause'}
+          onClick={() => {
+            if (paused) void ref.current?.play()
+            else ref.current?.pause()
+          }}
+          className="absolute top-1/2 left-1/2 z-10 flex size-16 -translate-1/2 items-center justify-center rounded-full bg-glass outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        >
+          <Icon className="size-6 fill-current" aria-hidden="true" />
+        </button>
+      </PressableControl>
+      <div className="absolute inset-x-0 bottom-0 z-10 h-0.75 bg-foreground/20" aria-hidden="true">
+        <div className="h-full bg-foreground" style={{ width: `${played * 100}%` }} />
+      </div>
+    </>
   )
 }

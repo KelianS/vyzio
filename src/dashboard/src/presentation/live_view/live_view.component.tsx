@@ -485,7 +485,7 @@ export function LiveView({ camera }: { camera: Camera }) {
                 labels={uido.clipLabels}
                 apiBaseUrl={apiBaseUrl}
                 playingId={uido.playingId}
-                allTo={`/detections?camera=${encodeURIComponent(frigateName)}`}
+                allTo={`/detections?camera=${encodeURIComponent(cameraId)}`}
                 onPlay={(event) => presenter.onPlayClip(event.eventId)}
                 onRetry={() => presenter.onOpenClips(frigateName)}
               />

@@ -59,7 +59,7 @@ test.describe('Camera view', () => {
     await page.goto('/cameras/camera-1?tab=detections')
 
     await page.getByRole('link', { name: 'Toutes ses détections' }).click()
-    await expect(page).toHaveURL('/detections?camera=front_door')
+    await expect(page).toHaveURL('/detections?camera=camera-1')
     await page.getByRole('button', { name: 'Retour' }).click()
 
     await expect(page).toHaveURL('/cameras/camera-1?tab=detections')
