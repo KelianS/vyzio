@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { act, render, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { PrivacyMiss, PrivacyStrategy } from '../../domain/entities/camera.entity'
@@ -268,6 +268,31 @@ describe('AppShell', () => {
     )
 
     // Assert
+    expect(screen.queryByRole('list', { name: 'Alertes' })).not.toBeInTheDocument()
+  })
+
+  it('TopBar_ShouldKeepTheAlertClosed_WhenTheInterfaceIsOpenedAgainOnThisDevice', async () => {
+    // Arrange
+    fakeNetwork({
+      'GET /api/cameras': ok([makeCamera({ displayName: 'Jardin', status: 'offline' })]),
+      'GET /api/system/stats': ok(stats()),
+    })
+    openShellAt('/')
+    await userEvent.click(
+      within(await screen.findByRole('list', { name: 'Alertes' })).getByRole('button', {
+        name: 'Masquer : Jardin ne répond plus',
+      }),
+    )
+    cleanup()
+
+    // Act
+    openShellAt('/')
+
+    // Assert
+    await waitFor(() => {
+      const state = useRootStore.getState()
+      expect(state.camerasLoading || state.systemStats === null).toBe(false)
+    })
     expect(screen.queryByRole('list', { name: 'Alertes' })).not.toBeInTheDocument()
   })
 

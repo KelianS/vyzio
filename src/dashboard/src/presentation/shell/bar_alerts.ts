@@ -142,11 +142,16 @@ export function trackFirstSeen(
   return Object.fromEntries(keys.map((key) => [key, seen[key] ?? now]))
 }
 
-/** The alerts set aside that still last: one whose cause ended comes back if the cause returns. */
+/**
+ * The alerts set aside that still last: one whose cause ended comes back if the cause returns.
+ * Only facts actually read can end a cause: while loading or out of reach, every one is kept.
+ */
 export function stillDismissed(
   dismissed: readonly string[],
   keys: readonly string[],
+  factsRead: boolean,
 ): readonly string[] {
+  if (!factsRead) return dismissed
   return dismissed.filter((key) => keys.includes(key))
 }
 

@@ -31,6 +31,10 @@ export function AppShell() {
   const restartFailed = useRootStore((s) => s.restartFailure !== null)
   const privacyActing = useRootStore((s) => s.privacyActing)
   const privacyMissesTold = useRootStore((s) => s.privacyMissesTold)
+  // Only a real read may end a cause: a reload or a lost hub would otherwise forget every dismissal.
+  const factsRead = useRootStore(
+    (s) => !s.camerasLoading && s.camerasError === null && s.systemStats !== null && !s.hubLost,
+  )
 
   return (
     <TopBar
@@ -46,6 +50,7 @@ export function AppShell() {
               privacyActing,
               privacyMissesTold,
             })}
+            factsRead={factsRead}
           />
           {/* The restart is asked for from the settings only (UI-28). */}
           {isSettingsPath(pathname) && <RestartSurveillanceTrigger />}

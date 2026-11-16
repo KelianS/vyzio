@@ -5,12 +5,37 @@ import { PressableControl, PressableSurface } from '../../../common/components/p
 import { formatSince, stillDismissed, trackFirstSeen, type BarAlert } from '../bar_alerts'
 
 const SINCE_TICK_MS = 30_000
+const DISMISSED_KEY = 'vyzio.bar-alerts.dismissed'
 
-/** The alerts the bar grows for, the most recent first (UI-30). */
-export function BarAlertList({ alerts }: { alerts: readonly BarAlert[] }) {
+/** What this device set aside, kept over a reload; none when the browser keeps nothing. */
+function readDismissed(): readonly string[] {
+  try {
+    const saved: unknown = JSON.parse(localStorage.getItem(DISMISSED_KEY) ?? '[]')
+    return Array.isArray(saved) ? saved.filter((key) => typeof key === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+function saveDismissed(dismissed: readonly string[]): void {
+  try {
+    localStorage.setItem(DISMISSED_KEY, JSON.stringify(dismissed))
+  } catch {
+    // A browser that keeps nothing forgets the dismissal at the next opening, nothing worse.
+  }
+}
+
+/** The alerts the bar grows for, the most recent first (UI-30); `factsRead` once they come from a real read. */
+export function BarAlertList({
+  alerts,
+  factsRead,
+}: {
+  alerts: readonly BarAlert[]
+  factsRead: boolean
+}) {
   const [now, setNow] = useState(() => Date.now())
   const [firstSeen, setFirstSeen] = useState<Record<string, number>>({})
-  const [dismissed, setDismissed] = useState<readonly string[]>([])
+  const [dismissed, setDismissed] = useState<readonly string[]>(readDismissed)
 
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), SINCE_TICK_MS)
@@ -21,8 +46,10 @@ export function BarAlertList({ alerts }: { alerts: readonly BarAlert[] }) {
   const tracked = trackFirstSeen(firstSeen, keys, now)
   // Adjusted while rendering, as React advises for state derived from props: no effect, no flash.
   if (Object.keys(tracked).join('|') !== Object.keys(firstSeen).join('|')) setFirstSeen(tracked)
-  const kept = stillDismissed(dismissed, keys)
+  const kept = stillDismissed(dismissed, keys, factsRead)
   if (kept.length !== dismissed.length) setDismissed(kept)
+
+  useEffect(() => saveDismissed(dismissed), [dismissed])
 
   const shown = alerts.filter((alert) => !kept.includes(alert.key))
   if (shown.length === 0) return null

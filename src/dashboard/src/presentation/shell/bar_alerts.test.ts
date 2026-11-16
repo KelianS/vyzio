@@ -215,10 +215,22 @@ describe('trackFirstSeen', () => {
 describe('stillDismissed', () => {
   it('stillDismissed_ShouldForgetASetAsideAlert_WhenItsCauseHasEnded', () => {
     // Arrange & Act
-    const kept = stillDismissed(['camera-offline:c-1', 'storage-critical'], ['storage-critical'])
+    const kept = stillDismissed(
+      ['camera-offline:c-1', 'storage-critical'],
+      ['storage-critical'],
+      true,
+    )
 
     // Assert
     expect(kept).toEqual(['storage-critical'])
+  })
+
+  it('stillDismissed_ShouldKeepEverySetAsideAlert_WhenTheFactsAreNotReadYet', () => {
+    // Arrange & Act
+    const kept = stillDismissed(['camera-offline:c-1', 'storage-critical'], [], false)
+
+    // Assert
+    expect(kept).toEqual(['camera-offline:c-1', 'storage-critical'])
   })
 })
 
