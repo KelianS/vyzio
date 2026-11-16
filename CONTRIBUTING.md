@@ -43,9 +43,10 @@ Docker commands run via `wsl docker compose ...` under the hood, since Docker is
 The rule is GIT-07 of [`docs/rules/git.md`](docs/rules/git.md). Write a
 `*.capture.ts` in `src/dashboard/tools/pr-capture/`, on the model of
 `tools/docs-capture/onboarding.capture.ts` (fake backend, phone viewport, a wait on what makes the
-screen recognisable), writing its images to `tools/pr-capture/out/`. The folder is git-ignored: a
-capture written for one review is not kept. A full-page shot goes through `fullPageScreenshot`
-(`tests/e2e/fixtures/`), which keeps the header at the top of the image.
+screen recognisable, then `settledScreenshot` once the motion rests), writing its images to
+`tools/pr-capture/out/`. The folder is git-ignored: a capture written for one review is not kept. A
+full-page shot goes through `fullPageScreenshot` (`tests/e2e/fixtures/`), which keeps the header at
+the top of the image.
 
 1. `task pr:capture` shoots the screens of the branch. For the *before* images, switch to `main`
    (the ignored capture script stays in place), shoot, prefix the images with `before-`, and switch
