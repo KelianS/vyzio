@@ -475,7 +475,7 @@ export function LiveView({ camera }: { camera: Camera }) {
 
         {/* Edge to edge, the controls lie over the picture: the tabs would steer twice. */}
         {!immersive && (
-          <ViewTabs current={tab} recent={uido.clipsRecent} onChoose={chooseTab}>
+          <ViewTabs current={tab} onChoose={chooseTab}>
             {tab === ViewTab.Controls ? (
               controlsPanel()
             ) : (

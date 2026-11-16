@@ -16,7 +16,6 @@ const HOLD_SIGNAL_MS = 1000
 const MOVE_SPEED = 50
 // The clips the Détections tab lists: the page of all of them is one tap away (LIVE-20).
 const CLIPS_SHOWN = 20
-const HOUR_MS = 60 * 60 * 1000
 // A native preset move goes on after the camera acknowledges it: capture once a full move has had time to end (ADR-09).
 const CAPTURE_DELAY_MS = 6000
 
@@ -218,10 +217,7 @@ export function buildLiveViewPresenter({
         history.getCameraLabels.execute(),
       ])
         .then(([page, labels]) => {
-          const recent = page.items.some(
-            (clip) => Date.now() - Date.parse(clip.occurredAt) < HOUR_MS,
-          )
-          if (isLatest()) dispatch({ type: 'CLIPS_LOADED', clips: page.items, labels, recent })
+          if (isLatest()) dispatch({ type: 'CLIPS_LOADED', clips: page.items, labels })
         })
         .catch((e: unknown) => {
           if (isLatest()) dispatch({ type: 'CLIPS_FAILED', error: toAppError(e) })

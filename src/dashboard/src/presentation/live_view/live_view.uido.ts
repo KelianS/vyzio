@@ -32,8 +32,6 @@ export interface LiveViewUido {
   clipsError: AppError | null
   /** What names a detection nobody was recognised in. */
   clipLabels: DetectionLabel[]
-  /** The camera detected within the hour before its clips were read: a dot on its tab (LIVE-20). */
-  clipsRecent: boolean
   /** The clip playing in place of the live picture, if any (LIVE-20). */
   playingId: string | null
   /** A clip whose video was erased with another detection (HIST-11). */
@@ -57,7 +55,6 @@ export function buildInitialLiveViewUido(): LiveViewUido {
     clips: null,
     clipsError: null,
     clipLabels: [],
-    clipsRecent: false,
     playingId: null,
     clipGoneId: null,
     privacyBusy: false,

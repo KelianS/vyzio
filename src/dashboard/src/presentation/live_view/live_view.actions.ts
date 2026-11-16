@@ -28,12 +28,7 @@ export type LiveViewAction =
   | { type: 'OVERRIDE_ASKED'; presetId: number }
   | { type: 'OVERRIDE_CLOSED' }
   | { type: 'CLIPS_STARTED' }
-  | {
-      type: 'CLIPS_LOADED'
-      clips: DetectionEvent[]
-      labels: DetectionLabel[]
-      recent: boolean
-    }
+  | { type: 'CLIPS_LOADED'; clips: DetectionEvent[]; labels: DetectionLabel[] }
   | { type: 'CLIPS_FAILED'; error: AppError }
   | { type: 'CLIP_PLAYED'; eventId: string }
   | { type: 'LIVE_RESUMED' }

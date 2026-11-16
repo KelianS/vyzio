@@ -12,13 +12,10 @@ const ORDER: ViewTab[] = [ViewTab.Controls, ViewTab.Detections]
 /** Two pills in one track, the selected one raised (DESIGN SYSTEM § Tabs), and the selected tab's panel. */
 export function ViewTabs({
   current,
-  recent,
   onChoose,
   children,
 }: {
   current: ViewTab
-  /** This camera detected within the last hour: a dot on its Détections tab (LIVE-20). */
-  recent: boolean
   onChoose: (tab: ViewTab) => void
   children: ReactNode
 }) {
@@ -35,20 +32,13 @@ export function ViewTabs({
             aria-controls={`panel-${tab}`}
             onClick={() => onChoose(tab)}
             className={cn(
-              'flex h-11 items-center justify-center gap-1.5 rounded-full text-body outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+              'flex h-11 items-center justify-center rounded-full text-body outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
               tab === current
                 ? 'bg-secondary font-semibold text-foreground'
                 : 'font-medium text-muted-foreground',
             )}
           >
             {LABEL[tab]}
-            {tab === ViewTab.Detections && recent && (
-              <span
-                role="img"
-                aria-label="Détection dans la dernière heure"
-                className="size-2 rounded-full bg-foreground"
-              />
-            )}
           </button>
         ))}
       </div>

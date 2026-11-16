@@ -81,7 +81,6 @@ export function liveViewReducer(state: LiveViewUido, action: LiveViewAction): Li
         ...state,
         clips: action.clips,
         clipLabels: action.labels,
-        clipsRecent: action.recent,
         clipsError: null,
       }
     // Unread is not empty: the list gives way to the failure.

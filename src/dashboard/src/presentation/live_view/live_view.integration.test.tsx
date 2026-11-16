@@ -1249,6 +1249,24 @@ describe('LiveView detections', () => {
     })
   }
 
+  it('ViewTabs_ShouldMarkNothingAsNew_WhenTheCameraDetectedAMinuteAgo', async () => {
+    // Arrange
+    fakeNetwork({
+      [HISTORY]: ok({
+        items: [clip({ occurredAt: new Date(Date.now() - 60_000).toISOString() })],
+        nextCursor: null,
+      }),
+      [LABELS]: ok([PERSON]),
+    })
+
+    // Act
+    renderOnDetections()
+
+    // Assert
+    expect(await screen.findByRole('button', { name: /Camille/ })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Détections' }).children).toHaveLength(0)
+  })
+
   it('onPlayClip_ShouldPlayTheDetectionInPlaceOfTheLiveThenGoBackToIt_WhenTheUserTapsItThenRevenirAuDirect', async () => {
     // Arrange
     fakeNetwork({
