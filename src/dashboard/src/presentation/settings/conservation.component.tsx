@@ -120,11 +120,11 @@ function ConservationForm({
       consequence: window === 'continuous' && current > 0 ? CONTINUOUS_DISK_WARNING : undefined,
       value: current,
       onChange: (days) => draft.set(field, days as number),
-      provenance: {
-        // One level above a camera: there's no override to fall back to, so matching the shipped value *is* following it.
-        following: current === shipped,
-        fallbackLabel: formatDays(shipped),
-        revertLabel: 'Revenir à la valeur d’origine',
+      inherits: {
+        from: 'default',
+        // The level above the installation is the shipped value: matching it *is* inheriting it.
+        inherited: current === shipped,
+        valueLabel: formatDays(shipped),
         onRevert: () => draft.set(field, shipped),
       },
     }
@@ -132,7 +132,7 @@ function ConservationForm({
 
   return (
     <>
-      <SettingsPage lede="Ces durées s’appliquent à toutes vos caméras. Une caméra peut s’en écarter depuis sa propre fiche, durée par durée.">
+      <SettingsPage>
         <SettingsList settings={declarations} />
 
         <RetentionHelp />

@@ -46,7 +46,7 @@ describe('CameraConservationView', () => {
     )
   })
 
-  it('CameraConservation_ShouldSayADurationIsItsOwn_WhenTheUserSetsIt', async () => {
+  it('CameraConservation_ShouldOpenTheLockOfADuration_WhenTheUserSetsIt', async () => {
     // Arrange
     fakeNetwork({ 'GET /api/cameras/camera-1/detection-config': ok(makeDetectionConfig()) })
     renderScreen(<CameraConservationView />, CONSERVATION_TAB)
@@ -57,24 +57,26 @@ describe('CameraConservationView', () => {
 
     // Assert
     // The fixture already sets the detection history apart; the motion clips now join it.
-    expect(screen.getAllByText('Comme l’ensemble')).toHaveLength(1)
-    expect(screen.getAllByText('Propre à cette caméra')).toHaveLength(2)
+    expect(screen.getAllByRole('img', { name: 'Valeur de l’ensemble' })).toHaveLength(1)
+    expect(
+      screen.getByRole('button', { name: 'Revenir à la valeur de l’ensemble (7 jours)' }),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Comme l’ensemble')).not.toBeInTheDocument()
   })
 
-  it('CameraConservation_ShouldFollowTheWholeInstallationAgain_WhenTheUserRevertsADuration', async () => {
+  it('CameraConservation_ShouldFollowTheWholeInstallationAgain_WhenTheUserTapsTheOpenLock', async () => {
     // Arrange
     fakeNetwork({ 'GET /api/cameras/camera-1/detection-config': ok(makeDetectionConfig()) })
     renderScreen(<CameraConservationView />, CONSERVATION_TAB)
     await setMotionToTenDays()
-    const [revert] = screen.getAllByRole('button', {
-      name: 'Suivre le réglage d’ensemble : 7 jours',
-    })
 
     // Act
-    await userEvent.click(revert)
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Revenir à la valeur de l’ensemble (7 jours)' }),
+    )
 
     // Assert
-    expect(screen.getAllByText('Comme l’ensemble')).toHaveLength(2)
+    expect(screen.getAllByRole('img', { name: 'Valeur de l’ensemble' })).toHaveLength(2)
     expect(screen.getByLabelText('Séquences de mouvement')).toHaveValue(7)
   })
 

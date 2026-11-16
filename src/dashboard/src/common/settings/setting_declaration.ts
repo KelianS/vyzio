@@ -2,7 +2,7 @@
  * Declaring a setting (ADR-15).
  *
  * A setting **is declared, it is not drawn**: one describes what it *is*, and the
- * rendering derives the control, the alignment, the provenance and the way back
+ * rendering derives the control, the alignment, the lock and the way back
  * from that. The author of a screen has no hold on the appearance - not because it
  * is forbidden, but because nothing here offers it to them.
  *
@@ -68,20 +68,20 @@ export type SettingNature =
 /** Beyond that, a filter appears in the panel: a long list is searched, not scanned. */
 export const VISIBLE_CHOICES_MAX = 7
 
+/** The level a value is inherited from: a camera's from the whole installation, the installation's from the product. */
+export type InheritedFrom = 'installation' | 'default'
+
 /**
- * Where the shown value comes from, when the setting can be overridden (ADR-15).
+ * A value inherited from the level above, which the row reads by its lock (ADR-15).
  * Supplied by the declaration, never recomputed while rendering.
  */
-interface SettingProvenance {
-  /** `true` for as long as the value is the one from the level above. */
-  readonly following: boolean
-  /** What going back restores, already formatted to be read. */
-  readonly fallbackLabel: string
-  /** Names the restored value rather than announcing a reset. */
-  readonly revertLabel: string
+interface SettingInheritance {
+  readonly from: InheritedFrom
+  /** `true` for as long as the value is the inherited one. */
+  readonly inherited: boolean
+  /** The inherited value, already formatted to be read: what going back restores. */
+  readonly valueLabel: string
   readonly onRevert: () => void
-  /** The row's subtitle, where the level above is one the user knows: one line per state. */
-  readonly subtitles?: { readonly following: string; readonly own: string }
 }
 
 export interface SettingDeclaration<T = unknown> {
@@ -101,6 +101,6 @@ export interface SettingDeclaration<T = unknown> {
   readonly consequence?: string
   readonly value: T
   readonly onChange: (value: T) => void
-  readonly provenance?: SettingProvenance
+  readonly inherits?: SettingInheritance
   readonly disabled?: boolean
 }

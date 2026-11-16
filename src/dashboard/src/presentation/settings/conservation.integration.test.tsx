@@ -64,6 +64,38 @@ describe('ConservationView', () => {
     expect(screen.queryByText(/désactivez-la/)).not.toBeInTheDocument()
   })
 
+  it('Conservation_ShouldTellAChangedDurationFromTheDefaults_WhenTheUserChangesOne', async () => {
+    // Arrange
+    fakeNetwork({ [SETTINGS]: ok(settings) })
+    renderScreen(<ConservationView />, CONSERVATION)
+    await screen.findByLabelText('Séquences de mouvement')
+
+    // Act
+    await setMotionToTenDays()
+
+    // Assert
+    expect(screen.getAllByRole('img', { name: 'Valeur par défaut' })).toHaveLength(2)
+    expect(
+      screen.getByRole('button', { name: 'Revenir à la valeur par défaut (7 jours)' }),
+    ).toBeInTheDocument()
+  })
+
+  it('Conservation_ShouldGoBackToTheDefaultDuration_WhenTheUserTapsTheOpenLock', async () => {
+    // Arrange
+    fakeNetwork({ [SETTINGS]: ok(settings) })
+    renderScreen(<ConservationView />, CONSERVATION)
+    await setMotionToTenDays()
+
+    // Act
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Revenir à la valeur par défaut (7 jours)' }),
+    )
+
+    // Assert
+    expect(screen.getAllByRole('img', { name: 'Valeur par défaut' })).toHaveLength(3)
+    expect(screen.getByLabelText('Séquences de mouvement')).toHaveValue(7)
+  })
+
   it('onSave_ShouldKeepTheDraftAndSayWhy_WhenTheSaveFails', async () => {
     // Arrange
     fakeNetwork({ [SETTINGS]: ok(settings), [SAVE]: failure(500) })

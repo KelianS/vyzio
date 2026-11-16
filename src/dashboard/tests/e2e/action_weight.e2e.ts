@@ -242,6 +242,28 @@ test.describe('Touch size', () => {
     ).toBeGreaterThanOrEqual(44)
   })
 
+  test('InheritanceLock_ShouldReachAFingerBesideItsField_WhenADurationIsSetHere', async ({
+    page,
+  }) => {
+    await page.setViewportSize(PHONE)
+    await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
+    await page.goto('/settings/retention')
+    const motion = page.getByRole('spinbutton', { name: 'Séquences de mouvement' })
+    await motion.fill('10')
+    await motion.blur()
+
+    const lock = page.getByRole('button', { name: /^Revenir à la valeur par défaut/ })
+    expect(await heightOf(lock)).toBe(44)
+    expect(await reachesAFinger(lock)).toBe(true)
+    const fieldBox = (await motion.locator('..').boundingBox())!
+    const lockBox = (await lock.boundingBox())!
+    expect(lockBox.x).toBeGreaterThanOrEqual(fieldBox.x + fieldBox.width - 1)
+    expect(lockBox.y).toBeLessThan(fieldBox.y + fieldBox.height)
+
+    await page.goto('/settings/cameras/camera-1/retention')
+    expect(await heightOf(page.getByRole('img', { name: 'Valeur de l’ensemble' }).first())).toBe(44)
+  })
+
   test('Controls_ShouldKeepTheirSize_WhenTheScreenIsWide', async ({ page }) => {
     await page.setViewportSize(DESKTOP)
     await installFakeBackend(page, channelState())

@@ -112,6 +112,21 @@ test.describe('Accessibility, WCAG 2.1 A/AA', () => {
     '/settings/hardware',
   ]
 
+  test('Screen_ShouldPassTheWcagScan_WhenADurationIsSetHere (/settings/retention)', async ({
+    page,
+  }) => {
+    await page.goto('/settings/retention')
+    const motion = page.getByRole('spinbutton', { name: 'Séquences de mouvement' })
+    await motion.fill('10')
+    await motion.blur()
+    await expect(
+      page.getByRole('button', { name: /^Revenir à la valeur par défaut/ }),
+    ).toBeVisible()
+
+    const violations = await scan(page)
+    expect(violations, describeViolations(violations)).toEqual([])
+  })
+
   for (const path of routes) {
     test(`Screen_ShouldPassTheWcagScan_WhenFilledWithContent (${path})`, async ({ page }) => {
       await page.goto(path)

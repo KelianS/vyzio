@@ -227,102 +227,92 @@ describe('SettingRow anatomy', () => {
     expect(screen.getByText('Compter 1 à 3 Go par jour.')).toBeInTheDocument()
   })
 
-  it('SettingRow_ShouldOfferNothingToUndo_WhenTheValueIsInherited', () => {
-    // Arrange & Act
-    render(
-      <SettingRow
-        setting={declare({
-          nature: { kind: 'number', unit: 'jours' },
-          value: 7,
-          provenance: {
-            following: true,
-            fallbackLabel: '7 jours',
-            revertLabel: 'Revenir à la valeur d’origine',
-            onRevert: vi.fn(),
-          },
-        })}
-      />,
-    )
-
-    // Assert
-    expect(screen.queryByRole('button', { name: /revenir/i })).not.toBeInTheDocument()
-  })
-
   it.each([
-    { following: true, subtitle: 'Comme l’ensemble' },
-    { following: false, subtitle: 'Propre à cette caméra' },
-  ])(
-    'SettingRow_ShouldSayWhereTheValueComesFrom_WhenTheLevelAboveIsNamed ($subtitle)',
-    ({ following, subtitle }) => {
+    { from: 'installation', mark: 'Valeur de l’ensemble' },
+    { from: 'default', mark: 'Valeur par défaut' },
+  ] as const)(
+    'SettingRow_ShouldMarkTheValueWithAClosedLockAndOfferNoWayBack_WhenItIsInherited ($from)',
+    ({ from, mark }) => {
       // Arrange & Act
       render(
         <SettingRow
           setting={declare({
             nature: { kind: 'number', unit: 'jours' },
             value: 7,
-            provenance: {
-              following,
-              fallbackLabel: '7 jours',
-              revertLabel: 'Suivre le réglage d’ensemble',
-              onRevert: vi.fn(),
-              subtitles: { following: 'Comme l’ensemble', own: 'Propre à cette caméra' },
-            },
+            inherits: { from, inherited: true, valueLabel: '7 jours', onRevert: vi.fn() },
           })}
         />,
       )
 
       // Assert
-      expect(screen.getByText(subtitle)).toBeInTheDocument()
+      expect(screen.getByRole('img', { name: mark })).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /revenir/i })).not.toBeInTheDocument()
     },
   )
 
-  it('SettingRow_ShouldReadTheValueInFullInk_WhenItFollowsTheLevelAbove', () => {
+  it.each([
+    { from: 'installation', revert: 'Revenir à la valeur de l’ensemble (7 jours)' },
+    { from: 'default', revert: 'Revenir à la valeur par défaut (7 jours)' },
+  ] as const)(
+    'SettingRow_ShouldOfferAnOpenLockNamingWhatItRestores_WhenTheValueIsSetHere ($from)',
+    ({ from, revert }) => {
+      // Arrange & Act
+      render(
+        <SettingRow
+          setting={declare({
+            nature: { kind: 'number', unit: 'jours' },
+            value: 30,
+            inherits: { from, inherited: false, valueLabel: '7 jours', onRevert: vi.fn() },
+          })}
+        />,
+      )
+
+      // Assert
+      expect(screen.getByRole('button', { name: revert })).toBeInTheDocument()
+      expect(screen.queryByRole('img', { name: /^Valeur/ })).not.toBeInTheDocument()
+    },
+  )
+
+  it('SettingRow_ShouldSayNoProvenanceUnderTheName_WhenTheValueIsInherited', () => {
+    // Arrange & Act
+    const { container } = render(
+      <SettingRow
+        setting={declare({
+          nature: { kind: 'number', unit: 'jours' },
+          value: 7,
+          inherits: {
+            from: 'installation',
+            inherited: true,
+            valueLabel: '7 jours',
+            onRevert: vi.fn(),
+          },
+        })}
+      />,
+    )
+
+    // Assert
+    // A list reads as names: the lock says it, never a nominal subtitle.
+    expect(container.querySelectorAll('p')).toHaveLength(0)
+  })
+
+  it('SettingRow_ShouldReadTheValueInFullInk_WhenItIsInherited', () => {
     // Arrange & Act
     render(
       <SettingRow
         setting={declare({
           nature: { kind: 'number', unit: 'jours' },
           value: 7,
-          provenance: {
-            following: true,
-            fallbackLabel: '7 jours',
-            revertLabel: 'Revenir à la valeur d’origine',
-            onRevert: vi.fn(),
-          },
+          inherits: { from: 'default', inherited: true, valueLabel: '7 jours', onRevert: vi.fn() },
         })}
       />,
     )
 
     // Assert
-    // A greyed value reads as a placeholder: the subtitle says the provenance, never the ink.
+    // A greyed value reads as a placeholder: the lock says the inheritance, never the ink.
     expect(screen.getByRole('spinbutton')).not.toHaveClass('text-muted-foreground')
   })
 
-  it('SettingRow_ShouldNameWhatTheUndoRestores_WhenTheValueIsTheLevelsOwn', () => {
-    // Arrange & Act
-    render(
-      <SettingRow
-        setting={declare({
-          nature: { kind: 'number', unit: 'jours' },
-          value: 30,
-          provenance: {
-            following: false,
-            fallbackLabel: '7 jours',
-            revertLabel: 'Revenir à la valeur d’origine',
-            onRevert: vi.fn(),
-          },
-        })}
-      />,
-    )
-
-    // Assert
-    // Names the restored value rather than announcing a reset.
-    expect(
-      screen.getAllByRole('button', { name: 'Revenir à la valeur d’origine : 7 jours' }).length,
-    ).toBeGreaterThan(0)
-  })
-
-  it('SettingRow_ShouldRestoreTheInheritedValue_WhenTheUserClicksTheUndo', async () => {
+  it('SettingRow_ShouldRestoreTheInheritedValue_WhenTheUserTapsTheOpenLock', async () => {
     // Arrange
     const onRevert = vi.fn()
     render(
@@ -330,24 +320,18 @@ describe('SettingRow anatomy', () => {
         setting={declare({
           nature: { kind: 'number', unit: 'jours' },
           value: 30,
-          provenance: {
-            following: false,
-            fallbackLabel: '7 jours',
-            revertLabel: 'Revenir à la valeur d’origine',
-            onRevert,
-          },
+          inherits: { from: 'default', inherited: false, valueLabel: '7 jours', onRevert },
         })}
       />,
     )
-    const [revert] = screen.getAllByRole('button', {
-      name: 'Revenir à la valeur d’origine : 7 jours',
-    })
 
     // Act
-    await userEvent.click(revert)
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Revenir à la valeur par défaut (7 jours)' }),
+    )
 
     // Assert
-    expect(onRevert).toHaveBeenCalled()
+    expect(onRevert).toHaveBeenCalledOnce()
   })
 })
 
