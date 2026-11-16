@@ -274,6 +274,64 @@ describe('SettingRow anatomy', () => {
     expect(screen.queryByRole('button', { name: /revenir/i })).not.toBeInTheDocument()
   })
 
+  it('SettingRow_ShouldShowNothingBesideTheField_WhenTheValueIsTheRecommendedOne', () => {
+    // Arrange & Act
+    render(
+      <SettingRow
+        setting={declare({
+          nature: { kind: 'number', unit: 'jours' },
+          value: 7,
+          recommended: { atRecommendation: true, valueLabel: '7 jours', onRevert: vi.fn() },
+        })}
+      />,
+    )
+
+    // Assert
+    expect(screen.queryByRole('button', { name: /revenir/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('img', { name: 'Valeur de l’ensemble' })).not.toBeInTheDocument()
+  })
+
+  it('SettingRow_ShouldOfferARevertNamingTheRecommendedValueWithoutALock_WhenTheValueDiffers', () => {
+    // Arrange & Act
+    render(
+      <SettingRow
+        setting={declare({
+          nature: { kind: 'number', unit: 'jours' },
+          value: 30,
+          recommended: { atRecommendation: false, valueLabel: '7 jours', onRevert: vi.fn() },
+        })}
+      />,
+    )
+
+    // Assert
+    expect(
+      screen.getByRole('button', { name: 'Revenir à la valeur recommandée (7 jours)' }),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('img', { name: 'Valeur de l’ensemble' })).not.toBeInTheDocument()
+  })
+
+  it('SettingRow_ShouldGoBackToTheRecommendedValue_WhenTheRevertIsTapped', async () => {
+    // Arrange
+    const onRevert = vi.fn()
+    render(
+      <SettingRow
+        setting={declare({
+          nature: { kind: 'number', unit: 'jours' },
+          value: 30,
+          recommended: { atRecommendation: false, valueLabel: '7 jours', onRevert },
+        })}
+      />,
+    )
+
+    // Act
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Revenir à la valeur recommandée (7 jours)' }),
+    )
+
+    // Assert
+    expect(onRevert).toHaveBeenCalledOnce()
+  })
+
   it('SettingRow_ShouldSayNoProvenanceUnderTheName_WhenTheValueIsInherited', () => {
     // Arrange & Act
     const { container } = render(

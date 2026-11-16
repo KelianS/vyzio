@@ -1,4 +1,4 @@
-import { Lock, LockOpen } from 'lucide-react'
+import { Lock, LockOpen, Undo2 } from 'lucide-react'
 import { Button } from '../ui/button'
 import { HelpTrigger } from '../components/help_trigger'
 import { cn } from '../ui/utils'
@@ -22,25 +22,30 @@ const HELP_ROOM = String.fromCharCode(0xa0).repeat(5)
 
 const INHERITED_MARK = 'Valeur de l’ensemble'
 
-/** On a phone, the lock takes a column of its own beside the control, whichever row that is. */
+/** Pulled into the grid gap, so the lock or the arrow reads as the field's own. */
+const INTO_THE_GAP = '-ml-2.5'
+
+/** On a phone, the lock or the arrow takes a column of its own beside the control, whichever row that is. */
 const PHONE_COLUMNS = {
   beside: {
-    locked: 'grid-cols-[minmax(0,1fr)_auto_auto]',
+    referenced: 'grid-cols-[minmax(0,1fr)_auto_auto]',
     plain: 'grid-cols-[minmax(0,1fr)_auto]',
   },
-  under: { locked: 'grid-cols-[minmax(0,1fr)_auto]', plain: 'grid-cols-1' },
+  under: { referenced: 'grid-cols-[minmax(0,1fr)_auto]', plain: 'grid-cols-1' },
 } as const
 
-/** Fixed row anatomy (ADR-15): label · help · control · lock, control column shared app-wide. */
+/** Fixed row anatomy (ADR-15): label · help · control · lock or arrow, control column shared app-wide. */
 export function SettingRow({ setting }: { setting: SettingDeclaration }) {
-  const { inherits } = setting
+  const { inherits, recommended } = setting
   const beside = BESIDE_THE_NAME[setting.nature.kind]
 
   return (
     <div
       className={cn(
         'grid min-h-14 items-center gap-x-4 gap-y-2',
-        PHONE_COLUMNS[beside ? 'beside' : 'under'][inherits ? 'locked' : 'plain'],
+        PHONE_COLUMNS[beside ? 'beside' : 'under'][
+          inherits || recommended ? 'referenced' : 'plain'
+        ],
         beside ? 'py-2.5' : 'py-3.5',
         // The lock column stays reserved, so rows line up whether a setting inherits or not.
         'sm:grid-cols-[minmax(0,1fr)_minmax(0,18rem)_2.75rem]',
@@ -77,6 +82,7 @@ export function SettingRow({ setting }: { setting: SettingDeclaration }) {
       </div>
 
       {inherits && <InheritanceLock inherits={inherits} />}
+      {recommended && <RecommendationRevert recommended={recommended} />}
 
       {setting.consequence && (
         <p className="col-span-full text-body text-muted-foreground">{setting.consequence}</p>
@@ -87,9 +93,6 @@ export function SettingRow({ setting }: { setting: SettingDeclaration }) {
 
 /** Closed while the value is inherited, a mark; open once it is set here, the way back. */
 function InheritanceLock({ inherits }: { inherits: NonNullable<SettingDeclaration['inherits']> }) {
-  // Pulled into the grid gap, so the lock reads as the field's own.
-  const intoTheGap = '-ml-2.5'
-
   if (inherits.inherited)
     return (
       <span
@@ -98,7 +101,7 @@ function InheritanceLock({ inherits }: { inherits: NonNullable<SettingDeclaratio
         title={INHERITED_MARK}
         className={cn(
           'inline-flex size-11 items-center justify-center text-muted-foreground',
-          intoTheGap,
+          INTO_THE_GAP,
         )}
       >
         <Lock className="size-4" aria-hidden="true" />
@@ -111,12 +114,37 @@ function InheritanceLock({ inherits }: { inherits: NonNullable<SettingDeclaratio
       type="button"
       variant="ghost"
       size="icon-sm"
-      className={cn('text-ink-muted hover:text-foreground', intoTheGap)}
+      className={cn('text-ink-muted hover:text-foreground', INTO_THE_GAP)}
       title={revert}
       aria-label={revert}
       onClick={inherits.onRevert}
     >
       <LockOpen className="size-4" aria-hidden="true" />
+    </Button>
+  )
+}
+
+/** Nothing at the recommendation, its column kept so the field never moves; away from it, the way back. */
+function RecommendationRevert({
+  recommended,
+}: {
+  recommended: NonNullable<SettingDeclaration['recommended']>
+}) {
+  if (recommended.atRecommendation)
+    return <span aria-hidden="true" className={cn('size-11', INTO_THE_GAP)} />
+
+  const revert = `Revenir à la valeur recommandée (${recommended.valueLabel})`
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon-sm"
+      className={cn('text-muted-foreground hover:text-foreground', INTO_THE_GAP)}
+      title={revert}
+      aria-label={revert}
+      onClick={recommended.onRevert}
+    >
+      <Undo2 className="size-4" aria-hidden="true" />
     </Button>
   )
 }

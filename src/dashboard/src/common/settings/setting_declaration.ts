@@ -80,7 +80,24 @@ interface SettingInheritance {
   readonly onRevert: () => void
 }
 
-export interface SettingDeclaration<T = unknown> {
+/**
+ * A value recommended to a setting with no parent level, the installation's shipped durations,
+ * which the row offers to return to by a revert arrow once it differs (ADR-15).
+ */
+interface SettingRecommendation {
+  /** `true` for as long as the value is the recommended one: the row then shows nothing. */
+  readonly atRecommendation: boolean
+  /** The recommended value, already formatted to be read: what going back restores. */
+  readonly valueLabel: string
+  readonly onRevert: () => void
+}
+
+/** A row reads a parent level by its lock or a recommendation by its arrow, never both. */
+type SettingReference =
+  | { readonly inherits?: SettingInheritance; readonly recommended?: never }
+  | { readonly inherits?: never; readonly recommended?: SettingRecommendation }
+
+interface SettingFields<T> {
   readonly id: string
   readonly label: string
   readonly nature: SettingNature
@@ -97,6 +114,7 @@ export interface SettingDeclaration<T = unknown> {
   readonly consequence?: string
   readonly value: T
   readonly onChange: (value: T) => void
-  readonly inherits?: SettingInheritance
   readonly disabled?: boolean
 }
+
+export type SettingDeclaration<T = unknown> = SettingFields<T> & SettingReference

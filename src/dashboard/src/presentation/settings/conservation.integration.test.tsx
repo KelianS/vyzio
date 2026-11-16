@@ -11,9 +11,9 @@ const SAVE = 'PUT /api/settings/recording'
 const CONSERVATION = { path: '/settings/retention', url: '/settings/retention' }
 
 const settings: RecordingSettings = {
-  continuous: { days: 0 },
-  motion: { days: 7 },
-  eventClip: { days: 30 },
+  continuous: { days: 0, default: 0 },
+  motion: { days: 7, default: 7 },
+  eventClip: { days: 30, default: 30 },
   maxDays: 365,
   minEventClipDays: 1,
 }
@@ -64,7 +64,7 @@ describe('ConservationView', () => {
     expect(screen.queryByText(/désactivez-la/)).not.toBeInTheDocument()
   })
 
-  it('Conservation_ShouldShowNoLock_WhenTheUserChangesADurationOfTheWholeInstallation', async () => {
+  it('Conservation_ShouldOfferTheRecommendedDurationWithoutALock_WhenTheUserChangesOne', async () => {
     // Arrange
     fakeNetwork({ [SETTINGS]: ok(settings) })
     renderScreen(<ConservationView />, CONSERVATION)
@@ -74,9 +74,31 @@ describe('ConservationView', () => {
     await setMotionToTenDays()
 
     // Assert
-    // The whole installation has no level above it: its durations are plain fields.
+    expect(
+      screen.getAllByRole('button', { name: /^Revenir à la valeur recommandée/ }),
+    ).toHaveLength(1)
+    expect(
+      screen.getByRole('button', { name: 'Revenir à la valeur recommandée (7 jours)' }),
+    ).toBeInTheDocument()
     expect(screen.queryByRole('img', { name: 'Valeur de l’ensemble' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /^Revenir à la valeur/ })).not.toBeInTheDocument()
+  })
+
+  it('Conservation_ShouldGoBackToTheRecommendedDuration_WhenTheUserTapsTheRevert', async () => {
+    // Arrange
+    fakeNetwork({ [SETTINGS]: ok(settings) })
+    renderScreen(<ConservationView />, CONSERVATION)
+    await setMotionToTenDays()
+
+    // Act
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Revenir à la valeur recommandée (7 jours)' }),
+    )
+
+    // Assert
+    expect(screen.getByLabelText('Séquences de mouvement')).toHaveValue(7)
+    expect(
+      screen.queryByRole('button', { name: /^Revenir à la valeur recommandée/ }),
+    ).not.toBeInTheDocument()
   })
 
   it('onSave_ShouldKeepTheDraftAndSayWhy_WhenTheSaveFails', async () => {
