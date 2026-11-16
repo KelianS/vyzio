@@ -248,6 +248,9 @@ test.describe('DetectionHistoryView', () => {
 
     const row = page.getByRole('listitem').first()
     await expect(row.locator('img')).toBeAttached()
-    await expect(row).toContainText(/front door · .* · sûr\sà\s92\s%/)
+    await expect(row).toContainText(/front door · \d+\sh/)
+    await expect(page.getByRole('group', { name: /^Détection :/ })).toContainText(
+      /front door · .* · sûr\sà\s92\s%/,
+    )
   })
 })

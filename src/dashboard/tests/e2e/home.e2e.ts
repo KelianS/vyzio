@@ -27,7 +27,7 @@ test.describe('Home', () => {
     await expect(sheet).toHaveCount(0)
     const pill = page.getByRole('button', { name: /^Silence jusqu’à \d+ h/ })
     await expect(pill).toHaveAttribute('aria-pressed', 'true')
-    await expect(page.getByText(/^En silence jusqu’à \d+ h/)).toBeVisible()
+    await expect(page.getByText(/^En silence jusqu’à \d+\sh/)).toBeVisible()
 
     await pill.click()
     await expect(page.getByRole('button', { name: 'Silence', exact: true })).toHaveAttribute(
