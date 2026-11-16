@@ -80,7 +80,6 @@ test.describe('Failed reads', () => {
     const alert = page.getByRole('alert')
     await expect(alert).toContainText(SERVER_FAILURE)
     await expect(alert).toContainText('500')
-    await expect(page.getByText('Aucune caméra pour l’instant.')).toHaveCount(0)
     await expect(page.getByRole('link', { name: 'Ajouter une caméra' })).toHaveCount(0)
   })
 

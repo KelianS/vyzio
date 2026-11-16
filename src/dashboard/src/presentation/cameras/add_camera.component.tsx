@@ -1,18 +1,17 @@
-import { useEffect, useReducer, type ComponentPropsWithoutRef, type ReactNode } from 'react'
+import { useEffect, useReducer, useRef, type ComponentPropsWithoutRef } from 'react'
 import ReactMarkdown from 'react-markdown'
-import { useNavigate } from 'react-router'
-import { Keyboard, Pencil, Radar, RotateCw } from 'lucide-react'
+import { useNavigate, useSearchParams } from 'react-router'
+import { Keyboard, LoaderCircle, Radar, RotateCw, Video } from 'lucide-react'
 import { PageHeader } from '../../common/components/page_header'
 import { DiagnosticLine, ErrorMessage } from '../../common/components/error_message'
-import { Badge } from '../../common/components/badge'
-import { ListRow } from '../../common/components/list_row'
 import { Button } from '../../common/ui/button'
 import { SecondaryButton } from '../../common/components/secondary_button'
 import { ConfirmModal } from '../../common/components/confirm_modal'
+import { GroupedList, GroupedRow } from '../../common/components/grouped_list'
+import { HelpRow } from '../../common/components/help_panel'
 import { useToast } from '../../common/components/toast'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { SettingsPage, SettingsSection } from '../../common/settings/settings_page'
-import { HelpPanel } from '../../common/components/help_panel'
 import { AdvancedFold } from '../../common/settings/advanced_fold'
 import { SettingsList } from '../../common/settings/settings_list'
 import type { SettingDeclaration } from '../../common/settings/setting_declaration'
@@ -33,11 +32,18 @@ import { Loading } from '../../common/components/loading'
 const OTHER_BRAND_HELP =
   'Ouvrez l’application de la caméra et créez-y un compte pour Vyzio. Si elle propose la vidéo locale (RTSP), activez-la.'
 
-/** Adding a camera is one task, one page (CAM-62): find it, give its access, add it; its page sets the rest (ADR-04). */
+/** The second step lives in the address, so the bar's back button returns to the first (CAM-62). */
+const STEP_PARAM = 'step'
+const ACCESS_STEP = 'access'
+
+const PAGE_TITLE = 'Ajouter une caméra'
+
+/** Adding a camera is two simple steps (CAM-62): find it, then give its access and add it; its page sets the rest (ADR-04). */
 export function AddCameraView() {
   const { cameras: container } = useAppContainer()
   const { toast } = useToast()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [uido, dispatch] = useReducer(addCameraReducer, undefined, buildInitialAddCameraUido)
   const presenter = usePresenter(buildAddCameraPresenter, {
     container,
@@ -45,6 +51,8 @@ export function AddCameraView() {
     toast,
   })
   const knownCameras = useRootStore((state) => state.cameras)
+  const camerasLoading = useRootStore((state) => state.camerasLoading)
+  const camerasError = useRootStore((state) => state.camerasError)
 
   const candidate =
     uido.selection.kind === 'candidate'
@@ -63,21 +71,27 @@ export function AddCameraView() {
     }
   }, [presenter, uido.discoveryResults, uido.selection])
 
-  const busy = uido.discovering || uido.refreshing || uido.creating
+  // The address leads: back from the second step clears the choice, a reload on it starts over.
+  const onAccessStep = searchParams.get(STEP_PARAM) === ACCESS_STEP
+  const chosen = uido.selection.kind !== 'none'
+  const wasOnAccessStep = useRef(onAccessStep)
+  useEffect(() => {
+    if (wasOnAccessStep.current && !onAccessStep) presenter.onClearSelection()
+    wasOnAccessStep.current = onAccessStep
+  }, [presenter, onAccessStep])
+  const openedOnAccessStep = useRef(onAccessStep)
+  useEffect(() => {
+    if (openedOnAccessStep.current) void navigate({ search: '' }, { replace: true })
+  }, [navigate])
 
-  // One-line summary of step 1's pick, shown once the list collapses.
-  const chosen = candidate
-    ? {
-        title: candidate.technicalDetails?.resolvedHostName?.trim() || candidate.displayName,
-        detail: candidateDetail(candidate),
-      }
-    : uido.selection.kind === 'manual'
-      ? { title: 'Adresse saisie à la main', detail: uido.form.host || 'Adresse à renseigner' }
-      : null
+  function toAccessStep() {
+    void navigate({ search: `?${STEP_PARAM}=${ACCESS_STEP}` })
+  }
+
+  const busy = uido.discovering || uido.refreshing || uido.creating
 
   // No protocol serves the stream yet: the camera must be opened from its app first.
   const needsActivation = Boolean(candidate && !candidate.stream)
-  const showForm = uido.selection.kind === 'manual' || Boolean(candidate?.stream)
   // A ready camera needs no preparing, so only the other two ways in offer the help list.
   const offersHelpList = needsActivation || uido.selection.kind === 'manual'
   // The vendor only picks the help sheet; it is never handed to the camera (#274).
@@ -85,7 +99,101 @@ export function AddCameraView() {
   useEffect(() => {
     void presenter.onVendorAssistanceNeeded(vendorFamily)
   }, [presenter, vendorFamily])
-  const vendorAssistance = uido.vendorAssistance
+
+  // Nothing to go back to: the first run opens here (UI-29).
+  const firstRun = !camerasLoading && camerasError === null && knownCameras.length === 0
+
+  if (!chosen || !onAccessStep)
+    return (
+      <>
+        <PageHeader title={PAGE_TITLE} back={!firstRun} />
+        <SettingsPage>
+          <GroupedList
+            label="Sur votre réseau"
+            labelAside={
+              uido.discovering && (
+                <LoaderCircle
+                  role="img"
+                  aria-label="Recherche en cours"
+                  className="size-3.5 animate-spin"
+                />
+              )
+            }
+          >
+            {unclaimed.map((entry) => {
+              const index = uido.discoveryResults.indexOf(entry)
+              return (
+                <GroupedRow
+                  key={`${entry.host}-${entry.port}`}
+                  icon={Video}
+                  title={candidateTitle(entry)}
+                  // A ready camera is the nominal case: only one to prepare says so (UI-31).
+                  subtitle={
+                    entry.stream ? candidateDetail(entry) : `${candidateDetail(entry)} · À préparer`
+                  }
+                  trailing="none"
+                  onClick={() => {
+                    presenter.onSelectCandidate(index, entry)
+                    toAccessStep()
+                  }}
+                />
+              )
+            })}
+            <GroupedRow
+              icon={Radar}
+              title={uido.discovering ? 'Recherche…' : 'Rechercher sur le réseau'}
+              weight="action"
+              trailing="none"
+              disabled={busy}
+              onClick={() => void presenter.onSearchAsked()}
+            />
+          </GroupedList>
+
+          <Feedback message={unclaimed.length > 0 ? null : uido.message} error={uido.error} />
+
+          <GroupedList label="Elle n’apparaît pas ?">
+            <GroupedRow
+              icon={Keyboard}
+              title="Saisir son adresse"
+              weight="action"
+              trailing="none"
+              disabled={busy}
+              onClick={() => {
+                presenter.onSelectManualEntry()
+                toAccessStep()
+              }}
+            />
+            <HelpRow title="Que vérifier">
+              <p>
+                Vyzio ne parcourt que les plages d’adresses que sa confirmation annonce, et beaucoup
+                de caméras ne répondent qu’une fois réveillées depuis leur propre application : une
+                caméra sur batterie doit être réveillée avant de répondre.
+              </p>
+              <p>
+                Sinon, prenez « Saisir son adresse » : son adresse sur le réseau, que l’application
+                de la caméra ou votre box indiquent. Une fois la caméra ajoutée, sa page cherche
+                comment la joindre et dit ce qui répond.
+              </p>
+            </HelpRow>
+          </GroupedList>
+        </SettingsPage>
+
+        {uido.confirmScan && (
+          <ConfirmModal
+            title="Rechercher les caméras du réseau ?"
+            body={searchWarning(uido.rangesToSweep)}
+            details={<RangesToSweep rangesToSweep={uido.rangesToSweep} />}
+            confirmLabel="Rechercher"
+            onConfirm={async () => {
+              presenter.onConfirmScanSet(false)
+              await presenter.onDiscover()
+            }}
+            onCancel={() => presenter.onConfirmScanSet(false)}
+          />
+        )}
+      </>
+    )
+
   const canAdd = Boolean(uido.form.displayName.trim() && uido.form.host.trim())
 
   async function add() {
@@ -101,24 +209,29 @@ export function AddCameraView() {
       value: uido.form.displayName,
       onChange: (value) => presenter.onFormChanged({ displayName: value as string }),
     },
-    {
-      id: 'add-host',
-      label: 'Adresse',
-      nature: { kind: 'text', placeholder: '192.168.1.50', keyboard: 'address' },
-      help: 'L’adresse de la caméra sur votre réseau local.',
-      value: uido.form.host,
-      onChange: (value) => presenter.onFormChanged({ host: value as string }),
-    },
+    // A found camera brings its address: only a typed one asks for it.
+    ...(uido.selection.kind === 'manual'
+      ? [
+          {
+            id: 'add-host',
+            label: 'Adresse',
+            nature: { kind: 'text', placeholder: '192.168.1.50', keyboard: 'address' },
+            help: 'L’adresse de la caméra sur votre réseau local.',
+            value: uido.form.host,
+            onChange: (value) => presenter.onFormChanged({ host: value as string }),
+          } satisfies SettingDeclaration,
+        ]
+      : []),
     {
       id: 'add-username',
-      label: 'Identifiant',
+      label: 'Identifiant de la caméra',
       nature: { kind: 'text', keyboard: 'identifier' },
       value: uido.form.username ?? '',
       onChange: (value) => presenter.onFormChanged({ username: (value as string) || null }),
     },
     {
       id: 'add-password',
-      label: 'Mot de passe',
+      label: 'Mot de passe de la caméra',
       nature: { kind: 'secret' },
       value: uido.form.password ?? '',
       onChange: (value) => presenter.onFormChanged({ password: (value as string) || null }),
@@ -134,203 +247,96 @@ export function AddCameraView() {
       presenter.onHelpVendorChosen(value === NO_HELP_VENDOR ? null : (value as string)),
   }
 
-  return (
-    <div className="flex flex-col gap-4">
-      {/* Own back link: this route names a task, not the rubric, and owns its exit on mobile. */}
-      <PageHeader title="Ajouter une caméra" />
+  const vendorHelp = (
+    <>
+      <SettingsList settings={[helpChoice]} />
+      {vendorFamily === null ? (
+        <p className="mx-1 text-body">{OTHER_BRAND_HELP}</p>
+      ) : uido.vendorAssistance.loading ? (
+        <Loading />
+      ) : uido.vendorAssistance.error ? (
+        <ErrorMessage error={uido.vendorAssistance.error} className="text-row" />
+      ) : uido.vendorAssistance.markdown ? (
+        <VendorNotice markdown={uido.vendorAssistance.markdown} />
+      ) : null}
+    </>
+  )
 
+  return (
+    <>
+      <PageHeader title={candidate ? candidateTitle(candidate) : PAGE_TITLE} />
       <SettingsPage>
-        <SettingsSection
-          title="Quelle caméra ?"
-          lede={
-            chosen
-              ? undefined
-              : 'Vyzio peut la chercher sur votre réseau, ou vous pouvez saisir son adresse.'
-          }
-        >
-          {/* Une fois la camera designee, la liste se replie : sur un ecran de
-              telephone elle repoussait la configuration hors de vue, si bien
-              qu'un clic ne semblait rien faire. Elle reste a un geste. */}
-          {chosen ? (
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <span className="min-w-0">
-                <span className="block font-medium">{chosen.title}</span>
-                <span className="block text-body text-muted-foreground">{chosen.detail}</span>
-              </span>
-              <SecondaryButton
-                icon={Pencil}
-                type="button"
-                size="sm"
-                onClick={presenter.onClearSelection}
-              >
-                Changer
-              </SecondaryButton>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-4">
-              {/* Deux facons d'en designer une, donc deux boutons de meme
-                  nature. La saisie manuelle trainait au bas de la liste des
-                  resultats, ou elle se lisait comme une camera trouvee. */}
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => void presenter.onSearchAsked()}
-                >
-                  <Radar aria-hidden="true" />
-                  {uido.discovering ? 'Recherche…' : 'Rechercher sur le réseau'}
-                </Button>
+        {needsActivation ? (
+          <>
+            <SettingsSection
+              title="Cette caméra n’est pas encore joignable"
+              lede="Ouvrez-la depuis son application, puis revenez ici. Le formulaire apparaîtra dès qu’elle répondra."
+            >
+              <div>
                 <SecondaryButton
-                  icon={Keyboard}
+                  icon={RotateCw}
                   type="button"
                   disabled={busy}
-                  onClick={() => presenter.onSelectManualEntry()}
+                  onClick={() =>
+                    candidate &&
+                    uido.selection.kind === 'candidate' &&
+                    void presenter.onRefreshCandidate(uido.selection.index, candidate)
+                  }
                 >
-                  Saisir l’adresse moi-même
+                  {uido.refreshing ? 'Vérification…' : 'Réessayer maintenant'}
                 </SecondaryButton>
               </div>
-
               <Feedback message={uido.message} error={uido.error} />
-
-              {/* La liste ne contient plus que ce que la recherche a trouve. */}
-              {unclaimed.length > 0 && (
-                <ul className="divide-y divide-border border-y border-border">
-                  {unclaimed.map((entry) => {
-                    const index = uido.discoveryResults.indexOf(entry)
-                    return (
-                      <CandidateRow
-                        key={`${entry.host}-${entry.port}`}
-                        candidate={entry}
-                        onSelect={() => presenter.onSelectCandidate(index, entry)}
-                      />
-                    )
-                  })}
-                </ul>
-              )}
-            </div>
-          )}
-
-          <HelpPanel title="La recherche ne trouve pas ma caméra ?">
-            <p>
-              C’est fréquent et ce n’est pas une panne : Vyzio ne parcourt que les plages d’adresses
-              que sa confirmation annonce, et beaucoup de caméras ne répondent qu’une fois
-              réveillées depuis leur propre application. Prenez alors{' '}
-              <em>Saisir l’adresse moi-même</em> : son adresse sur le réseau, que l’application de
-              la caméra ou votre box indiquent.
-            </p>
-            <p>
-              Une fois la caméra ajoutée, sa page cherche comment la joindre et dit ce qui répond.
-              Une caméra sur batterie doit être réveillée avant de répondre.
-            </p>
-          </HelpPanel>
-        </SettingsSection>
-
-        {needsActivation && (
-          <SettingsSection
-            title="Cette caméra n’est pas encore joignable"
-            lede="Ouvrez-la depuis son application, puis revenez ici. Le formulaire apparaîtra dès qu’elle répondra."
-          >
-            <SecondaryButton
-              icon={RotateCw}
-              type="button"
-              disabled={busy}
-              onClick={() =>
-                candidate &&
-                uido.selection.kind === 'candidate' &&
-                void presenter.onRefreshCandidate(uido.selection.index, candidate)
-              }
+            </SettingsSection>
+            <SettingsSection
+              title="Aide de votre caméra"
+              lede="Choisissez sa marque pour savoir quoi préparer dans son application. Ce choix sert seulement à afficher l’aide."
             >
-              {uido.refreshing ? 'Vérification…' : 'Réessayer maintenant'}
-            </SecondaryButton>
-          </SettingsSection>
-        )}
-
-        {showForm && (
-          <SettingsSection
-            title="Connexion"
-            lede="Son nom, son adresse et son compte : Vyzio trouve le reste une fois la caméra ajoutée."
-          >
+              {vendorHelp}
+            </SettingsSection>
+          </>
+        ) : (
+          <>
             <SettingsList settings={declarations} />
 
-            <div className="mt-4">
-              <Feedback message={uido.message} error={uido.error} />
-            </div>
+            <GroupedList>
+              <HelpRow title="Où trouver ces identifiants">
+                {offersHelpList ? (
+                  <div className="flex flex-col gap-3 text-foreground">{vendorHelp}</div>
+                ) : (
+                  <p>{OTHER_BRAND_HELP}</p>
+                )}
+              </HelpRow>
+            </GroupedList>
 
-            <div className="mt-5 flex flex-wrap gap-2">
-              <Button type="button" disabled={busy || !canAdd} onClick={() => void add()}>
-                {uido.creating ? 'Ajout…' : 'Ajouter la caméra'}
-              </Button>
-            </div>
-          </SettingsSection>
+            <Feedback message={uido.message} error={uido.error} />
+
+            <Button
+              type="button"
+              size="lg"
+              className="w-full"
+              disabled={busy || !canAdd}
+              onClick={() => void add()}
+            >
+              {uido.creating ? 'Ajout…' : 'Ajouter'}
+            </Button>
+          </>
         )}
 
-        {/* Last, so a user who already prepared the camera never scrolls past it. */}
-        {offersHelpList && (
-          <SettingsSection
-            title="Aide de votre caméra"
-            lede="Choisissez sa marque pour savoir quoi préparer dans son application. Ce choix sert seulement à afficher l’aide."
-          >
-            <SettingsList settings={[helpChoice]} />
-            <div className="mt-4">
-              {vendorFamily === null ? (
-                <p className="text-body">{OTHER_BRAND_HELP}</p>
-              ) : vendorAssistance.loading ? (
-                <Loading />
-              ) : vendorAssistance.error ? (
-                <ErrorMessage error={vendorAssistance.error} className="text-row" />
-              ) : vendorAssistance.markdown ? (
-                <VendorNotice markdown={vendorAssistance.markdown} />
-              ) : null}
-            </div>
-          </SettingsSection>
-        )}
         {candidate && <TechnicalFacts candidate={candidate} />}
       </SettingsPage>
-
-      {uido.confirmScan && (
-        <ConfirmModal
-          title="Rechercher les caméras du réseau ?"
-          body={searchWarning(uido.rangesToSweep)}
-          details={<RangesToSweep rangesToSweep={uido.rangesToSweep} />}
-          confirmLabel="Rechercher"
-          onConfirm={async () => {
-            presenter.onConfirmScanSet(false)
-            await presenter.onDiscover()
-          }}
-          onCancel={() => presenter.onConfirmScanSet(false)}
-        />
-      )}
-    </div>
+    </>
   )
+}
+
+/** A found camera by what identifies it: its network name, else what discovery calls it. */
+function candidateTitle(candidate: DiscoveredCamera): string {
+  return candidate.technicalDetails?.resolvedHostName?.trim() || candidate.displayName
 }
 
 /** The address, then the vendor as text, only when discovery recognised it (#274). */
 function candidateDetail(candidate: DiscoveredCamera): string {
   return [candidate.host, formatVendorFamily(candidate.vendorFamily)].filter(Boolean).join(' · ')
-}
-
-function CandidateRow({
-  candidate,
-  onSelect,
-}: {
-  candidate: DiscoveredCamera
-  onSelect: () => void
-}) {
-  const title = candidate.technicalDetails?.resolvedHostName?.trim() || candidate.displayName
-
-  return (
-    <li>
-      <SelectableRow onSelect={onSelect}>
-        <span className="block font-medium">{title}</span>
-        <span className="block text-body text-muted-foreground">{candidateDetail(candidate)}</span>
-        <span className="mt-1.5 flex flex-wrap gap-1.5">
-          <Badge tone={candidate.stream ? 'ok' : 'warn'}>
-            {candidate.stream ? 'Prête' : 'À préparer'}
-          </Badge>
-        </span>
-      </SelectableRow>
-    </li>
-  )
 }
 
 const RANGE_SOURCE_LABELS: Record<DiscoveryRangeSource, string> = {
@@ -381,16 +387,6 @@ function Feedback({ message, error }: { message: string | null; error: AddCamera
     )
   if (message) return <p className="text-body text-success">{message}</p>
   return null
-}
-
-function SelectableRow({ onSelect, children }: { onSelect: () => void; children: ReactNode }) {
-  return (
-    <ListRow className="block w-full px-3 text-left">
-      <button type="button" onClick={onSelect}>
-        {children}
-      </button>
-    </ListRow>
-  )
 }
 
 /** Raw discovery facts, kept under the closing fold: only useful to diagnose a stuck add. */

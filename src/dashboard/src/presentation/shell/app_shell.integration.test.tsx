@@ -11,6 +11,7 @@ import { AppContainerProvider } from '../../infrastructure/providers/app_contain
 import { ToastProvider } from '../../common/components/toast'
 import { PageHeader } from '../../common/components/page_header'
 import type { SystemStats } from '../../domain/entities/system_stats.entity'
+import { AddCameraView } from '../cameras/add_camera.component'
 import { AppShell } from './app_shell.component'
 
 function stats(overrides: Partial<SystemStats> = {}): SystemStats {
@@ -41,6 +42,7 @@ function openShellAt(...entries: string[]) {
           { path: '/', element: <p>Accueil</p> },
           { path: '/detections', element: <PageHeader title="Détections" /> },
           { path: '/settings', element: <PageHeader title="Réglages" /> },
+          { path: '/settings/cameras/add', element: <AddCameraView /> },
         ],
       },
     ],
@@ -109,6 +111,36 @@ describe('AppShell', () => {
     // Assert
     const bar = await screen.findByRole('banner')
     expect(await within(bar).findByRole('heading', { level: 1, name: 'Détections' })).toBeVisible()
+    expect(within(bar).getByRole('button', { name: 'Retour' })).toBeVisible()
+  })
+
+  it('TopBar_ShouldOfferNoWayBack_WhenTheFirstCameraIsToAdd', async () => {
+    // Arrange
+    fakeNetwork({ 'GET /api/cameras': ok([]), 'GET /api/system/stats': ok(stats()) })
+
+    // Act
+    openShellAt('/settings/cameras/add')
+
+    // Assert
+    const bar = await screen.findByRole('banner')
+    expect(
+      await within(bar).findByRole('heading', { level: 1, name: 'Ajouter une caméra' }),
+    ).toBeVisible()
+    await waitFor(() =>
+      expect(within(bar).queryByRole('button', { name: 'Retour' })).not.toBeInTheDocument(),
+    )
+  })
+
+  it('TopBar_ShouldOfferTheWayBack_WhenACameraIsAddedBesideOthers', async () => {
+    // Arrange
+    fakeNetwork({ 'GET /api/cameras': ok([makeCamera()]), 'GET /api/system/stats': ok(stats()) })
+
+    // Act
+    openShellAt('/settings/cameras/add')
+
+    // Assert
+    const bar = await screen.findByRole('banner')
+    await waitFor(() => expect(useRootStore.getState().cameras).toHaveLength(1))
     expect(within(bar).getByRole('button', { name: 'Retour' })).toBeVisible()
   })
 

@@ -27,5 +27,5 @@ test('adding a camera', async ({ page }) => {
   await shoot(page.getByRole('button', { name: /Caméra détectée/ }))
 
   await page.getByRole('button', { name: /Caméra détectée/ }).click()
-  await shoot(page.getByRole('button', { name: 'Ajouter la caméra' }))
+  await shoot(page.getByRole('button', { name: 'Ajouter', exact: true }))
 })

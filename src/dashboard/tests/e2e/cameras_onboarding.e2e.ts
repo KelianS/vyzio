@@ -48,9 +48,9 @@ test.describe('AddCameraView', () => {
     await expect(page.getByRole('textbox', { name: 'Nom' })).toHaveValue('Caméra détectée')
     await expect(page.getByRole('textbox', { name: 'Chemin du flux' })).toHaveCount(0)
     await expect(page.getByRole('button', { name: 'Vérifier la connexion' })).toHaveCount(0)
-    await page.getByRole('textbox', { name: 'Identifiant' }).fill('viewer')
-    await page.getByLabel('Mot de passe').fill('not-a-real-secret')
-    await page.getByRole('button', { name: 'Ajouter la caméra' }).click()
+    await page.getByRole('textbox', { name: 'Identifiant de la caméra' }).fill('viewer')
+    await page.getByLabel('Mot de passe de la caméra').fill('not-a-real-secret')
+    await page.getByRole('button', { name: 'Ajouter', exact: true }).click()
 
     // Adding opens the camera's page, which detects it on arrival (ADR-04).
     await expect(page).toHaveURL(/\/settings\/cameras\/camera-\d+\/connection$/)
@@ -81,10 +81,10 @@ test.describe('AddCameraView', () => {
     )
     await page.goto('/settings/cameras/add')
 
-    await page.getByRole('button', { name: 'Saisir l’adresse moi-même' }).click()
+    await page.getByRole('button', { name: 'Saisir son adresse' }).click()
     await page.getByRole('textbox', { name: 'Nom' }).fill('Garage')
     await page.getByRole('textbox', { name: 'Adresse' }).fill('192.168.1.90')
-    await page.getByRole('button', { name: 'Ajouter la caméra' }).click()
+    await page.getByRole('button', { name: 'Ajouter', exact: true }).click()
 
     // Nothing answers at that address: the page says so, never that detection simply finished.
     await expect(page.getByText(/^Rien ne répond à cette adresse/)).toBeVisible()
@@ -112,11 +112,11 @@ test.describe('AddCameraView', () => {
     await page.getByRole('alertdialog').getByRole('button', { name: 'Rechercher' }).click()
 
     const candidate = page.getByRole('button', { name: /Caméra ICSee/ })
-    await expect(candidate).toContainText('Prête')
+    await expect(candidate).not.toContainText('À préparer')
     await candidate.click()
 
     await expect(page.getByRole('textbox', { name: 'Nom' })).toHaveValue('Caméra ICSee')
-    await page.getByRole('button', { name: 'Ajouter la caméra' }).click()
+    await page.getByRole('button', { name: 'Ajouter', exact: true }).click()
 
     await expect(page).toHaveURL(/\/settings\/cameras\/camera-\d+\/connection$/)
   })
@@ -126,7 +126,7 @@ test.describe('AddCameraView', () => {
     await page.goto('/settings/cameras/add')
 
     // Manual entry is offered right away, without having to search first.
-    await page.getByRole('button', { name: 'Saisir l’adresse moi-même' }).click()
+    await page.getByRole('button', { name: 'Saisir son adresse' }).click()
     await expect(page.getByRole('textbox', { name: 'Nom' })).toBeVisible()
     await expect(page.getByRole('textbox', { name: 'Adresse' })).toBeVisible()
     await expect(page.getByRole('spinbutton', { name: 'Port' })).toHaveCount(0)
@@ -138,14 +138,15 @@ test.describe('AddCameraView', () => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [] }))
     await page.goto('/settings/cameras/add')
 
-    await page.getByRole('button', { name: 'Saisir l’adresse moi-même' }).click()
+    await page.getByRole('button', { name: 'Saisir son adresse' }).click()
+    await page.getByText('Où trouver ces identifiants').click()
     await page.getByRole('combobox', { name: 'Marque' }).click()
     await page.getByRole('option', { name: 'V380 PRO' }).click()
 
     await expect(page.getByText('Créez le compte caméra dans l’application')).toBeVisible()
   })
 
-  test('AddCameraView_ShouldFoldTheListAndLetItReopen_WhenTheUserChoosesACamera', async ({
+  test('AddCameraView_ShouldAskTheAccessThenReturnToTheList_WhenTheUserChoosesACameraThenGoesBack', async ({
     page,
   }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [] }))
@@ -156,16 +157,16 @@ test.describe('AddCameraView', () => {
 
     // Readiness reads without opening; an unrecognised vendor shows nothing (#274).
     const candidate = page.getByRole('button', { name: /Caméra détectée/ })
-    await expect(candidate).toContainText('Prête')
+    await expect(candidate).not.toContainText('À préparer')
     await expect(candidate).not.toContainText('Marque')
 
     await candidate.click()
 
-    // Folded, the list makes room for the access - on a phone it used to push it out of sight.
+    // The access is its own step: the list gives way to it (CAM-62).
     await expect(candidate).toHaveCount(0)
     await expect(page.getByRole('textbox', { name: 'Nom' })).toBeVisible()
 
-    await page.getByRole('button', { name: 'Changer' }).click()
+    await page.getByRole('button', { name: 'Retour' }).click()
     await expect(candidate).toBeVisible()
     await expect(page.getByRole('textbox', { name: 'Nom' })).toHaveCount(0)
   })

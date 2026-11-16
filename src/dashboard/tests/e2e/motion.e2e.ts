@@ -354,7 +354,8 @@ test.describe('Layers', () => {
   test('Select_ShouldFadeInGrowingSlightly_WhenItOpens', async ({ page }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [] }))
     await page.goto('/settings/cameras/add')
-    await page.getByRole('button', { name: 'Saisir l’adresse moi-même' }).click()
+    await page.getByRole('button', { name: 'Saisir son adresse' }).click()
+    await page.getByText('Où trouver ces identifiants').click()
     await slowDownMotion(page)
 
     await page.getByRole('combobox', { name: 'Marque' }).click()
