@@ -31,7 +31,8 @@ global restart the user triggers.
   reimplements it.
 - **Override per setting, never in a block.** A camera that sets one value keeps the others attached
   to the installation. The value one level up travels to the API boundary, so undoing an override
-  names what it restores. The installation level works the same way against the shipped value.
+  names what it restores. The installation level offers the same way back to the shipped value, its
+  recommendation.
 - **The generated configuration mirrors the model.** The installation value is written once for the
   engine, and only what a camera really overrides appears under that camera (ADR-02).
 - **A setting is declared, not drawn.** A declaration states the name, the nature of the value, its

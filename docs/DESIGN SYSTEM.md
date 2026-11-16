@@ -226,11 +226,11 @@ camera, a capability, a stream or a protocol is a mark, not a pill (§ Status ma
 ### Settings screens
 
 A setting **is declared, it is not drawn**: its nature determines its control and alignment, and
-its declaration whether it inherits a value ([ADR-15](adr/0015-settings-model-schedules-and-edit-cycle.md); the table from a nature to
+its declaration whether it inherits a value or recommends one ([ADR-15](adr/0015-settings-model-schedules-and-edit-cycle.md); the table from a nature to
 its control is the settings renderer's, in code). A page **does not name itself in its content**: its
 title is in the bar.
 
-A settings row is always, in this order: **name, help trigger, control, lock**. The
+A settings row is always, in this order: **name, help trigger, control, lock or revert arrow**. The
 help trigger follows the name's last word. On a phone, the control's nature sets the layout: a
 short control (a switch, a number) stands beside the name, on one row of a grouped list, the
 number field sized to its value and unit; a long one (a list, a text, a slider) goes under the
@@ -239,10 +239,17 @@ to `Avancé`.
 
 **An inherited value reads by a lock beside its field**, never by a subtitle: only a setting with a
 real parent value has one (a camera's duration follows the whole installation's); a setting with no
-level above, the installation's own included, is a plain field. A **closed lock** in ink soft marks a
-value that follows its parent; it is a mark, not a button, named `Valeur de l’ensemble`. An **open
-lock** in ink muted marks a value set here; it is the way back, a button named by what it restores
+level above, the installation's own included, has none. A **closed lock** in ink soft marks a value
+that follows its parent; it is a mark, not a button, named `Valeur de l’ensemble`. An **open lock**
+in ink muted marks a value set here; it is the way back, a button named by what it restores
 (`Revenir à la valeur de l’ensemble (7 jours)`), and going back is a draft change like any other.
+
+**A value away from its recommendation offers a revert arrow beside its field**, not a lock: a
+setting with no parent may declare a recommended value (the installation's durations, the shipped
+ones). At its recommendation the field reads plain, with nothing beside it; once it differs, an arrow
+in ink soft is a button named by what it restores (`Revenir à la valeur recommandée (7 jours)`), a
+draft change like any other. A row carries one or the other, never both: a camera row has the lock
+only.
 
 **An option that cannot be chosen yet stays in the list**, greyed and not selectable, with the reason
 and the way out on a quieter second line: what is missing, and the screen where it is fixed. The saved
