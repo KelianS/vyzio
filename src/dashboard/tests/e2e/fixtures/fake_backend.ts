@@ -992,6 +992,11 @@ export async function installFakeBackend(
           lastSuccessfulFrameAt: new Date().toISOString(),
         })
       }
+      // Asked again, the fake camera follows: its last miss goes.
+      if (rest === '/privacy/retry' && method === 'POST') {
+        if (camera) Object.assign(camera, { privacyMiss: null, privacyMissDetail: null })
+        return json(route, camera)
+      }
       if (rest === '/privacy/toggle' && method === 'POST') {
         if (camera) camera.privacyModeActive = Boolean(postData?.active)
         return json(route, camera)

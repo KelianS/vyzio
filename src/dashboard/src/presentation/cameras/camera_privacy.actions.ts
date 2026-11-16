@@ -9,6 +9,8 @@ export type CameraPrivacyAction =
   | { type: 'PRESETS_SKIPPED' }
   | { type: 'SAVE_STARTED' }
   | { type: 'SAVE_FINISHED' }
+  | { type: 'RETRY_STARTED' }
+  | { type: 'RETRY_FINISHED' }
   | { type: 'RULES_STARTED' }
   | { type: 'RULES_LOADED'; rules: ScheduleRule[] }
   | { type: 'RULES_FAILED'; error: AppError }

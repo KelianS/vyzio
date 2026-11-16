@@ -16,8 +16,11 @@ const SAVE_POSITIONS = 'Enregistrez-la dans « Image et pilotage ».'
 const CHECK_CAMERA = 'Vérifiez qu’elle est allumée et connectée.'
 const STILL_FILMING = 'elle filme peut-être encore, mais Vyzio n’enregistre plus rien.'
 
+/** What still holds while privacy is on, whatever the camera did (ADR-10). */
+export const RECORDING_OFF_TEXT = 'Enregistrement désactivé'
+
 const RECORDING_OFF: PrivacyBadge = {
-  text: 'Enregistrement désactivé',
+  text: RECORDING_OFF_TEXT,
   tone: 'neutral',
   kind: 'off',
 }
@@ -49,23 +52,40 @@ const FOLLOWED: Record<PrivacyStrategy, PrivacyBadge> = {
   [PrivacyStrategy.Hardware]: RECORDING_OFF,
 }
 
-/** What did not happen, named per strategy rather than as a vague miss; null where nothing is asked of the camera. */
-const MISSED_BADGE: Record<PrivacyStrategy, string | null> = {
-  [PrivacyStrategy.SoftwareBlur]: null,
-  [PrivacyStrategy.PtzParking]: 'Caméra non tournée, enregistrement désactivé',
-  [PrivacyStrategy.Hardware]: 'Objectif non coupé, enregistrement désactivé',
-}
-
-const MISSED_LABEL: Record<PrivacyStrategy, { on: string; off: string } | null> = {
+/** The consequence in plain words, per strategy and direction; "peut-être" when the answer never came. */
+const MISSED_LABEL: Record<
+  PrivacyStrategy,
+  { on: string; off: string; unsureOn: string; unsureOff: string } | null
+> = {
   [PrivacyStrategy.SoftwareBlur]: null,
   [PrivacyStrategy.PtzParking]: {
     on: 'La caméra ne s’est pas tournée',
-    off: 'La caméra n’est pas revenue',
+    off: 'La caméra n’a pas repris sa position',
+    unsureOn: 'La caméra ne s’est peut-être pas tournée',
+    unsureOff: 'La caméra n’a peut-être pas repris sa position',
   },
   [PrivacyStrategy.Hardware]: {
     on: 'L’objectif ne s’est pas coupé',
     off: 'L’objectif ne s’est pas rouvert',
+    unsureOn: 'L’objectif ne s’est peut-être pas coupé',
+    unsureOff: 'L’objectif ne s’est peut-être pas rouvert',
   },
+}
+
+/** The one thing that fixes a miss: ask the camera again, save its positions, or check its capability. */
+export type PrivacyMissRemedy = 'retry' | 'positions' | 'connection'
+
+const REMEDY: Record<PrivacyMiss, PrivacyMissRemedy> = {
+  [PrivacyMiss.PositionMissing]: 'positions',
+  [PrivacyMiss.CapabilityUnverified]: 'connection',
+  [PrivacyMiss.CameraFailed]: 'retry',
+  [PrivacyMiss.Unconfirmed]: 'retry',
+}
+
+/** What fixes the miss the screen shows; null when there is none. */
+export function privacyMissRemedy(camera: PrivacyAnswer): PrivacyMissRemedy | null {
+  if (camera.privacyMiss === null || !ASKS_THE_CAMERA[camera.privacyStrategy]) return null
+  return REMEDY[camera.privacyMiss]
 }
 
 /** The sentence per strategy; the ones that ask nothing of the camera are stopped by ASKS_THE_CAMERA first. */
@@ -86,24 +106,24 @@ const REFUSED_ON: Record<PrivacyStrategy, string | null> = {
 /** The short line a camera tile shows, pointing at the screen that explains it (PRIV-05); null when nothing missed. */
 export function privacyMissLabel(camera: PrivacyAnswer): string | null {
   if (camera.privacyMiss === null || !ASKS_THE_CAMERA[camera.privacyStrategy]) return null
-  if (!DID_NOT_FOLLOW[camera.privacyMiss]) return 'Demande interrompue'
   const label = MISSED_LABEL[camera.privacyStrategy]
-  return label && (camera.privacyModeActive ? label.on : label.off)
+  if (!label) return null
+  // An interrupted request says nothing about the camera: it may have followed.
+  if (!DID_NOT_FOLLOW[camera.privacyMiss])
+    return camera.privacyModeActive ? label.unsureOn : label.unsureOff
+  return camera.privacyModeActive ? label.on : label.off
 }
 
-/** What the camera answered, never what its strategy promises (PRIV-04); null while privacy is off. */
+/** What the camera answered, never what its strategy promises (PRIV-04); null while privacy is off or a miss speaks. */
 export function privacyBadge(
   camera: PrivacyAnswer & Pick<Camera, 'privacyVendorCut'>,
 ): PrivacyBadge | null {
   if (camera.privacyVendorCut)
     return { text: 'Coupure matérielle confirmée', tone: 'ok', kind: 'cut' }
   if (!camera.privacyModeActive) return null
-  if (camera.privacyMiss === null || !ASKS_THE_CAMERA[camera.privacyStrategy])
-    return FOLLOWED[camera.privacyStrategy]
-  const missed = MISSED_BADGE[camera.privacyStrategy]
-  return DID_NOT_FOLLOW[camera.privacyMiss] && missed
-    ? { text: missed, tone: 'warn', kind: 'missed' }
-    : RECORDING_OFF
+  // A miss is said by its own line, with what fixes it (privacyMissLabel, privacyMissRemedy).
+  if (camera.privacyMiss !== null && ASKS_THE_CAMERA[camera.privacyStrategy]) return null
+  return FOLLOWED[camera.privacyStrategy]
 }
 
 /** What happened and what to do, for the camera's privacy screen (UI-01, PRIV-05); null when it followed. */

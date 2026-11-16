@@ -12,7 +12,9 @@ export interface PrivacySetup {
 interface StrategyDefinition {
   readonly value: PrivacyStrategy
   readonly label: string
-  /** What happens to this camera while privacy mode is on, whoever turned it on. */
+  /** What it does in one line, honest about whether the camera still films (product principle #4). */
+  readonly effect: string
+  /** What happens to this camera while privacy mode is on, whoever turned it on, behind the setting's help. */
   readonly explanation: string
   /** Why the strategy cannot be chosen now and where to fix that; null when it can (PRIV-15). */
   readonly unavailable: (camera: Camera, setup: PrivacySetup) => string | null
@@ -20,23 +22,20 @@ interface StrategyDefinition {
 
 const HARDWARE_PRIVACY: Capability = 'hardware_privacy'
 
-const NOTHING_KEPT = 'Vyzio n’enregistre plus, ne détecte plus et ne notifie plus.'
-const MEANWHILE =
-  'En attendant, seul Vyzio s’arrête : il n’enregistre plus, ne détecte plus et ne notifie plus.'
-const STILL_VIEWABLE = 'son image reste accessible depuis votre réseau local'
+const NOTHING_KEPT = 'Vyzio n’enregistre plus, ne détecte plus et ne notifie plus'
+const STILL_FILMS = 'filme toujours, visible sur votre réseau local'
+const MEANWHILE = `En attendant, seul Vyzio s’arrête : la caméra ${STILL_FILMS}.`
 
-const ORIENTATION_UNVERIFIED =
-  'L’orientation de cette caméra n’est pas vérifiée : voir « Connexion ».'
-const ORIENTATION_OFF = 'L’orientation de cette caméra est désactivée : voir « Connexion ».'
+const ORIENTATION_UNVERIFIED = 'Orientation non vérifiée : voir « Connexion ».'
+const ORIENTATION_OFF = 'Orientation désactivée : voir « Connexion ».'
 // Positions are saved from the live view, which only a camera in surveillance has (PRIV-18).
 const POSITIONS_WAIT_FOR_STREAM =
-  'Ses positions se règlent une fois la caméra en surveillance, et son flux vidéo n’a pas encore fonctionné : voir « Connexion ».'
+  'Positions réglables une fois son flux vidéo reçu : voir « Connexion ».'
 const POSITIONS_WAIT_FOR_RESTART =
-  'Ses positions se règlent une fois la caméra en surveillance : appliquez les changements, en haut de l’écran.'
+  'Positions réglables une fois les changements appliqués, en haut de l’écran.'
 const POSITIONS_FIRST =
   'Enregistrez d’abord ses positions Surveillance et Parking dans « Image et pilotage ».'
-const HARDWARE_UNVERIFIED =
-  'Aucune coupure matérielle vérifiée sur cette caméra : voir « Connexion » si elle en a une.'
+const HARDWARE_UNVERIFIED = 'Coupure matérielle non vérifiée : voir « Connexion ».'
 
 const always = () => null
 
@@ -54,13 +53,15 @@ const STRATEGIES: readonly StrategyDefinition[] = [
   {
     value: PrivacyStrategy.SoftwareBlur,
     label: 'Arrêt logiciel',
-    explanation: `${NOTHING_KEPT} Rien n’est demandé à la caméra : elle continue de filmer et ${STILL_VIEWABLE}.`,
+    effect: `Vyzio s’arrête, la caméra ${STILL_FILMS}.`,
+    explanation: `Rien n’est demandé à la caméra : ${NOTHING_KEPT}. Elle continue de filmer et son image reste accessible depuis votre réseau local.`,
     unavailable: always,
   },
   {
     value: PrivacyStrategy.PtzParking,
     label: 'Orientation à l’écart',
-    explanation: `La caméra pivote vers sa position Parking, puis revient sur sa position Surveillance quand le mode vie privée se termine. ${NOTHING_KEPT} Tournée, elle filme toujours et ${STILL_VIEWABLE}.`,
+    effect: `La caméra se tourne, mais ${STILL_FILMS}.`,
+    explanation: `La caméra pivote vers sa position Parking, puis revient sur sa position Surveillance à la fin du mode vie privée. ${NOTHING_KEPT}, mais tournée, elle filme toujours et son image reste accessible depuis votre réseau local.`,
     unavailable: (camera, setup) => {
       // The camera only turns on a verified orientation it is allowed to use (ADR-10).
       if (!camera.verifiedCapabilities.includes(ORIENTATION)) return ORIENTATION_UNVERIFIED
@@ -74,7 +75,8 @@ const STRATEGIES: readonly StrategyDefinition[] = [
   {
     value: PrivacyStrategy.Hardware,
     label: 'Coupure matérielle',
-    explanation: `L’objectif est masqué dans la caméra elle-même : c’est la seule option où plus rien ne peut être filmé. ${NOTHING_KEPT}`,
+    effect: 'L’objectif est masqué : plus rien n’est filmé.',
+    explanation: `L’objectif est masqué dans la caméra elle-même : c’est la seule option où plus rien ne peut être filmé. ${NOTHING_KEPT}.`,
     unavailable: (camera) =>
       camera.verifiedCapabilities.includes(HARDWARE_PRIVACY) ? null : HARDWARE_UNVERIFIED,
   },
@@ -120,16 +122,16 @@ export function buildPrivacySettings({
   const chosen = STRATEGIES.find((strategy) => strategy.value === value)
   const lack = chosen?.unavailable(camera, setup) ?? null
   // A strategy that cannot act must not promise its effect: what is missing, then what still holds.
-  const lines = lack ? [lack, MEANWHILE] : [chosen?.explanation ?? '']
+  const lines = lack ? [lack, MEANWHILE] : [chosen?.effect ?? '']
 
   return [
     {
       id: 'privacy-strategy',
       label: STRATEGY_LABEL,
       nature: { kind: 'choice', options },
-      help: 'S’applique à chaque passage en mode vie privée, manuel ou programmé par une plage.',
-      // Only what the chosen strategy does, and what it still lacks, stays visible (ADR-15).
-      consequence: lines.join('\n\n'),
+      help: chosen?.explanation,
+      // Only what the chosen strategy does in one line, and what it still lacks, stays visible (ADR-15).
+      consequence: lines.join(' '),
       value,
       onChange: (next) => onChange(next as PrivacyStrategy),
     },

@@ -9,8 +9,9 @@ import { useToast } from '../../common/components/toast'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import type { Camera, PrivacyStrategy } from '../../domain/entities/camera.entity'
-import { SettingsPage, SettingsSection } from '../../common/settings/settings_page'
-import { HelpPanel } from '../../common/components/help_panel'
+import { SettingsPage } from '../../common/settings/settings_page'
+import { GroupedList } from '../../common/components/grouped_list'
+import { HelpRow } from '../../common/components/help_panel'
 import { ScheduleCountLine } from '../../common/schedule/schedule_count_line'
 import { ScheduleRuleKind } from '../../domain/entities/schedule_rule.entity'
 import { PrivacyAnswerNotice } from './components/privacy_answer_notice'
@@ -59,7 +60,11 @@ export function CameraPrivacyView() {
   return (
     <>
       <SettingsPage>
-        <PrivacyAnswerNotice camera={camera} />
+        <PrivacyAnswerNotice
+          camera={camera}
+          retrying={uido.retrying}
+          onRetry={() => presenter.onRetryPrivacy(camera.id)}
+        />
         <SettingsList settings={settings} />
         {uido.presetsError && (
           <ReadFailure
@@ -69,33 +74,36 @@ export function CameraPrivacyView() {
           />
         )}
 
-        <SettingsSection title="Plages horaires">
-          <ScheduleCountLine
-            rules={uido.rules}
-            kind={ScheduleRuleKind.Privacy}
-            targetId={camera.id}
-            error={uido.rulesError}
-            onRetry={presenter.onRetryRules}
-          />
+        <div className="flex flex-col gap-2">
+          <GroupedList label="Plages horaires">
+            <ScheduleCountLine
+              rules={uido.rules}
+              kind={ScheduleRuleKind.Privacy}
+              targetId={camera.id}
+              error={uido.rulesError}
+              onRetry={presenter.onRetryRules}
+            />
+            <HelpRow title="Comment les plages et la coupure manuelle s’articulent-elles ?">
+              <p>
+                Une plage coupe la caméra à son entrée et la rétablit à sa sortie. Si vous avez
+                coupé la caméra vous-même, la plage ne la rétablira pas : ce que vous avez décidé à
+                la main ne se défait qu’à la main. Si vous reprenez la surveillance pendant une
+                plage, la plage ne recoupe pas la caméra avant sa fin ; la plage suivante s’applique
+                normalement.
+              </p>
+              <p>
+                Un redémarrage de Vyzio ne réveille rien : une coupure manuelle est retrouvée telle
+                quelle, et les plages sont réévaluées : si l’heure courante tombe dans l’une
+                d’elles, la caméra repart coupée, même si vous aviez repris la surveillance.
+              </p>
+            </HelpRow>
+          </GroupedList>
           {camera.privacyResume && (
-            <p className="pb-3 text-body">{formatPrivacyResume(camera.privacyResume)}</p>
+            <p className="mx-1 text-body text-muted-foreground">
+              {formatPrivacyResume(camera.privacyResume)}
+            </p>
           )}
-
-          <HelpPanel title="Comment les plages et la coupure manuelle s’articulent-elles ?">
-            <p>
-              Une plage coupe la caméra à son entrée et la rétablit à sa sortie. Si vous avez coupé
-              la caméra vous-même, la plage ne la rétablira pas : ce que vous avez décidé à la main
-              ne se défait qu’à la main. Si vous reprenez la surveillance pendant une plage, la
-              plage ne recoupe pas la caméra avant sa fin ; la plage suivante s’applique
-              normalement.
-            </p>
-            <p>
-              Un redémarrage de Vyzio ne réveille rien : une coupure manuelle est retrouvée telle
-              quelle, et les plages sont réévaluées : si l’heure courante tombe dans l’une d’elles,
-              la caméra repart coupée, même si vous aviez repris la surveillance.
-            </p>
-          </HelpPanel>
-        </SettingsSection>
+        </div>
       </SettingsPage>
 
       <SettingsDraftBar

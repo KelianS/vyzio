@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { PrivacyMiss, PrivacyStrategy } from '../../domain/entities/camera.entity'
-import { privacyBadge, privacyMissLabel, privacyMissSentence } from './privacy_status'
+import {
+  privacyBadge,
+  privacyMissLabel,
+  privacyMissRemedy,
+  privacyMissSentence,
+} from './privacy_status'
 
 const parked = {
   privacyModeActive: true,
@@ -18,22 +23,16 @@ describe('privacyBadge', () => {
     expect(badge?.text).toBe('Caméra orientée, enregistrement désactivé')
   })
 
-  it('privacyBadge_ShouldSayTheCameraDidNotFollow_WhenItRefusedTheMove', () => {
-    // Arrange & Act
-    const badge = privacyBadge({ ...parked, privacyMiss: PrivacyMiss.CameraFailed })
+  it.each([PrivacyMiss.CameraFailed, PrivacyMiss.Unconfirmed])(
+    'privacyBadge_ShouldLeaveTheMissToItsOwnLine_WhenTheCameraDidNotConfirm (%s)',
+    (miss) => {
+      // Arrange & Act
+      const badge = privacyBadge({ ...parked, privacyMiss: miss })
 
-    // Assert
-    expect(badge?.text).toBe('Caméra non tournée, enregistrement désactivé')
-    expect(badge?.tone).toBe('warn')
-  })
-
-  it('privacyBadge_ShouldClaimNoMove_WhenTheCameraAnswerDidNotArrive', () => {
-    // Arrange & Act
-    const badge = privacyBadge({ ...parked, privacyMiss: PrivacyMiss.Unconfirmed })
-
-    // Assert
-    expect(badge?.text).toBe('Enregistrement désactivé')
-  })
+      // Assert
+      expect(badge).toBeNull()
+    },
+  )
 
   it('privacyBadge_ShouldClaimNoMiss_WhenTheMissBelongsToAStrategyThatAsksNothingOfTheCamera', () => {
     // Arrange & Act
@@ -172,7 +171,19 @@ describe('privacyMissLabel', () => {
     const label = privacyMissLabel({ ...parked, privacyMiss: PrivacyMiss.Unconfirmed })
 
     // Assert
-    expect(label).toBe('Demande interrompue')
+    expect(label).toBe('La caméra ne s’est peut-être pas tournée')
+  })
+
+  it('privacyMissLabel_ShouldSayTheCameraMayNotHaveComeBack_WhenTheResumeWasInterrupted', () => {
+    // Arrange & Act
+    const label = privacyMissLabel({
+      ...parked,
+      privacyModeActive: false,
+      privacyMiss: PrivacyMiss.Unconfirmed,
+    })
+
+    // Assert
+    expect(label).toBe('La caméra n’a peut-être pas repris sa position')
   })
 
   it('privacyMissLabel_ShouldSayTheCameraDidNotTurn_WhenTheParkingMoveFailed', () => {
@@ -192,7 +203,7 @@ describe('privacyMissLabel', () => {
     })
 
     // Assert
-    expect(label).toBe('La caméra n’est pas revenue')
+    expect(label).toBe('La caméra n’a pas repris sa position')
   })
 
   it('privacyMissLabel_ShouldNameTheLens_WhenTheHardwareCutFailed', () => {
@@ -205,5 +216,31 @@ describe('privacyMissLabel', () => {
 
     // Assert
     expect(label).toBe('L’objectif ne s’est pas coupé')
+  })
+})
+
+describe('privacyMissRemedy', () => {
+  it.each([
+    [PrivacyMiss.Unconfirmed, 'retry'],
+    [PrivacyMiss.CameraFailed, 'retry'],
+    [PrivacyMiss.PositionMissing, 'positions'],
+    [PrivacyMiss.CapabilityUnverified, 'connection'],
+  ])(
+    'privacyMissRemedy_ShouldOfferTheOneFixOfTheMiss_WhenTheCameraMissed (%s)',
+    (miss, expected) => {
+      // Act
+      const remedy = privacyMissRemedy({ ...parked, privacyMiss: miss })
+
+      // Assert
+      expect(remedy).toBe(expected)
+    },
+  )
+
+  it('privacyMissRemedy_ShouldOfferNothing_WhenTheCameraFollowed', () => {
+    // Act
+    const remedy = privacyMissRemedy(parked)
+
+    // Assert
+    expect(remedy).toBeNull()
   })
 })

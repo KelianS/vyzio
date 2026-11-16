@@ -197,6 +197,14 @@ export class HttpCameraRepository implements CameraRepository {
     return mapCamera(payload)
   }
 
+  async retryPrivacy(cameraId: string): Promise<Camera> {
+    const payload = await postJson<CameraDto>(
+      `${this.apiBaseUrl}/api/cameras/${cameraId}/privacy/retry`,
+      {},
+    )
+    return mapCamera(payload)
+  }
+
   async batchTogglePrivacyMode(cameraIds: string[], active: boolean): Promise<Camera[]> {
     const payload = await postJson<CameraDto[]>(
       `${this.apiBaseUrl}/api/cameras/privacy/batch-toggle`,

@@ -6,6 +6,8 @@ export interface CameraPrivacyUido {
   positionsSaved: boolean | null
   presetsError: AppError | null
   saving: boolean
+  /** The camera is being asked again for its privacy state, after a miss. */
+  retrying: boolean
 
   /** The house's rules, to count those aiming at this camera; null while unread. */
   rules: ScheduleRule[] | null
@@ -17,6 +19,7 @@ export function buildInitialCameraPrivacyUido(): CameraPrivacyUido {
     positionsSaved: null,
     presetsError: null,
     saving: false,
+    retrying: false,
 
     rules: null,
     rulesError: null,
