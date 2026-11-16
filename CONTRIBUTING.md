@@ -146,7 +146,7 @@ echo $GITHUB_TOKEN | docker login ghcr.io -u KelianS --password-stdin
 docker push ghcr.io/kelians/vyzio-api:VERSION
 docker push ghcr.io/kelians/vyzio-dashboard:VERSION
 
-# Update the latest tag on stable releases
+# Update the latest tag on stable releases, never on a pre-release (0.4.0-beta.1)
 docker tag ghcr.io/kelians/vyzio-api:VERSION     ghcr.io/kelians/vyzio-api:latest
 docker tag ghcr.io/kelians/vyzio-dashboard:VERSION ghcr.io/kelians/vyzio-dashboard:latest
 docker push ghcr.io/kelians/vyzio-api:latest

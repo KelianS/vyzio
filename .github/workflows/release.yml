@@ -80,4 +80,7 @@ jobs:
           # Asking the API outright rather than through --generate-notes, whose documented
           # interaction is with --notes and not with a notes file.
           gh api "repos/$GITHUB_REPOSITORY/releases/generate-notes"             -f tag_name="$TAG" -f target_commitish="$GITHUB_SHA" --jq .body >> "$notes"
-          gh release create "$TAG" --title "$TAG" --notes-file "$notes" --verify-tag
+          # A pre-release (v0.4.0-beta.1) is published as such, never as the latest release.
+          prerelease=()
+          [[ "$VERSION" == *-* ]] && prerelease=(--prerelease)
+          gh release create "$TAG" --title "$TAG" --notes-file "$notes" --verify-tag "${prerelease[@]}"
