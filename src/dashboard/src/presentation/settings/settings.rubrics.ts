@@ -1,48 +1,37 @@
-/** Settings rubrics, declared as data (UI-25) — organized by functional domain, never by scope or screen of origin. */
+import {
+  Bell,
+  CalendarClock,
+  Server,
+  Lock,
+  ScanFace,
+  Archive,
+  Video,
+  type LucideIcon,
+} from 'lucide-react'
+
+/** The two groups the rubrics are shown in (UI-36). */
+export const SETTINGS_SECTIONS = ['Surveillance', 'Système'] as const
+
+type SettingsSection = (typeof SETTINGS_SECTIONS)[number]
+
+/** Settings rubrics, declared as data (UI-25), organized by functional domain, never by scope or screen of origin. */
 export interface SettingsRubric {
   /** Route segment under `/settings`. */
   readonly slug: string
   readonly label: string
-  /** What the rubric governs, in a few words — a full sentence would compete with the label. */
-  readonly summary: string
+  readonly section: SettingsSection
+  /** The neutral icon of its row (DESIGN SYSTEM § Grouped lists). */
+  readonly icon: LucideIcon
 }
 
 export const SETTINGS_RUBRICS: readonly SettingsRubric[] = [
-  {
-    slug: 'cameras',
-    label: 'Caméras',
-    summary: 'Ajout et réglages',
-  },
-  {
-    slug: 'detection',
-    label: 'Détection',
-    summary: 'Ce qui est reconnu',
-  },
-  {
-    slug: 'retention',
-    label: 'Conservation',
-    summary: 'Durée des enregistrements',
-  },
-  {
-    slug: 'notifications',
-    label: 'Notifications',
-    summary: 'Canaux et messages',
-  },
-  {
-    slug: 'schedule',
-    label: 'Planification',
-    summary: 'Vie privée et notifications',
-  },
-  {
-    slug: 'access',
-    label: 'Accès',
-    summary: 'Mot de passe et appareils',
-  },
-  {
-    slug: 'hardware',
-    label: 'Matériel',
-    summary: 'Stockage et ressources',
-  },
+  { slug: 'cameras', label: 'Caméras', section: 'Surveillance', icon: Video },
+  { slug: 'detection', label: 'Détection', section: 'Surveillance', icon: ScanFace },
+  { slug: 'schedule', label: 'Planification', section: 'Surveillance', icon: CalendarClock },
+  { slug: 'notifications', label: 'Notifications', section: 'Surveillance', icon: Bell },
+  { slug: 'retention', label: 'Conservation', section: 'Système', icon: Archive },
+  { slug: 'access', label: 'Accès', section: 'Système', icon: Lock },
+  { slug: 'hardware', label: 'Matériel', section: 'Système', icon: Server },
 ]
 
 export const SETTINGS_ROOT = '/settings'

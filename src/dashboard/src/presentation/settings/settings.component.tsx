@@ -1,8 +1,13 @@
-import { Link, Outlet, useLocation, useMatches } from 'react-router'
-import { ChevronRight } from 'lucide-react'
+import { Outlet, useLocation, useMatches } from 'react-router'
 import { cn } from '../../common/ui/utils'
-import { SETTINGS_RUBRICS, SETTINGS_ROOT, declaresOwnHeader, rubricPath } from './settings.rubrics'
-import { ListRow } from '../../common/components/list_row'
+import {
+  SETTINGS_RUBRICS,
+  SETTINGS_ROOT,
+  SETTINGS_SECTIONS,
+  declaresOwnHeader,
+  rubricPath,
+} from './settings.rubrics'
+import { GroupedList, GroupedRow } from '../../common/components/grouped_list'
 import { PageHeader } from '../../common/components/page_header'
 import { Surface } from '../../common/components/surface'
 
@@ -31,44 +36,24 @@ export function SettingsView() {
 
       <div className="grid gap-4 md:grid-cols-[minmax(0,17rem)_minmax(0,1fr)] md:items-start">
         {/* On mobile the list gives way to the open page. */}
-        <div className={atRoot ? 'block' : 'hidden md:block'}>
-          <Surface inset="list" asChild>
-            <nav aria-label="Rubriques de réglages">
-              <ul className="flex flex-col gap-0.5">
-                {SETTINGS_RUBRICS.map((rubric) => {
-                  const active = current?.slug === rubric.slug
-                  return (
-                    <li key={rubric.slug}>
-                      <ListRow
-                        className={cn(
-                          'rounded-full px-4 py-2.5',
-                          active && 'bg-secondary font-semibold',
-                        )}
-                      >
-                        <Link
-                          to={rubricPath(rubric.slug)}
-                          aria-current={active ? 'page' : undefined}
-                        >
-                          {/* Size, weight and colour together: one signal alone left the two lines alike. */}
-                          <span className="min-w-0">
-                            <span className="block text-row font-semibold">{rubric.label}</span>
-                            <span className="block text-body text-muted-foreground">
-                              {rubric.summary}
-                            </span>
-                          </span>
-                          <ChevronRight
-                            className="size-5 shrink-0 text-muted-foreground md:hidden"
-                            aria-hidden="true"
-                          />
-                        </Link>
-                      </ListRow>
-                    </li>
-                  )
-                })}
-              </ul>
-            </nav>
-          </Surface>
-        </div>
+        <nav
+          aria-label="Rubriques de réglages"
+          className={cn('flex-col gap-6', atRoot ? 'flex' : 'hidden md:flex')}
+        >
+          {SETTINGS_SECTIONS.map((section) => (
+            <GroupedList key={section} label={section}>
+              {SETTINGS_RUBRICS.filter((rubric) => rubric.section === section).map((rubric) => (
+                <GroupedRow
+                  key={rubric.slug}
+                  to={rubricPath(rubric.slug)}
+                  icon={rubric.icon}
+                  title={rubric.label}
+                  current={current?.slug === rubric.slug}
+                />
+              ))}
+            </GroupedList>
+          ))}
+        </nav>
 
         <div className={cn('min-w-0', atRoot ? 'hidden md:block' : 'block')}>
           {atRoot ? (

@@ -20,9 +20,28 @@ describe('SettingsView', () => {
 
     // Assert
     expect(screen.getByRole('heading', { level: 1, name: 'Conservation' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /Durée des enregistrements/ })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Conservation' })).toHaveAttribute(
       'aria-current',
       'page',
     )
+  })
+
+  it('SettingsView_ShouldGroupTheRubricsUnderSurveillanceAndSysteme_WhenOpened', () => {
+    // Arrange & Act
+    renderScreen(<SettingsView />, { path: '/settings/*', url: '/settings' })
+
+    // Assert
+    const surveillance = screen.getByRole('region', { name: 'Surveillance' })
+    const system = screen.getByRole('region', { name: 'Système' })
+    expect(
+      within(surveillance)
+        .getAllByRole('link')
+        .map((link) => link.textContent),
+    ).toEqual(['Caméras', 'Détection', 'Planification', 'Notifications'])
+    expect(
+      within(system)
+        .getAllByRole('link')
+        .map((link) => link.textContent),
+    ).toEqual(['Conservation', 'Accès', 'Matériel'])
   })
 })
