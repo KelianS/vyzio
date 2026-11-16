@@ -192,7 +192,7 @@ Two kinds of action, no intermediate style:
   while every camera is cut, and says until when when they share an end. A toggle whose start needs a
   duration opens a sheet (§ Sheets); its end is one tap on the toggle.
 - **A destructive action is quiet until confirmed**: a coral-tinted pill with coral ink, last on its
-  page, after `Avancé`, alone on its line; solid only on its confirmation's button.
+  page, after the `Avancé` row, alone on its line; solid only on its confirmation's button.
 - **Text**: the way out of a sheet or a dialog (`Annuler`), a label with no fill.
 
 Buttons in a row stand `8px` apart and wrap. A footer that settles a dialog aligns its actions to the
@@ -243,8 +243,9 @@ the reason.
 
 ### Cards
 
-A thing the user checks or sets, opened from its row (a capability) or its page (a channel), reads as
-**a card sharing one anatomy**:
+A thing the user checks or sets, opened from its row (a capability) or its page (a channel, a
+protocol), reads as **a card sharing one anatomy**; on a page of its own, the title and its mark sit
+in the bar:
 **title** with its mark · *state line* · *settings* · **actions**.
 
 - **The title** is the plain name of the thing, never a protocol or a technical acronym.
@@ -261,11 +262,15 @@ takes its place, naming as a link the page where it is fixed.
 | Fold | Where | Holds |
 | --- | --- | --- |
 | `Options` | Inside a card, closed | That card's settings |
-| `Avancé` | The end of the page, closed, before a removal | Rare settings: a position, not a mode (UI-09) |
-| Help question | The end of the page, before `Avancé`, closed | Task help (§ Help) |
+| `Avancé` | A row ending the page's settings, opening its own page titled `Avancé` | Rare settings: a position, not a mode (UI-09) |
+| Help question | Last on the page, closed | Task help (§ Help) |
 | `Détails techniques` | The end of an error or a card, closed | Figures for support (§ Technical details) |
 
 None stands in for another: no setting in help or technical details, no help in `Avancé`.
+
+**A settings page reads in one order**: its settings, the `Avancé` row, the removal, then the help
+questions. The `Avancé` page carries the bar's back button to the page it left, never the tabs of
+the thing it belongs to.
 
 ### Help: three levels, not a manual
 
@@ -280,9 +285,9 @@ gesture.
 (`common/components/help_notes`): a `16px` help icon then the question, both `15px` regular in ink
 soft, at least `44px` tall, no surface, no section label, no line between questions, no chevron. Its
 answer opens in place under the question's text, `15px` in ink soft. A page's questions sit
-**together at its end**, after its content and its main action, before `Avancé`, the technical
-details and a removal; never inside a grouped list of real rows. The one exception is a question
-that opens by itself because its task is not done yet: it stays under the section it unblocks.
+**together, last on the page** (§ Folds), never inside a grouped list of real rows. The one
+exception is a question that opens by itself because its task is not done yet: it stays under the
+section it unblocks.
 
 An **action** says its cost once, before the effect ([SPECS](SPECS.md) UI-16, UI-19): in its
 confirmation when it asks one, otherwise in one line above its button. An action that costs nothing

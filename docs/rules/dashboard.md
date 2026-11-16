@@ -194,7 +194,7 @@ literal colour or radius in a component.
 
 **Level**: Required · **Verified by**: Review
 
-The end-of-page `Avancé` fold, a section's long-form help, a card's `Détails techniques`, a detection
+The `Avancé` row and its page, a page's help questions, a card's `Détails techniques`, a detection
 list and a detection preview each have one component in `common/`: never a rewritten `<details>`, a
 second rendering, or a bare `<img>` that stays broken when surveillance restarts (UI-09, ADR-17).
 
