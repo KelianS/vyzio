@@ -13,7 +13,10 @@ notifications) and must not call each other directly. Its data is small, relatio
 one product.
 
 The interface is the product for a non-technical public: mobile first, accessible, built without a
-dedicated designer, on a local network where bundle size barely matters.
+dedicated designer, on a local network where bundle size barely matters. It must move like a calm
+phone app: springs that a tap or a finger can catch mid-flight without a jump, layers that follow
+the finger and land where its momentum carries them ([DESIGN SYSTEM](../DESIGN%20SYSTEM.md)
+§ Motion), all of it working offline.
 
 Something outside the process must know whether the API lives: the container healthcheck, which the
 interface's container waits on before it starts. Whoever diagnoses an installation needs to know
@@ -37,6 +40,12 @@ application, built statically and served by its own web server container.
   process runs in production and the API publishes no port.
 - **Component foundation**: shadcn/ui primitives copied into the repository, on Radix and Tailwind.
   Their tiers and the tokens are the [DESIGN SYSTEM](../DESIGN%20SYSTEM.md)'s.
+- **Spring and gesture engine**: the `motion` library (motion.dev), through its React entry
+  `motion/react`. Every value that moves is one of its motion values, retargeted by its springs from
+  the value and velocity on screen; a gesture feeds those values from the pointer and hands its
+  release velocity to the spring. The library is bundled with the interface, never loaded from a
+  host ([SPECS](../SPECS.md) SYS-03). The spring presets live in one motion module of the
+  interface, never in a screen.
 - **Two anonymous probes.** Liveness says the process answers, nothing else, and is what the
   container healthcheck reads. Readiness checks the database, the Frigate subscription and Frigate,
   each within a bounded time, Frigate read by the same rule as the engine status (ADR-02). Both
@@ -54,6 +63,8 @@ application, built statically and served by its own web server container.
 - ✅ An expected Frigate restart never marks the API unhealthy, and the interface that explains the
   outage still starts; diagnosis has a probe that needs no session.
 - ✅ Accessible primitives (focus, keyboard, roles) without writing them; tests select by role.
+- ✅ Interruptible springs, velocity handed from a finger to a spring, and frame scheduling come
+  maintained and tested, reusable by any screen.
 - ⚠️ SQLite takes one writer at a time: acceptable because one process writes, and binding: nothing
   else ever writes to this file.
 - ⚠️ An event in a queue is lost if the API stops before it is consumed.
@@ -62,6 +73,8 @@ application, built statically and served by its own web server container.
   no image, no setting, no secret. Each call costs round trips, so nothing polls it fast.
 - ⚠️ The copied primitives are repository code kept up to date by hand; Tailwind, and the animation
   utilities the primitives use, are permanent build dependencies.
+- ⚠️ The spring engine is a permanent runtime dependency that grows the bundle; the gestures built on
+  it (axis lock, momentum projection, rubber band) remain the interface's own code to test.
 
 ## Options rejected
 
@@ -80,6 +93,8 @@ application, built statically and served by its own web server container.
 | Server rendering (Next.js) | No SEO on a local network, and a Node process in production |
 | The interface served by the API | The API would publish a port: the interface container relaying it keeps readiness and Frigate unreachable from the user's network |
 | A home-made component base | Accessibility, focus, keyboard and floating surfaces on mobile all left to write and test |
+| An in-house spring primitive | A spring integrates in a few lines, but frame scheduling, value batching, velocity carried across an interruption and a hardware-accelerated path all remain to write, test and keep up, for no gain over a maintained library |
+| CSS transitions and keyframes on one curve | A curve restarts from rest when it is interrupted and cannot carry a finger's velocity: a motion caught mid-flight jumps |
 | Headless primitives without Tailwind | The hard half is solved, the voluminous half (every component's styling) stays, and global CSS grows back |
 | Dependencies checked on the liveness probe | Every applied setting restarts Frigate: the API would turn unhealthy on an expected event and hold back the interface's start |
 | Readiness behind the owner session | Its readers hold no session, and it is most needed when the interface cannot be reached |
