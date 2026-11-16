@@ -237,7 +237,7 @@ a live tuning that needs no restart goes over MQTT (ADR-08).
 | Cameras, their protocols, capabilities and streams | Vyzio | Database | Until the camera is removed |
 | Profiles and their reference photos | Vyzio, synced to Frigate's face library (ADR-13) | Database, the photos as files beside it | Until removed |
 | Schedule rules, channel settings and pairings, retention settings | Vyzio | Database | Until changed |
-| The household Silence | Vyzio (ADR-15) | Database | Until its end instant, at most seven days |
+| The household Silence | Vyzio (ADR-15) | Database | Until ended or replaced; inactive once its end instant passes |
 | Notification log, command journal | Vyzio, anchored on the Frigate event | Database | No expiry; a notification row goes with its detection ([SPECS](SPECS.md) HIST-10) |
 | Owner account and sessions | Vyzio | Database; the password only hashed (ADR-16) | Sessions until revoked |
 | PTZ positions counted by Vyzio, the thumbnails and slot labels | Vyzio (ADR-09) | Database, the thumbnails as files beside it | Until removed |

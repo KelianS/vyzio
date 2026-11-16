@@ -53,6 +53,9 @@ command is declared once, whatever channel carries it.
 - ✅ The command journal is the trace to read should a pairing leak.
 - ⚠️ The image passes through the channel's servers: a trade-off the interface states before the
   channel is first saved.
+- ⚠️ A channel has no on/off of its own: complete credentials are the consent. A channel saved
+  complete by an earlier version but switched off sends once Vyzio is upgraded; the release notes
+  say so, and deleting the channel is how its owner keeps it silent.
 - ⚠️ Notifications and commands depend on internet and on the third party (SYS-03): they extend
   local use, never replace it, and a channel back from an outage replays nothing (NOTIF-11).
 - ⚠️ A bot costs a longer setup than a write-only address; the channel's setup guide in the

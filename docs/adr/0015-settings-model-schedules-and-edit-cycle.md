@@ -44,8 +44,8 @@ global restart the user triggers.
   A target is an identifier read in that kind, with no foreign key: a removed camera simply stops
   being targeted, and a rule left without target stays until edited or deleted. A rule is deleted,
   never paused. The server is the source of the current moment in the installation's clock.
-- **The household Silence is one stored state beside the rules, not a rule**: an end instant, at
-  most seven days ahead, that survives a restart and lapses by itself. A channel is quiet while the
+- **The household Silence is one stored state beside the rules, not a rule**: an end instant, bounded so a
+  forgotten Silence cannot hold for good, that survives a restart and lapses by itself. A channel is quiet while the
   Silence holds or a muting rule targets it; neither ends the other. Its first offered end is the
   next change of the muting rules, computed by the server.
 - **One consumer per rule type.** A target is under a type's effect when any rule of that type
