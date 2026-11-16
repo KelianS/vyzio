@@ -119,7 +119,7 @@ export function DetectionHistoryView() {
       ) : !uido.loaded ? (
         <Loading lines={4} />
       ) : playing === null ? (
-        <EmptyState className="px-1">
+        <EmptyState>
           {filtered ? 'Aucune détection avec ces filtres.' : 'Aucune détection pour l’instant.'}
         </EmptyState>
       ) : (

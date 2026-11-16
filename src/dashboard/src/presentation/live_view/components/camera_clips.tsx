@@ -42,7 +42,7 @@ export function CameraClips({
   return (
     <div className="flex flex-col gap-4">
       {clips.length === 0 ? (
-        <EmptyState className="px-1">Aucune détection de cette caméra pour l’instant.</EmptyState>
+        <EmptyState>Aucune détection de cette caméra pour l’instant.</EmptyState>
       ) : (
         <ClipList
           events={clips}
