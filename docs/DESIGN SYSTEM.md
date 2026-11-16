@@ -97,6 +97,8 @@ structure ([SPECS](SPECS.md) UI-10).
 
 **Icons are line icons**, from the one icon set, never an emoji: its glyph and colours change with
 the phone, and it reads as another product beside the line icons.
+A detection's type reads at a glance from its icon, in a small icon circle before a clip's name,
+wherever a clip is listed or played and in the filter; one table maps each type to its icon.
 
 **A press never selects.** What the user acts on, a button, a link, a tab, a row, a field's label or
 a strip of controls marked `data-press-only`, never selects its text nor opens the phone's callout on
@@ -208,8 +210,10 @@ what the user has already seen.
 A choice that is quick and reversible (a duration, a filter, a clip's actions) opens a **sheet** from
 the bottom: a title, one line saying the effect, the options as rows, `Annuler` last. One tap on an
 option applies it and closes the sheet; nothing to confirm. A choice along several axes (a filter by
-camera, person and type) lists each axis as its own group under a quiet heading, its first row
-`Toutes`/`Tous`, the current choice checked.
+camera, person, type and day) lists each axis as its own group under a quiet heading, its first row
+`Toutes`/`Tous` clearing it, the current choice checked. There, a tap checks or unchecks a row, an
+axis holding several values at once, or one for the day; the list follows at each tap, so the sheet
+stays open and closes with `Fermer` in place of `Annuler`. A chosen day is a date field in its row.
 
 ### State pills
 

@@ -35,7 +35,7 @@
 
 ### A1 · Filtrer les détections
 
-1. L'utilisateur touche le filtre de la barre : il filtre par caméra, personne ou type d'événement (HIST-03).
+1. L'utilisateur touche le filtre de la barre : il coche une ou plusieurs caméras, personnes ou types d'événement, et choisit un jour (HIST-03) ; la liste suit à chaque toucher.
 2. Le chemin reprend à N1, pas 2, sur les détections filtrées.
 
 ### A2 · Ouvrir les détections d'une caméra
@@ -53,10 +53,10 @@
 
 ## Règles locales
 
-- **HIST-03** · l'utilisateur doit pouvoir consulter un historique filtre par camera, personne ou type d'evenement ;
+- **HIST-03** · l'utilisateur doit pouvoir consulter un historique filtré par caméra, personne, type d'événement et jour ; caméra, personne et type acceptent plusieurs valeurs à la fois, le jour en prend un : aujourd'hui, hier, les sept derniers jours ou un jour choisi ;
 - **HIST-04** · les clips associes a un evenement doivent etre consultables quand ils existent ;
 - **HIST-17** · la video d'une detection dont la duree de conservation est echue ne s'affiche pas en panne : son lecteur dit qu'elle n'est plus conservee, en raison de la duree choisie (UC-HIST-02) ;
-- **HIST-18** · la page « Détections » porte en haut le même lecteur que la vue d'une caméra (UC-LIVE-01 A3), et en dessous les clips groupés par jour, les plus récents d'abord, chacun avec ce qui a été vu, sa caméra et son heure ; un toucher lit le clip ; à sa fin, le clip suivant de la liste se lit de lui-même, d'un jour au précédent, sans commande pour le régler, et après le dernier le lecteur s'arrête sur sa dernière image ; les actions d'un clip sont dans son menu « ⋯ », et le filtre est une icône de la barre ;
+- **HIST-18** · la page « Détections » porte en haut le même lecteur que la vue d'une caméra (UC-LIVE-01 A3), et en dessous les clips groupés par jour, les plus récents d'abord, chacun avec ce qui a été vu, que l'icône de son type fait reconnaître d'un coup d'œil, sa caméra et son heure ; un toucher lit le clip ; à sa fin, le clip suivant de la liste se lit de lui-même, d'un jour au précédent, sans commande pour le régler, et après le dernier le lecteur s'arrête sur sa dernière image ; les actions d'un clip sont dans son menu « ⋯ », et le filtre est une icône de la barre ;
 - **HIST-19** · un clip se télécharge depuis son menu, pour le conserver ou le partager hors de Vyzio ; le téléchargement se fait sur l'appareil qui consulte, sans passer par un service tiers (SEC-01).
 
 ## Points ouverts
