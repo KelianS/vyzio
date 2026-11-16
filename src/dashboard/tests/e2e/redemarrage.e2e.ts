@@ -108,7 +108,10 @@ test.describe('Surveillance restart', () => {
     await page.goto('/settings/cameras/camera-1/detection')
 
     // The most common gesture while configuring: asking here would nag, and stack with the draft guard.
-    await page.getByRole('link', { name: 'Conservation', exact: true }).click()
+    await page
+      .getByRole('navigation', { name: 'Réglages de la caméra' })
+      .getByRole('link', { name: 'Conservation' })
+      .click()
     await expect(page).toHaveURL('/settings/cameras/camera-1/retention')
     await expect(page.getByRole('alertdialog')).toHaveCount(0)
   })

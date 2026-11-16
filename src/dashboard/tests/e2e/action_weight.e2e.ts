@@ -85,6 +85,7 @@ test.describe('Action weight', () => {
   }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
     await page.goto('/settings/cameras/camera-1/connection')
+    await page.getByRole('heading', { name: 'Flux vidéo' }).click()
     await expect(page.getByRole('button', { name: 'Vérifier' })).toBeVisible()
 
     const green = await page
@@ -103,11 +104,13 @@ test.describe('Action weight', () => {
   }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
     await page.goto('/settings/cameras/camera-1/connection')
+    await page.getByRole('heading', { name: 'Flux vidéo' }).click()
 
     const tint = await page
       .getByRole('button', { name: 'Vérifier' })
       .evaluate((el) => getComputedStyle(el).backgroundColor)
-    await expect(page.locator('details', { hasText: 'Options' }).first()).toHaveCSS(
+    // The Options fold sits inside the capability's own opening row.
+    await expect(page.locator('details details', { hasText: 'Options' }).first()).toHaveCSS(
       'background-color',
       tint,
     )

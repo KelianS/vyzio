@@ -39,4 +39,25 @@ describe('CapabilityCard', () => {
     expect(screen.getByText('À confirmer')).toBeVisible()
     expect(screen.getByRole('button', { name: 'Essayer' })).toBeVisible()
   })
+
+  it('CapabilityCard_ShouldStayOpen_WhenTheCapabilityItShowedToConfirmNowWorks', () => {
+    // Arrange
+    const card = (kind: 'on' | 'off', label: string) => (
+      <ul>
+        <CapabilityCard
+          icon={Video}
+          title="Orientation"
+          mark={{ kind, label }}
+          actions={<button type="button">Essayer à nouveau</button>}
+        />
+      </ul>
+    )
+    const { rerender } = render(card('off', 'À confirmer'))
+
+    // Act
+    rerender(card('on', 'Fonctionne'))
+
+    // Assert
+    expect(screen.getByRole('button', { name: 'Essayer à nouveau' })).toBeVisible()
+  })
 })

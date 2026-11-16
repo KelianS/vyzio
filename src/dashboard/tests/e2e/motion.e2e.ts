@@ -340,6 +340,7 @@ test.describe('Layers', () => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
     await page.goto('/settings/cameras/camera-1/connection')
     const stream = page.getByRole('list', { name: 'Capacités' }).getByRole('listitem').first()
+    await stream.getByRole('heading', { name: 'Flux vidéo' }).click()
     await stream.getByText('Options').click()
     await slowDownMotion(page)
 

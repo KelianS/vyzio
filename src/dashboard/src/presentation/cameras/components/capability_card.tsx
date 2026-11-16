@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { ChevronRight, type LucideIcon } from 'lucide-react'
 import { Fold } from '../../../common/components/fold'
 import { GroupedItem } from '../../../common/components/grouped_list'
@@ -33,9 +33,21 @@ export function CapabilityCard({
   actions?: ReactNode
 }) {
   const subtitle = mark && markSubtitle(mark)
+  // Decided once the state is first read, then left to the user: an answer never snaps it shut.
+  const [open, setOpen] = useState<boolean | null>(null)
+  const known = mark !== undefined
+  const working = mark?.kind === StatusMarkKind.On
+  useEffect(() => {
+    if (open === null && known) setOpen(!working)
+  }, [open, known, working])
+
   return (
     <GroupedItem inset="icon">
-      <details open={mark?.kind !== StatusMarkKind.On} className="group/card">
+      <details
+        open={open ?? false}
+        onToggle={(event) => setOpen(event.currentTarget.open)}
+        className="group/card"
+      >
         <summary className="flex min-h-16 cursor-pointer list-none items-center gap-3.5 px-4 py-2 outline-none hover:bg-secondary focus-visible:bg-secondary">
           <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-icon-circle text-ink-muted">
             <Icon className="size-5" aria-hidden="true" />

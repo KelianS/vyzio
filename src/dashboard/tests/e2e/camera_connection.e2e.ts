@@ -102,7 +102,7 @@ test.describe('CameraConnectionView three levels', () => {
     await expect(page.getByText('Protocole ajouté.')).toBeVisible()
 
     const onvif = page.getByRole('listitem', { name: 'ONVIF' })
-    await expect(onvif).toContainText('Accessible')
+    await expect(onvif.getByRole('img', { name: 'Accessible' })).toBeVisible()
     await expect(
       page.getByRole('listitem', { name: 'RTSP' }).getByRole('button', { name: 'Retirer' }),
     ).toBeDisabled()
@@ -132,6 +132,7 @@ test.describe('CameraConnectionView three levels', () => {
     await page.goto('/settings/cameras/camera-1/connection')
     const stream = page.getByRole('list', { name: 'Capacités' }).getByRole('listitem').first()
 
+    await stream.getByRole('heading', { name: 'Flux vidéo' }).click()
     await stream.getByText('Options').click()
     const main = stream.getByRole('listitem', { name: '1920 × 1080 · 15 img/s' })
     await main.getByRole('button', { name: 'Comment Vyzio reçoit-il ce flux ?' }).click()
@@ -149,6 +150,7 @@ test.describe('CameraConnectionView stream lines', () => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
     await page.goto('/settings/cameras/camera-1/connection')
     const stream = page.getByRole('list', { name: 'Capacités' }).getByRole('listitem').first()
+    await stream.getByRole('heading', { name: 'Flux vidéo' }).click()
     await stream.getByText('Options').click()
     const sub = stream.getByRole('listitem', { name: '640 × 360 · 10 img/s' })
 
@@ -171,6 +173,7 @@ test.describe('CameraConnectionView stream lines', () => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
     await page.goto('/settings/cameras/camera-1/connection')
     const stream = page.getByRole('list', { name: 'Capacités' }).getByRole('listitem').first()
+    await stream.getByRole('heading', { name: 'Flux vidéo' }).click()
     await stream.getByText('Options').click()
     const main = stream.getByRole('listitem', { name: '1920 × 1080 · 15 img/s' })
     const sub = stream.getByRole('listitem', { name: '640 × 360 · 10 img/s' })
@@ -200,6 +203,7 @@ test.describe('CameraConnectionView stream lines', () => {
     await installFakeBackend(page, state)
     await page.goto('/settings/cameras/camera-1/connection')
     const stream = page.getByRole('list', { name: 'Capacités' }).getByRole('listitem').first()
+    await stream.getByRole('heading', { name: 'Flux vidéo' }).click()
     await stream.getByText('Options').click()
 
     await stream.getByRole('combobox', { name: 'Protocole' }).click()
@@ -225,6 +229,9 @@ test.describe('CameraConnectionView capability cards', () => {
     await installFakeBackend(page, state)
     await page.goto('/settings/cameras/camera-1/connection')
     const cards = page.getByRole('list', { name: 'Capacités' }).getByRole('listitem')
+    // A working capability's row starts closed: its name opens its card (CAM-23).
+    await page.getByRole('heading', { name: 'Flux vidéo' }).click()
+    await page.getByRole('heading', { name: 'Orientation' }).click()
 
     await cards.filter({ hasText: 'Flux vidéo' }).getByRole('button', { name: 'Vérifier' }).click()
     await expect(page.getByText('Flux vidéo : connexion réussie.')).toBeVisible()
@@ -272,7 +279,9 @@ test.describe('CameraConnectionView camera without protocols', () => {
     await page.getByRole('button', { name: 'Rechercher les protocoles' }).click()
     await expect(page.getByText('Recherche terminée.')).toBeVisible()
 
-    await expect(page.getByRole('listitem', { name: 'DVRIP' })).toContainText('Accessible')
+    await expect(
+      page.getByRole('listitem', { name: 'DVRIP' }).getByRole('img', { name: 'Accessible' }),
+    ).toBeVisible()
     const stream = page.getByRole('list', { name: 'Capacités' }).getByRole('listitem').first()
     await expect(stream).toContainText('Choisissez comment Vyzio lit les images')
   })

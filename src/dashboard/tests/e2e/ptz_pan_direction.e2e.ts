@@ -15,6 +15,7 @@ test.describe('PTZ pan direction', () => {
       .getByRole('list', { name: 'Capacités' })
       .getByRole('listitem')
       .filter({ hasText: 'Orientation' })
+    await orientation.getByRole('heading', { name: 'Orientation' }).click()
     await orientation.getByText('Options').click()
 
     const setting = page.getByRole('switch', { name: /Inverser gauche et droite/ })

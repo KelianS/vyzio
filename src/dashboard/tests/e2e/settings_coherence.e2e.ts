@@ -121,8 +121,8 @@ test.describe('Settings screens coherence', () => {
   test('SettingsSection_ShouldSetItsTitleApartFromLabels_WhenAPageGroupsItsSettings', async ({
     page,
   }) => {
-    // A section title and a setting label rendered alike make a page where everything
-    // sits at the same level: the sections then separate nothing.
+    // A section label and a setting label rendered alike make a page where everything
+    // sits at the same level: the label sits above its list, smaller, bold and quieter (DESIGN SYSTEM § Typography).
     for (const path of SETTINGS_ROUTES) {
       await page.goto(path)
       await page.waitForLoadState('networkidle')
@@ -133,6 +133,7 @@ test.describe('Settings screens coherence', () => {
             text: node.textContent ?? '',
             size: Number.parseFloat(getComputedStyle(node).fontSize),
             weight: Number.parseFloat(getComputedStyle(node).fontWeight),
+            color: getComputedStyle(node).color,
           })),
         )
 
@@ -140,13 +141,16 @@ test.describe('Settings screens coherence', () => {
       const labels = await typography('label[id$="-label"]')
       if (titles.length === 0) continue
 
-      const biggestLabel = Math.max(...labels.map((entry) => entry.size))
+      const smallestLabel = Math.min(...labels.map((entry) => entry.size))
+      const labelColours = labels.map((entry) => entry.color)
       for (const title of titles) {
         expect(title.weight, `${path}: "${title.text}" is not set bold`).toBeGreaterThanOrEqual(600)
-        expect(
-          title.size,
-          `${path}: "${title.text}" is the size of a setting label`,
-        ).toBeGreaterThan(biggestLabel)
+        expect(title.size, `${path}: "${title.text}" is the size of a setting label`).toBeLessThan(
+          smallestLabel,
+        )
+        expect(labelColours, `${path}: "${title.text}" has a setting label's colour`).not.toContain(
+          title.color,
+        )
       }
     }
   })
