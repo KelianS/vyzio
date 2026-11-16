@@ -98,6 +98,19 @@ describe('NotificationChannelView', () => {
     expect(screen.queryByText('Seulement à certaines heures')).not.toBeInTheDocument()
   })
 
+  it('onOpen_ShouldOfferNoPauseOfItsOwn_WhenTheChannelIsConfigured', async () => {
+    // Arrange
+    fakeNetwork(channelRoutes())
+
+    // Act
+    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+
+    // Assert
+    expect(await screen.findByText('Aucune plage « Silence » ne s’applique')).toBeInTheDocument()
+    expect(screen.queryByRole('switch', { name: /Notifications Telegram/ })).not.toBeInTheDocument()
+    expect(screen.queryByText(/En pause/)).not.toBeInTheDocument()
+  })
+
   it('onOpen_ShouldSayTheRangesCouldNotBeRead_WhenTheirReadFails', async () => {
     // Arrange
     fakeNetwork({ ...channelRoutes(), [RULES]: failure(500) })

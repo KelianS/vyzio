@@ -23,17 +23,23 @@ const routes = [
   '/settings',
   '/settings/cameras',
   '/settings/cameras/add',
+  '/settings/cameras/add?step=access',
   '/settings/cameras/camera-1/connection',
   '/settings/cameras/camera-1/privacy',
   '/settings/cameras/camera-1/detection',
   '/settings/cameras/camera-1/image',
   '/settings/cameras/camera-1/retention',
   '/settings/detection/people',
+  '/settings/detection/people/add',
   '/settings/detection/people/profile-1/identity',
+  '/settings/detection/people/profile-1/photos',
+  '/settings/detection/people/profile-1/cameras',
   '/settings/schedule',
   '/settings/schedule/rule-1',
+  '/settings/schedule/add?kind=mute_notifications',
   '/settings/notifications',
   '/settings/notifications/telegram',
+  '/settings/notifications/add',
   '/settings/retention',
   '/settings/access',
   '/settings/hardware',
@@ -52,6 +58,7 @@ test.describe('Redesign foundation', () => {
             verifiedCapabilities: ['ptz'],
           }),
           makeFakeCamera({ id: 'camera-2', displayName: 'Garage', status: 'offline' }),
+          makeFakeCamera({ id: 'camera-3', displayName: 'Cave', privacyModeActive: true }),
         ],
         notificationChannels: { telegram: makeFakeChannel('telegram') },
         profiles: [
@@ -93,6 +100,32 @@ test.describe('Redesign foundation', () => {
     await add.focus()
     await expect(add.locator('span').first()).not.toHaveCSS('box-shadow', 'none')
   })
+
+  const marks = [
+    { name: 'Salon', id: 'camera-1', mark: 'En marche' },
+    { name: 'Cave', id: 'camera-3', mark: 'Coupée' },
+    { name: 'Garage', id: 'camera-2', mark: 'Hors ligne' },
+  ]
+
+  for (const { name, id, mark } of marks) {
+    test(`CameraMark_ShouldBeTheSameBesideItsNameOnEveryScreen_WhenTheCameraIs (${mark})`, async ({
+      page,
+    }) => {
+      await page.goto('/')
+      await expect(page.getByRole('img', { name: mark }).first()).toBeVisible()
+
+      await page.goto(`/cameras/${id}`)
+      await expect(page.getByRole('banner').getByRole('img', { name: mark })).toBeVisible()
+
+      await page.goto('/settings/cameras')
+      await expect(
+        page.getByRole('link', { name: new RegExp(name) }).getByRole('img', { name: mark }),
+      ).toBeVisible()
+
+      await page.goto(`/settings/cameras/${id}/connection`)
+      await expect(page.getByRole('banner').getByRole('img', { name: mark })).toBeVisible()
+    })
+  }
 
   for (const path of routes) {
     test(`Screen_ShouldBeDarkInOneFontAtFourSizesWithControlsAFingerReaches_WhenItRenders (${path})`, async ({
