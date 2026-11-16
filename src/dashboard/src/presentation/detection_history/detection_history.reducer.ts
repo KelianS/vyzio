@@ -88,9 +88,12 @@ export function detectionHistoryReducer(
     case 'CLIP_PLAYED':
       return { ...state, playingId: action.eventId }
     // The next clip plays by itself, with nothing to set; after the last, the player rests (HIST-18).
+    // While its actions are open the clip holds still, so they never land on the next one.
     case 'CLIP_ENDED': {
       const next = nextOf(state.items, action.eventId)
-      return next ? { ...state, playingId: next.eventId } : state
+      return next && state.sheet !== 'actions' && state.sheet !== 'identity'
+        ? { ...state, playingId: next.eventId }
+        : state
     }
 
     case 'SHEET_OPENED':

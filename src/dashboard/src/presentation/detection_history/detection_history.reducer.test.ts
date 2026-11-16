@@ -104,6 +104,20 @@ describe('detectionHistoryReducer', () => {
     expect(next.playingId).toBe('e3')
   })
 
+  it.each(['actions', 'identity'] as const)(
+    'detectionHistoryReducer_ShouldHoldTheClip_WhenItEndsWhileItsActionsAreOpen (%s)',
+    (sheet) => {
+      // Arrange
+      const acting = { ...read, playingId: 'e1', sheet }
+
+      // Act
+      const next = detectionHistoryReducer(acting, { type: 'CLIP_ENDED', eventId: 'e1' })
+
+      // Assert
+      expect(next.playingId).toBe('e1')
+    },
+  )
+
   it('detectionHistoryReducer_ShouldNameOnlyTheCorrectedDetection_WhenTheCorrectionSucceeds', () => {
     // Arrange & Act
     const next = detectionHistoryReducer(read, {
