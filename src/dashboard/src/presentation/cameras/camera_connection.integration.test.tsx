@@ -141,9 +141,12 @@ async function cardOf(title: string) {
   return within(heading.closest('li') as HTMLElement)
 }
 
-/** Opens a card's Options fold, where its protocol and settings are. */
+/** Opens a capability's row, which a working one leaves closed, then its Options fold. */
 async function optionsOf(title: string) {
-  const card = await cardOf(title)
+  const heading = await screen.findByRole('heading', { name: title })
+  const row = heading.closest('details') as HTMLDetailsElement
+  if (!row.open) await userEvent.click(heading)
+  const card = within(heading.closest('li') as HTMLElement)
   await userEvent.click(card.getByText('Options'))
   return card
 }
@@ -283,7 +286,7 @@ describe('CameraConnectionView', () => {
 
     // Assert
     const [rtspBox, onvifBox] = await protocolRows()
-    expect(rtspBox).toHaveTextContent('RTSPAccessible')
+    expect(within(rtspBox).getByRole('img', { name: 'Accessible' })).toBeInTheDocument()
     expect(within(rtspBox).getByLabelText('Port')).toHaveValue(554)
     expect(onvifBox).toHaveTextContent('ONVIFPas encore vérifié')
     expect(within(onvifBox).getByLabelText('Port')).toHaveValue(2020)
@@ -1252,7 +1255,7 @@ describe('CameraConnectionView', () => {
     // Assert
     const sub = await streamLine('640 × 360 · 10 img/s')
     expect(sub.getByRole('combobox', { name: 'Rôle' })).toHaveTextContent('Détection')
-    expect(sub.getByText('Fonctionne')).toBeInTheDocument()
+    expect(sub.getByRole('img', { name: 'Fonctionne' })).toBeInTheDocument()
   })
 
   it('onLoad_ShouldSayTheLineFailedWithItsDiagnostic_WhenAStreamFailedItsCheck', async () => {

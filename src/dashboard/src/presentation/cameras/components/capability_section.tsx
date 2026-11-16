@@ -1,4 +1,16 @@
-import { Play, Power, RefreshCw, ScanSearch, Settings2, X } from 'lucide-react'
+import {
+  EyeOff,
+  Move,
+  Play,
+  Power,
+  RefreshCw,
+  ScanSearch,
+  Settings2,
+  SlidersHorizontal,
+  Video,
+  X,
+  type LucideIcon,
+} from 'lucide-react'
 import { useState } from 'react'
 import { DiagnosticLine, ReadFailure } from '../../../common/components/error_message'
 import type { AppError } from '../../../common/errors/app_error'
@@ -130,6 +142,14 @@ interface StreamLinesState {
   intents: StreamLineIntents
 }
 
+/** Each capability's neutral icon, beside its name in the list. */
+const CAPABILITY_ICONS: Record<Capability, LucideIcon> = {
+  stream: Video,
+  ptz: Move,
+  hardware_privacy: EyeOff,
+  image_settings: SlidersHorizontal,
+}
+
 export function CapabilitySection({
   camera,
   bindings,
@@ -154,7 +174,7 @@ export function CapabilitySection({
 
   return (
     <div className="flex flex-col gap-3">
-      <ul aria-label="Capacités" className="flex flex-col gap-3">
+      <ul aria-label="Capacités" className="overflow-hidden rounded-card bg-card">
         <StreamCard
           camera={camera}
           binding={stream}
@@ -328,6 +348,7 @@ function StreamCard({
 
   return (
     <CapabilityCard
+      icon={CAPABILITY_ICONS.stream}
       title={STREAM_LABEL}
       mark={state && capabilityMark(state)}
       options={
@@ -690,6 +711,7 @@ function BindingCard({
   return (
     <>
       <CapabilityCard
+        icon={CAPABILITY_ICONS[binding.capability]}
         title={label}
         mark={capabilityMark(state)}
         actions={actions()}

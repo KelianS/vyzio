@@ -14,7 +14,8 @@ import { useAppContainer } from '../../infrastructure/providers/app_container.co
 import type { Camera } from '../../domain/entities/camera.entity'
 import type { SupportedProtocol } from '../../domain/entities/camera_capability_binding.entity'
 import { SettingsPage, SettingsSection } from '../../common/settings/settings_page'
-import { HelpPanel } from '../../common/components/help_panel'
+import { HelpPanel, HelpRow } from '../../common/components/help_panel'
+import { GroupedList } from '../../common/components/grouped_list'
 import { AdvancedFold } from '../../common/settings/advanced_fold'
 import { CapabilitySection } from './components/capability_section'
 import { AddProtocol } from './components/add_protocol_form'
@@ -145,7 +146,7 @@ export function CameraConnectionView() {
         <SettingsList settings={identity} />
 
         {/* Checking or configuring a capability tests a connection and returns a result: an action, not a draft value. */}
-        <SettingsSection title="Capacités" lede="Ce que Vyzio vérifie auprès de cette caméra.">
+        <SettingsSection title="Capacités">
           <CapabilitySection
             camera={camera}
             bindings={uido.bindings}
@@ -204,8 +205,10 @@ export function CameraConnectionView() {
                 void presenter.onConfigureManually(cameraId, capability, protocol),
             }}
           />
+        </SettingsSection>
 
-          <HelpPanel title="Une vérification échoue, que faire ?">
+        <GroupedList label="Aide">
+          <HelpRow title="Une vérification échoue">
             <p>
               Commencez par le flux vidéo : les autres capacités passent par lui. S’il échoue,
               corrigez l’adresse ou le compte de la caméra dans Avancé, en bas de page, ou la façon
@@ -220,9 +223,9 @@ export function CameraConnectionView() {
               Une capacité dont la vérification échoue n’est jamais proposée comme active, et la
               vérification se relance à tout moment.
             </p>
-          </HelpPanel>
+          </HelpRow>
 
-          <HelpPanel title="Une capacité est à confirmer, pourquoi ?">
+          <HelpRow title="Une capacité est à confirmer">
             <p>
               Certaines caméras ne permettent pas à Vyzio de lire la preuve d’une capacité. Vyzio ne
               la suppose pas : il vous la fait essayer une fois, et votre réponse décide.
@@ -236,8 +239,8 @@ export function CameraConnectionView() {
               Ensuite, « Essayer à nouveau » refait l’essai et repose la question, ses options
               permettent de la joindre autrement, et « Retirer » l’enlève si la caméra ne l’a pas.
             </p>
-          </HelpPanel>
-        </SettingsSection>
+          </HelpRow>
+        </GroupedList>
 
         <AdvancedFold lede="Comment Vyzio joint cette caméra.">
           <SettingsList settings={access} />

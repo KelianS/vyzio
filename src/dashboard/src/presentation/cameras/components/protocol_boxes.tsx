@@ -2,7 +2,8 @@ import { RefreshCw } from 'lucide-react'
 import { useState } from 'react'
 import { DiagnosticLine, ReadFailure } from '../../../common/components/error_message'
 import { ConfirmModal } from '../../../common/components/confirm_modal'
-import { Badge } from '../../../common/components/badge'
+import { StatusMark } from '../../../common/components/status_mark'
+import { markSubtitle } from '../../../common/components/status_mark_state'
 import type { AppError } from '../../../common/errors/app_error'
 import { scrubSecrets } from '../../../common/errors/scrub_secrets'
 import { Button } from '../../../common/ui/button'
@@ -13,7 +14,7 @@ import type { SupportedProtocol } from '../../../domain/entities/camera_capabili
 import type { CameraProtocol } from '../../../domain/entities/camera_protocol.entity'
 import { formatCheckedAt } from '../cameras.formatters'
 import type { ProtocolValues } from '../camera_connection_values'
-import { protocolFailureLine, protocolPill } from '../capability_state'
+import { protocolFailureLine, protocolMark } from '../capability_state'
 import { PROTOCOL_LABELS, SPECIFIC_ACCOUNT_HELP } from '../protocol_labels'
 import { Loading } from '../../../common/components/loading'
 
@@ -68,7 +69,10 @@ export function ProtocolBoxes({
     )
 
   return (
-    <ul aria-label="Protocoles" className="flex flex-col gap-3">
+    <ul
+      aria-label="Protocoles"
+      className="divide-y divide-border overflow-hidden rounded-card bg-card"
+    >
       {protocols.map((entry) => (
         <ProtocolBox
           key={entry.protocol}
@@ -172,18 +176,18 @@ function ProtocolBox({
     )
   }
 
-  const pill = protocolPill(entry.status)
+  const mark = protocolMark(entry.status)
   const failure = protocolFailureLine(entry.status)
 
   return (
-    <li
-      className="rounded-inset border border-border p-4"
-      aria-label={PROTOCOL_LABELS[entry.protocol]}
-    >
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h4 className="font-medium">{PROTOCOL_LABELS[entry.protocol]}</h4>
-        <Badge tone={pill.tone}>{pill.label}</Badge>
+    <li className="p-4" aria-label={PROTOCOL_LABELS[entry.protocol]}>
+      <div className="flex items-center gap-2">
+        <h4 className="text-row font-semibold">{PROTOCOL_LABELS[entry.protocol]}</h4>
+        <StatusMark {...mark} />
       </div>
+      {markSubtitle(mark) && (
+        <p className="text-body text-muted-foreground">{markSubtitle(mark)}</p>
+      )}
       {entry.checkedAt && (
         <p className="mt-1 text-body text-muted-foreground">
           Vérifié le {formatCheckedAt(entry.checkedAt)}

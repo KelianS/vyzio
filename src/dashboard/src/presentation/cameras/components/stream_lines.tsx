@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Check, Plus, RefreshCw } from 'lucide-react'
-import { Badge } from '../../../common/components/badge'
+import { StatusMark } from '../../../common/components/status_mark'
+import { markSubtitle } from '../../../common/components/status_mark_state'
 import { ConfirmModal } from '../../../common/components/confirm_modal'
 import { DiagnosticLine, ReadFailure } from '../../../common/components/error_message'
 import { HelpPanel } from '../../../common/components/help_panel'
@@ -27,7 +28,7 @@ import {
   RECORDING_STREAM_KEPT,
   ROLE_CONSEQUENCES,
   ROLE_LABELS,
-  STREAM_LINE_PILLS,
+  streamLineMark,
   StreamLineState,
   addChoices,
   choiceOptions,
@@ -94,7 +95,7 @@ export function StreamLines({
         />
       )}
       {lineup && (
-        <ul aria-label="Flux" className="flex flex-col gap-3">
+        <ul aria-label="Flux" className="divide-y divide-border">
           {lineup.streams.map((stream) => (
             <StreamLine
               key={stream.id}
@@ -168,19 +169,21 @@ function StreamLine({
 }) {
   const [confirmRemove, setConfirmRemove] = useState(false)
   const state = streamLineState(stream)
+  const mark = streamLineMark(state)
   const records = stream.id === lineup.recordStreamId
   const fallback = stream.id === lineup.detectStreamId ? ` ${DETECTION_FALLS_BACK}` : ''
   const quality = streamQuality(stream)
 
   return (
-    <li aria-label={quality} className="rounded-inset border border-border p-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-1">
-          <p className="font-medium">{quality}</p>
-          <HelpTrigger question="Comment Vyzio reçoit-il ce flux ?" help={streamReach(stream)} />
-        </div>
-        <Badge tone={STREAM_LINE_PILLS[state].tone}>{STREAM_LINE_PILLS[state].label}</Badge>
+    <li aria-label={quality} className="py-3">
+      <div className="flex items-center gap-2">
+        <p className="font-medium">{quality}</p>
+        <StatusMark {...mark} />
+        <HelpTrigger question="Comment Vyzio reçoit-il ce flux ?" help={streamReach(stream)} />
       </div>
+      {markSubtitle(mark) && (
+        <p className="text-body text-muted-foreground">{markSubtitle(mark)}</p>
+      )}
       {state === StreamLineState.Failed && (
         <div className="text-body text-destructive">
           <p>{streamFailure(records)}</p>
