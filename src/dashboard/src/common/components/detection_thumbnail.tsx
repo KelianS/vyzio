@@ -87,7 +87,7 @@ export function DetectionThumbnail({
           <button
             type="button"
             aria-label="Réessayer de charger l’aperçu"
-            title="Aperçu indisponible — réessayer"
+            title="Aperçu indisponible : réessayer"
             onClick={retryNow}
             className="absolute inset-0 flex items-center justify-center text-muted-foreground hover:text-foreground"
           >

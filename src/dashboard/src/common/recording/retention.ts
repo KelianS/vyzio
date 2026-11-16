@@ -31,7 +31,7 @@ const RETENTION_EXPLANATION: Record<RetentionWindow, string> = {
     'Tout est enregistré, même quand il ne se passe rien. C’est ce qui occupe de loin le plus d’espace disque.',
   motion: 'Seuls les moments où l’image bouge sont conservés.',
   eventClip:
-    'Combien de temps vos détections restent consultables — aperçu et vidéo compris. C’est la profondeur de la page Historique.',
+    'Combien de temps vos détections restent consultables, aperçu et vidéo compris. C’est la profondeur de la page Détections.',
 }
 
 // Said in the help of each duration: outside the row it was running text, which is banned (UI-19).

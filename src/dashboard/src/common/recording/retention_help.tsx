@@ -11,7 +11,7 @@ export function RetentionHelp() {
         <p>
           C’est la seule des trois dont le coût grandit avec le temps qui passe plutôt qu’avec ce
           qui se produit : une semaine sur quatre caméras dépasse les 50 Go. Les séquences de
-          mouvement couvrent le besoin courant — retrouver ce qui s’est passé — pour une fraction de
+          mouvement couvrent le besoin courant, retrouver ce qui s’est passé, pour une fraction de
           cette place.
         </p>
         <p>
