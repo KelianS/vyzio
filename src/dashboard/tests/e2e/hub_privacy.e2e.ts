@@ -73,10 +73,34 @@ test.describe('HubView privacy', () => {
     await page.getByRole('link', { name: 'La caméra ne s’est pas tournée' }).click()
 
     await expect(page).toHaveURL(/\/settings\/cameras\/camera-1\/privacy$/)
-    await expect(page.getByText('Caméra non tournée, enregistrement désactivé')).toBeVisible()
     // The page's own loading state is a status too: read the one that explains the miss.
     const why = page.getByRole('status').filter({ hasText: 'ne s’est pas tournée' })
-    await expect(why).toContainText('ne s’est pas tournée vers sa position Parking')
-    await expect(why).toContainText('ONVIF Ptz: no answer')
+    await expect(why.getByText('La caméra ne s’est pas tournée', { exact: true })).toBeVisible()
+    await expect(why.getByRole('button', { name: 'Réessayer' })).toBeVisible()
+    await expect(why.getByText('Enregistrement désactivé')).toBeVisible()
+    await why.getByText('Détails techniques').click()
+    await expect(why.getByText(/ne s’est pas tournée vers sa position Parking/)).toBeVisible()
+    await expect(why.getByText(/ONVIF Ptz: no answer/)).toBeVisible()
+  })
+
+  test('CameraPrivacyView_ShouldClearTheMiss_WhenTheUserRetriesAndTheCameraFollows', async ({
+    page,
+  }) => {
+    const interrupted = makeFakeCamera({
+      id: 'camera-1',
+      displayName: 'Salon',
+      privacyStrategy: 'ptz_parking',
+      ptzSupported: true,
+      privacyMiss: 'unconfirmed',
+      privacyMissDetail: 'privacy off, ptz_parking: interrupted before the camera answered',
+    })
+    await installFakeBackend(page, createFakeBackendState({ cameras: [interrupted] }))
+
+    await page.goto('/settings/cameras/camera-1/privacy')
+    await expect(page.getByText('La caméra n’a peut-être pas repris sa position')).toBeVisible()
+    await page.getByRole('button', { name: 'Réessayer' }).click()
+
+    await expect(page.getByText('La caméra a suivi.')).toBeVisible()
+    await expect(page.getByText('La caméra n’a peut-être pas repris sa position')).toHaveCount(0)
   })
 })

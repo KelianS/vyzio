@@ -33,6 +33,11 @@ export function cameraPrivacyReducer(
     case 'SAVE_FINISHED':
       return { ...state, saving: false }
 
+    case 'RETRY_STARTED':
+      return { ...state, retrying: true }
+    case 'RETRY_FINISHED':
+      return { ...state, retrying: false }
+
     // The rules are the house's, not the camera's: a re-read keeps the count shown.
     case 'RULES_STARTED':
       return { ...state, rulesError: null }

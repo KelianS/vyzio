@@ -38,6 +38,8 @@ export interface CameraRepository {
   applyConfiguration(): Promise<CameraConfigurationApplyResult>
   delete(cameraId: string): Promise<{ deleted: boolean; message: string; configPath: string }>
   togglePrivacyMode(cameraId: string, active: boolean): Promise<Camera>
+  /** Asks the camera again for its current privacy state; the answer replaces the last miss. */
+  retryPrivacy(cameraId: string): Promise<Camera>
   batchTogglePrivacyMode(cameraIds: string[], active: boolean): Promise<Camera[]>
   setPrivacyStrategy(cameraId: string, strategy: string): Promise<Camera>
   ptzStartMove(cameraId: string, direction: string, speed: number): Promise<void>

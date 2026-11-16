@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ScheduleRuleKind, type ScheduleRule } from '../../domain/entities/schedule_rule.entity'
-import { appliesSentence, endsNextDay, rulesTargeting } from './schedule_types'
+import { endsNextDay, rangeCount, rulesTargeting } from './schedule_types'
 
 function makeRule(overrides: Partial<ScheduleRule> = {}): ScheduleRule {
   return {
@@ -54,16 +54,23 @@ describe('rulesTargeting', () => {
   })
 })
 
-describe('appliesSentence', () => {
+describe('rangeCount', () => {
   it.each([
-    [0, 'Aucune plage « Caméras coupées » ne s’applique'],
-    [1, '1 plage « Caméras coupées » s’applique'],
-    [3, '3 plages « Caméras coupées » s’appliquent'],
-  ])('appliesSentence_ShouldNameTheTypeAndAgreeWithTheCount_WhenCounting %i', (count, expected) => {
+    [1, '1 plage'],
+    [3, '3 plages'],
+  ])('rangeCount_ShouldAgreeWithTheCount_WhenSomeRangesApply (%i)', (count, expected) => {
     // Act
-    const sentence = appliesSentence(ScheduleRuleKind.Privacy, count)
+    const label = rangeCount(count)
 
     // Assert
-    expect(sentence).toBe(expected)
+    expect(label).toBe(expected)
+  })
+
+  it('rangeCount_ShouldSayNothing_WhenNoRangeApplies', () => {
+    // Act
+    const label = rangeCount(0)
+
+    // Assert
+    expect(label).toBeNull()
   })
 })

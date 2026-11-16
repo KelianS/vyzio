@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { PrivacyStrategy } from '../../domain/entities/camera.entity'
+import { PrivacyMiss, PrivacyStrategy } from '../../domain/entities/camera.entity'
 import { ScheduleRuleKind, type ScheduleRule } from '../../domain/entities/schedule_rule.entity'
 import { makeCamera } from '../../testing/camera_fixture'
 import { failure, fakeNetwork, ok } from '../../testing/fake_network'
@@ -43,13 +43,13 @@ describe('CameraPrivacyView', () => {
     renderScreen(<CameraPrivacyView />, { ...PRIVACY_TAB, outletContext: ptzCamera })
 
     // Assert
-    expect(
-      await screen.findByText('Aucune plage « Caméras coupées » ne s’applique'),
-    ).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: 'Planification' })).toBeInTheDocument()
     expect(screen.getByRole('combobox', { name: 'En mode vie privée' })).toHaveTextContent(
       'Arrêt logiciel',
     )
-    expect(screen.getByText(/Rien n’est demandé à la caméra/)).toBeVisible()
+    expect(
+      screen.getByText('Vyzio s’arrête, la caméra filme toujours, visible sur votre réseau local.'),
+    ).toBeVisible()
     expect(screen.queryByText(/Parking/)).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Début')).not.toBeInTheDocument()
   })
@@ -72,8 +72,8 @@ describe('CameraPrivacyView', () => {
     renderScreen(<CameraPrivacyView />, PRIVACY_TAB)
 
     // Assert
-    expect(await screen.findByText('1 plage « Caméras coupées » s’applique')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Voir la planification' })).toHaveAttribute(
+    expect(await screen.findByRole('link', { name: 'Planification 1 plage' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /^Planification/ })).toHaveAttribute(
       'href',
       '/settings/schedule',
     )
@@ -103,7 +103,7 @@ describe('CameraPrivacyView', () => {
     renderScreen(<CameraPrivacyView />, PRIVACY_TAB)
 
     // Assert
-    expect(await screen.findByText('1 plage « Caméras coupées » s’applique')).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: 'Planification 1 plage' })).toBeInTheDocument()
     expect(screen.queryByText(/Surveillance reprise/)).not.toBeInTheDocument()
   })
 
@@ -117,9 +117,7 @@ describe('CameraPrivacyView', () => {
     // Assert
     expect(await screen.findByText('La planification n’a pas pu être lue.')).toBeInTheDocument()
     expect(screen.getByRole('alert')).toHaveTextContent('GET /api/schedules · 500')
-    expect(
-      screen.queryByText('Aucune plage « Caméras coupées » ne s’applique'),
-    ).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /Planification/ })).not.toBeInTheDocument()
   })
 
   it('onRetryRules_ShouldCountTheRanges_WhenTheSecondReadSucceeds', async () => {
@@ -133,7 +131,7 @@ describe('CameraPrivacyView', () => {
     await userEvent.click(retry)
 
     // Assert
-    expect(await screen.findByText('2 plages « Caméras coupées » s’appliquent')).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: 'Planification 2 plages' })).toBeInTheDocument()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
@@ -141,7 +139,7 @@ describe('CameraPrivacyView', () => {
     // Arrange
     fakeNetwork({ [RULES]: ok([]), [PRESETS]: ok({ presets: [], calibrated: true }) })
     renderScreen(<CameraPrivacyView />, { ...PRIVACY_TAB, outletContext: ptzCamera })
-    await screen.findByText('Aucune plage « Caméras coupées » ne s’applique')
+    await screen.findByRole('link', { name: 'Planification' })
     screen.getByRole('combobox', { name: 'En mode vie privée' }).focus()
 
     // Act
@@ -208,6 +206,85 @@ describe('CameraPrivacyView', () => {
     )
   })
 
+  it('onRetryPrivacy_ShouldAskTheCameraAgainAndSaySoWhenItFollows_WhenTheRequestWasInterrupted', async () => {
+    // Arrange
+    const missed = makeCamera({
+      privacyModeActive: true,
+      privacyStrategy: PrivacyStrategy.PtzParking,
+      privacyMiss: PrivacyMiss.Unconfirmed,
+    })
+    const followed = { ...missed, privacyMiss: null }
+    const network = fakeNetwork({
+      [RULES]: ok([]),
+      'POST /api/cameras/camera-1/privacy/retry': ok(followed),
+      'GET /api/cameras': ok([followed]),
+    })
+    renderScreen(<CameraPrivacyView />, { ...PRIVACY_TAB, outletContext: missed })
+    await screen.findByText('La caméra ne s’est peut-être pas tournée')
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Réessayer' }))
+
+    // Assert
+    expect(await screen.findByText('La caméra a suivi.')).toBeInTheDocument()
+    expect(network.sent).toContainEqual(
+      expect.objectContaining({ route: 'POST /api/cameras/camera-1/privacy/retry' }),
+    )
+  })
+
+  it('onRetryPrivacy_ShouldSayTheNewMissAndItsDetail_WhenTheCameraStillDoesNotFollow', async () => {
+    // Arrange
+    const missed = makeCamera({
+      privacyModeActive: true,
+      privacyStrategy: PrivacyStrategy.PtzParking,
+      privacyMiss: PrivacyMiss.Unconfirmed,
+    })
+    const failed = {
+      ...missed,
+      privacyMiss: PrivacyMiss.CameraFailed,
+      privacyMissDetail:
+        'privacy on, ptz_parking: CameraUnreachableException: ONVIF Ptz: no answer',
+    }
+    fakeNetwork({
+      [RULES]: ok([]),
+      'POST /api/cameras/camera-1/privacy/retry': ok(failed),
+      'GET /api/cameras': ok([failed]),
+    })
+    renderScreen(<CameraPrivacyView />, { ...PRIVACY_TAB, outletContext: missed })
+    await screen.findByText('La caméra ne s’est peut-être pas tournée')
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Réessayer' }))
+
+    // Assert
+    expect(await screen.findByText('La caméra ne s’est pas tournée.')).toBeInTheDocument()
+    expect(screen.getAllByText(/ONVIF Ptz: no answer/).length).toBeGreaterThan(0)
+  })
+
+  it('onRetryPrivacy_ShouldSayTheRequestFailed_WhenTheHubRefusesIt', async () => {
+    // Arrange
+    const missed = makeCamera({
+      privacyModeActive: true,
+      privacyStrategy: PrivacyStrategy.PtzParking,
+      privacyMiss: PrivacyMiss.CameraFailed,
+    })
+    fakeNetwork({
+      [RULES]: ok([]),
+      'POST /api/cameras/camera-1/privacy/retry': failure(500),
+    })
+    renderScreen(<CameraPrivacyView />, { ...PRIVACY_TAB, outletContext: missed })
+    await screen.findByText('La caméra ne s’est pas tournée')
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Réessayer' }))
+
+    // Assert
+    expect(
+      await screen.findByText(/POST \/api\/cameras\/camera-1\/privacy\/retry · 500/),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Réessayer' })).toBeEnabled()
+  })
+
   it('onSaveStrategy_ShouldSaveTheChosenMode_WhenTheUserSaves', async () => {
     // Arrange
     const cutCamera = makeCamera({ verifiedCapabilities: ['hardware_privacy'] })
@@ -217,7 +294,7 @@ describe('CameraPrivacyView', () => {
       'GET /api/cameras': ok([cutCamera]),
     })
     renderScreen(<CameraPrivacyView />, { ...PRIVACY_TAB, outletContext: cutCamera })
-    await screen.findByText('Aucune plage « Caméras coupées » ne s’applique')
+    await screen.findByRole('link', { name: 'Planification' })
     // The list opens on the current mode; the next choosable one skips the greyed Parking.
     screen.getByRole('combobox', { name: 'En mode vie privée' }).focus()
     await userEvent.keyboard('{ArrowDown}{ArrowDown}{Enter}')
@@ -253,7 +330,7 @@ describe('CameraPrivacyView', () => {
     // Assert
     expect(
       await screen.findByText(
-        /^Ses positions se règlent une fois la caméra en surveillance, et son flux vidéo n’a pas encore fonctionné : voir « Connexion »/,
+        /^Positions réglables une fois son flux vidéo reçu : voir « Connexion »/,
       ),
     ).toBeInTheDocument()
   })
@@ -270,7 +347,7 @@ describe('CameraPrivacyView', () => {
 
     // Assert
     expect(
-      await screen.findByText(/^Ses positions se règlent .* appliquez les changements, en haut/),
+      await screen.findByText(/^Positions réglables une fois les changements appliqués, en haut/),
     ).toBeInTheDocument()
     expect(screen.queryByText(/Enregistrez d’abord ses positions/)).not.toBeInTheDocument()
     expect(
@@ -285,7 +362,7 @@ describe('CameraPrivacyView', () => {
       ...PRIVACY_TAB,
       outletContext: { ...ptzCamera, validationState: 'draft' },
     })
-    await screen.findByText('Aucune plage « Caméras coupées » ne s’applique')
+    await screen.findByRole('link', { name: 'Planification' })
     screen.getByRole('combobox', { name: 'En mode vie privée' }).focus()
 
     // Act
@@ -294,9 +371,7 @@ describe('CameraPrivacyView', () => {
     // Assert
     const parking = await screen.findByRole('option', { name: /Orientation à l’écart/ })
     expect(parking).toHaveAttribute('aria-disabled', 'true')
-    expect(parking).toHaveTextContent(
-      /une fois la caméra en surveillance : appliquez les changements/,
-    )
+    expect(parking).toHaveTextContent(/une fois les changements appliqués/)
   })
 
   it('render_ShouldNotPromiseThePositions_WhenOrientationIsNotVerifiedYet', async () => {
@@ -314,7 +389,7 @@ describe('CameraPrivacyView', () => {
     })
 
     // Assert
-    await screen.findByText('Aucune plage « Caméras coupées » ne s’applique')
-    expect(screen.queryByText(/^Ses positions se règlent/)).not.toBeInTheDocument()
+    await screen.findByRole('link', { name: 'Planification' })
+    expect(screen.queryByText(/^Positions réglables/)).not.toBeInTheDocument()
   })
 })

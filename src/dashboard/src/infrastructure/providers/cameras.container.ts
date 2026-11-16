@@ -43,6 +43,7 @@ import { SaveCameraDetectionConfig } from '../../domain/usecases/save_camera_det
 import { SetCameraImageSettings } from '../../domain/usecases/set_camera_image_settings.use_case'
 import { SetPrivacyStrategy } from '../../domain/usecases/set_privacy_strategy.use_case'
 import { ToggleCameraPrivacyMode } from '../../domain/usecases/toggle_camera_privacy_mode.use_case'
+import { RetryCameraPrivacy } from '../../domain/usecases/retry_camera_privacy.use_case'
 import { UpdateCamera } from '../../domain/usecases/update_camera.use_case'
 import { VerifyCamera } from '../../domain/usecases/verify_camera.use_case'
 import type { CameraRepository } from '../../domain/ports/camera.port'
@@ -64,6 +65,7 @@ export interface CamerasContainer {
   restartSurveillance: RestartSurveillance
   deleteCamera: DeleteCamera
   toggleCameraPrivacyMode: ToggleCameraPrivacyMode
+  retryCameraPrivacy: RetryCameraPrivacy
   batchToggleCameraPrivacyMode: BatchToggleCameraPrivacyMode
   setPrivacyStrategy: SetPrivacyStrategy
   getCameraCapabilities: GetCameraCapabilities
@@ -124,6 +126,7 @@ export function makeCamerasContainer(
     restartSurveillance: new RestartSurveillance(cameraRepository),
     deleteCamera: new DeleteCamera(cameraRepository),
     toggleCameraPrivacyMode: new ToggleCameraPrivacyMode(cameraRepository),
+    retryCameraPrivacy: new RetryCameraPrivacy(cameraRepository),
     batchToggleCameraPrivacyMode: new BatchToggleCameraPrivacyMode(cameraRepository),
     setPrivacyStrategy: new SetPrivacyStrategy(cameraRepository),
     getCameraCapabilities: new GetCameraCapabilities(cameraRepository),

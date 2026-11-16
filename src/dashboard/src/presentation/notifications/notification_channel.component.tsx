@@ -14,6 +14,7 @@ import { ConfirmModal } from '../../common/components/confirm_modal'
 import { DeleteAction } from '../../common/components/delete_action'
 import { ReadFailure } from '../../common/components/error_message'
 import { ScheduleCountLine } from '../../common/schedule/schedule_count_line'
+import { GroupedList } from '../../common/components/grouped_list'
 import { ScheduleRuleKind } from '../../domain/entities/schedule_rule.entity'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
@@ -350,13 +351,15 @@ function ChannelForm({
             )}
             <SettingsList settings={when} />
             {/* Outside the list: a count and a link are not a setting (ADR-15). */}
-            <ScheduleCountLine
-              rules={uido.rules}
-              kind={ScheduleRuleKind.MuteNotifications}
-              targetId={channel}
-              error={uido.rulesError}
-              onRetry={presenter.onRetryRules}
-            />
+            <GroupedList>
+              <ScheduleCountLine
+                rules={uido.rules}
+                kind={ScheduleRuleKind.MuteNotifications}
+                targetId={channel}
+                error={uido.rulesError}
+                onRetry={presenter.onRetryRules}
+              />
+            </GroupedList>
 
             <HelpPanel title="Pourquoi une notification n’est-elle pas partie ?">
               <p>Une détection n’est envoyée sur ce canal que si tout est vrai à la fois :</p>

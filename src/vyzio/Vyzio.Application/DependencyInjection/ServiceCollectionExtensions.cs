@@ -61,6 +61,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<PrivacyResumes>();
         services.AddScoped<ToggleCameraPrivacyModeUseCase>();
         services.AddScoped<BatchToggleCameraPrivacyModeUseCase>();
+        services.AddScoped<RetryCameraPrivacyAnswerUseCase>();
         services.AddScoped<ScheduleRuleValidator>();
         services.AddScoped<ListScheduleRulesUseCase>();
         services.AddScoped<GetScheduleRuleUseCase>();

@@ -90,8 +90,8 @@ describe('NotificationChannelView', () => {
     renderScreen(<NotificationChannelView />, channelAt('telegram'))
 
     // Assert
-    expect(await screen.findByText('2 plages « Silence » s’appliquent')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Voir la planification' })).toHaveAttribute(
+    expect(await screen.findByRole('link', { name: 'Planification 2 plages' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /^Planification/ })).toHaveAttribute(
       'href',
       '/settings/schedule',
     )
@@ -106,7 +106,7 @@ describe('NotificationChannelView', () => {
     renderScreen(<NotificationChannelView />, channelAt('telegram'))
 
     // Assert
-    expect(await screen.findByText('Aucune plage « Silence » ne s’applique')).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: 'Planification' })).toBeInTheDocument()
     expect(screen.queryByRole('switch', { name: /Notifications Telegram/ })).not.toBeInTheDocument()
     expect(screen.queryByText(/En pause/)).not.toBeInTheDocument()
   })
@@ -120,7 +120,7 @@ describe('NotificationChannelView', () => {
 
     // Assert
     expect(await screen.findByText('La planification n’a pas pu être lue.')).toBeInTheDocument()
-    expect(screen.queryByText('Aucune plage « Silence » ne s’applique')).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /Planification/ })).not.toBeInTheDocument()
   })
 
   it('onRetryRules_ShouldCountTheRanges_WhenTheSecondReadSucceeds', async () => {
@@ -134,7 +134,7 @@ describe('NotificationChannelView', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Réessayer' }))
 
     // Assert
-    expect(await screen.findByText('Aucune plage « Silence » ne s’applique')).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: 'Planification' })).toBeInTheDocument()
   })
 
   it('NotificationChannelView_ShouldSayTheChannelIsMissing_WhenTheAddressNamesNone', async () => {

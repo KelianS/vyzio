@@ -75,9 +75,8 @@ export function rulesTargeting(rules: readonly ScheduleRule[], kind: ScheduleRul
   return rules.filter((rule) => rule.kind === kind && rule.targetIds.includes(id)).length
 }
 
-/** What a camera or a channel says about the ranges of one type that apply to it. */
-export function appliesSentence(kind: ScheduleRuleKind, count: number): string {
-  const name = `« ${SCHEDULE_TYPES[kind].name} »`
-  if (count === 0) return `Aucune plage ${name} ne s’applique`
-  return count === 1 ? `1 plage ${name} s’applique` : `${count} plages ${name} s’appliquent`
+/** How many ranges apply, said only when some do: none is the ordinary case (UI-31). */
+export function rangeCount(count: number): string | null {
+  if (count === 0) return null
+  return count === 1 ? '1 plage' : `${count} plages`
 }
