@@ -262,6 +262,25 @@ test.describe('Touch size', () => {
     expect(await heightOf(page.getByRole('img', { name: 'Valeur de l’ensemble' }).first())).toBe(44)
   })
 
+  test('RecommendationRevert_ShouldReachAFingerBesideItsField_WhenADurationLeavesItsRecommendation', async ({
+    page,
+  }) => {
+    await page.setViewportSize(PHONE)
+    await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
+    await page.goto('/settings/retention')
+    const motion = page.getByRole('spinbutton', { name: 'Séquences de mouvement' })
+    await motion.fill('10')
+    await motion.blur()
+
+    const revert = page.getByRole('button', { name: 'Revenir à la valeur recommandée (7 jours)' })
+    expect(await heightOf(revert)).toBe(44)
+    expect(await reachesAFinger(revert)).toBe(true)
+    const fieldBox = (await motion.locator('..').boundingBox())!
+    const revertBox = (await revert.boundingBox())!
+    expect(revertBox.x).toBeGreaterThanOrEqual(fieldBox.x + fieldBox.width - 1)
+    expect(revertBox.y).toBeLessThan(fieldBox.y + fieldBox.height)
+  })
+
   test('Controls_ShouldKeepTheirSize_WhenTheScreenIsWide', async ({ page }) => {
     await page.setViewportSize(DESKTOP)
     await installFakeBackend(page, channelState())
