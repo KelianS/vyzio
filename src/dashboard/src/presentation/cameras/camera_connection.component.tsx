@@ -245,8 +245,7 @@ export function CameraConnectionView() {
         <AdvancedFold lede="Comment Vyzio joint cette caméra.">
           <SettingsList settings={access} />
 
-          <div className="mt-6 flex flex-col gap-3">
-            <h3 className="font-medium">Protocoles</h3>
+          <SettingsSection title="Protocoles">
             <ProtocolBoxes
               protocols={uido.protocols}
               loading={uido.protocolsLoading}
@@ -289,7 +288,7 @@ export function CameraConnectionView() {
                 />
               </div>
             )}
-          </div>
+          </SettingsSection>
 
           <HelpPanel title="Un protocole ne répond pas, que vérifier ?">
             <p>

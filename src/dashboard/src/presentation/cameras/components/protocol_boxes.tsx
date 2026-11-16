@@ -196,7 +196,7 @@ function ProtocolBox({
       {failure && <p className="mt-1 text-body text-destructive">{failure}</p>}
       {entry.lastError && <DiagnosticLine text={scrubSecrets(entry.lastError)} />}
       <div className="mt-2">
-        <SettingsList settings={settings} />
+        <SettingsList settings={settings} nested />
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <SecondaryButton
