@@ -86,9 +86,11 @@ test.describe('House calendar', () => {
     await page.getByLabel('À', { exact: true }).fill('22:00')
     await page.getByRole('button', { name: 'Enregistrer' }).click()
 
-    const alert = page.getByRole('alert')
-    await expect(alert).toContainText('choisissez deux heures différentes')
-    await expect(alert).toContainText('schedule_empty_range')
+    // The refusal answers the user's save: a toast, never a paragraph in the page.
+    const toast = page.getByRole('region', { name: 'Notifications' })
+    await expect(toast).toContainText('choisissez deux heures différentes')
+    await expect(toast).toContainText('schedule_empty_range')
+    await expect(page.getByRole('alert')).toHaveCount(0)
     await expect(page).toHaveURL(/\/settings\/schedule\/add$/)
   })
 
