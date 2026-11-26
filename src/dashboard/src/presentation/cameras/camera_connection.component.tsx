@@ -151,7 +151,7 @@ export function CameraConnectionView() {
           />
         </SettingsSection>
 
-        <AdvancedFold>
+        <AdvancedFold lede="Comment Vyzio joint cette caméra.">
           <SettingsList settings={access} />
 
           <div className="flex flex-col gap-4">
