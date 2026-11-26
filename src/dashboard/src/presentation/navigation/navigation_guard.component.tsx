@@ -8,6 +8,7 @@ import { buildRestartSurveillancePresenter } from '../surveillance/restart_surve
 import { useRestartState } from '../surveillance/use_restart_state'
 import { isLiveViewPath } from '../live_view/live_view.route'
 import { isSettingsPath } from '../settings/settings.rubrics'
+import type { SettingsExitSteps } from './use_settings_exit'
 
 /**
  * The only navigation guard in the application.
@@ -17,7 +18,7 @@ import { isSettingsPath } from '../settings/settings.rubrics'
  * Both questions are therefore asked here, in the order they come up - which also
  * guarantees they never stack (ADR-15).
  */
-export function NavigationGuard() {
+export function NavigationGuard({ exit }: { exit?: SettingsExitSteps } = {}) {
   const unsaved = useRootStore((state) => state.unsavedChanges)
   const { cameras: camerasContainer, hub: hubContainer } = useAppContainer()
   const presenter = usePresenter(buildRestartSurveillancePresenter, {
@@ -29,10 +30,14 @@ export function NavigationGuard() {
 
   const blocker = useBlocker(({ currentLocation, nextLocation }) => {
     if (currentLocation.pathname === nextLocation.pathname) return false
+    // Fermer asked everything over the page it was pressed on, before its pop (UI-15, UI-29).
+    if (exit?.replacing()) return false
     // Read at the moment of leaving: a page that just saved and leaves has not re-rendered the guard yet.
     if (useRootStore.getState().unsavedChanges) return true
     // Driving the camera from its page is a detour, not leaving the settings (LIVE-19).
-    const leaving = !isSettingsPath(nextLocation.pathname) && !isLiveViewPath(nextLocation.pathname)
+    const leaving =
+      exit?.popping() === true ||
+      (!isSettingsPath(nextLocation.pathname) && !isLiveViewPath(nextLocation.pathname))
     return pending && isSettingsPath(currentLocation.pathname) && leaving
   })
 
@@ -40,6 +45,7 @@ export function NavigationGuard() {
   // leave a question with no object on screen.
   if (blocker.state === 'blocked' && !unsaved && !pending) {
     blocker.reset?.()
+    exit?.forget()
     return null
   }
 
@@ -56,7 +62,10 @@ export function NavigationGuard() {
         cancelLabel="Rester sur la page"
         tone="warn"
         onConfirm={() => blocker.proceed?.()}
-        onCancel={() => blocker.reset?.()}
+        onCancel={() => {
+          blocker.reset?.()
+          exit?.forget()
+        }}
       />
     )
   }

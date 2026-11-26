@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router'
 import { Send } from 'lucide-react'
 import { SettingsPage, SettingsSection } from '../../common/settings/settings_page'
 import { SettingsList } from '../../common/settings/settings_list'
-import { AdvancedPage, AdvancedRow } from '../../common/settings/advanced'
+import { AdvancedFold } from '../../common/settings/advanced'
 import { HelpNotes, HelpQuestion } from '../../common/components/help_notes'
 import { SettingsDraftBar } from '../../common/settings/settings_draft_bar'
 import { useSettingsDraft } from '../../common/settings/use_settings_draft'
@@ -61,8 +61,8 @@ const MESSAGE_FIELD_OPTIONS = [
 
 const TRIGGERS_LABEL = 'Ce qui déclenche une notification'
 
-/** Second level of the Notifications rubric: one channel, whichever it is (ADR-14, UI-25), or its Avancé page. */
-export function NotificationChannelView({ advanced = false }: { advanced?: boolean }) {
+/** Second level of the Notifications rubric: one channel, whichever it is (ADR-14, UI-25). */
+export function NotificationChannelView() {
   const { channel: slug } = useParams()
   const channel = parseNotificationChannelName(slug)
   const { notifications: container, schedules: schedulesContainer } = useAppContainer()
@@ -127,11 +127,7 @@ export function NotificationChannelView({ advanced = false }: { advanced?: boole
     )
   }
 
-  return advanced ? (
-    <ChannelAdvancedForm key={channel} config={uido.config} uido={uido} presenter={presenter} />
-  ) : (
-    <ChannelForm key={channel} config={uido.config} uido={uido} presenter={presenter} />
-  )
+  return <ChannelForm key={channel} config={uido.config} uido={uido} presenter={presenter} />
 }
 
 function ChannelForm({
@@ -233,6 +229,33 @@ function ChannelForm({
     })
   }
 
+  // The channel's rare part: what its message carries (UI-09).
+  const message: SettingDeclaration[] = [
+    {
+      id: 'channel-media',
+      label: 'Ce qui est envoyé',
+      // A channel that cannot carry video does not offer it: the capability decides (ADR-14).
+      nature: {
+        kind: 'choice',
+        options: MEDIA_MODE_OPTIONS.filter(
+          (option) => option.value !== 'clip_or_photo' || config.capabilities.video,
+        ),
+      },
+      help: config.capabilities.video
+        ? 'La vidéo arrive quelques secondes après la photo, le temps que l’enregistrement se termine. Si elle n’est pas prête, la photo part seule ; si la photo manque aussi, le message part en texte.'
+        : undefined,
+      value: draft.values.mediaMode,
+      onChange: (value) => draft.set('mediaMode', value as MediaMode),
+    },
+    {
+      id: 'channel-fields',
+      label: 'Détails du message',
+      nature: { kind: 'multiChoice', options: [...MESSAGE_FIELD_OPTIONS] },
+      value: draft.values.messageFields,
+      onChange: (value) => draft.set('messageFields', value as string[]),
+    },
+  ]
+
   const testable = config.isConfigured && !draft.dirty
 
   return (
@@ -330,7 +353,43 @@ function ChannelForm({
           </SettingsSection>
 
           {config.isConfigured && (
-            <AdvancedRow to={`/settings/notifications/${channel}/advanced`} />
+            <AdvancedFold>
+              <SettingsSection title="Contenu du message">
+                <SettingsList settings={message} />
+              </SettingsSection>
+
+              <SettingsSection title="Derniers envois">
+                {uido.logError ? (
+                  <ReadFailure
+                    error={uido.logError}
+                    onRetry={() => presenter.onRetryLog(channel)}
+                  />
+                ) : (
+                  <NotificationLog
+                    entries={uido.log}
+                    loading={uido.logLoading}
+                    onRefresh={() => presenter.onRefreshLog(channel)}
+                  />
+                )}
+              </SettingsSection>
+
+              {config.acceptsCommands && (
+                <SettingsSection title="Dernières commandes">
+                  {uido.journalError ? (
+                    <ReadFailure
+                      error={uido.journalError}
+                      onRetry={() => presenter.onRetryJournal(channel)}
+                    />
+                  ) : (
+                    <CommandJournal
+                      entries={uido.journal}
+                      loading={uido.journalLoading}
+                      onRefresh={() => presenter.onRefreshJournal(channel)}
+                    />
+                  )}
+                </SettingsSection>
+              )}
+            </AdvancedFold>
           )}
 
           {config.isConfigured && (
@@ -407,104 +466,6 @@ function ChannelForm({
           onCancel={presenter.onCancelEnable}
         />
       )}
-    </>
-  )
-}
-
-/** The channel's rare part: what its message carries, and what was sent or asked (UI-09). */
-function ChannelAdvancedForm({
-  config,
-  uido,
-  presenter,
-}: {
-  config: NotificationChannelConfig
-  uido: NotificationChannelUido
-  presenter: ReturnType<typeof buildNotificationChannelPresenter>
-}) {
-  const { channel, acceptsCommands } = config
-
-  useEffect(() => {
-    presenter.onOpen(channel, acceptsCommands)
-  }, [presenter, channel, acceptsCommands])
-
-  const draft = useSettingsDraft<NotificationValues>({
-    saved: config.isConfigured ? toNotificationValues(config) : DEFAULT_NOTIFICATION_VALUES,
-    labels: notificationDraftLabels(config.channel),
-  })
-
-  useUnsavedChanges(draft.dirty)
-
-  const message: SettingDeclaration[] = [
-    {
-      id: 'channel-media',
-      label: 'Ce qui est envoyé',
-      // A channel that cannot carry video does not offer it: the capability decides (ADR-14).
-      nature: {
-        kind: 'choice',
-        options: MEDIA_MODE_OPTIONS.filter(
-          (option) => option.value !== 'clip_or_photo' || config.capabilities.video,
-        ),
-      },
-      help: config.capabilities.video
-        ? 'La vidéo arrive quelques secondes après la photo, le temps que l’enregistrement se termine. Si elle n’est pas prête, la photo part seule ; si la photo manque aussi, le message part en texte.'
-        : undefined,
-      value: draft.values.mediaMode,
-      onChange: (value) => draft.set('mediaMode', value as MediaMode),
-    },
-    {
-      id: 'channel-fields',
-      label: 'Détails du message',
-      nature: { kind: 'multiChoice', options: [...MESSAGE_FIELD_OPTIONS] },
-      value: draft.values.messageFields,
-      onChange: (value) => draft.set('messageFields', value as string[]),
-    },
-  ]
-
-  return (
-    <>
-      <AdvancedPage>
-        <SettingsSection title="Contenu du message">
-          <SettingsList settings={message} />
-        </SettingsSection>
-
-        <SettingsSection title="Derniers envois">
-          {uido.logError ? (
-            <ReadFailure error={uido.logError} onRetry={() => presenter.onRetryLog(channel)} />
-          ) : (
-            <NotificationLog
-              entries={uido.log}
-              loading={uido.logLoading}
-              onRefresh={() => presenter.onRefreshLog(channel)}
-            />
-          )}
-        </SettingsSection>
-
-        {config.acceptsCommands && (
-          <SettingsSection title="Dernières commandes">
-            {uido.journalError ? (
-              <ReadFailure
-                error={uido.journalError}
-                onRetry={() => presenter.onRetryJournal(channel)}
-              />
-            ) : (
-              <CommandJournal
-                entries={uido.journal}
-                loading={uido.journalLoading}
-                onRefresh={() => presenter.onRefreshJournal(channel)}
-              />
-            )}
-          </SettingsSection>
-        )}
-      </AdvancedPage>
-
-      <SettingsDraftBar
-        changes={draft.changes}
-        saving={uido.saving}
-        onSave={async () => {
-          if (await presenter.onSave(config, draft.values)) draft.accept()
-        }}
-        onDiscard={draft.discard}
-      />
     </>
   )
 }

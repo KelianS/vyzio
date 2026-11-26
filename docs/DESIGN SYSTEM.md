@@ -10,9 +10,9 @@ reproduced verbatim.
 
 The Vyzio Hub must feel calm, readable and domestic, never like an expert NVR tool: a dark, quiet
 interface where the cameras come first, their state reads at a glance from one mark, each view has
-one main action, and everything else stays neutral. Rare settings sit in depth, out of the everyday
-path and never naming the engine underneath (product principle 2). Less is the default: a word, a
-subtitle or a frame is added only when it carries something the user acts on.
+one main action, and everything else stays neutral. Rare settings fold in place under `Avancé`,
+out of the everyday path and never naming the engine underneath (product principle 2). Less is the
+default: a word, a subtitle or a frame is added only when it carries something the user acts on.
 
 ## Palette
 
@@ -156,6 +156,9 @@ is no navigation bar** ([SPECS](SPECS.md) UI-29).
   size. A page about
   one thing (a camera) adds the thing's status mark beside its title, and may carry one icon button
   on the right for that thing (a camera's gear, the filter of `Détections`).
+- **A settings page also carries `Fermer`** (UI-29): a cross at the far right, drawn as the back
+  button, after the page's own icon button. It is the settings' way out, not an action on the page's
+  object, and goes through the same questions as leaving them by the back button (UI-15).
 - **It never slides with the pages.** When the page changes, only its contents move, vertically: the
   old ones rise out as the new ones come up from below.
 - **The alert slot** (UI-30): the bar grows downwards, its height springing to make room for an
@@ -212,7 +215,7 @@ Two kinds of action, no intermediate style:
   icon says the state; `Silence` turns amber while it holds. A toggle whose start needs a
   duration opens a sheet (§ Sheets); its end is one tap on the toggle.
 - **A destructive action is quiet until confirmed**: a coral-tinted pill with coral ink, last on its
-  page, after the `Avancé` row, alone on its line; solid only on its confirmation's button.
+  page, after the `Avancé` fold, alone on its line; solid only on its confirmation's button.
 - **Text**: the way out of a sheet or a dialog (`Annuler`), a label with no fill.
 
 Buttons in a row stand `8px` apart and wrap. A footer that settles a dialog aligns its actions to the
@@ -297,8 +300,8 @@ the reason.
 
 ### Cards
 
-A thing the user checks or sets, opened from its row (a capability) or its page (a channel, a
-protocol), reads as **a card sharing one anatomy**; on a page of its own, the title and its mark sit
+A thing the user checks or sets, opened from its row (a capability, a protocol) or its page (a
+channel), reads as **a card sharing one anatomy**; on a page of its own, the title and its mark sit
 in the bar:
 **title** with its mark · _state line_ · _settings_ · **actions**.
 
@@ -313,18 +316,19 @@ takes its place, naming as a link the page where it is fixed.
 
 ### Folds
 
-| Fold                 | Where                                                                                                                   | Holds                                         |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
-| `Options`            | Inside a card, closed                                                                                                   | That card's settings                          |
-| `Avancé`             | A row ending the page's settings, opening its own page titled `Avancé`, or straight the one screen that page would hold | Rare settings: a position, not a mode (UI-09) |
-| Help question        | Last on the page, closed                                                                                                | Task help (§ Help)                            |
-| `Détails techniques` | The end of an error or a card, closed                                                                                   | Figures for support (§ Technical details)     |
+| Fold                 | Where                                        | Holds                                                                          |
+| -------------------- | -------------------------------------------- | ------------------------------------------------------------------------------ |
+| `Options`            | Inside a card, closed                        | That card's settings                                                           |
+| `Avancé`             | Ending the page's settings, closed, in place | Rare settings: a position, not a mode (UI-09); a log of what was sent or asked |
+| Help question        | Last on the page, closed                     | Task help (§ Help)                                                             |
+| `Détails techniques` | The end of an error or a card, closed        | Figures for support (§ Technical details)                                      |
 
 None stands in for another: no setting in help or technical details, no help in `Avancé`.
 
-**A settings page reads in one order**: its settings, the `Avancé` row, the removal, then the help
-questions. The `Avancé` page carries the bar's back button to the page it left, never the tabs of
-the thing it belongs to.
+**A settings page reads in one order**: its settings, the `Avancé` fold, the removal, then the help
+questions. `Avancé` opens where it stands, never one more page except where UI-25 says otherwise:
+what it holds that is a thing of its own (a protocol) reads as a card in it. A fold may open on one
+quiet line saying what it holds (a lede), never a title.
 
 ### Help: three levels, not a manual
 

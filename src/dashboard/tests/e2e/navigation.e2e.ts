@@ -45,9 +45,10 @@ test.describe('Navigation', () => {
     await rubrics.getByRole('link', { name: /Matériel/ }).click()
     await expect(page.getByRole('heading', { name: 'Matériel' })).toBeVisible()
 
-    // The niche one is put deep, not hidden: the technical interface is the Avancé row's destination.
-    await page.getByRole('link', { name: /Avancé/ }).click()
-    await expect(page).toHaveURL('/settings/hardware/advanced')
+    // The niche one is folded, not hidden: Avancé leads to the technical interface's own page.
+    await page.locator('summary', { hasText: /^Avancé/ }).click()
+    await page.getByRole('link', { name: /Interface technique/ }).click()
+    await expect(page).toHaveURL('/settings/hardware/technical-interface')
     await expect(
       page
         .getByRole('status', { name: 'Chargement de Frigate…' })
@@ -63,6 +64,58 @@ test.describe('Navigation', () => {
     expect(consoleErrors, `Console errors while navigating:\n${consoleErrors.join('\n')}`).toEqual(
       [],
     )
+  })
+
+  test('Fermer_ShouldLandOnHomeWithNoWayBackIntoTheSettings_WhenTheUserLeavesAProtocolCard', async ({
+    page,
+  }) => {
+    await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
+    const bar = page.getByRole('banner')
+    await page.goto('/')
+
+    await bar.getByRole('link', { name: 'Réglages' }).click()
+    await page.getByRole('link', { name: /Caméras/ }).click()
+    await page.getByRole('link', { name: /Porte d’entrée/ }).click()
+    await expect(page).toHaveURL('/settings/cameras/camera-1/connection')
+
+    // Avancé and the protocol open where they stand: no page is added under the camera (UI-25).
+    await page.locator('summary', { hasText: /^Avancé/ }).click()
+    const rtsp = page
+      .getByRole('region', { name: 'Protocoles' })
+      .getByRole('listitem')
+      .filter({ has: page.getByRole('heading', { name: 'RTSP', exact: true }) })
+    await rtsp.getByRole('heading', { name: 'RTSP' }).click()
+    await expect(rtsp.getByRole('button', { name: 'Vérifier' })).toBeVisible()
+    await expect(page).toHaveURL('/settings/cameras/camera-1/connection')
+
+    await bar.getByRole('button', { name: 'Fermer' }).click()
+    await expect(page).toHaveURL('/')
+    await expect(bar.getByRole('link', { name: 'Réglages' })).toBeVisible()
+
+    await page.goBack()
+    await expect(page).not.toHaveURL(/\/settings/)
+  })
+
+  test('BackButton_ShouldReachHomeInThreeTaps_WhenAProtocolCardIsOpen', async ({ page }) => {
+    await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
+    const bar = page.getByRole('banner')
+    const back = bar.getByRole('button', { name: 'Retour' })
+    await page.goto('/')
+    await bar.getByRole('link', { name: 'Réglages' }).click()
+    await page.getByRole('link', { name: /Caméras/ }).click()
+    await page.getByRole('link', { name: /Porte d’entrée/ }).click()
+    await page.locator('summary', { hasText: /^Avancé/ }).click()
+    await page
+      .getByRole('region', { name: 'Protocoles' })
+      .getByRole('heading', { name: 'RTSP' })
+      .click()
+
+    await back.click()
+    await expect(page).toHaveURL('/settings/cameras')
+    await back.click()
+    await expect(page).toHaveURL('/settings')
+    await back.click()
+    await expect(page).toHaveURL('/')
   })
 
   test('CamerasView_ShouldOpenOnConnexionWithTabsInSetupOrder_WhenACameraIsPickedFromTheList', async ({

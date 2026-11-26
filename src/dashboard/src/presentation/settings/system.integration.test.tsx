@@ -48,7 +48,7 @@ describe('SystemView', () => {
     expect(card.getByText('Front Door')).toBeVisible()
   })
 
-  it('SystemView_ShouldOpenTheTechnicalInterfaceFromAvanceAndSayWhatItCosts_WhenRendered', async () => {
+  it('SystemView_ShouldEndWithAClosedAvance_WhenRendered', async () => {
     // Arrange
     fakeNetwork({ 'GET /api/system/stats': ok(running), 'GET /api/cameras': ok([]) })
 
@@ -57,9 +57,23 @@ describe('SystemView', () => {
     await pollTheSurveillance()
 
     // Assert
-    const advanced = screen.getByRole('link', { name: /Avancé/ })
-    expect(advanced).toHaveAttribute('href', '/settings/hardware/advanced')
-    expect(advanced).toHaveTextContent('ce qu’on y modifie n’est pas repris par Vyzio')
+    expect(screen.getByText('Avancé')).toBeVisible()
+    expect(screen.queryByRole('link', { name: /Interface technique/ })).not.toBeInTheDocument()
+  })
+
+  it('AdvancedFold_ShouldLeadToTheTechnicalInterfaceAndSayWhatItCosts_WhenTheUserOpensIt', async () => {
+    // Arrange
+    fakeNetwork({ 'GET /api/system/stats': ok(running), 'GET /api/cameras': ok([]) })
+    renderScreen(<SystemView />)
+    await pollTheSurveillance()
+
+    // Act
+    await userEvent.click(screen.getByText('Avancé'))
+
+    // Assert
+    const technical = screen.getByRole('link', { name: /Interface technique/ })
+    expect(technical).toHaveAttribute('href', '/settings/hardware/technical-interface')
+    expect(technical).toHaveTextContent('Ce qu’on y modifie n’est pas repris par Vyzio')
   })
 
   it('SystemView_ShouldWaitForTheNextReading_WhenTheStateCannotBeRead', async () => {

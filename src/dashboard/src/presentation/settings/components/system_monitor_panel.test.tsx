@@ -80,7 +80,7 @@ describe('SystemMonitorPanel', () => {
     expect(screen.getByText('Arrêtée')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Diagnostiquer' })).toHaveAttribute(
       'href',
-      '/settings/hardware/advanced',
+      '/settings/hardware/technical-interface',
     )
   })
 })

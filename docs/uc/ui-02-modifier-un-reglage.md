@@ -22,7 +22,7 @@
 | N1 | Modifier, enregistrer, puis appliquer | Nominal | Le propriétaire change un réglage |
 | A1 | Renoncer | Alternative | Le propriétaire renonce à ses modifications |
 | A2 | Quitter les réglages sans redémarrer | Alternative | Le propriétaire ne veut pas interrompre la surveillance maintenant |
-| A3 | Régler un réglage rare | Alternative | Le réglage cherché est mis en profondeur |
+| A3 | Régler un réglage rare | Alternative | Le réglage cherché est rare |
 | E1 | La surveillance ne reprend pas les réglages | Échec | Le redémarrage échoue |
 
 ## Détail des chemins
@@ -45,7 +45,7 @@
 
 ### A3 · Régler un réglage rare
 
-1. Le réglage est mis en profondeur, atteignable sans mode à activer (UI-09) ; le chemin reprend à N1, pas 2.
+1. Le propriétaire ouvre le pli Avancé de la page qui porte le réglage (UI-09, UI-25) ; le chemin reprend à N1, pas 2.
 
 ### E1 · La surveillance ne reprend pas les réglages
 

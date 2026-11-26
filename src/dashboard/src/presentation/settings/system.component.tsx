@@ -1,5 +1,6 @@
 import { SettingsPage } from '../../common/settings/settings_page'
-import { AdvancedRow } from '../../common/settings/advanced'
+import { AdvancedFold } from '../../common/settings/advanced'
+import { GroupedList, GroupedRow } from '../../common/components/grouped_list'
 import { Loading } from '../../common/components/loading'
 import { useRootStore } from '../../infrastructure/store/root.store'
 import { SystemMonitorPanel } from './components/system_monitor_panel'
@@ -14,10 +15,16 @@ export function SystemView() {
   return (
     <SettingsPage>
       {systemStats ? <SystemMonitorPanel stats={systemStats} cameras={cameras} /> : <Loading />}
-      <AdvancedRow
-        to={TECHNICAL_INTERFACE_PATH}
-        subtitle="Interface technique, ce qu’on y modifie n’est pas repris par Vyzio"
-      />
+      <AdvancedFold>
+        <GroupedList>
+          <GroupedRow
+            to={TECHNICAL_INTERFACE_PATH}
+            title="Interface technique"
+            subtitle="Ce qu’on y modifie n’est pas repris par Vyzio"
+            weight="action"
+          />
+        </GroupedList>
+      </AdvancedFold>
     </SettingsPage>
   )
 }

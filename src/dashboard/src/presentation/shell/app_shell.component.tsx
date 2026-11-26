@@ -6,6 +6,7 @@ import { useAppContainer } from '../../infrastructure/providers/app_container.co
 import { useRootStore } from '../../infrastructure/store/root.store'
 import { useCameraListFailureToast } from '../cameras/camera_list_read'
 import { NavigationGuard } from '../navigation/navigation_guard.component'
+import { useSettingsExit } from '../navigation/use_settings_exit'
 import { isSettingsPath } from '../settings/settings.rubrics'
 import { RestartSurveillanceTrigger } from '../surveillance/restart_surveillance_trigger.component'
 import { buildAppShellPresenter } from './app_shell.presenter'
@@ -27,6 +28,7 @@ export function AppShell() {
   useEffect(() => presenter.onWatchCameras(), [presenter])
 
   const { pathname } = useLocation()
+  const settingsExit = useSettingsExit()
   const cameras = useRootStore((s) => s.cameras)
   const systemStats = useRootStore((s) => s.systemStats)
   const hubLost = useRootStore((s) => s.hubLost)
@@ -41,6 +43,7 @@ export function AppShell() {
   return (
     <TopBar
       home={pathname === '/'}
+      onClose={settingsExit.close}
       below={
         <>
           <BarAlertList
@@ -60,7 +63,7 @@ export function AppShell() {
       }
     >
       {/* The only navigation guard: react-router accepts a single one. */}
-      <NavigationGuard />
+      <NavigationGuard exit={settingsExit.steps} />
       <div className="mx-auto w-full max-w-5xl min-w-0 px-4 pt-6 pb-10 *:min-w-0">
         <Suspense fallback={null}>
           <Outlet />
