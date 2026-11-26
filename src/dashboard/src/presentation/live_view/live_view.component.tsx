@@ -26,7 +26,8 @@ import { useAppContainer } from '../../infrastructure/providers/app_container.co
 import { useRootStore } from '../../infrastructure/store/root.store'
 import { buildCamerasPresenter } from '../cameras/cameras.presenter'
 import { CameraClips } from './components/camera_clips'
-import { fading, LIVE_CONTROL } from './components/live_control'
+import { LIVE_CONTROL } from './components/live_control'
+import { fading } from '../../common/motion/fading'
 import { LiveVideo } from './components/live_video'
 import { PictureNotice } from './components/picture_notice'
 import { PtzPad, type PadVariant } from './components/ptz_pad'
@@ -39,7 +40,7 @@ import { useSideways } from './live_layout'
 import { buildLiveViewPresenter } from './live_view.presenter'
 import { liveViewReducer } from './live_view.reducer'
 import { buildInitialLiveViewUido } from './live_view.uido'
-import { useAutoHide } from './use_auto_hide'
+import { useAutoHide } from '../../common/motion/use_auto_hide'
 import { useFullScreen } from './use_full_screen'
 import { useViewportFitCover } from './use_viewport_fit_cover'
 
@@ -193,13 +194,6 @@ export function LiveView({ camera }: { camera: Camera }) {
   useEffect(() => {
     presenter.onOpenClips(frigateName)
   }, [presenter, frigateName])
-
-  // A key brings the faded controls back, wherever the focus fell when they faded.
-  const reveal = controls.reveal
-  useEffect(() => {
-    window.addEventListener('keydown', reveal)
-    return () => window.removeEventListener('keydown', reveal)
-  }, [reveal])
 
   const enterFullScreen = () => {
     setAsked(true)
