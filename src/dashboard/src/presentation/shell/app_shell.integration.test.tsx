@@ -45,6 +45,8 @@ function openShellAt(...entries: string[]) {
           { path: '/', element: <p>Accueil</p> },
           { path: '/detections', element: <PageHeader title="Détections" /> },
           { path: '/settings', element: <PageHeader title="Réglages" /> },
+          { path: '/settings/cameras', element: <PageHeader title="Caméras" /> },
+          { path: '/cameras/:cameraId', element: <PageHeader title="Entrée" /> },
           { path: '/settings/cameras/add', element: <AddCameraView /> },
         ],
       },
@@ -165,6 +167,71 @@ describe('AppShell', () => {
 
     // Assert
     await waitFor(() => expect(router.state.location.pathname).toBe('/'))
+  })
+
+  it('Fermer_ShouldReturnHomeAndLeaveNoSettingsBehind_WhenTheSettingsWereEnteredFromHome', async () => {
+    // Arrange
+    fakeNetwork({ 'GET /api/cameras': ok([]), 'GET /api/system/stats': ok(stats()) })
+    const router = openShellAt('/')
+    await act(() => router.navigate('/settings'))
+    await act(() => router.navigate('/settings/cameras'))
+
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: 'Fermer' }))
+
+    // Assert
+    await waitFor(() => expect(router.state.location.pathname).toBe('/'))
+    await act(() => router.navigate(-1))
+    expect(router.state.location.pathname).toBe('/')
+  })
+
+  it('Fermer_ShouldReturnToTheCameraView_WhenTheSettingsWereEnteredFromIt', async () => {
+    // Arrange
+    fakeNetwork({ 'GET /api/cameras': ok([]), 'GET /api/system/stats': ok(stats()) })
+    const router = openShellAt('/')
+    await act(() => router.navigate('/cameras/camera-1'))
+    await act(() => router.navigate('/settings/cameras'))
+    await act(() => router.navigate('/settings'))
+
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: 'Fermer' }))
+
+    // Assert
+    await waitFor(() => expect(router.state.location.pathname).toBe('/cameras/camera-1'))
+  })
+
+  it('Fermer_ShouldAskTheRestartQuestionFirst_WhenASavedChangeWaits', async () => {
+    // Arrange
+    fakeNetwork({
+      'GET /api/cameras': ok([]),
+      'GET /api/system/stats': ok(stats({ pendingChanges: true })),
+    })
+    const router = openShellAt('/')
+    await act(() => router.navigate('/settings'))
+    await waitFor(() => expect(useRootStore.getState().systemStats).not.toBeNull())
+
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: 'Fermer' }))
+
+    // Assert
+    const question = await screen.findByRole('alertdialog')
+    expect(within(question).getByText('Redémarrer la surveillance maintenant ?')).toBeVisible()
+    expect(router.state.location.pathname).toBe('/settings')
+    await userEvent.click(within(question).getByRole('button', { name: 'Plus tard' }))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/'))
+  })
+
+  it('TopBar_ShouldOfferNoFermer_WhenThePageIsNotASetting', async () => {
+    // Arrange
+    fakeNetwork({ 'GET /api/cameras': ok([]), 'GET /api/system/stats': ok(stats()) })
+
+    // Act
+    openShellAt('/detections')
+
+    // Assert
+    const bar = await screen.findByRole('banner')
+    expect(await within(bar).findByRole('button', { name: 'Retour' })).toBeVisible()
+    expect(within(bar).queryByRole('button', { name: 'Fermer' })).not.toBeInTheDocument()
   })
 
   it.each([

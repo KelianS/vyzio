@@ -10,7 +10,7 @@ import {
 import { createPortal } from 'react-dom'
 import { Link, useLocation, useNavigationType } from 'react-router'
 import { useGoBack } from '../navigation/use_go_back'
-import { ArrowLeft, Settings } from 'lucide-react'
+import { ArrowLeft, Settings, X } from 'lucide-react'
 import { pageDirection, PageTransition } from '../motion/page_transition'
 import { SnapshotBeforeCommit } from '../motion/snapshot_before_commit'
 import { cn } from '../ui/utils'
@@ -104,12 +104,15 @@ function BackButton() {
 export function TopBar({
   home,
   gear = true,
+  onClose,
   below,
   children,
 }: {
   home: boolean
   /** Without Vyzio, the settings cannot open: the bar then carries the name alone (UI-34). */
   gear?: boolean
+  /** The settings' way out, a cross at the far right (UI-29). */
+  onClose?: () => void
   below?: ReactNode
   children: ReactNode
 }) {
@@ -188,6 +191,18 @@ export function TopBar({
                     <BackButton />
                     <div ref={setTitle} className="min-w-0 flex-1" />
                     <div ref={setAction} className="contents" />
+                    {onClose && (
+                      <PressableControl>
+                        <button
+                          type="button"
+                          aria-label="Fermer"
+                          className={ROUND_BUTTON}
+                          onClick={onClose}
+                        >
+                          <X className="size-5" aria-hidden="true" />
+                        </button>
+                      </PressableControl>
+                    )}
                   </div>
                 )}
               </div>
