@@ -28,7 +28,7 @@ export function AppShell() {
   useEffect(() => presenter.onWatchCameras(), [presenter])
 
   const { pathname } = useLocation()
-  const closeSettings = useSettingsExit()
+  const settingsExit = useSettingsExit()
   const cameras = useRootStore((s) => s.cameras)
   const systemStats = useRootStore((s) => s.systemStats)
   const hubLost = useRootStore((s) => s.hubLost)
@@ -43,7 +43,7 @@ export function AppShell() {
   return (
     <TopBar
       home={pathname === '/'}
-      onClose={closeSettings}
+      onClose={settingsExit.close}
       below={
         <>
           <BarAlertList
@@ -63,7 +63,7 @@ export function AppShell() {
       }
     >
       {/* The only navigation guard: react-router accepts a single one. */}
-      <NavigationGuard />
+      <NavigationGuard exit={settingsExit.steps} />
       <div className="mx-auto w-full max-w-5xl min-w-0 px-4 pt-6 pb-10 *:min-w-0">
         <Suspense fallback={null}>
           <Outlet />

@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef } from 'react'
+import { useCallback, useLayoutEffect, useMemo, useRef } from 'react'
 import { NavigationType, useLocation, useNavigate, useNavigationType } from 'react-router'
 import { isLiveViewPath } from '../live_view/live_view.route'
 import { isSettingsPath } from '../settings/settings.rubrics'
@@ -8,21 +8,39 @@ interface Trail {
   keys: string[]
   at: number
   entry: number | null
-  /** Popped back to the first entry, which is then replaced by the home. */
-  homeOnArrival: boolean
+  /** Fermer from a session opened on the settings: popping back to their first entry. */
+  popping: boolean
+  /** That first entry reached, the home replacing it. */
+  replacing: boolean
+}
+
+/** What the navigation guard reads of a Fermer under way, and how it drops one it held back. */
+export interface SettingsExitSteps {
+  /** The pop leaves the settings, though it lands on one of their pages: ask as when leaving. */
+  popping: () => boolean
+  /** The questions were already asked at the pop. */
+  replacing: () => boolean
+  forget: () => void
 }
 
 /** Leaves the settings where they were entered, popping their pages so Back never returns into them (UI-29). */
-export function useSettingsExit(): (() => void) | undefined {
+export function useSettingsExit(): { close: (() => void) | undefined; steps: SettingsExitSteps } {
   const { key, pathname } = useLocation()
   const type = useNavigationType()
   const navigate = useNavigate()
-  const trail = useRef<Trail>({ keys: [], at: -1, entry: null, homeOnArrival: false })
+  const trail = useRef<Trail>({
+    keys: [],
+    at: -1,
+    entry: null,
+    popping: false,
+    replacing: false,
+  })
 
   useLayoutEffect(() => {
     const walked = trail.current
-    const homeOnArrival = walked.homeOnArrival
-    walked.homeOnArrival = false
+    const popped = walked.popping
+    walked.popping = false
+    walked.replacing = false
     const known = walked.keys.indexOf(key)
     if (type === NavigationType.Push) {
       walked.keys = [...walked.keys.slice(0, walked.at + 1), key]
@@ -43,8 +61,10 @@ export function useSettingsExit(): (() => void) | undefined {
     // Driving the camera from its page is a detour that keeps the way out (LIVE-19).
     else if (!isLiveViewPath(pathname)) walked.entry = null
 
-    if (homeOnArrival && walked.at === 0 && isSettingsPath(pathname))
+    if (popped && walked.at === 0 && isSettingsPath(pathname)) {
+      walked.replacing = true
       void navigate('/', { replace: true })
+    }
   }, [key, pathname, type, navigate])
 
   const close = useCallback(() => {
@@ -53,9 +73,20 @@ export function useSettingsExit(): (() => void) | undefined {
     if (entry > 0) return void navigate(-(at - entry + 1))
     // Opened on the settings: back to their first page, which the home then replaces.
     if (at === 0) return void navigate('/', { replace: true })
-    trail.current.homeOnArrival = true
+    trail.current.popping = true
     void navigate(-at)
   }, [navigate])
 
-  return isSettingsPath(pathname) ? close : undefined
+  const steps = useMemo<SettingsExitSteps>(
+    () => ({
+      popping: () => trail.current.popping,
+      replacing: () => trail.current.replacing,
+      forget: () => {
+        trail.current.popping = false
+      },
+    }),
+    [],
+  )
+
+  return { close: isSettingsPath(pathname) ? close : undefined, steps }
 }

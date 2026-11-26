@@ -200,6 +200,56 @@ describe('AppShell', () => {
     expect(router.state.location.pathname).toBe('/')
   })
 
+  it('Fermer_ShouldAskTheRestartQuestionOverThePageItWasPressedOn_WhenTheAppOpenedOnTheSettingsAndWentDeeper', async () => {
+    // Arrange
+    fakeNetwork({
+      'GET /api/cameras': ok([]),
+      'GET /api/system/stats': ok(stats({ pendingChanges: true })),
+    })
+    const router = openShellAt('/settings')
+    await act(() => router.navigate('/settings/cameras'))
+    await waitFor(() => expect(useRootStore.getState().systemStats).not.toBeNull())
+
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: 'Fermer' }))
+
+    // Assert
+    const question = await screen.findByRole('alertdialog')
+    expect(within(question).getByText('Redémarrer la surveillance maintenant ?')).toBeVisible()
+    expect(router.state.location.pathname).toBe('/settings/cameras')
+    await userEvent.click(within(question).getByRole('button', { name: 'Plus tard' }))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/'))
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    await act(() => router.navigate(-1))
+    expect(router.state.location.pathname).toBe('/')
+  })
+
+  it('Fermer_ShouldLeaveALaterBackAlone_WhenTheUserStayedWithUnsavedEdits', async () => {
+    // Arrange
+    fakeNetwork({ 'GET /api/cameras': ok([]), 'GET /api/system/stats': ok(stats()) })
+    const router = openShellAt('/settings')
+    await act(() => router.navigate('/settings/cameras'))
+    act(() => useRootStore.getState().setUnsavedChanges(true))
+    await userEvent.click(await screen.findByRole('button', { name: 'Fermer' }))
+    await userEvent.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', {
+        name: 'Rester sur la page',
+      }),
+    )
+
+    // Act
+    await act(() => router.navigate(-1))
+    await userEvent.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', {
+        name: 'Quitter sans enregistrer',
+      }),
+    )
+
+    // Assert
+    await waitFor(() => expect(router.state.location.pathname).toBe('/settings'))
+    expect(router.state.location.pathname).not.toBe('/')
+  })
+
   it('Fermer_ShouldReturnToTheCameraView_WhenTheSettingsWereEnteredFromIt', async () => {
     // Arrange
     fakeNetwork({ 'GET /api/cameras': ok([]), 'GET /api/system/stats': ok(stats()) })
