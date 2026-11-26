@@ -36,7 +36,7 @@ import { ViewTabs } from './components/view_tabs'
 import { ViewTab, viewTabOf } from './components/view_tab'
 import { LiveAccess, liveAccessOf } from './live_access'
 import { CAMERA_REMOVED, presetLabel } from './live_view.formatters'
-import { useSideways } from './live_layout'
+import { useSideways } from '../../common/layout/sideways'
 import { buildLiveViewPresenter } from './live_view.presenter'
 import { liveViewReducer } from './live_view.reducer'
 import { buildInitialLiveViewUido } from './live_view.uido'
@@ -463,7 +463,7 @@ export function LiveView({ camera }: { camera: Camera }) {
           className={cn(
             immersive ? 'fixed inset-0 z-40 touch-manipulation bg-picture' : 'relative w-full',
             // A clip sticks like the Détections page's, its list scrolling below (LIVE-20).
-            playing && !immersive && STICKY_WELL,
+            playing && !immersive && !sideways && STICKY_WELL,
           )}
           onPointerDownCapture={immersive ? controls.hold : undefined}
           onPointerUpCapture={immersive ? controls.release : undefined}
