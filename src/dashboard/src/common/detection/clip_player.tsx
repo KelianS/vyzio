@@ -151,7 +151,6 @@ function ClipVideo({
         // A clip waiting for its data is not playing: its controls stay while it waits.
         onPlaying={() => onPlayingChange(true)}
         onWaiting={() => onPlayingChange(false)}
-        onStalled={() => onPlayingChange(false)}
         onPause={() => {
           setPaused(true)
           onPlayingChange(false)

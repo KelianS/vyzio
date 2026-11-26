@@ -140,21 +140,31 @@ describe('ClipPlayer', () => {
     expect(screen.getByRole('button', { name: 'Plus d’actions' })).toBeInTheDocument()
   })
 
-  it.each(['waiting', 'stalled'])(
-    'ClipPlayer_ShouldKeepItsControls_WhenTheClipWaitsForItsData (%s)',
-    (event) => {
-      // Arrange
-      const video = aPlayingClip()
-      fireEvent(video, new Event(event))
+  it('ClipPlayer_ShouldKeepItsControls_WhenTheClipWaitsForItsData', () => {
+    // Arrange
+    const video = aPlayingClip()
+    fireEvent.waiting(video)
 
-      // Act
-      wait(3000)
+    // Act
+    wait(3000)
 
-      // Assert
-      expect(screen.getByRole('button', { name: 'Pause' })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: 'Plus d’actions' })).toBeInTheDocument()
-    },
-  )
+    // Assert
+    expect(screen.getByRole('button', { name: 'Pause' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Plus d’actions' })).toBeInTheDocument()
+  })
+
+  it('ClipPlayer_ShouldFadeItsControls_WhenTheClipStallsButPlaysOnFromItsBuffer', () => {
+    // Arrange
+    const video = aPlayingClip()
+    fireEvent.stalled(video)
+    fireEvent.timeUpdate(video)
+
+    // Act
+    wait(3000)
+
+    // Assert
+    expect(screen.queryByRole('button', { name: 'Pause' })).not.toBeInTheDocument()
+  })
 
   it('ClipPlayer_ShouldFadeItsControls_WhenTheClipPlaysThreeSecondsAgainAfterWaiting', () => {
     // Arrange
