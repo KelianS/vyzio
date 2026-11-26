@@ -171,7 +171,11 @@ function ChannelForm({
         id: `channel-${credential.field}`,
         label: copy.label,
         nature: credential.secret
-          ? { kind: 'secret', placeholder: credential.isSet ? 'Inchangée' : copy.placeholder }
+          ? {
+              kind: 'secret',
+              placeholder: credential.isSet ? 'Inchangée' : copy.placeholder,
+              validating: uido.saving,
+            }
           : { kind: 'text', placeholder: copy.placeholder },
         help: copy.help,
         value: draft.values[credential.field],

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ComponentProps } from 'react'
+import { useState, type ComponentProps } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
@@ -7,26 +7,27 @@ import { cn } from '../ui/utils'
 /** A password or secret field whose eye, inside it, shows what was typed then masks it again (UI-38). */
 export function SecretInput({
   revealLabel = 'Afficher le mot de passe',
+  validating = false,
   className,
   ...input
-}: Omit<ComponentProps<'input'>, 'type' | 'ref'> & { revealLabel?: string }) {
+}: Omit<ComponentProps<'input'>, 'type'> & {
+  revealLabel?: string
+  /** True while what was typed is being validated: the field masks again as it starts. */
+  validating?: boolean
+}) {
   const [revealed, setRevealed] = useState(false)
-  const field = useRef<HTMLInputElement>(null)
+  const [wasValidating, setWasValidating] = useState(validating)
 
-  useEffect(() => {
-    const form = field.current?.form
-    if (!form) return
-    const mask = () => setRevealed(false)
-    form.addEventListener('submit', mask)
-    return () => form.removeEventListener('submit', mask)
-  }, [])
+  if (validating !== wasValidating) {
+    setWasValidating(validating)
+    if (validating) setRevealed(false)
+  }
 
   return (
     // Stacked in one grid cell, not positioned, so it never paints over a neighbour's tap area.
     <div className="grid w-full items-center">
       <Input
         {...input}
-        ref={field}
         type={revealed ? 'text' : 'password'}
         className={cn('col-start-1 row-start-1 pr-13', className)}
       />

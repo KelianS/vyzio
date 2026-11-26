@@ -1072,6 +1072,27 @@ describe('CameraConnectionView', () => {
     expect(form.getByLabelText('Mot de passe')).toHaveValue('test-secret')
   })
 
+  it('onAddProtocol_ShouldMaskTheRevealedPasswordAgain_WhenTheUserAddsAndChecksIt', async () => {
+    // Arrange
+    connectionNetwork({
+      [BINDINGS]: ok([rtspStream]),
+      'POST /api/cameras/camera-1/protocols': failure(500),
+    })
+    renderScreen(<CameraConnectionAdvancedView />, advancedPage())
+    await userEvent.click(await screen.findByRole('button', { name: 'Ajouter un protocole' }))
+    const form = within(screen.getByRole('group', { name: 'Ajouter un protocole' }))
+    await userEvent.click(form.getByRole('switch', { name: 'Compte spécifique' }))
+    await userEvent.type(form.getByLabelText('Mot de passe'), 'test-secret')
+    await userEvent.click(form.getByRole('button', { name: 'Afficher le mot de passe' }))
+
+    // Act
+    await userEvent.click(form.getByRole('button', { name: 'Ajouter et vérifier' }))
+
+    // Assert
+    expect(await screen.findByText(/Vyzio a rencontré une erreur/)).toBeInTheDocument()
+    expect(form.getByLabelText('Mot de passe')).toHaveAttribute('type', 'password')
+  })
+
   it('onCheckProtocol_ShouldKeepNoPendingChangeAndAllowRemoval_WhenABoxWasEditedThenPutBack', async () => {
     // Arrange
     connectionNetwork({

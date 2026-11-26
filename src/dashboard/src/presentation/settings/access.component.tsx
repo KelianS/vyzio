@@ -133,6 +133,7 @@ function ChangePasswordForm({
         </label>
         <SecretInput
           id="current-password"
+          validating={changing}
           autoComplete="current-password"
           value={current}
           onChange={(event) => setCurrent(event.target.value)}
@@ -149,6 +150,7 @@ function ChangePasswordForm({
         </label>
         <SecretInput
           id="new-password"
+          validating={changing}
           autoComplete="new-password"
           value={next}
           onChange={(event) => setNext(event.target.value)}

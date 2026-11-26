@@ -43,7 +43,7 @@ export function CameraConnectionAdvancedView() {
     {
       id: 'connection-password',
       label: 'Mot de passe',
-      nature: { kind: 'secret', placeholder: 'Inchangé' },
+      nature: { kind: 'secret', placeholder: 'Inchangé', validating: uido.saving },
       help: 'Laissez vide pour conserver le mot de passe actuel.',
       value: draft.values.password,
       onChange: (value) => draft.set('password', value as string),

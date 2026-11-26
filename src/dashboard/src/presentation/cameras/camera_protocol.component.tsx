@@ -98,8 +98,11 @@ export function CameraProtocolView() {
         )}
 
         <SettingsList
-          settings={protocolSettings(entry, draft.values[key], (patch) =>
-            setProtocol(protocol, patch),
+          settings={protocolSettings(
+            entry,
+            draft.values[key],
+            (patch) => setProtocol(protocol, patch),
+            uido.saving,
           )}
         />
 

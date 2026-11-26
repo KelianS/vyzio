@@ -333,6 +333,7 @@ function SecretControl({
       id={setting.id}
       revealLabel={`Afficher « ${setting.label} »`}
       placeholder={nature.placeholder}
+      validating={nature.validating}
       disabled={setting.disabled}
       value={String(setting.value ?? '')}
       onChange={(event) => setting.onChange(event.target.value)}
