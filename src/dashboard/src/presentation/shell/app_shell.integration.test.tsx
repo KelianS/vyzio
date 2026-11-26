@@ -185,6 +185,21 @@ describe('AppShell', () => {
     expect(router.state.location.pathname).toBe('/')
   })
 
+  it('Fermer_ShouldLeaveNoSettingsBehindTheHome_WhenTheAppOpenedOnASettingsPageAndWentDeeper', async () => {
+    // Arrange
+    fakeNetwork({ 'GET /api/cameras': ok([]), 'GET /api/system/stats': ok(stats()) })
+    const router = openShellAt('/settings')
+    await act(() => router.navigate('/settings/cameras'))
+
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: 'Fermer' }))
+
+    // Assert
+    await waitFor(() => expect(router.state.location.pathname).toBe('/'))
+    await act(() => router.navigate(-1))
+    expect(router.state.location.pathname).toBe('/')
+  })
+
   it('Fermer_ShouldReturnToTheCameraView_WhenTheSettingsWereEnteredFromIt', async () => {
     // Arrange
     fakeNetwork({ 'GET /api/cameras': ok([]), 'GET /api/system/stats': ok(stats()) })

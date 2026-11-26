@@ -8,6 +8,8 @@ interface Trail {
   keys: string[]
   at: number
   entry: number | null
+  /** Popped back to the first entry, which is then replaced by the home. */
+  homeOnArrival: boolean
 }
 
 /** Leaves the settings where they were entered, popping their pages so Back never returns into them (UI-29). */
@@ -15,10 +17,12 @@ export function useSettingsExit(): (() => void) | undefined {
   const { key, pathname } = useLocation()
   const type = useNavigationType()
   const navigate = useNavigate()
-  const trail = useRef<Trail>({ keys: [], at: -1, entry: null })
+  const trail = useRef<Trail>({ keys: [], at: -1, entry: null, homeOnArrival: false })
 
   useLayoutEffect(() => {
     const walked = trail.current
+    const homeOnArrival = walked.homeOnArrival
+    walked.homeOnArrival = false
     const known = walked.keys.indexOf(key)
     if (type === NavigationType.Push) {
       walked.keys = [...walked.keys.slice(0, walked.at + 1), key]
@@ -38,14 +42,19 @@ export function useSettingsExit(): (() => void) | undefined {
       walked.entry = walked.entry === null ? walked.at : Math.min(walked.entry, walked.at)
     // Driving the camera from its page is a detour that keeps the way out (LIVE-19).
     else if (!isLiveViewPath(pathname)) walked.entry = null
-  }, [key, pathname, type])
+
+    if (homeOnArrival && walked.at === 0 && isSettingsPath(pathname))
+      void navigate('/', { replace: true })
+  }, [key, pathname, type, navigate])
 
   const close = useCallback(() => {
     const { at, entry } = trail.current
     if (entry === null) return
-    // Opened on the settings: nothing of the app lies behind them but the home.
-    if (entry === 0) void navigate('/', { replace: true })
-    else void navigate(-(at - entry + 1))
+    if (entry > 0) return void navigate(-(at - entry + 1))
+    // Opened on the settings: back to their first page, which the home then replaces.
+    if (at === 0) return void navigate('/', { replace: true })
+    trail.current.homeOnArrival = true
+    void navigate(-at)
   }, [navigate])
 
   return isSettingsPath(pathname) ? close : undefined
