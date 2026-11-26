@@ -407,7 +407,7 @@ export interface FakeBackendState {
   streams: FakeStream[]
   /** What the camera says it serves over RTSP when asked, most detailed first (ADR-07). */
   servedStreams: Pick<FakeStream, 'path' | 'width' | 'height' | 'fps'>[]
-  /** The protocols the camera speaks, one box each in Avancé (ADR-04). */
+  /** The protocols the camera speaks, one card each in Avancé (ADR-04). */
   protocols: FakeProtocol[]
   /** The protocols a search or a detection finds answering, added to the boxes then. */
   discoverableProtocols: FakeProtocol[]

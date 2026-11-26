@@ -59,11 +59,16 @@ function channelAt(slug: string) {
   return { path: '/settings/notifications/:channel', url: `/settings/notifications/${slug}` }
 }
 
-function advancedAt(slug: string) {
-  return {
-    path: '/settings/notifications/:channel/advanced',
-    url: `/settings/notifications/${slug}/advanced`,
-  }
+/** The fold that ends the channel's settings, by its own title rather than the help that names it. */
+function advancedFold() {
+  return screen.findByText('Avancé', { selector: 'summary span' })
+}
+
+/** The channel's page with its Avancé fold opened: its message, what was sent or asked. */
+async function renderAdvanced(slug: string) {
+  const rendered = renderScreen(<NotificationChannelView />, channelAt(slug))
+  await userEvent.click(await advancedFold())
+  return rendered
 }
 
 // What every channel page reads, with the channel's settings given.
@@ -82,7 +87,7 @@ function commandRoutes(pairing = makePairing()) {
 }
 
 describe('NotificationChannelView', () => {
-  it('onOpen_ShouldLeadToItsAdvancedPage_WhenTheChannelIsConfigured', async () => {
+  it('onOpen_ShouldEndWithAClosedAdvancedFold_WhenTheChannelIsConfigured', async () => {
     // Arrange
     fakeNetwork(channelRoutes())
 
@@ -90,10 +95,22 @@ describe('NotificationChannelView', () => {
     renderScreen(<NotificationChannelView />, channelAt('telegram'))
 
     // Assert
-    expect(await screen.findByRole('link', { name: 'Avancé' })).toHaveAttribute(
-      'href',
-      '/settings/notifications/telegram/advanced',
-    )
+    expect(await advancedFold()).toBeVisible()
+    expect(screen.queryByRole('region', { name: 'Contenu du message' })).not.toBeInTheDocument()
+  })
+
+  it('AdvancedFold_ShouldUnfoldTheMessageInPlace_WhenTheUserOpensIt', async () => {
+    // Arrange
+    fakeNetwork(channelRoutes())
+    const { router } = renderScreen(<NotificationChannelView />, channelAt('telegram'))
+    const fold = await advancedFold()
+
+    // Act
+    await userEvent.click(fold)
+
+    // Assert
+    expect(screen.getByRole('region', { name: 'Contenu du message' })).toBeVisible()
+    expect(router.state.location.pathname).toBe('/settings/notifications/telegram')
   })
 
   it('onOpen_ShouldOfferNoAdvancedPage_WhenTheChannelIsNotConfiguredYet', async () => {
@@ -105,7 +122,7 @@ describe('NotificationChannelView', () => {
 
     // Assert
     expect(await screen.findByRole('button', { name: /Envoyer un message de test/ })).toBeVisible()
-    expect(screen.queryByRole('link', { name: 'Avancé' })).not.toBeInTheDocument()
+    expect(screen.queryByText('Avancé', { selector: 'summary span' })).not.toBeInTheDocument()
   })
 
   it('onOpen_ShouldCountTheRangesMutingThisChannelAndLinkToTheCalendar_WhenSomeTargetIt', async () => {
@@ -264,7 +281,7 @@ describe('NotificationChannelView', () => {
     })
 
     // Act
-    renderScreen(<NotificationChannelView advanced />, advancedAt('telegram'))
+    await renderAdvanced('telegram')
 
     // Assert
     expect(await screen.findByText('Chat not found')).toBeInTheDocument()
@@ -434,7 +451,7 @@ describe('NotificationChannelView', () => {
     expect(screen.getByRole('button', { name: 'Relier une conversation' })).toBeInTheDocument()
     expect(screen.queryByText('N’écoute plus')).not.toBeInTheDocument()
     expect(screen.queryByText(/ce qui se passe chez vous/)).not.toBeInTheDocument()
-    // The sent log and the command journal, each with its own, live on the Avancé page.
+    // The sent log and the command journal, each with its own, live in the closed Avancé fold.
     expect(screen.queryByRole('button', { name: 'Actualiser' })).not.toBeInTheDocument()
   })
 
@@ -557,7 +574,7 @@ describe('NotificationChannelView', () => {
     fakeNetwork({ ...channelRoutes(), [LOG]: failure(500) })
 
     // Act
-    renderScreen(<NotificationChannelView advanced />, advancedAt('telegram'))
+    await renderAdvanced('telegram')
 
     // Assert
     expect(
@@ -569,7 +586,7 @@ describe('NotificationChannelView', () => {
   it('onRetryLog_ShouldShowWhatWasSent_WhenTheSecondReadSucceeds', async () => {
     // Arrange
     const network = fakeNetwork({ ...channelRoutes(), [LOG]: failure(500) })
-    renderScreen(<NotificationChannelView advanced />, advancedAt('telegram'))
+    await renderAdvanced('telegram')
     await screen.findByText(/GET \/api\/notifications\/log\/telegram · 500/)
     network.answer(LOG, ok([FAILED_SEND]))
 
@@ -583,7 +600,7 @@ describe('NotificationChannelView', () => {
   it('onRefreshLog_ShouldKeepWhatWasSentAndSayWhy_WhenTheRereadFails', async () => {
     // Arrange
     const network = fakeNetwork({ ...channelRoutes(), [LOG]: ok([FAILED_SEND]) })
-    renderScreen(<NotificationChannelView advanced />, advancedAt('telegram'))
+    await renderAdvanced('telegram')
     const sent = await screen.findByText('Chat not found')
     network.answer(LOG, failure(500))
 
@@ -601,7 +618,7 @@ describe('NotificationChannelView', () => {
     fakeNetwork({ ...commandRoutes(), [COMMANDS]: failure(500) })
 
     // Act
-    renderScreen(<NotificationChannelView advanced />, advancedAt('telegram'))
+    await renderAdvanced('telegram')
 
     // Assert
     expect(
@@ -613,7 +630,7 @@ describe('NotificationChannelView', () => {
   it('onRetryJournal_ShouldShowTheCommands_WhenTheSecondReadSucceeds', async () => {
     // Arrange
     const network = fakeNetwork({ ...commandRoutes(), [COMMANDS]: failure(500) })
-    renderScreen(<NotificationChannelView advanced />, advancedAt('telegram'))
+    await renderAdvanced('telegram')
     await screen.findByText(/GET \/api\/notifications\/settings\/telegram\/commands · 500/)
     network.answer(COMMANDS, ok([]))
 
@@ -627,7 +644,7 @@ describe('NotificationChannelView', () => {
   it('onRefreshJournal_ShouldKeepTheCommandsAndSayWhy_WhenTheRereadFails', async () => {
     // Arrange
     const network = fakeNetwork({ ...commandRoutes(), [COMMANDS]: ok([ANSWERED]) })
-    renderScreen(<NotificationChannelView advanced />, advancedAt('telegram'))
+    await renderAdvanced('telegram')
     const command = await screen.findByText('/etat')
     network.answer(COMMANDS, failure(500))
 

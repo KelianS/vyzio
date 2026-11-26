@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import type { SystemStats } from '../../../domain/entities/system_stats.entity'
 import { makeCamera } from '../../../testing/camera_fixture'
@@ -15,10 +16,10 @@ const running: SystemStats = {
 
 const cameras = [makeCamera({ frigateCameraName: 'front_door', displayName: 'Porte d’entrée' })]
 
-function renderPanel(stats: SystemStats) {
+function renderPanel(stats: SystemStats, onDiagnose = () => undefined) {
   render(
     <MemoryRouter>
-      <SystemMonitorPanel stats={stats} cameras={cameras} />
+      <SystemMonitorPanel stats={stats} cameras={cameras} onDiagnose={onDiagnose} />
     </MemoryRouter>,
   )
 }
@@ -69,18 +70,19 @@ describe('SystemMonitorPanel', () => {
 
     // Assert
     expect(screen.getByText('Les mesures réapparaîtront d’elles-mêmes.')).toBeInTheDocument()
-    expect(screen.queryByRole('link', { name: 'Diagnostiquer' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Diagnostiquer' })).not.toBeInTheDocument()
   })
 
-  it('SystemMonitorPanel_ShouldOfferADiagnosis_WhenSurveillanceIsStopped', () => {
-    // Arrange & Act
-    renderPanel({ ...running, status: 'unavailable' })
+  it('SystemMonitorPanel_ShouldOfferADiagnosis_WhenSurveillanceIsStopped', async () => {
+    // Arrange
+    const onDiagnose = vi.fn()
+    renderPanel({ ...running, status: 'unavailable' }, onDiagnose)
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Diagnostiquer' }))
 
     // Assert
     expect(screen.getByText('Arrêtée')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Diagnostiquer' })).toHaveAttribute(
-      'href',
-      '/settings/hardware/advanced',
-    )
+    expect(onDiagnose).toHaveBeenCalledOnce()
   })
 })

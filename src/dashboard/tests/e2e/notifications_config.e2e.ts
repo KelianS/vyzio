@@ -105,7 +105,7 @@ test.describe('NotificationChannelView', () => {
 
     // The trace of what was asked, including what was ignored: it is the only
     // sign that another conversation is knocking at the door (ADR-14).
-    await page.getByRole('link', { name: 'Avancé' }).click()
+    await page.locator('summary', { hasText: /^Avancé/ }).click()
     await expect(page.getByText('Ignoré : conversation non reliée')).toBeVisible()
   })
 

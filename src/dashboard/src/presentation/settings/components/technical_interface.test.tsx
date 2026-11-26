@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, fireEvent, screen } from '@testing-library/react'
-import { renderScreen } from '../../testing/render_screen'
-import { ExpertView } from './expert.component'
+import { act, fireEvent, render, screen } from '@testing-library/react'
+import { TechnicalInterface } from './technical_interface'
 
-describe('ExpertView', () => {
+const ADDRESS = 'http://localhost:5000'
+
+describe('TechnicalInterface', () => {
   beforeEach(() => {
     vi.useFakeTimers()
   })
@@ -12,17 +13,17 @@ describe('ExpertView', () => {
     vi.useRealTimers()
   })
 
-  it('ExpertView_ShouldShowAWait_WhenTheInterfaceIsLoading', () => {
+  it('TechnicalInterface_ShouldShowAWait_WhenTheInterfaceIsLoading', () => {
     // Arrange & Act
-    renderScreen(<ExpertView />)
+    render(<TechnicalInterface frigateBaseUrl={ADDRESS} />)
 
     // Assert
     expect(screen.getByRole('status')).toBeInTheDocument()
   })
 
-  it('ExpertView_ShouldSayWhatToCheck_WhenTheInterfaceDoesNotLoadInTime', () => {
+  it('TechnicalInterface_ShouldSayWhatToCheck_WhenTheInterfaceDoesNotLoadInTime', () => {
     // Arrange
-    renderScreen(<ExpertView />)
+    render(<TechnicalInterface frigateBaseUrl={ADDRESS} />)
 
     // Act
     act(() => void vi.advanceTimersByTime(10_000))
@@ -35,9 +36,9 @@ describe('ExpertView', () => {
     expect(screen.getByRole('link', { name: 'Ouvrir Frigate dans un onglet' })).toBeInTheDocument()
   })
 
-  it('ExpertView_ShouldShowTheInterfaceAndNeverTimeOut_WhenItLoads', () => {
+  it('TechnicalInterface_ShouldShowTheInterfaceAndNeverTimeOut_WhenItLoads', () => {
     // Arrange
-    renderScreen(<ExpertView />)
+    render(<TechnicalInterface frigateBaseUrl={ADDRESS} />)
 
     // Act
     fireEvent.load(screen.getByTitle('Frigate NVR'))

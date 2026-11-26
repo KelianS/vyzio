@@ -44,7 +44,8 @@ test.describe('Action weight', () => {
     await expect(remove).not.toHaveCSS('background-color', TRANSPARENT)
 
     const removeTop = (await remove.boundingBox())?.y ?? 0
-    const advancedTop = (await page.getByRole('link', { name: 'Avancé' }).boundingBox())?.y ?? 0
+    const advancedTop =
+      (await page.locator('summary', { hasText: /^Avancé/ }).boundingBox())?.y ?? 0
     const testTop =
       (await page.getByRole('button', { name: 'Envoyer un message de test' }).boundingBox())?.y ?? 0
     expect(removeTop).toBeGreaterThan(advancedTop)
@@ -115,7 +116,8 @@ test.describe('Action weight', () => {
     expect(await heightOf(questions.first())).toBeGreaterThanOrEqual(44)
 
     // Settings, then Avancé, then the removal, then the help (DESIGN SYSTEM § Help).
-    const advancedTop = (await page.getByRole('link', { name: 'Avancé' }).boundingBox())?.y ?? 0
+    const advancedTop =
+      (await page.locator('summary', { hasText: /^Avancé/ }).boundingBox())?.y ?? 0
     const removeTop =
       (await page.getByRole('button', { name: 'Supprimer cette caméra' }).boundingBox())?.y ?? 0
     const firstQuestionTop = (await questions.first().boundingBox())?.y ?? 0

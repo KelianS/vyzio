@@ -1,10 +1,25 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 import {
   installFakeBackend,
   createFakeBackendState,
   makeFakeCamera,
   makeFakeProtocol,
 } from './fixtures/fake_backend'
+
+/** The Avancé fold that ends the camera's Connexion tab, opened in place. */
+async function openAdvanced(page: Page) {
+  await page.goto('/settings/cameras/camera-1/connection')
+  await page.locator('summary', { hasText: /^Avancé/ }).click()
+  return page.getByRole('region', { name: 'Protocoles' })
+}
+
+/** One protocol's card in Avancé, by its title. */
+function protocolCard(page: Page, name: string) {
+  return page
+    .getByRole('region', { name: 'Protocoles' })
+    .getByRole('listitem')
+    .filter({ has: page.getByRole('heading', { name, exact: true }) })
+}
 
 /**
  * Editing and deleting a camera had become unreachable when the camera page was
@@ -38,9 +53,7 @@ test.describe('CameraConnectionView', () => {
   test('CameraConnectionView_ShouldSaveTheStreamAddressThroughTheDraft_WhenTheUserFixesItInAdvanced', async ({
     page,
   }) => {
-    await page.getByRole('link', { name: 'Avancé' }).click()
-    await expect(page.getByRole('heading', { level: 1, name: 'Avancé' })).toBeVisible()
-    await expect(page.getByRole('tablist')).toHaveCount(0)
+    await page.locator('summary', { hasText: /^Avancé/ }).click()
     await page.getByRole('textbox', { name: 'Adresse' }).fill('192.168.1.51')
 
     const bar = page.getByRole('region', { name: 'Modifications en attente' })
@@ -49,8 +62,6 @@ test.describe('CameraConnectionView', () => {
     await bar.getByRole('button', { name: 'Enregistrer' }).click()
     await expect(bar).toBeHidden()
     await expect(page.getByRole('textbox', { name: 'Adresse' })).toHaveValue('192.168.1.51')
-
-    await page.getByRole('button', { name: 'Retour' }).click()
     await expect(page).toHaveURL('/settings/cameras/camera-1/connection')
   })
 
@@ -65,9 +76,9 @@ test.describe('CameraConnectionView', () => {
   })
 })
 
-// Each connection detail sits on its level: each stream in its card options, a port and a specific account on its protocol page (ADR-04).
+// Each connection detail sits on its level: each stream in its card options, a port and a specific account in its protocol card (ADR-04).
 test.describe('CameraConnectionView three levels', () => {
-  test('CameraProtocolView_ShouldSaveThePortAndSpecificAccountOfAProtocol_WhenTheUserEditsItsPage', async ({
+  test('ProtocolCard_ShouldSaveThePortAndSpecificAccountOfAProtocol_WhenTheUserEditsItsCard', async ({
     page,
   }) => {
     const state = createFakeBackendState({ cameras: [makeFakeCamera()] })
@@ -76,10 +87,10 @@ test.describe('CameraConnectionView three levels', () => {
       makeFakeProtocol({ protocol: 'tapo_klap', effectivePort: 80 }),
     ]
     await installFakeBackend(page, state)
-    await page.goto('/settings/cameras/camera-1/connection/advanced')
-    await page.getByRole('link', { name: /Tapo KLAP/ }).click()
-    await expect(page.getByRole('heading', { level: 1, name: 'Tapo KLAP' })).toBeVisible()
-    const klap = page.getByRole('main')
+    await openAdvanced(page)
+    const klap = protocolCard(page, 'Tapo KLAP')
+    await klap.getByRole('heading', { name: 'Tapo KLAP' }).click()
+    await klap.getByText('Options', { exact: true }).click()
 
     await klap.getByRole('spinbutton', { name: 'Port' }).fill('8080')
     await klap.getByRole('switch', { name: 'Compte spécifique' }).click()
@@ -99,26 +110,26 @@ test.describe('CameraConnectionView three levels', () => {
     page,
   }) => {
     await installFakeBackend(page, createFakeBackendState({ cameras: [makeFakeCamera()] }))
-    await page.goto('/settings/cameras/camera-1/connection/advanced')
+    await openAdvanced(page)
 
     await page.getByRole('button', { name: 'Ajouter un protocole' }).click()
     const form = page.getByRole('group', { name: 'Ajouter un protocole' })
     await form.getByRole('button', { name: 'Ajouter et vérifier' }).click()
     await expect(page.getByText('Protocole ajouté.')).toBeVisible()
 
-    const onvif = page.getByRole('link', { name: /ONVIF/ })
+    const onvif = protocolCard(page, 'ONVIF')
     await expect(onvif.getByRole('img', { name: 'Accessible' })).toBeVisible()
 
-    await page.getByRole('link', { name: /RTSP/ }).click()
-    await expect(page.getByRole('button', { name: 'Retirer ce protocole' })).toBeDisabled()
-    await expect(page.getByText('Flux vidéo passe par ce protocole.')).toBeVisible()
-    await page.getByRole('button', { name: 'Retour' }).click()
+    const rtsp = protocolCard(page, 'RTSP')
+    await rtsp.getByRole('heading', { name: 'RTSP' }).click()
+    await expect(rtsp.getByRole('button', { name: 'Retirer' })).toBeDisabled()
+    await expect(rtsp.getByText('Flux vidéo passe par ce protocole.')).toBeVisible()
 
-    await onvif.click()
-    await page.getByRole('button', { name: 'Retirer ce protocole' }).click()
+    await onvif.getByRole('heading', { name: 'ONVIF' }).click()
+    await onvif.getByRole('button', { name: 'Retirer' }).click()
     await page.getByRole('alertdialog').getByRole('button', { name: 'Retirer' }).click()
     await expect(page.getByText('Protocole retiré.')).toBeVisible()
-    await expect(page).toHaveURL('/settings/cameras/camera-1/connection/advanced')
+    await expect(page).toHaveURL('/settings/cameras/camera-1/connection')
     await expect(onvif).toHaveCount(0)
   })
 
@@ -282,15 +293,12 @@ test.describe('CameraConnectionView camera without protocols', () => {
     page,
   }) => {
     await installFakeBackend(page, cameraWithoutProtocols())
-    await page.goto('/settings/cameras/camera-1/connection/advanced')
+    await openAdvanced(page)
 
     await page.getByRole('button', { name: 'Rechercher les protocoles' }).click()
     await expect(page.getByText('Recherche terminée.')).toBeVisible()
 
-    await expect(
-      page.getByRole('link', { name: /DVRIP/ }).getByRole('img', { name: 'Accessible' }),
-    ).toBeVisible()
-    await page.goto('/settings/cameras/camera-1/connection')
+    await expect(protocolCard(page, 'DVRIP').getByRole('img', { name: 'Accessible' })).toBeVisible()
     const stream = page.getByRole('list', { name: 'Capacités' }).getByRole('listitem').first()
     await expect(stream).toContainText('Choisissez comment Vyzio lit les images')
   })

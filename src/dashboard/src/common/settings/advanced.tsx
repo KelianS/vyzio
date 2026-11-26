@@ -1,25 +1,48 @@
-import type { ReactNode } from 'react'
-import { GroupedList, GroupedRow } from '../components/grouped_list'
-import { PageHeader } from '../components/page_header'
-import { SettingsPage } from './settings_page'
+import { useState, type ReactNode } from 'react'
+import { ChevronDown } from 'lucide-react'
 
 const ADVANCED = 'Avancé'
 
-/** `Avancé` is a position, not a mode (UI-09): one row at the end of the settings, the same everywhere, opening its own page. */
-export function AdvancedRow({ to, subtitle }: { to: string; subtitle?: string }) {
-  return (
-    <GroupedList>
-      <GroupedRow to={to} title={ADVANCED} subtitle={subtitle} weight="action" />
-    </GroupedList>
-  )
-}
+/** `Avancé` is a position, not a mode (UI-09): a closed fold ending the page's settings, opening in place (UI-25). */
+export function AdvancedFold({
+  subtitle,
+  open,
+  onOpenChange,
+  children,
+}: {
+  subtitle?: string
+  /** Held by the page when something else on it opens the fold. */
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  children: ReactNode
+}) {
+  const [own, setOwn] = useState(false)
+  const shown = open ?? own
 
-/** The page `Avancé` opens: named in the bar, the back button returning to the page it left. */
-export function AdvancedPage({ lede, children }: { lede?: string; children: ReactNode }) {
   return (
-    <>
-      <PageHeader title={ADVANCED} />
-      <SettingsPage lede={lede}>{children}</SettingsPage>
-    </>
+    <details
+      open={shown}
+      onToggle={(event) => {
+        const next = event.currentTarget.open
+        if (next === shown) return
+        setOwn(next)
+        onOpenChange?.(next)
+      }}
+      className="group/advanced"
+    >
+      <summary className="flex min-h-14 cursor-pointer list-none items-center gap-3.5 rounded-card bg-card px-4 py-2 outline-none hover:bg-secondary focus-visible:bg-secondary focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset">
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span className="text-row font-medium">{ADVANCED}</span>
+          {subtitle && ' '}
+          {subtitle && <span className="text-body text-muted-foreground">{subtitle}</span>}
+        </span>
+        <ChevronDown
+          className="size-5 shrink-0 text-mark-off transition-transform group-open/advanced:rotate-180"
+          aria-hidden="true"
+        />
+      </summary>
+      {/* Drawn once opened: a closed fold holds no control a reader would meet. */}
+      {shown && <div className="mt-6 flex flex-col gap-6">{children}</div>}
+    </details>
   )
 }

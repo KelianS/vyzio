@@ -94,12 +94,9 @@ test.describe('Accessibility, WCAG 2.1 A/AA', () => {
     '/settings/cameras/camera-1/privacy',
     '/settings/cameras/camera-1/image',
     '/settings/cameras/camera-1/connection',
-    '/settings/cameras/camera-1/connection/advanced',
-    '/settings/cameras/camera-1/connection/advanced/protocols/rtsp',
     '/settings/retention',
     '/settings/notifications',
     '/settings/notifications/telegram',
-    '/settings/notifications/telegram/advanced',
     '/settings/schedule',
     '/settings/schedule/rule-1',
     '/settings/access',
@@ -107,7 +104,6 @@ test.describe('Accessibility, WCAG 2.1 A/AA', () => {
     '/settings/face-recognition/add',
     '/settings/face-recognition/profile-1/identity',
     '/settings/face-recognition/profile-1/photos',
-    '/settings/face-recognition/profile-1/photos/advanced',
     '/settings/face-recognition/profile-1/cameras',
     '/settings/hardware',
   ]
@@ -137,6 +133,32 @@ test.describe('Accessibility, WCAG 2.1 A/AA', () => {
     await expect(
       page.getByRole('button', { name: /^Revenir à la valeur de l’ensemble/ }),
     ).toBeVisible()
+
+    const violations = await scan(page)
+    expect(violations, describeViolations(violations)).toEqual([])
+  })
+
+  test('Screen_ShouldPassTheWcagScan_WhenAvanceAndAProtocolAreOpen (/settings/cameras/camera-1/connection)', async ({
+    page,
+  }) => {
+    await page.goto('/settings/cameras/camera-1/connection')
+    await page.locator('summary', { hasText: /^Avancé/ }).click()
+    const protocols = page.getByRole('region', { name: 'Protocoles' })
+    await protocols.getByRole('heading', { name: 'RTSP' }).click()
+    await protocols.getByText('Options', { exact: true }).click()
+    await expect(protocols.getByRole('spinbutton', { name: 'Port' })).toBeVisible()
+
+    const violations = await scan(page)
+    expect(violations, describeViolations(violations)).toEqual([])
+  })
+
+  test('Screen_ShouldPassTheWcagScan_WhenAvanceIsOpen (/settings/notifications/telegram)', async ({
+    page,
+  }) => {
+    await page.goto('/settings/notifications/telegram')
+    await page.locator('summary', { hasText: /^Avancé/ }).click()
+    await expect(page.getByRole('region', { name: 'Contenu du message' })).toBeVisible()
+    await page.waitForLoadState('networkidle')
 
     const violations = await scan(page)
     expect(violations, describeViolations(violations)).toEqual([])

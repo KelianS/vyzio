@@ -1,5 +1,5 @@
 import { useEffect, useReducer } from 'react'
-import { Link, Outlet, useMatches, useParams } from 'react-router'
+import { Link, Outlet, useParams } from 'react-router'
 import { TabBar } from '../../common/components/tab_bar'
 import { ReadFailure } from '../../common/components/error_message'
 import { SettingsPage } from '../../common/settings/settings_page'
@@ -11,7 +11,6 @@ import { buildPersonPresenter } from './person.presenter'
 import { personReducer } from './person.reducer'
 import { buildInitialPersonUido } from './person.uido'
 import { Loading } from '../../common/components/loading'
-import { isSubPage } from '../settings/settings.rubrics'
 import { PEOPLE_PATH } from '../settings/settings.rubrics'
 
 const PERSON_PAGES = [
@@ -26,7 +25,6 @@ export function PersonView() {
   const { profiles: container } = useAppContainer()
   const [uido, dispatch] = useReducer(personReducer, undefined, buildInitialPersonUido)
   const presenter = usePresenter(buildPersonPresenter, { container, dispatch })
-  const subPage = isSubPage(useMatches())
 
   useEffect(() => {
     presenter.onLoad(profileId!)
@@ -74,9 +72,6 @@ export function PersonView() {
     person: found,
     reload: () => presenter.onLoad(profileId!),
   } satisfies PersonContext
-
-  // A sub-page names itself and leads back to its tab: neither the person's name nor the tabs.
-  if (subPage) return <Outlet context={context} />
 
   return (
     <div className="flex flex-col gap-4">

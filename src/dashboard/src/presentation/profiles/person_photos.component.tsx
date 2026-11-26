@@ -1,9 +1,10 @@
 import { useEffect, useReducer, useRef } from 'react'
-import { Trash2 } from 'lucide-react'
+import { RefreshCw, Trash2 } from 'lucide-react'
 import { Badge } from '../../common/components/badge'
 import { Button } from '../../common/ui/button'
 import { SettingsPage } from '../../common/settings/settings_page'
-import { AdvancedRow } from '../../common/settings/advanced'
+import { AdvancedFold } from '../../common/settings/advanced'
+import { SecondaryButton } from '../../common/components/secondary_button'
 import { useToast } from '../../common/components/toast'
 import { ConfirmModal } from '../../common/components/confirm_modal'
 import { ReadFailure } from '../../common/components/error_message'
@@ -15,7 +16,6 @@ import { usePerson } from './person_context'
 import { buildPersonPhotosPresenter } from './person_photos.presenter'
 import { personPhotosReducer } from './person_photos.reducer'
 import { buildInitialPersonPhotosUido } from './person_photos.uido'
-import { PEOPLE_PATH } from '../settings/settings.rubrics'
 
 /** Below this, recognition misfires more than it recognizes. */
 const ADVISED_PHOTOS = 3
@@ -115,7 +115,22 @@ export function PersonPhotosView() {
           </ul>
         )}
 
-        <AdvancedRow to={`${PEOPLE_PATH}/${personId}/photos/advanced`} />
+        <AdvancedFold>
+          <p className="mx-1 text-body text-muted-foreground">
+            Si une photo reste « en attente », renvoyez toute la bibliothèque au moteur de
+            reconnaissance.
+          </p>
+          <div>
+            <SecondaryButton
+              icon={RefreshCw}
+              type="button"
+              disabled={uido.resyncing}
+              onClick={presenter.onAskResync}
+            >
+              {uido.resyncing ? 'Reprise…' : 'Reprendre toutes les photos'}
+            </SecondaryButton>
+          </div>
+        </AdvancedFold>
       </SettingsPage>
 
       {uido.confirmRemoveId && (
@@ -131,6 +146,17 @@ export function PersonPhotosView() {
           loading={uido.removing}
           onConfirm={() => presenter.onRemove(personId, uido.confirmRemoveId!)}
           onCancel={presenter.onCancelRemove}
+        />
+      )}
+
+      {uido.confirmResync && (
+        <ConfirmModal
+          title="Reprendre toutes les photos ?"
+          body="Toutes les photos de toutes les personnes sont réanalysées. Selon leur nombre, cela prend de quelques secondes à plusieurs minutes."
+          confirmLabel="Reprendre"
+          loading={uido.resyncing}
+          onConfirm={presenter.onResync}
+          onCancel={presenter.onCancelResync}
         />
       )}
     </>

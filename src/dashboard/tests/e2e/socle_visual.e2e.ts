@@ -44,7 +44,8 @@ test.describe('Base styles', () => {
     await expect(page.getByRole('img', { name: 'En marche' })).toBeVisible()
 
     // The iframe shell, last screen brought onto the socle.
-    await page.goto('/settings/hardware/advanced')
+    await page.goto('/settings/hardware')
+    await page.locator('summary', { hasText: /^Avancé/ }).click()
     await expect(
       page
         .getByRole('status', { name: 'Chargement de Frigate…' })

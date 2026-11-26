@@ -3,7 +3,7 @@ import { createBrowserRouter, Navigate, RouterProvider } from 'react-router'
 import { ToastProvider } from './common/components/toast'
 import { installPressFeedback } from './common/motion/press'
 import { AppContainerProvider } from './infrastructure/providers/app_container.context'
-import { OWN_HEADER, SUB_PAGE } from './presentation/settings/settings.rubrics'
+import { OWN_HEADER } from './presentation/settings/settings.rubrics'
 import { AccessGate } from './presentation/access/access_gate.component'
 import { AppShell } from './presentation/shell/app_shell.component'
 import { LIVE_VIEW_ROUTE } from './presentation/live_view/live_view.route'
@@ -79,21 +79,6 @@ const PersonIdentityView = lazy(() =>
     default: m.PersonIdentityView,
   })),
 )
-const CameraConnectionAdvancedView = lazy(() =>
-  import('./presentation/cameras/camera_connection_advanced.component').then((m) => ({
-    default: m.CameraConnectionAdvancedView,
-  })),
-)
-const CameraProtocolView = lazy(() =>
-  import('./presentation/cameras/camera_protocol.component').then((m) => ({
-    default: m.CameraProtocolView,
-  })),
-)
-const PersonPhotosAdvancedView = lazy(() =>
-  import('./presentation/profiles/person_photos_advanced.component').then((m) => ({
-    default: m.PersonPhotosAdvancedView,
-  })),
-)
 const PersonPhotosView = lazy(() =>
   import('./presentation/profiles/person_photos.component').then((m) => ({
     default: m.PersonPhotosView,
@@ -139,9 +124,6 @@ const AccessView = lazy(() =>
 )
 const SystemView = lazy(() =>
   import('./presentation/settings/system.component').then((m) => ({ default: m.SystemView })),
-)
-const ExpertView = lazy(() =>
-  import('./presentation/expert/expert.component').then((m) => ({ default: m.ExpertView })),
 )
 
 function Root() {
@@ -193,16 +175,6 @@ const router = createBrowserRouter([
                   // A camera always opens on Connexion (CAM-61).
                   { index: true, element: <Navigate to="connection" replace /> },
                   { path: 'connection', element: <CameraConnectionView /> },
-                  {
-                    path: 'connection/advanced',
-                    element: <CameraConnectionAdvancedView />,
-                    handle: SUB_PAGE,
-                  },
-                  {
-                    path: 'connection/advanced/protocols/:protocol',
-                    element: <CameraProtocolView />,
-                    handle: SUB_PAGE,
-                  },
                   { path: 'privacy', element: <CameraPrivacyView /> },
                   { path: 'detection', element: <CameraDetectionView /> },
                   { path: 'image', element: <CameraImageView /> },
@@ -223,7 +195,6 @@ const router = createBrowserRouter([
               { index: true, element: <Navigate to="identity" replace /> },
               { path: 'identity', element: <PersonIdentityView /> },
               { path: 'photos', element: <PersonPhotosView /> },
-              { path: 'photos/advanced', element: <PersonPhotosAdvancedView />, handle: SUB_PAGE },
               { path: 'cameras', element: <PersonCamerasView /> },
             ],
           },
@@ -241,17 +212,11 @@ const router = createBrowserRouter([
             element: <NotificationChannelView />,
             handle: OWN_HEADER,
           },
-          {
-            path: 'notifications/:channel/advanced',
-            element: <NotificationChannelView advanced />,
-            handle: OWN_HEADER,
-          },
           { path: 'schedule', element: <ScheduleWeekView /> },
           { path: 'schedule/add', element: <ScheduleRuleView />, handle: OWN_HEADER },
           { path: 'schedule/:ruleId', element: <ScheduleRuleView />, handle: OWN_HEADER },
           { path: 'access', element: <AccessView /> },
           { path: 'hardware', element: <SystemView /> },
-          { path: 'hardware/advanced', element: <ExpertView />, handle: OWN_HEADER },
         ],
       },
     ],

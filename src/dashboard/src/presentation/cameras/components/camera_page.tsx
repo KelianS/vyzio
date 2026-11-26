@@ -1,4 +1,4 @@
-import { Link, Outlet, useMatches } from 'react-router'
+import { Link, Outlet } from 'react-router'
 import { TabBar } from '../../../common/components/tab_bar'
 import { SettingsPage } from '../../../common/settings/settings_page'
 import { ReadFailure } from '../../../common/components/error_message'
@@ -8,7 +8,6 @@ import { cameraMark } from '../../../common/camera/camera_status'
 import { PageHeader } from '../../../common/components/page_header'
 import { CameraNotFound } from './camera_not_found'
 import { Loading } from '../../../common/components/loading'
-import { isSubPage } from '../../settings/settings.rubrics'
 
 // The pages of one camera, each the twin of an installation page one notch lower (UI-08).
 const CAMERA_PAGES = [
@@ -30,8 +29,6 @@ export function CameraPage({
   error: AppError | null
   onRetry: () => void
 }) {
-  const subPage = isSubPage(useMatches())
-
   if (!camera && loading)
     return (
       <SettingsPage>
@@ -60,9 +57,6 @@ export function CameraPage({
       </SettingsPage>
     )
   }
-
-  // A sub-page names itself and leads back to its tab: neither the camera's name nor its tabs.
-  if (subPage) return <Outlet context={camera} />
 
   return (
     <div className="flex flex-col gap-4">

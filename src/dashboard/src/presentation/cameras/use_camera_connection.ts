@@ -36,7 +36,7 @@ type ConnectionDeps = Pick<
   'container' | 'hubContainer'
 >
 
-/** A camera's connection, read and drafted the same way by its Connexion page and its Avancé page. */
+/** A camera's connection, read and drafted for its Connexion page, its Avancé fold included. */
 export function useCameraConnection(camera: Camera, { container, hubContainer }: ConnectionDeps) {
   const { toast } = useToast()
   const [uido, dispatch] = useReducer(

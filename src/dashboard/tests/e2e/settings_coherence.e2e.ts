@@ -156,28 +156,19 @@ test.describe('Settings screens coherence', () => {
   })
 
   const ADVANCED_ROUTES = [
-    {
-      path: '/settings/face-recognition/profile-1/photos',
-      advanced: '/settings/face-recognition/profile-1/photos/advanced',
-    },
-    {
-      path: '/settings/cameras/camera-1/connection',
-      advanced: '/settings/cameras/camera-1/connection/advanced',
-    },
+    '/settings/face-recognition/profile-1/photos',
+    '/settings/cameras/camera-1/connection',
+    '/settings/hardware',
   ]
 
-  for (const { path, advanced } of ADVANCED_ROUTES) {
-    test(`AdvancedRow_ShouldOpenItsOwnAdvancedPage_WhenTheUserFollowsIt (${path})`, async ({
-      page,
-    }) => {
+  for (const path of ADVANCED_ROUTES) {
+    test(`AdvancedFold_ShouldOpenInPlace_WhenTheUserOpensIt (${path})`, async ({ page }) => {
       await page.goto(path)
+      const fold = page.locator('summary', { hasText: /^Avancé/ })
 
-      // "Avance" is a position, not a mode (UI-09): one row of its own, leading to its own page.
-      await page.getByRole('link', { name: 'Avancé' }).click()
-      await expect(page).toHaveURL(advanced)
-      await expect(page.getByRole('heading', { level: 1, name: 'Avancé' })).toBeVisible()
-
-      await page.getByRole('button', { name: 'Retour' }).click()
+      // "Avance" is a position, not a mode (UI-09): a closed fold that opens where it stands (UI-25).
+      await fold.click()
+      await expect(fold.locator('xpath=..')).toHaveAttribute('open', '')
       await expect(page).toHaveURL(path)
     })
   }

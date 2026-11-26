@@ -48,7 +48,7 @@ describe('SystemView', () => {
     expect(card.getByText('Front Door')).toBeVisible()
   })
 
-  it('SystemView_ShouldOpenTheTechnicalInterfaceFromAvanceAndSayWhatItCosts_WhenRendered', async () => {
+  it('SystemView_ShouldSayWhatTheTechnicalInterfaceCostsUnderAClosedAvance_WhenRendered', async () => {
     // Arrange
     fakeNetwork({ 'GET /api/system/stats': ok(running), 'GET /api/cameras': ok([]) })
 
@@ -57,9 +57,44 @@ describe('SystemView', () => {
     await pollTheSurveillance()
 
     // Assert
-    const advanced = screen.getByRole('link', { name: /Avancé/ })
-    expect(advanced).toHaveAttribute('href', '/settings/hardware/advanced')
-    expect(advanced).toHaveTextContent('ce qu’on y modifie n’est pas repris par Vyzio')
+    expect(screen.getByText('Avancé')).toBeVisible()
+    expect(
+      screen.getByText('Interface technique, ce qu’on y modifie n’est pas repris par Vyzio'),
+    ).toBeVisible()
+    expect(screen.queryByTitle('Frigate NVR')).not.toBeInTheDocument()
+  })
+
+  it('AdvancedFold_ShouldOpenTheTechnicalInterfaceInPlace_WhenTheUserOpensIt', async () => {
+    // Arrange
+    fakeNetwork({ 'GET /api/system/stats': ok(running), 'GET /api/cameras': ok([]) })
+    const { router } = renderScreen(<SystemView />, {
+      path: '/settings/hardware',
+      url: '/settings/hardware',
+    })
+    await pollTheSurveillance()
+
+    // Act
+    await userEvent.click(screen.getByText('Avancé'))
+
+    // Assert
+    expect(screen.getByTitle('Frigate NVR')).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/settings/hardware')
+  })
+
+  it('onDiagnose_ShouldOpenTheTechnicalInterfaceInPlace_WhenSurveillanceIsStopped', async () => {
+    // Arrange
+    fakeNetwork({
+      'GET /api/system/stats': ok({ ...running, status: 'unavailable' }),
+      'GET /api/cameras': ok([]),
+    })
+    renderScreen(<SystemView />)
+    await pollTheSurveillance()
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Diagnostiquer' }))
+
+    // Assert
+    expect(screen.getByTitle('Frigate NVR')).toBeInTheDocument()
   })
 
   it('SystemView_ShouldWaitForTheNextReading_WhenTheStateCannotBeRead', async () => {

@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useOutletContext } from 'react-router'
+import { Search } from 'lucide-react'
 import { useGoBack } from '../../common/navigation/use_go_back'
 import { SettingsList } from '../../common/settings/settings_list'
 import { SettingsDraftBar } from '../../common/settings/settings_draft_bar'
@@ -8,9 +9,14 @@ import { DeleteAction } from '../../common/components/delete_action'
 import type { Camera } from '../../domain/entities/camera.entity'
 import { SettingsPage, SettingsSection } from '../../common/settings/settings_page'
 import { HelpNotes, HelpQuestion } from '../../common/components/help_notes'
-import { AdvancedRow } from '../../common/settings/advanced'
+import { AdvancedFold } from '../../common/settings/advanced'
+import { SecondaryButton } from '../../common/components/secondary_button'
 import { CapabilitySection } from './components/capability_section'
 import { CameraNotFound } from './components/camera_not_found'
+import { AddProtocol } from './components/add_protocol_form'
+import { ProtocolCard, ProtocolList } from './components/protocol_list'
+import { CAPABILITY_LABELS } from './cameras.formatters'
+import { protocolKey } from './camera_connection_values'
 import { otherTestsSuspended, streamBindingOf } from './capability_state'
 import { useCameraConnection } from './use_camera_connection'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
@@ -19,7 +25,7 @@ export function CameraConnectionView() {
   const camera = useOutletContext<Camera>()
   const { cameras, hub } = useAppContainer()
   const goBack = useGoBack()
-  const { uido, presenter, draft } = useCameraConnection(camera, {
+  const { uido, presenter, draft, setProtocol } = useCameraConnection(camera, {
     container: cameras,
     hubContainer: hub,
   })
@@ -39,6 +45,33 @@ export function CameraConnectionView() {
       nature: { kind: 'text' },
       value: draft.values.displayName,
       onChange: (value) => draft.set('displayName', value as string),
+    },
+  ]
+
+  // How Vyzio reaches the camera itself: rare, in its Avancé fold (DESIGN SYSTEM § Folds).
+  const access: SettingDeclaration[] = [
+    {
+      id: 'connection-host',
+      label: 'Adresse',
+      nature: { kind: 'text', placeholder: '192.168.1.50', keyboard: 'address' },
+      help: 'L’adresse de la caméra sur votre réseau local. Elle peut changer si votre box la réattribue.',
+      value: draft.values.host,
+      onChange: (value) => draft.set('host', value as string),
+    },
+    {
+      id: 'connection-username',
+      label: 'Identifiant',
+      nature: { kind: 'text', keyboard: 'identifier' },
+      value: draft.values.username,
+      onChange: (value) => draft.set('username', value as string),
+    },
+    {
+      id: 'connection-password',
+      label: 'Mot de passe',
+      nature: { kind: 'secret', placeholder: 'Inchangé' },
+      help: 'Laissez vide pour conserver le mot de passe actuel.',
+      value: draft.values.password,
+      onChange: (value) => draft.set('password', value as string),
     },
   ]
 
@@ -118,7 +151,59 @@ export function CameraConnectionView() {
           />
         </SettingsSection>
 
-        <AdvancedRow to={`/settings/cameras/${cameraId}/connection/advanced`} />
+        <AdvancedFold>
+          <SettingsList settings={access} />
+
+          <div className="flex flex-col gap-4">
+            <ProtocolList
+              loading={uido.protocolsLoading}
+              readError={uido.protocolsError}
+              onRetryRead={() => presenter.onLoad(cameraId)}
+            >
+              {uido.protocols.map((entry) => {
+                const key = protocolKey(entry.protocol)
+                return (
+                  <ProtocolCard
+                    key={entry.protocol}
+                    entry={entry}
+                    values={draft.values[key]}
+                    onChange={(patch) => setProtocol(entry.protocol, patch)}
+                    usedBy={uido.bindings
+                      .filter((b) => b.isConfigured && b.protocol === entry.protocol)
+                      .map((b) => CAPABILITY_LABELS[b.capability])}
+                    edited={draft.values[key] !== draft.saved[key]}
+                    checking={uido.checking[entry.protocol] === true}
+                    removing={uido.removing[entry.protocol] === true}
+                    onCheck={() => void presenter.onCheckProtocol(cameraId, entry.protocol)}
+                    onRemove={() => presenter.onRemoveProtocol(cameraId, entry.protocol)}
+                  />
+                )
+              })}
+            </ProtocolList>
+            {!uido.protocolsLoading && !uido.protocolsError && (
+              <div className="flex flex-wrap items-center gap-2">
+                <SecondaryButton
+                  icon={Search}
+                  type="button"
+                  size="sm"
+                  disabled={uido.searchingProtocols}
+                  onClick={() => void presenter.onSearchProtocols(cameraId)}
+                >
+                  {uido.searchingProtocols ? 'Recherche…' : 'Rechercher les protocoles'}
+                </SecondaryButton>
+                {/* Adding by hand is the way out when the search finds nothing (CAM-64). */}
+                <AddProtocol
+                  protocols={uido.protocols}
+                  open={uido.protocolFormOpen}
+                  adding={uido.addingProtocol}
+                  onOpen={presenter.onOpenProtocolForm}
+                  onClose={presenter.onCloseProtocolForm}
+                  onAdd={(addition) => void presenter.onAddProtocol(cameraId, addition)}
+                />
+              </div>
+            )}
+          </div>
+        </AdvancedFold>
 
         <DeleteAction
           label="Supprimer cette caméra"
