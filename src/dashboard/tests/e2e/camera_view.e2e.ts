@@ -82,6 +82,28 @@ test.describe('Camera view', () => {
     expect(box.y).toBeGreaterThanOrEqual(bar.y + bar.height)
   })
 
+  test('CameraView_ShouldPlayTheClipAtTheLiveSize_WhenTheListSitsBesideIt', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 })
+    await installFakeBackend(
+      page,
+      createFakeBackendState({
+        detectionHistory: [
+          makeFakeDetectionEvent({ eventId: 'e0', camera: 'front_door', identity: 'Camille' }),
+          ...longHistory,
+        ],
+      }),
+    )
+    await page.goto('/cameras/camera-1?tab=detections')
+    const live = page.locator('video[aria-label="Porte d’entrée"]')
+    await expect(live).toBeVisible()
+    const liveBox = (await live.boundingBox())!
+
+    await page.getByRole('button', { name: /Camille/ }).click()
+
+    const clipBox = (await page.getByRole('group', { name: /^Détection :/ }).boundingBox())!
+    expect(clipBox).toEqual(liveBox)
+  })
+
   test('CameraView_ShouldOpenItsDetectionsAndComeBackToThem_WhenTheUserFollowsToutesSesDetections', async ({
     page,
   }) => {

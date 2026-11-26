@@ -380,7 +380,8 @@ export function LiveView({ camera }: { camera: Camera }) {
           labels={uido.clipLabels}
           apiBaseUrl={apiBaseUrl}
           clipGone={uido.clipGoneId === playing.eventId}
-          className={PLAYER_FRAME}
+          // Beside its list on a wide screen (LIVE-19), the clip keeps the live's place and size (UI-39).
+          className={cn(PLAYER_FRAME, 'lg:max-h-none')}
           onVideoError={() => void presenter.onClipFailed(playing.eventId)}
         >
           <PressableControl>
@@ -462,8 +463,8 @@ export function LiveView({ camera }: { camera: Camera }) {
         <div
           className={cn(
             immersive ? 'fixed inset-0 z-40 touch-manipulation bg-picture' : 'relative w-full',
-            // A clip sticks under the bar, its list scrolling below (UI-39).
-            playing && !immersive && !sideways && STICKY_WELL,
+            // A clip sticks under the bar while its list scrolls below it, not beside it (UI-39).
+            playing && !immersive && !sideways && cn(STICKY_WELL, 'lg:static'),
           )}
           onPointerDownCapture={immersive ? controls.hold : undefined}
           onPointerUpCapture={immersive ? controls.release : undefined}
