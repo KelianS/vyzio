@@ -80,6 +80,38 @@ test.describe('Sign-in', () => {
 
     await expect(page.getByRole('banner')).toBeVisible()
   })
+
+  test('AccessGate_ShouldShowThenMaskThePasswordAndMaskItAgainOnSubmit_WhenTheUserPressesTheEye', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await installFakeBackend(
+      page,
+      createFakeBackendState({ access: { installed: true, signedIn: false } }),
+    )
+    await page.goto('/')
+    const field = page.getByLabel('Mot de passe', { exact: true })
+    const eye = page.getByRole('button', { name: 'Afficher le mot de passe' })
+    await field.fill('pas-le-bon-mot')
+
+    await eye.click()
+    await expect(field).toHaveAttribute('type', 'text')
+    await expect(field).toHaveValue('pas-le-bon-mot')
+    await expect(eye).toHaveAttribute('aria-pressed', 'true')
+    await expect(field).toBeFocused()
+
+    await eye.click()
+    await expect(field).toHaveAttribute('type', 'password')
+    await expect(eye).toHaveAttribute('aria-pressed', 'false')
+    await expect(field).toBeFocused()
+
+    await eye.click()
+    await page.getByRole('button', { name: 'Déverrouiller' }).click()
+    await expect(page.getByRole('alert')).toContainText('Mot de passe incorrect.')
+    await expect(field).toHaveAttribute('type', 'password')
+    await expect(eye).toHaveAttribute('aria-pressed', 'false')
+  })
+
   test('AccessGate_ShouldShowTheRefusalInTheErrorColourWithoutMovingTheButton_WhenThePasswordIsWrong', async ({
     page,
   }) => {
