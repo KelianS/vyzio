@@ -326,10 +326,9 @@ takes its place, naming as a link the page where it is fixed.
 None stands in for another: no setting in help or technical details, no help in `Avancé`.
 
 **A settings page reads in one order**: its settings, the `Avancé` fold, the removal, then the help
-questions. `Avancé` opens where it stands, never one more page (UI-25): what it holds that is a
-thing of its own (a protocol) reads as a card in it; only Matériel's holds a row opening a page, the
-technical interface's own. A fold may open on one quiet line saying what it holds (a lede), never a
-title.
+questions. `Avancé` opens where it stands, never one more page except where UI-25 says otherwise:
+what it holds that is a thing of its own (a protocol) reads as a card in it. A fold may open on one
+quiet line saying what it holds (a lede), never a title.
 
 ### Help: three levels, not a manual
 
