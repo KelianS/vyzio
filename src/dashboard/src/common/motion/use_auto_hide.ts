@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 const HIDE_AFTER_MS = 3000
 
-/** Controls over the picture fade without a gesture, never while a finger holds one (LIVE-10). */
+/** Controls over a picture fade without a gesture, never while a finger holds one (LIVE-10, HIST-20). */
 export function useAutoHide(enabled: boolean) {
   const [hidden, setHidden] = useState(false)
   const [wasEnabled, setWasEnabled] = useState(enabled)
@@ -36,6 +36,12 @@ export function useAutoHide(enabled: boolean) {
     arm()
     return disarm
   }, [enabled, arm, disarm])
+
+  // A key brings the faded controls back, wherever the focus fell when they faded.
+  useEffect(() => {
+    window.addEventListener('keydown', reveal)
+    return () => window.removeEventListener('keydown', reveal)
+  }, [reveal])
 
   return {
     shown: !enabled || !hidden,

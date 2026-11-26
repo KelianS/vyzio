@@ -9,7 +9,7 @@ import type { PtzPreset } from '../../../domain/entities/ptz_preset.entity'
 import { POSITIONS_UNREAD } from '../../cameras/cameras.formatters'
 import { presetLabel } from '../live_view.formatters'
 import type { LiveViewUido, PresetActivity } from '../live_view.uido'
-import { fading } from './live_control'
+import { fading } from '../../../common/motion/fading'
 import type { PadVariant } from './ptz_pad'
 
 const ALL_PRESET_IDS = [1, 2, 3, 4]

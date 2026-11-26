@@ -2,6 +2,8 @@ import { useRef, useState, type ReactNode } from 'react'
 import { Pause, Play } from 'lucide-react'
 import { cn } from '../ui/utils'
 import { PressableControl } from '../components/pressable'
+import { fading } from '../motion/fading'
+import { useAutoHide } from '../motion/use_auto_hide'
 import type { DetectionEvent } from '../../domain/entities/detection_event.entity'
 import type { DetectionLabel } from '../../domain/entities/detection_label.entity'
 import { clipUrl, formatClipDetail, formatEventTitle, snapshotUrl } from './detection_formatters'
@@ -21,6 +23,7 @@ function stillOf(event: DetectionEvent, clipGone: boolean): string | null {
 /**
  * The player of a detection, in place of a picture: its video from the start, its name and hour over
  * it, how far it has played. It stops on its last frame unless the screen goes on (`onEnded`).
+ * While it plays, all but the progress line fade and come back at a tap or a key (HIST-20).
  */
 export function ClipPlayer({
   event,
@@ -48,12 +51,20 @@ export function ClipPlayer({
 }) {
   const still = stillOf(event, clipGone)
   const video = !still && event.hasClip
+  // Held by the clip it names, so the next clip starts as not yet playing.
+  const [playingId, setPlayingId] = useState<string | null>(null)
+  const controls = useAutoHide(video && playingId === event.eventId)
+  const fade = fading(controls.shown)
 
   return (
     <div
       role="group"
       aria-label={`Détection : ${formatEventTitle(event, labels)}`}
       className={cn('relative overflow-hidden bg-picture', className)}
+      onPointerDownCapture={controls.hold}
+      onPointerUpCapture={controls.release}
+      onPointerCancelCapture={controls.release}
+      onFocusCapture={controls.reveal}
     >
       {video && (
         <ClipVideo
@@ -61,6 +72,8 @@ export function ClipPlayer({
           key={event.eventId}
           src={clipUrl(apiBaseUrl, event.eventId)}
           label={formatEventTitle(event, labels)}
+          fade={fade}
+          onPlayingChange={(playing) => setPlayingId(playing ? event.eventId : null)}
           onEnded={onEnded}
           onError={onVideoError}
         />
@@ -78,7 +91,13 @@ export function ClipPlayer({
         </p>
       )}
 
-      <div className="absolute inset-x-0 bottom-0 flex items-center gap-2.5 bg-linear-to-t from-picture/80 to-transparent px-3 pt-8 pb-3">
+      <div
+        {...fade}
+        className={cn(
+          'absolute inset-x-0 bottom-0 flex items-center gap-2.5 bg-linear-to-t from-picture/80 to-transparent px-3 pt-8 pb-3',
+          fade.className,
+        )}
+      >
         <DetectionTypeIcon label={event.label} className="size-9" />
         <div className="min-w-0">
           <p className="text-row font-semibold">{formatEventTitle(event, labels)}</p>
@@ -87,7 +106,8 @@ export function ClipPlayer({
           </p>
         </div>
       </div>
-      {children}
+      {/* Static, so the screen's controls keep the player as their frame while they fade. */}
+      <div {...fade}>{children}</div>
     </div>
   )
 }
@@ -96,11 +116,15 @@ export function ClipPlayer({
 function ClipVideo({
   src,
   label,
+  fade,
+  onPlayingChange,
   onEnded,
   onError,
 }: {
   src: string
   label: string
+  fade: ReturnType<typeof fading>
+  onPlayingChange: (playing: boolean) => void
   onEnded?: () => void
   onError: () => void
 }) {
@@ -124,23 +148,34 @@ function ClipVideo({
           if (duration > 0) setPlayed(currentTime / duration)
         }}
         onPlay={() => setPaused(false)}
-        onPause={() => setPaused(true)}
-        onEnded={onEnded}
+        // A clip waiting for its data is not playing: its controls stay while it waits.
+        onPlaying={() => onPlayingChange(true)}
+        onWaiting={() => onPlayingChange(false)}
+        onPause={() => {
+          setPaused(true)
+          onPlayingChange(false)
+        }}
+        onEnded={() => {
+          onPlayingChange(false)
+          onEnded?.()
+        }}
         onError={onError}
       />
-      <PressableControl>
-        <button
-          type="button"
-          aria-label={paused ? 'Lire' : 'Pause'}
-          onClick={() => {
-            if (paused) void ref.current?.play()
-            else ref.current?.pause()
-          }}
-          className="absolute top-1/2 left-1/2 z-10 flex size-16 -translate-1/2 items-center justify-center rounded-full bg-glass outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-        >
-          <Icon className="size-6 fill-current" aria-hidden="true" />
-        </button>
-      </PressableControl>
+      <div {...fade}>
+        <PressableControl>
+          <button
+            type="button"
+            aria-label={paused ? 'Lire' : 'Pause'}
+            onClick={() => {
+              if (paused) void ref.current?.play()
+              else ref.current?.pause()
+            }}
+            className="absolute top-1/2 left-1/2 z-10 flex size-16 -translate-1/2 items-center justify-center rounded-full bg-glass outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          >
+            <Icon className="size-6 fill-current" aria-hidden="true" />
+          </button>
+        </PressableControl>
+      </div>
       <div className="absolute inset-x-0 bottom-0 z-10 h-0.75 bg-foreground/20" aria-hidden="true">
         <div className="h-full bg-foreground" style={{ width: `${played * 100}%` }} />
       </div>

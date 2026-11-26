@@ -413,6 +413,9 @@ over a page: the back button returns to the previous page, home when there is no
   controls lie over it, translucent; they fade after a few seconds without a gesture and come back on a
   tap, never while a finger holds one. A line that explains a state never fades. Where each control
   sits is the use case's.
+- **Clip player**: the pause, the clip's caption and its controls fade over a playing clip the way
+  the full-screen controls do; when they fade and what brings them back is
+  [SPECS](SPECS.md) HIST-20.
 - **The browser's own bars**: in full screen, the screen asks the browser to hide them on a gesture,
   and keeps every control inside the device's safe areas.
 
