@@ -9,6 +9,7 @@ import {
 import { SecondaryButton } from '../../../common/components/secondary_button'
 import { Surface } from '../../../common/components/surface'
 import { cn } from '../../../common/ui/utils'
+import { TECHNICAL_INTERFACE_PATH } from '../hardware_paths'
 import { TechnicalDetails } from '../../../common/components/technical_details'
 import { isStorageCritical, storageUsedRatio } from '../../../common/surveillance/storage'
 import type { Camera } from '../../../domain/entities/camera.entity'
@@ -44,16 +45,7 @@ const DEGRADED_SHOWS_DIAGNOSIS: Record<DegradedStatus, boolean> = {
   unavailable: true,
 }
 
-export function SystemMonitorPanel({
-  stats,
-  cameras,
-  onDiagnose,
-}: {
-  stats: SystemStats
-  cameras: Camera[]
-  /** Opens the engine's own interface, in the page's Avancé. */
-  onDiagnose: () => void
-}) {
+export function SystemMonitorPanel({ stats, cameras }: { stats: SystemStats; cameras: Camera[] }) {
   switch (stats.status) {
     case 'restarting':
     case 'unavailable':
@@ -62,7 +54,7 @@ export function SystemMonitorPanel({
           <p className="mt-3 text-body text-muted-foreground">{DEGRADED_MESSAGE[stats.status]}</p>
           {DEGRADED_SHOWS_DIAGNOSIS[stats.status] && (
             <div className="mt-4">
-              <SecondaryButton icon={Activity} type="button" size="sm" onClick={onDiagnose}>
+              <SecondaryButton icon={Activity} to={TECHNICAL_INTERFACE_PATH} size="sm">
                 Diagnostiquer
               </SecondaryButton>
             </div>

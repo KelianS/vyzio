@@ -122,6 +122,9 @@ const ConservationView = lazy(() =>
 const AccessView = lazy(() =>
   import('./presentation/settings/access.component').then((m) => ({ default: m.AccessView })),
 )
+const ExpertView = lazy(() =>
+  import('./presentation/expert/expert.component').then((m) => ({ default: m.ExpertView })),
+)
 const SystemView = lazy(() =>
   import('./presentation/settings/system.component').then((m) => ({ default: m.SystemView })),
 )
@@ -217,6 +220,7 @@ const router = createBrowserRouter([
           { path: 'schedule/:ruleId', element: <ScheduleRuleView />, handle: OWN_HEADER },
           { path: 'access', element: <AccessView /> },
           { path: 'hardware', element: <SystemView /> },
+          { path: 'hardware/technical-interface', element: <ExpertView />, handle: OWN_HEADER },
         ],
       },
     ],

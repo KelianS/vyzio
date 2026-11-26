@@ -48,7 +48,7 @@ describe('SystemView', () => {
     expect(card.getByText('Front Door')).toBeVisible()
   })
 
-  it('SystemView_ShouldSayWhatTheTechnicalInterfaceCostsUnderAClosedAvance_WhenRendered', async () => {
+  it('SystemView_ShouldEndWithAClosedAvance_WhenRendered', async () => {
     // Arrange
     fakeNetwork({ 'GET /api/system/stats': ok(running), 'GET /api/cameras': ok([]) })
 
@@ -58,43 +58,22 @@ describe('SystemView', () => {
 
     // Assert
     expect(screen.getByText('Avancé')).toBeVisible()
-    expect(
-      screen.getByText('Interface technique, ce qu’on y modifie n’est pas repris par Vyzio'),
-    ).toBeVisible()
-    expect(screen.queryByTitle('Frigate NVR')).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /Interface technique/ })).not.toBeInTheDocument()
   })
 
-  it('AdvancedFold_ShouldOpenTheTechnicalInterfaceInPlace_WhenTheUserOpensIt', async () => {
+  it('AdvancedFold_ShouldLeadToTheTechnicalInterfaceAndSayWhatItCosts_WhenTheUserOpensIt', async () => {
     // Arrange
     fakeNetwork({ 'GET /api/system/stats': ok(running), 'GET /api/cameras': ok([]) })
-    const { router } = renderScreen(<SystemView />, {
-      path: '/settings/hardware',
-      url: '/settings/hardware',
-    })
+    renderScreen(<SystemView />)
     await pollTheSurveillance()
 
     // Act
     await userEvent.click(screen.getByText('Avancé'))
 
     // Assert
-    expect(screen.getByTitle('Frigate NVR')).toBeInTheDocument()
-    expect(router.state.location.pathname).toBe('/settings/hardware')
-  })
-
-  it('onDiagnose_ShouldOpenTheTechnicalInterfaceInPlace_WhenSurveillanceIsStopped', async () => {
-    // Arrange
-    fakeNetwork({
-      'GET /api/system/stats': ok({ ...running, status: 'unavailable' }),
-      'GET /api/cameras': ok([]),
-    })
-    renderScreen(<SystemView />)
-    await pollTheSurveillance()
-
-    // Act
-    await userEvent.click(screen.getByRole('button', { name: 'Diagnostiquer' }))
-
-    // Assert
-    expect(screen.getByTitle('Frigate NVR')).toBeInTheDocument()
+    const technical = screen.getByRole('link', { name: /Interface technique/ })
+    expect(technical).toHaveAttribute('href', '/settings/hardware/technical-interface')
+    expect(technical).toHaveTextContent('Ce qu’on y modifie n’est pas repris par Vyzio')
   })
 
   it('SystemView_ShouldWaitForTheNextReading_WhenTheStateCannotBeRead', async () => {

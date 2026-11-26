@@ -45,9 +45,10 @@ test.describe('Navigation', () => {
     await rubrics.getByRole('link', { name: /Matériel/ }).click()
     await expect(page.getByRole('heading', { name: 'Matériel' })).toBeVisible()
 
-    // The niche one is folded, not hidden: the technical interface opens in place in Avancé.
+    // The niche one is folded, not hidden: Avancé leads to the technical interface's own page.
     await page.locator('summary', { hasText: /^Avancé/ }).click()
-    await expect(page).toHaveURL('/settings/hardware')
+    await page.getByRole('link', { name: /Interface technique/ }).click()
+    await expect(page).toHaveURL('/settings/hardware/technical-interface')
     await expect(
       page
         .getByRole('status', { name: 'Chargement de Frigate…' })

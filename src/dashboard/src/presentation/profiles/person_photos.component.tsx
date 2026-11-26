@@ -115,11 +115,7 @@ export function PersonPhotosView() {
           </ul>
         )}
 
-        <AdvancedFold>
-          <p className="mx-1 text-body text-muted-foreground">
-            Si une photo reste « en attente », renvoyez toute la bibliothèque au moteur de
-            reconnaissance.
-          </p>
+        <AdvancedFold lede="Si une photo reste « en attente », renvoyez toute la bibliothèque au moteur de reconnaissance.">
           <div>
             <SecondaryButton
               icon={RefreshCw}
