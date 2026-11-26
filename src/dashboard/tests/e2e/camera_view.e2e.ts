@@ -82,6 +82,30 @@ test.describe('Camera view', () => {
     expect(box.y).toBeGreaterThanOrEqual(bar.y + bar.height)
   })
 
+  test('CameraView_ShouldScrollTheClipPlayerAway_WhenThePhoneIsTurnedOnItsSide', async ({
+    page,
+  }) => {
+    await installFakeBackend(
+      page,
+      createFakeBackendState({
+        detectionHistory: [
+          makeFakeDetectionEvent({ eventId: 'e0', camera: 'front_door', identity: 'Camille' }),
+          ...longHistory,
+        ],
+      }),
+    )
+    await page.goto('/cameras/camera-1?tab=detections')
+    await page.getByRole('button', { name: /Camille/ }).click()
+    const player = page.getByRole('group', { name: /^Détection :/ })
+    await expect(player).toBeVisible()
+    await page.setViewportSize({ width: 800, height: 360 })
+
+    await page.mouse.wheel(0, 1200)
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(800)
+
+    await expect(player).not.toBeInViewport()
+  })
+
   test('CameraView_ShouldPlayTheClipAtTheLiveSize_WhenTheListSitsBesideIt', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 720 })
     await installFakeBackend(
