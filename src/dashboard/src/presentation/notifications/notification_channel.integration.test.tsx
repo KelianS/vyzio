@@ -107,10 +107,7 @@ describe('NotificationChannelView', () => {
 
     // Assert
     expect(screen.getByLabelText('Token du bot')).toHaveAttribute('type', 'text')
-    expect(screen.getByRole('button', { name: 'Afficher « Token du bot »' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    )
+    expect(screen.getByRole('button', { name: 'Masquer « Token du bot »' })).toBeInTheDocument()
   })
 
   it('onOpen_ShouldOfferNoAdvancedPage_WhenTheChannelIsNotConfiguredYet', async () => {

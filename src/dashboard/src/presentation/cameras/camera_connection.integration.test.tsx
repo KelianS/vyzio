@@ -1065,7 +1065,7 @@ describe('CameraConnectionView', () => {
     await userEvent.type(form.getByLabelText('Mot de passe'), 'test-secret')
 
     // Act
-    await userEvent.click(form.getByRole('button', { name: 'Afficher le mot de passe' }))
+    await userEvent.click(form.getByRole('button', { name: 'Afficher « Mot de passe »' }))
 
     // Assert
     expect(form.getByLabelText('Mot de passe')).toHaveAttribute('type', 'text')
@@ -1083,7 +1083,7 @@ describe('CameraConnectionView', () => {
     const form = within(screen.getByRole('group', { name: 'Ajouter un protocole' }))
     await userEvent.click(form.getByRole('switch', { name: 'Compte spécifique' }))
     await userEvent.type(form.getByLabelText('Mot de passe'), 'test-secret')
-    await userEvent.click(form.getByRole('button', { name: 'Afficher le mot de passe' }))
+    await userEvent.click(form.getByRole('button', { name: 'Afficher « Mot de passe »' }))
 
     // Act
     await userEvent.click(form.getByRole('button', { name: 'Ajouter et vérifier' }))

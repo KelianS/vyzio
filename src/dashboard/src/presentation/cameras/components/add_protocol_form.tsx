@@ -115,6 +115,7 @@ function AddProtocolForm({
             <Field label="Mot de passe">
               <SecretInput
                 {...SECRET_KEYBOARD}
+                label="Mot de passe"
                 validating={adding}
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}

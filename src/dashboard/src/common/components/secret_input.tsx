@@ -6,12 +6,13 @@ import { cn } from '../ui/utils'
 
 /** A password or secret field whose eye, inside it, shows what was typed then masks it again (UI-38). */
 export function SecretInput({
-  revealLabel = 'Afficher le mot de passe',
+  label,
   validating = false,
   className,
   ...input
 }: Omit<ComponentProps<'input'>, 'type'> & {
-  revealLabel?: string
+  /** The field's name, which the eye names too, so two eyes on a page never read alike. */
+  label: string
   /** True while what was typed is being validated: the field masks again as it starts. */
   validating?: boolean
 }) {
@@ -36,9 +37,7 @@ export function SecretInput({
         variant="ghost"
         size="icon"
         className="col-start-1 row-start-1 mr-1 justify-self-end text-muted-foreground hover:bg-transparent hover:text-foreground"
-        aria-label={revealLabel}
-        aria-pressed={revealed}
-        title={revealed ? 'Masquer' : 'Afficher'}
+        aria-label={`${revealed ? 'Masquer' : 'Afficher'} « ${label} »`}
         disabled={input.disabled}
         // The keyboard stays open on a phone and the caret where it was.
         onPointerDown={(event) => event.preventDefault()}

@@ -91,25 +91,26 @@ test.describe('Sign-in', () => {
     )
     await page.goto('/')
     const field = page.getByLabel('Mot de passe', { exact: true })
-    const eye = page.getByRole('button', { name: 'Afficher le mot de passe' })
+    const show = page.getByRole('button', { name: 'Afficher « Mot de passe »' })
+    const hide = page.getByRole('button', { name: 'Masquer « Mot de passe »' })
     await field.fill('pas-le-bon-mot')
 
-    await eye.click()
+    await show.click()
     await expect(field).toHaveAttribute('type', 'text')
     await expect(field).toHaveValue('pas-le-bon-mot')
-    await expect(eye).toHaveAttribute('aria-pressed', 'true')
+    await expect(hide).toBeVisible()
     await expect(field).toBeFocused()
 
-    await eye.click()
+    await hide.click()
     await expect(field).toHaveAttribute('type', 'password')
-    await expect(eye).toHaveAttribute('aria-pressed', 'false')
+    await expect(show).toBeVisible()
     await expect(field).toBeFocused()
 
-    await eye.click()
+    await show.click()
     await page.getByRole('button', { name: 'Déverrouiller' }).click()
     await expect(page.getByRole('alert')).toContainText('Mot de passe incorrect.')
     await expect(field).toHaveAttribute('type', 'password')
-    await expect(eye).toHaveAttribute('aria-pressed', 'false')
+    await expect(show).toBeVisible()
   })
 
   test('AccessGate_ShouldShowTheRefusalInTheErrorColourWithoutMovingTheButton_WhenThePasswordIsWrong', async ({
@@ -141,8 +142,8 @@ test.describe('Password change', () => {
     await installFakeBackend(page, createFakeBackendState())
 
     await page.goto('/settings/access')
-    await page.getByLabel('Mot de passe actuel').fill('pas-le-bon-mot')
-    await page.getByLabel('Nouveau mot de passe').fill('un-nouveau-mot')
+    await page.getByLabel('Mot de passe actuel', { exact: true }).fill('pas-le-bon-mot')
+    await page.getByLabel('Nouveau mot de passe', { exact: true }).fill('un-nouveau-mot')
     await page.getByRole('button', { name: 'Changer le mot de passe' }).click()
 
     await expect(page.getByRole('alert')).toContainText('Mot de passe actuel incorrect.')
@@ -157,8 +158,8 @@ test.describe('Password change', () => {
     await installFakeBackend(page, createFakeBackendState())
     await page.goto('/settings/access')
     const change = page.getByRole('button', { name: 'Changer le mot de passe' })
-    await page.getByLabel('Mot de passe actuel').fill('pas-le-bon-mot')
-    await page.getByLabel('Nouveau mot de passe').fill('un-nouveau-mot')
+    await page.getByLabel('Mot de passe actuel', { exact: true }).fill('pas-le-bon-mot')
+    await page.getByLabel('Nouveau mot de passe', { exact: true }).fill('un-nouveau-mot')
     const before = await topOf(change)
 
     await change.click()
@@ -174,8 +175,8 @@ test.describe('Password change', () => {
     await installFakeBackend(page, state)
 
     await page.goto('/settings/access')
-    await page.getByLabel('Mot de passe actuel').fill(FAKE_PASSWORD)
-    await page.getByLabel('Nouveau mot de passe').fill('un-nouveau-mot')
+    await page.getByLabel('Mot de passe actuel', { exact: true }).fill(FAKE_PASSWORD)
+    await page.getByLabel('Nouveau mot de passe', { exact: true }).fill('un-nouveau-mot')
     await page.getByRole('button', { name: 'Changer le mot de passe' }).click()
 
     await expect(page.getByText('Mot de passe changé.')).toBeVisible()

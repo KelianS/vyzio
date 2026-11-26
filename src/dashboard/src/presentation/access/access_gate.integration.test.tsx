@@ -96,14 +96,11 @@ describe('AccessGate', () => {
     await typeThePassword('correct-horse')
 
     // Act
-    await userEvent.click(screen.getByRole('button', { name: 'Afficher le mot de passe' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Afficher « Mot de passe »' }))
 
     // Assert
     expect(screen.getByRole('textbox', { name: 'Mot de passe' })).toHaveValue('correct-horse')
-    expect(screen.getByRole('button', { name: 'Afficher le mot de passe' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    )
+    expect(screen.getByRole('button', { name: 'Masquer « Mot de passe »' })).toBeInTheDocument()
   })
 
   it('PasswordScreen_ShouldMaskThePasswordAndKeepTheFocusInTheField_WhenTheUserPressesTheEyeAgain', async () => {
@@ -111,17 +108,16 @@ describe('AccessGate', () => {
     fakeNetwork({ [STATE]: ok(installed), [SESSION]: failure(401) })
     renderGate()
     await typeThePassword('correct-horse')
-    const eye = screen.getByRole('button', { name: 'Afficher le mot de passe' })
-    await userEvent.click(eye)
+    await userEvent.click(screen.getByRole('button', { name: 'Afficher « Mot de passe »' }))
 
     // Act
-    await userEvent.click(eye)
+    await userEvent.click(screen.getByRole('button', { name: 'Masquer « Mot de passe »' }))
 
     // Assert
     const field = screen.getByLabelText('Mot de passe')
     expect(field).toHaveAttribute('type', 'password')
     expect(field).toHaveFocus()
-    expect(eye).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByRole('button', { name: 'Afficher « Mot de passe »' })).toBeInTheDocument()
   })
 
   it('PasswordScreen_ShouldMaskThePasswordAgain_WhenTheUserSubmitsItRevealed', async () => {
@@ -129,7 +125,7 @@ describe('AccessGate', () => {
     fakeNetwork({ [STATE]: ok(installed), [SESSION]: failure(401), [SIGN_IN]: failure(401) })
     renderGate()
     await typeThePassword('guess')
-    await userEvent.click(screen.getByRole('button', { name: 'Afficher le mot de passe' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Afficher « Mot de passe »' }))
 
     // Act
     await userEvent.click(screen.getByRole('button', { name: 'Déverrouiller' }))
@@ -148,10 +144,7 @@ describe('AccessGate', () => {
 
     // Assert
     expect(await screen.findByLabelText('Mot de passe')).toHaveAttribute('type', 'password')
-    expect(screen.getByRole('button', { name: 'Afficher le mot de passe' })).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    )
+    expect(screen.getByRole('button', { name: 'Afficher « Mot de passe »' })).toBeInTheDocument()
   })
 
   it('onLoad_ShouldFillTheScreenSayingVyzioDoesNotAnswer_WhenTheStateCannotBeRead', async () => {

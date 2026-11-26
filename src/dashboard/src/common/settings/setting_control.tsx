@@ -331,7 +331,7 @@ function SecretControl({
     <SecretInput
       {...SECRET_KEYBOARD}
       id={setting.id}
-      revealLabel={`Afficher « ${setting.label} »`}
+      label={setting.label}
       placeholder={nature.placeholder}
       validating={nature.validating}
       disabled={setting.disabled}

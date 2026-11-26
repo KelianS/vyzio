@@ -133,6 +133,7 @@ function ChangePasswordForm({
         </label>
         <SecretInput
           id="current-password"
+          label="Mot de passe actuel"
           validating={changing}
           autoComplete="current-password"
           value={current}
@@ -150,6 +151,7 @@ function ChangePasswordForm({
         </label>
         <SecretInput
           id="new-password"
+          label="Nouveau mot de passe"
           validating={changing}
           autoComplete="new-password"
           value={next}

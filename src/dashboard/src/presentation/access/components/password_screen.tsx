@@ -53,6 +53,7 @@ export function PasswordScreen({
           </label>
           <SecretInput
             id="password"
+            label={label}
             validating={busy}
             autoFocus
             autoComplete={minLength === undefined ? 'current-password' : 'new-password'}
