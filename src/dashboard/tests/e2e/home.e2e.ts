@@ -165,4 +165,21 @@ test.describe('Home', () => {
     await page.clock.fastForward(8000)
     await expect(alerts).toHaveCount(0)
   })
+
+  test('TopBar_ShouldOpenTheCameraAndDropItsAlert_WhenTheUserTouchesTheOfflineAlert', async ({
+    page,
+  }) => {
+    const state = createFakeBackendState({
+      cameras: [makeFakeCamera({ displayName: 'Jardin', status: 'offline' })],
+    })
+    await installFakeBackend(page, state)
+    await page.goto('/')
+    const alerts = page.getByRole('list', { name: 'Alertes' })
+
+    await alerts.getByRole('link', { name: /Jardin ne répond plus/ }).click()
+
+    await expect(page).toHaveURL('/cameras/camera-1')
+    await expect(page.getByRole('heading', { name: 'Jardin' })).toBeVisible()
+    await expect(alerts).toHaveCount(0)
+  })
 })

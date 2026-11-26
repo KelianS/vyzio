@@ -138,6 +138,7 @@ export function BarAlertList({
           </>
         )
         const line = 'flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-inset p-3'
+        const dismiss = () => setDismissed([...kept, alert.key])
         return (
           <AlertLine
             key={alert.key}
@@ -146,7 +147,11 @@ export function BarAlertList({
           >
             {alert.to ? (
               <PressableSurface>
-                <Link to={alert.to} className={line}>
+                <Link
+                  to={alert.to}
+                  className={line}
+                  onClick={alert.dismissible ? dismiss : undefined}
+                >
                   {content}
                 </Link>
               </PressableSurface>
@@ -159,7 +164,7 @@ export function BarAlertList({
                   type="button"
                   aria-label={`Masquer : ${alert.title}`}
                   className="mr-1 inline-flex size-11 shrink-0 items-center justify-center rounded-full outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                  onClick={() => setDismissed([...kept, alert.key])}
+                  onClick={dismiss}
                 >
                   <X className="size-5" aria-hidden="true" />
                 </button>

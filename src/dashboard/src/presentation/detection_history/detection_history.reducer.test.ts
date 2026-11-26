@@ -138,6 +138,28 @@ describe('detectionHistoryReducer', () => {
     expect(next.playingId).toBe('e2')
   })
 
+  it('detectionHistoryReducer_ShouldSayTheClipStartedOnItsOwn_WhenTheOneBeforeItEnds', () => {
+    // Arrange
+    const playing = { ...read, playingId: 'e1' }
+
+    // Act
+    const next = detectionHistoryReducer(playing, { type: 'CLIP_ENDED', eventId: 'e1' })
+
+    // Assert
+    expect(next.playedOnItsOwn).toBe(true)
+  })
+
+  it('detectionHistoryReducer_ShouldSayTheClipWasChosen_WhenTheUserTapsARowAfterAClipStartedOnItsOwn', () => {
+    // Arrange
+    const followed = { ...read, playingId: 'e2', playedOnItsOwn: true }
+
+    // Act
+    const next = detectionHistoryReducer(followed, { type: 'CLIP_PLAYED', eventId: 'e1' })
+
+    // Assert
+    expect(next.playedOnItsOwn).toBe(false)
+  })
+
   it('detectionHistoryReducer_ShouldStayOnTheLastClip_WhenTheLastOneEnds', () => {
     // Arrange
     const playing = { ...read, playingId: 'e3' }

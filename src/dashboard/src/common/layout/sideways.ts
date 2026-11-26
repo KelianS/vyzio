@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react'
 
-// A phone on its side: too short to keep the controls off the picture (LIVE-10).
+// A phone on its side, for the live full screen (LIVE-10) and the player that stops sticking.
 const SIDEWAYS = '(orientation: landscape) and (max-height: 32rem)'
 
 function matches(): boolean {
