@@ -10,9 +10,9 @@ reproduced verbatim.
 
 The Vyzio Hub must feel calm, readable and domestic, never like an expert NVR tool: a dark, quiet
 interface where the cameras come first, their state reads at a glance from one mark, each view has
-one main action, and everything else stays neutral. Rare settings fold in place under `Avancé`, out of the everyday
-path and never naming the engine underneath (product principle 2). Less is the default: a word, a
-subtitle or a frame is added only when it carries something the user acts on.
+one main action, and everything else stays neutral. Rare settings fold in place under `Avancé`,
+out of the everyday path and never naming the engine underneath (product principle 2). Less is the
+default: a word, a subtitle or a frame is added only when it carries something the user acts on.
 
 ## Palette
 
@@ -327,7 +327,9 @@ None stands in for another: no setting in help or technical details, no help in 
 
 **A settings page reads in one order**: its settings, the `Avancé` fold, the removal, then the help
 questions. `Avancé` opens where it stands, never one more page (UI-25): what it holds that is a
-thing of its own (a protocol) reads as a card in it.
+thing of its own (a protocol) reads as a card in it; only Matériel's holds a row opening a page, the
+technical interface's own. A fold may open on one quiet line saying what it holds (a lede), never a
+title.
 
 ### Help: three levels, not a manual
 
