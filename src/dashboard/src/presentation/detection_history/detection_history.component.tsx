@@ -13,6 +13,7 @@ import { EmptyState } from '../../common/components/empty_state'
 import { Loading } from '../../common/components/loading'
 import { ClipList } from '../../common/detection/clip_list'
 import { ClipPlayer } from '../../common/detection/clip_player'
+import { PLAYER_FRAME, StickyPlayer } from '../../common/detection/sticky_player'
 import { clipFileName, clipUrl } from '../../common/detection/detection_formatters'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
@@ -150,28 +151,30 @@ export function DetectionHistoryView() {
         </EmptyState>
       ) : (
         <>
-          <ClipPlayer
-            event={playing}
-            labels={uido.detectionLabels}
-            apiBaseUrl={apiBaseUrl}
-            clipGone={uido.clipGoneEventId === playing.eventId}
-            withCamera
-            className="aspect-video w-full rounded-card"
-            onVideoError={() => void presenter.onVideoFailed(playing.eventId)}
-            onEnded={() => presenter.onClipEnded(playing.eventId)}
-          >
-            <PressableControl>
-              <button
-                type="button"
-                aria-label="Plus d’actions"
-                aria-haspopup="dialog"
-                onClick={() => presenter.onOpenSheet('actions')}
-                className="absolute top-2.5 right-2.5 flex size-11 items-center justify-center rounded-full bg-glass outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-              >
-                <Ellipsis className="size-5" aria-hidden="true" />
-              </button>
-            </PressableControl>
-          </ClipPlayer>
+          <StickyPlayer>
+            <ClipPlayer
+              event={playing}
+              labels={uido.detectionLabels}
+              apiBaseUrl={apiBaseUrl}
+              clipGone={uido.clipGoneEventId === playing.eventId}
+              withCamera
+              className={PLAYER_FRAME}
+              onVideoError={() => void presenter.onVideoFailed(playing.eventId)}
+              onEnded={() => presenter.onClipEnded(playing.eventId)}
+            >
+              <PressableControl>
+                <button
+                  type="button"
+                  aria-label="Plus d’actions"
+                  aria-haspopup="dialog"
+                  onClick={() => presenter.onOpenSheet('actions')}
+                  className="absolute top-2.5 right-2.5 flex size-11 items-center justify-center rounded-full bg-glass outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                >
+                  <Ellipsis className="size-5" aria-hidden="true" />
+                </button>
+              </PressableControl>
+            </ClipPlayer>
+          </StickyPlayer>
 
           <ClipList
             events={uido.items}
@@ -179,6 +182,7 @@ export function DetectionHistoryView() {
             apiBaseUrl={apiBaseUrl}
             playingId={playing.eventId}
             withCamera
+            follow={uido.playedOnItsOwn}
             now={new Date()}
             onPlay={(event) => presenter.onPlay(event.eventId)}
           />

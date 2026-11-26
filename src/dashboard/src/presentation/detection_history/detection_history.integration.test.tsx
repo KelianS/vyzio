@@ -122,6 +122,37 @@ describe('DetectionHistoryView', () => {
     expect(screen.getByRole('button', { name: /Voiture/ })).toHaveAttribute('aria-current', 'true')
   })
 
+  it('ClipList_ShouldBringTheNextRowIntoView_WhenTheNextClipStartsByItself', async () => {
+    // Arrange
+    fakeNetwork(twoClips)
+    renderScreen(<DetectionHistoryView />)
+    await screen.findByRole('group', { name: 'Détection : Chat' })
+    const scroll = vi.spyOn(Element.prototype, 'scrollIntoView')
+
+    // Act
+    fireEvent.ended(player().querySelector('video')!)
+
+    // Assert
+    expect(scroll).toHaveBeenCalledExactlyOnceWith({ block: 'nearest', behavior: 'auto' })
+    expect(scroll.mock.contexts[0]).toBe(screen.getByRole('button', { name: /Voiture/ }))
+    scroll.mockRestore()
+  })
+
+  it('ClipList_ShouldLeaveTheListWhereItIs_WhenTheUserTapsARow', async () => {
+    // Arrange
+    fakeNetwork(twoClips)
+    renderScreen(<DetectionHistoryView />)
+    const row = await screen.findByRole('button', { name: /Voiture/ })
+    const scroll = vi.spyOn(Element.prototype, 'scrollIntoView')
+
+    // Act
+    await userEvent.click(row)
+
+    // Assert
+    expect(scroll).not.toHaveBeenCalled()
+    scroll.mockRestore()
+  })
+
   it('ClipPlayer_ShouldPauseTheClip_WhenTheUserTapsPauseWhileItPlays', async () => {
     // Arrange
     fakeNetwork(twoClips)

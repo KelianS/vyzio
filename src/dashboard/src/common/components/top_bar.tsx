@@ -141,16 +141,22 @@ export function TopBar({
   useLayoutEffect(() => {
     const bar = header.current
     if (!bar) return
+    const root = document.documentElement
     let last: { width: number; height: number } | null = null
     const observer = new ResizeObserver(() => {
       const now = { width: bar.offsetWidth, height: bar.offsetHeight }
+      // What sticks under the bar follows its height, which its alerts change (UI-30).
+      root.style.setProperty('--top-bar-height', `${now.height}px`)
       // A wider or narrower window lays the bar out again: only an alert coming or going springs it.
       if (last && last.width === now.width && last.height !== now.height)
         transition.barResized(now.height - last.height)
       last = now
     })
     observer.observe(bar)
-    return () => observer.disconnect()
+    return () => {
+      observer.disconnect()
+      root.style.removeProperty('--top-bar-height')
+    }
   }, [transition])
 
   return (

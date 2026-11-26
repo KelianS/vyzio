@@ -22,6 +22,8 @@ export interface DetectionHistoryUido {
   error: AppError | null
   /** The clip in the player; null holds the most recent one (HIST-18). */
   playingId: string | null
+  /** The clip in the player followed the previous one by itself: its row comes into view. */
+  playedOnItsOwn: boolean
   sheet: DetectionSheet | null
 
   /** The values checked on each axis, none meaning all; a camera by its id, never the engine's name. */
@@ -45,6 +47,7 @@ export function buildInitialDetectionHistoryUido(cameraId = ''): DetectionHistor
     loadingMore: false,
     error: null,
     playingId: null,
+    playedOnItsOwn: false,
     sheet: null,
 
     filters: { camera: cameraId ? [cameraId] : [], profile: [], label: [] },

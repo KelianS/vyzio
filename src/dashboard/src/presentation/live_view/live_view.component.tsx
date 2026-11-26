@@ -12,6 +12,7 @@ import { TechnicalDetails } from '../../common/components/technical_details'
 import { TopBarIconLink } from '../../common/components/top_bar'
 import { OrientationUnavailable } from '../../common/components/orientation_unavailable'
 import { ClipPlayer } from '../../common/detection/clip_player'
+import { PLAYER_FRAME, STICKY_WELL } from '../../common/detection/sticky_player'
 import { cameraMark, cutLine } from '../../common/camera/camera_status'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { Button } from '../../common/ui/button'
@@ -379,7 +380,7 @@ export function LiveView({ camera }: { camera: Camera }) {
           labels={uido.clipLabels}
           apiBaseUrl={apiBaseUrl}
           clipGone={uido.clipGoneId === playing.eventId}
-          className="aspect-video w-full rounded-card"
+          className={PLAYER_FRAME}
           onVideoError={() => void presenter.onClipFailed(playing.eventId)}
         >
           <PressableControl>
@@ -461,6 +462,8 @@ export function LiveView({ camera }: { camera: Camera }) {
         <div
           className={cn(
             immersive ? 'fixed inset-0 z-40 touch-manipulation bg-picture' : 'relative w-full',
+            // A clip sticks like the Détections page's, its list scrolling below (LIVE-20).
+            playing && !immersive && STICKY_WELL,
           )}
           onPointerDownCapture={immersive ? controls.hold : undefined}
           onPointerUpCapture={immersive ? controls.release : undefined}

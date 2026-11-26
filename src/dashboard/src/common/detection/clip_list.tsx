@@ -1,4 +1,6 @@
+import { useEffect, useRef } from 'react'
 import { CalendarOff, ImageOff } from 'lucide-react'
+import { prefersReducedMotion } from '../motion/springs'
 import { cn } from '../ui/utils'
 import { DetectionThumbnail } from '../components/detection_thumbnail'
 import { DetectionTypeIcon } from './detection_type_icon'
@@ -21,6 +23,7 @@ export function ClipList({
   apiBaseUrl,
   playingId,
   withCamera = false,
+  follow = false,
   now,
   onPlay,
 }: {
@@ -32,9 +35,21 @@ export function ClipList({
   playingId: string | null
   /** The clips come from several cameras: each line says which. */
   withCamera?: boolean
+  /** The clip in the player started on its own: its row comes into view, never after a tap. */
+  follow?: boolean
   now: Date
   onPlay: (event: DetectionEvent) => void
 }) {
+  const playingRow = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    if (follow)
+      playingRow.current?.scrollIntoView({
+        block: 'nearest',
+        behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+      })
+  }, [follow, playingId])
+
   return (
     <div className="flex flex-col gap-6">
       {groupClipsByDay(events, now).map(({ day, events: ofDay }) => (
@@ -49,10 +64,13 @@ export function ClipList({
                   {index > 0 && <div className="ml-27.5 h-px bg-border" aria-hidden="true" />}
                   <PressableSurface>
                     <button
+                      ref={playing ? playingRow : undefined}
                       type="button"
                       aria-current={playing ? 'true' : undefined}
                       onClick={() => onPlay(event)}
                       className={cn(
+                        // Clear of the bar and of the player that stick above the list.
+                        'scroll-mt-[calc(var(--top-bar-height,0px)+var(--clip-player-height,0px))]',
                         'flex min-h-19 w-full items-center gap-3 py-2.5 pr-4 pl-2.5 text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset',
                         playing && 'bg-secondary',
                       )}
