@@ -10,7 +10,7 @@ reproduced verbatim.
 
 The Vyzio Hub must feel calm, readable and domestic, never like an expert NVR tool: a dark, quiet
 interface where the cameras come first, their state reads at a glance from one mark, each view has
-one main action, and everything else stays neutral. Rare settings sit in depth, out of the everyday
+one main action, and everything else stays neutral. Rare settings fold in place under `Avancé`, out of the everyday
 path and never naming the engine underneath (product principle 2). Less is the default: a word, a
 subtitle or a frame is added only when it carries something the user acts on.
 
@@ -316,12 +316,12 @@ takes its place, naming as a link the page where it is fixed.
 
 ### Folds
 
-| Fold                 | Where                                        | Holds                                         |
-| -------------------- | -------------------------------------------- | --------------------------------------------- |
-| `Options`            | Inside a card, closed                        | That card's settings                          |
-| `Avancé`             | Ending the page's settings, closed, in place | Rare settings: a position, not a mode (UI-09) |
-| Help question        | Last on the page, closed                     | Task help (§ Help)                            |
-| `Détails techniques` | The end of an error or a card, closed        | Figures for support (§ Technical details)     |
+| Fold                 | Where                                        | Holds                                                                          |
+| -------------------- | -------------------------------------------- | ------------------------------------------------------------------------------ |
+| `Options`            | Inside a card, closed                        | That card's settings                                                           |
+| `Avancé`             | Ending the page's settings, closed, in place | Rare settings: a position, not a mode (UI-09); a log of what was sent or asked |
+| Help question        | Last on the page, closed                     | Task help (§ Help)                                                             |
+| `Détails techniques` | The end of an error or a card, closed        | Figures for support (§ Technical details)                                      |
 
 None stands in for another: no setting in help or technical details, no help in `Avancé`.
 
