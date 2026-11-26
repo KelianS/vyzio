@@ -106,14 +106,21 @@ test.describe('Camera view', () => {
     await expect(player).not.toBeInViewport()
   })
 
-  test('CameraView_ShouldPlayTheClipAtTheLiveSize_WhenTheListSitsBesideIt', async ({ page }) => {
+  test('CameraView_ShouldPlayAFarClipUnderTheBarAtTheLiveSize_WhenTheListSitsBesideIt', async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 1280, height: 720 })
     await installFakeBackend(
       page,
       createFakeBackendState({
         detectionHistory: [
-          makeFakeDetectionEvent({ eventId: 'e0', camera: 'front_door', identity: 'Camille' }),
           ...longHistory,
+          makeFakeDetectionEvent({
+            eventId: 'oldest',
+            camera: 'front_door',
+            identity: 'Dominique',
+            occurredAt: new Date(Date.now() - 300 * 60 * 1000).toISOString(),
+          }),
         ],
       }),
     )
@@ -122,10 +129,18 @@ test.describe('Camera view', () => {
     await expect(live).toBeVisible()
     const liveBox = (await live.boundingBox())!
 
-    await page.getByRole('button', { name: /Camille/ }).click()
+    await page.getByRole('button', { name: /Dominique/ }).click()
 
-    const clipBox = (await page.getByRole('group', { name: /^Détection :/ }).boundingBox())!
-    expect(clipBox).toEqual(liveBox)
+    const player = page.getByRole('group', { name: /^Détection :/ })
+    await expect(player).toBeInViewport({ ratio: 1 })
+    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
+    const bar = (await page.locator('header').boundingBox())!
+    const box = (await player.boundingBox())!
+    expect(box.y).toBeGreaterThanOrEqual(bar.y + bar.height)
+    expect({ width: box.width, height: box.height }).toEqual({
+      width: liveBox.width,
+      height: liveBox.height,
+    })
   })
 
   test('CameraView_ShouldOpenItsDetectionsAndComeBackToThem_WhenTheUserFollowsToutesSesDetections', async ({

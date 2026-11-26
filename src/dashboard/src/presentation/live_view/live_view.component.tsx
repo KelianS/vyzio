@@ -463,8 +463,8 @@ export function LiveView({ camera }: { camera: Camera }) {
         <div
           className={cn(
             immersive ? 'fixed inset-0 z-40 touch-manipulation bg-picture' : 'relative w-full',
-            // A clip sticks under the bar while its list scrolls below it, not beside it (UI-39).
-            playing && !immersive && !sideways && cn(STICKY_WELL, 'lg:static'),
+            // A clip sticks under the bar, beside its list as above it, so a row far down plays in view (UI-39).
+            playing && !immersive && !sideways && STICKY_WELL,
           )}
           onPointerDownCapture={immersive ? controls.hold : undefined}
           onPointerUpCapture={immersive ? controls.release : undefined}

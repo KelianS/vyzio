@@ -165,7 +165,7 @@ is no navigation bar** ([SPECS](SPECS.md) UI-29).
 - **The settings apply** (UI-28) is the bar's main action, drawn as one (§ Editing cycle).
 - **The clip player sticks under it** ([SPECS](SPECS.md) UI-39): while the list below scrolls, it
   stays under the bar, never taller than 40% of the screen so the list stays in reach; on a phone held
-  sideways it scrolls with the page; beside its list, on a wide screen, it neither sticks nor shrinks.
+  sideways it scrolls with the page; beside its list, on a wide screen, it sticks without shrinking.
 
 ### Page transition
 
