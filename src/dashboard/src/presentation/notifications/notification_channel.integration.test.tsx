@@ -96,6 +96,20 @@ describe('NotificationChannelView', () => {
     )
   })
 
+  it('onRevealToken_ShouldShowTheTypedTokenInClear_WhenTheUserPressesTheEye', async () => {
+    // Arrange
+    fakeNetwork(channelRoutes())
+    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+    await userEvent.type(await screen.findByLabelText('Token du bot'), 'not-a-real-token')
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Afficher « Token du bot »' }))
+
+    // Assert
+    expect(screen.getByLabelText('Token du bot')).toHaveAttribute('type', 'text')
+    expect(screen.getByRole('button', { name: 'Masquer « Token du bot »' })).toBeInTheDocument()
+  })
+
   it('onOpen_ShouldOfferNoAdvancedPage_WhenTheChannelIsNotConfiguredYet', async () => {
     // Arrange
     fakeNetwork(channelRoutes(makeChannelConfig({ isConfigured: false })))
@@ -205,6 +219,21 @@ describe('NotificationChannelView', () => {
         body: expect.objectContaining({ credentials: { bot_token: '123:abc' } }),
       }),
     )
+  })
+
+  it('onSave_ShouldMaskTheRevealedTokenAgain_WhenTheUserSavesIt', async () => {
+    // Arrange
+    fakeNetwork({ ...channelRoutes(), [SAVE]: failure(500) })
+    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+    await userEvent.type(await screen.findByLabelText('Token du bot'), '123:abc')
+    await userEvent.click(screen.getByRole('button', { name: 'Afficher « Token du bot »' }))
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    // Assert
+    expect(await screen.findByText(/Vyzio a rencontré une erreur/)).toBeInTheDocument()
+    expect(screen.getByLabelText('Token du bot')).toHaveAttribute('type', 'password')
   })
 
   it('onSave_ShouldKeepTheDraftAndSayWhy_WhenTheSaveFails', async () => {

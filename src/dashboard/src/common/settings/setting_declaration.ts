@@ -63,7 +63,12 @@ export type SettingNature =
   /** Free text. Rare: often a choice that was misidentified. Prose unless it says otherwise. */
   | { readonly kind: 'text'; readonly placeholder?: string; readonly keyboard?: TextKeyboard }
   /** Secret -> a masked field, with a reveal: one must be able to re-read it. */
-  | { readonly kind: 'secret'; readonly placeholder?: string }
+  | {
+      readonly kind: 'secret'
+      readonly placeholder?: string
+      /** True while the page validates it, so a revealed secret masks again (UI-38). */
+      readonly validating?: boolean
+    }
 
 /** Beyond that, a filter appears in the panel: a long list is searched, not scanned. */
 export const VISIBLE_CHOICES_MAX = 7

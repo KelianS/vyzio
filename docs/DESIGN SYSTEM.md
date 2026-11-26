@@ -458,6 +458,8 @@ A label states the **nature** of a screen, viewing or configuring, never its aud
 - A capability is titled by what the camera does, in the product's words: `Flux vidéo`, `Orientation`,
   `Vie privée matérielle`, `Réglages image`. Where a protocol name may appear is UI-02.
 - A time reads `22 h`, `7 h 30`, a range `22 h – 7 h`; days `lundi au vendredi`.
+- A password or secret is revealed by **`Afficher`** and hidden again by **`Masquer`**, an eye in the
+  field, crossed out while revealed ([SPECS](SPECS.md) UI-38).
 
 ### Editing cycle
 

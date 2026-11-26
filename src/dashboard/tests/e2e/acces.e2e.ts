@@ -35,7 +35,7 @@ test.describe('First opening', () => {
     // None of the application is mounted behind it: no navigation, no cameras.
     await expect(page.getByRole('banner')).toHaveCount(0)
 
-    await page.getByLabel('Mot de passe').fill(FAKE_PASSWORD)
+    await page.getByLabel('Mot de passe', { exact: true }).fill(FAKE_PASSWORD)
     await page.getByRole('button', { name: 'Protéger et continuer' }).click()
 
     await expect(page.getByRole('banner')).toBeVisible()
@@ -50,7 +50,7 @@ test.describe('First opening', () => {
     )
 
     await page.goto('/')
-    await page.getByLabel('Mot de passe').fill('court')
+    await page.getByLabel('Mot de passe', { exact: true }).fill('court')
 
     await expect(page.getByText('Au moins 8 caractères.')).toBeVisible()
     await expect(page.getByRole('button', { name: 'Protéger et continuer' })).toBeDisabled()
@@ -69,17 +69,50 @@ test.describe('Sign-in', () => {
     await page.goto('/')
     await expect(page.getByRole('heading', { name: 'Vyzio est verrouillé' })).toBeVisible()
 
-    await page.getByLabel('Mot de passe').fill('pas-le-bon-mot')
+    await page.getByLabel('Mot de passe', { exact: true }).fill('pas-le-bon-mot')
     await page.getByRole('button', { name: 'Déverrouiller' }).click()
 
     // A refusal is not a failure: it reads beside the field, and the screen stays usable.
     await expect(page.getByRole('alert')).toContainText('Mot de passe incorrect.')
 
-    await page.getByLabel('Mot de passe').fill(FAKE_PASSWORD)
+    await page.getByLabel('Mot de passe', { exact: true }).fill(FAKE_PASSWORD)
     await page.getByRole('button', { name: 'Déverrouiller' }).click()
 
     await expect(page.getByRole('banner')).toBeVisible()
   })
+
+  test('AccessGate_ShouldShowThenMaskThePasswordAndMaskItAgainOnSubmit_WhenTheUserPressesTheEye', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await installFakeBackend(
+      page,
+      createFakeBackendState({ access: { installed: true, signedIn: false } }),
+    )
+    await page.goto('/')
+    const field = page.getByLabel('Mot de passe', { exact: true })
+    const show = page.getByRole('button', { name: 'Afficher « Mot de passe »' })
+    const hide = page.getByRole('button', { name: 'Masquer « Mot de passe »' })
+    await field.fill('pas-le-bon-mot')
+
+    await show.click()
+    await expect(field).toHaveAttribute('type', 'text')
+    await expect(field).toHaveValue('pas-le-bon-mot')
+    await expect(hide).toBeVisible()
+    await expect(field).toBeFocused()
+
+    await hide.click()
+    await expect(field).toHaveAttribute('type', 'password')
+    await expect(show).toBeVisible()
+    await expect(field).toBeFocused()
+
+    await show.click()
+    await page.getByRole('button', { name: 'Déverrouiller' }).click()
+    await expect(page.getByRole('alert')).toContainText('Mot de passe incorrect.')
+    await expect(field).toHaveAttribute('type', 'password')
+    await expect(show).toBeVisible()
+  })
+
   test('AccessGate_ShouldShowTheRefusalInTheErrorColourWithoutMovingTheButton_WhenThePasswordIsWrong', async ({
     page,
   }) => {
@@ -90,7 +123,7 @@ test.describe('Sign-in', () => {
     )
     await page.goto('/')
     const unlock = page.getByRole('button', { name: 'Déverrouiller' })
-    await page.getByLabel('Mot de passe').fill('pas-le-bon-mot')
+    await page.getByLabel('Mot de passe', { exact: true }).fill('pas-le-bon-mot')
     const before = await topOf(unlock)
 
     await unlock.click()
@@ -109,8 +142,8 @@ test.describe('Password change', () => {
     await installFakeBackend(page, createFakeBackendState())
 
     await page.goto('/settings/access')
-    await page.getByLabel('Mot de passe actuel').fill('pas-le-bon-mot')
-    await page.getByLabel('Nouveau mot de passe').fill('un-nouveau-mot')
+    await page.getByLabel('Mot de passe actuel', { exact: true }).fill('pas-le-bon-mot')
+    await page.getByLabel('Nouveau mot de passe', { exact: true }).fill('un-nouveau-mot')
     await page.getByRole('button', { name: 'Changer le mot de passe' }).click()
 
     await expect(page.getByRole('alert')).toContainText('Mot de passe actuel incorrect.')
@@ -125,8 +158,8 @@ test.describe('Password change', () => {
     await installFakeBackend(page, createFakeBackendState())
     await page.goto('/settings/access')
     const change = page.getByRole('button', { name: 'Changer le mot de passe' })
-    await page.getByLabel('Mot de passe actuel').fill('pas-le-bon-mot')
-    await page.getByLabel('Nouveau mot de passe').fill('un-nouveau-mot')
+    await page.getByLabel('Mot de passe actuel', { exact: true }).fill('pas-le-bon-mot')
+    await page.getByLabel('Nouveau mot de passe', { exact: true }).fill('un-nouveau-mot')
     const before = await topOf(change)
 
     await change.click()
@@ -142,8 +175,8 @@ test.describe('Password change', () => {
     await installFakeBackend(page, state)
 
     await page.goto('/settings/access')
-    await page.getByLabel('Mot de passe actuel').fill(FAKE_PASSWORD)
-    await page.getByLabel('Nouveau mot de passe').fill('un-nouveau-mot')
+    await page.getByLabel('Mot de passe actuel', { exact: true }).fill(FAKE_PASSWORD)
+    await page.getByLabel('Nouveau mot de passe', { exact: true }).fill('un-nouveau-mot')
     await page.getByRole('button', { name: 'Changer le mot de passe' }).click()
 
     await expect(page.getByText('Mot de passe changé.')).toBeVisible()
@@ -152,11 +185,11 @@ test.describe('Password change', () => {
     await page.getByRole('button', { name: 'Se déconnecter' }).click()
     await expect(page.getByRole('heading', { name: 'Vyzio est verrouillé' })).toBeVisible()
 
-    await page.getByLabel('Mot de passe').fill(FAKE_PASSWORD)
+    await page.getByLabel('Mot de passe', { exact: true }).fill(FAKE_PASSWORD)
     await page.getByRole('button', { name: 'Déverrouiller' }).click()
     await expect(page.getByRole('alert')).toContainText('Mot de passe incorrect.')
 
-    await page.getByLabel('Mot de passe').fill('un-nouveau-mot')
+    await page.getByLabel('Mot de passe', { exact: true }).fill('un-nouveau-mot')
     await page.getByRole('button', { name: 'Déverrouiller' }).click()
     await expect(page.getByRole('banner')).toBeVisible()
   })
@@ -181,7 +214,7 @@ test.describe('Forgotten password', () => {
     ).toBeVisible()
     await expect(page.getByText('n’ont pas bougé')).toBeVisible()
 
-    await page.getByLabel('Mot de passe').fill('un-nouveau-mot')
+    await page.getByLabel('Mot de passe', { exact: true }).fill('un-nouveau-mot')
     await page.getByRole('button', { name: 'Enregistrer et continuer' }).click()
 
     await expect(page.getByRole('banner')).toBeVisible()

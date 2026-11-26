@@ -43,6 +43,23 @@ describe('AccessView', () => {
     ).toBeInTheDocument()
   })
 
+  it('AccessView_ShouldOfferToShowEachPasswordUnderItsOwnName_WhenTheUserTypesThem', async () => {
+    // Arrange
+    fakeNetwork({ [STATE]: ok(state) })
+    renderScreen(<AccessView />, ACCESS)
+    await fillThePasswords('old-password', 'new-password')
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Afficher « Mot de passe actuel »' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Afficher « Nouveau mot de passe »' }))
+
+    // Assert
+    expect(screen.getByRole('textbox', { name: 'Mot de passe actuel' })).toHaveValue('old-password')
+    expect(screen.getByRole('textbox', { name: 'Nouveau mot de passe' })).toHaveValue(
+      'new-password',
+    )
+  })
+
   it('onChangePassword_ShouldSaySoAndClearTheFields_WhenThePasswordChanges', async () => {
     // Arrange
     const network = fakeNetwork({ [STATE]: ok(state), [PASSWORD]: ok() })

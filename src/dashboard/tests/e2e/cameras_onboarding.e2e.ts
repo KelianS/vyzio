@@ -49,7 +49,7 @@ test.describe('AddCameraView', () => {
     await expect(page.getByRole('textbox', { name: 'Chemin du flux' })).toHaveCount(0)
     await expect(page.getByRole('button', { name: 'Vérifier la connexion' })).toHaveCount(0)
     await page.getByRole('textbox', { name: 'Identifiant de la caméra' }).fill('viewer')
-    await page.getByLabel('Mot de passe de la caméra').fill('not-a-real-secret')
+    await page.getByLabel('Mot de passe de la caméra', { exact: true }).fill('not-a-real-secret')
     await page.getByRole('button', { name: 'Ajouter', exact: true }).click()
 
     // Adding opens the camera's page, which detects it on arrival (ADR-04).

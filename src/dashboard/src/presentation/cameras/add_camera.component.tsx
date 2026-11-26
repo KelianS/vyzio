@@ -233,7 +233,7 @@ export function AddCameraView() {
     {
       id: 'add-password',
       label: 'Mot de passe de la caméra',
-      nature: { kind: 'secret' },
+      nature: { kind: 'secret', validating: uido.creating },
       value: uido.form.password ?? '',
       onChange: (value) => presenter.onFormChanged({ password: (value as string) || null }),
     },

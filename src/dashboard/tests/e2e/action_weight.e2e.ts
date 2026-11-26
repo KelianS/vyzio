@@ -221,7 +221,9 @@ test.describe('Touch size', () => {
     expect(
       await reachesAFinger(page.getByRole('button', { name: /À quoi sert « Token du bot »/ })),
     ).toBe(true)
-    expect(await reachesAFinger(page.getByRole('button', { name: 'Afficher' }))).toBe(true)
+    expect(
+      await reachesAFinger(page.getByRole('button', { name: 'Afficher « Token du bot »' })),
+    ).toBe(true)
     expect(
       await heightOf(page.getByRole('textbox', { name: 'Identifiant de conversation' })),
     ).toBeGreaterThanOrEqual(44)

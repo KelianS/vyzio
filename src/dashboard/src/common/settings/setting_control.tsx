@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { ChevronDown, Eye, EyeOff } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 import { Switch } from '../ui/switch'
 import { Input } from '../ui/input'
 import { Checkbox } from '../ui/checkbox'
@@ -15,6 +15,7 @@ import {
 } from './setting_declaration'
 import { SECRET_KEYBOARD, TEXT_KEYBOARD } from './text_keyboard'
 import { EmptyState } from '../components/empty_state'
+import { SecretInput } from '../components/secret_input'
 
 /** Nature -> control (ADR-15): the only place this choice is made. */
 export function SettingControl({ setting }: { setting: SettingDeclaration }) {
@@ -326,30 +327,16 @@ function SecretControl({
   setting: SettingDeclaration
   nature: Narrow<'secret'>
 }) {
-  const [revealed, setRevealed] = useState(false)
-
   return (
-    <div className="flex w-full items-center gap-1">
-      <Input
-        {...SECRET_KEYBOARD}
-        id={setting.id}
-        type={revealed ? 'text' : 'password'}
-        className="w-full"
-        placeholder={nature.placeholder}
-        disabled={setting.disabled}
-        value={String(setting.value ?? '')}
-        onChange={(event) => setting.onChange(event.target.value)}
-      />
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        className="text-muted-foreground hover:text-foreground"
-        aria-label={revealed ? 'Masquer' : 'Afficher'}
-        onClick={() => setRevealed((previous) => !previous)}
-      >
-        {revealed ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
-      </Button>
-    </div>
+    <SecretInput
+      {...SECRET_KEYBOARD}
+      id={setting.id}
+      label={setting.label}
+      placeholder={nature.placeholder}
+      validating={nature.validating}
+      disabled={setting.disabled}
+      value={String(setting.value ?? '')}
+      onChange={(event) => setting.onChange(event.target.value)}
+    />
   )
 }

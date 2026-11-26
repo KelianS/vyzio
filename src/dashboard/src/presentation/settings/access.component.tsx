@@ -6,7 +6,7 @@ import { ConfirmModal } from '../../common/components/confirm_modal'
 import { useToast } from '../../common/components/toast'
 import { SettingsPage, SettingsSection } from '../../common/settings/settings_page'
 import { Button } from '../../common/ui/button'
-import { Input } from '../../common/ui/input'
+import { SecretInput } from '../../common/components/secret_input'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { useAppContainer } from '../../infrastructure/providers/app_container.context'
 import { buildAccessPresenter } from './access.presenter'
@@ -131,9 +131,10 @@ function ChangePasswordForm({
         >
           Mot de passe actuel
         </label>
-        <Input
+        <SecretInput
           id="current-password"
-          type="password"
+          label="Mot de passe actuel"
+          validating={changing}
           autoComplete="current-password"
           value={current}
           onChange={(event) => setCurrent(event.target.value)}
@@ -148,9 +149,10 @@ function ChangePasswordForm({
         >
           Nouveau mot de passe
         </label>
-        <Input
+        <SecretInput
           id="new-password"
-          type="password"
+          label="Nouveau mot de passe"
+          validating={changing}
           autoComplete="new-password"
           value={next}
           onChange={(event) => setNext(event.target.value)}

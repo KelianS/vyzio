@@ -18,6 +18,7 @@ export function protocolSettings(
   entry: CameraProtocol,
   values: ProtocolValues,
   onChange: (patch: Partial<ProtocolValues>) => void,
+  saving: boolean,
 ): SettingDeclaration[] {
   const id = `protocol-${entry.protocol}`
   const settings: SettingDeclaration[] = []
@@ -65,7 +66,11 @@ export function protocolSettings(
       {
         id: `${id}-password`,
         label: 'Mot de passe',
-        nature: { kind: 'secret', placeholder: entry.hasSpecificAccount ? 'Inchangé' : '' },
+        nature: {
+          kind: 'secret',
+          placeholder: entry.hasSpecificAccount ? 'Inchangé' : '',
+          validating: saving,
+        },
         help: entry.hasSpecificAccount
           ? 'Laissez vide pour conserver le mot de passe actuel.'
           : undefined,
