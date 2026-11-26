@@ -462,7 +462,7 @@ export function LiveView({ camera }: { camera: Camera }) {
         <div
           className={cn(
             immersive ? 'fixed inset-0 z-40 touch-manipulation bg-picture' : 'relative w-full',
-            // A clip sticks like the Détections page's, its list scrolling below (LIVE-20).
+            // A clip sticks under the bar, its list scrolling below (UI-39).
             playing && !immersive && !sideways && STICKY_WELL,
           )}
           onPointerDownCapture={immersive ? controls.hold : undefined}

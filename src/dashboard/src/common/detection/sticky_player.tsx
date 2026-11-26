@@ -3,7 +3,7 @@ import { useSideways } from '../layout/sideways'
 
 /**
  * What holds the player: it stays under the bar while the list below scrolls, opaque so no row shows
- * through, under the Radix layers (`z-50`); never on a phone on its side (`useSideways`), too short.
+ * through, under the Radix layers (`z-50`); never on a phone on its side (`useSideways`), too short (UI-39).
  */
 export const STICKY_WELL = 'sticky top-(--top-bar-height) z-30 -my-2 bg-background py-2'
 
