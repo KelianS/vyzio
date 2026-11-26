@@ -104,6 +104,17 @@ test.describe('DetectionHistoryView sticky player', () => {
     expect(box.height).toBeLessThanOrEqual(192)
   })
 
+  test('DetectionHistoryView_ShouldCapThePlayerAt40PercentOfTheScreen_WhenTheScreenIsWide', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 720 })
+    await page.goto('/detections')
+
+    const box = (await page.getByRole('group', { name: /^Détection :/ }).boundingBox())!
+
+    expect(box.height).toBeLessThanOrEqual(288)
+  })
+
   test('DetectionHistoryView_ShouldScrollThePlayerAway_WhenThePhoneIsOnItsSide', async ({
     page,
   }) => {

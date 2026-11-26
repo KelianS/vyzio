@@ -7,8 +7,8 @@ import { useSideways } from '../layout/sideways'
  */
 export const STICKY_WELL = 'sticky top-(--top-bar-height) z-30 -my-2 bg-background py-2'
 
-/** The player at 16:9 across the page, never taller than 40% of an upright screen. */
-export const PLAYER_FRAME = 'aspect-video w-full rounded-card portrait:max-h-[40svh]'
+/** The player at 16:9 across the page, never taller than 40% of the screen, so the list stays reachable. */
+export const PLAYER_FRAME = 'aspect-video w-full rounded-card max-h-[40svh]'
 
 /**
  * The well over a list whose rows come into view on their own: its height, published on the page,
