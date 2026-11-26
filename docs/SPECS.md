@@ -167,7 +167,7 @@ Chaque exigence porte un identifiant `<DOMAINE>-NN`, et chaque cas d'utilisation
 
 - **HIST-01** · l'utilisateur doit etre informe si la capacite de stockage devient critique ;
 - **HIST-11** · la video d'une detection dont l'enregistrement a ete efface avec une autre ne s'affiche pas en panne : son lecteur dit que la video de ce moment a ete supprimee ;
-- **HIST-20** · dans le lecteur d'un clip, pendant la lecture, la pause, la légende du clip et ses commandes s'effacent après quelques secondes et reviennent d'un appui sur l'image, d'une touche ou du focus du clavier, le délai repartant de zéro ; la ligne de progression reste ; en pause, à la fin ou tant que le clip attend ses données, ils restent.
+- **HIST-20** · dans le lecteur d'un clip, pendant la lecture, la pause, la légende du clip et ses commandes s'effacent après quelques secondes et reviennent d'un appui sur l'image, d'une touche ou du focus du clavier, le délai repartant de zéro, et jamais tant qu'un doigt tient une commande ; la ligne de progression reste ; en pause, à la fin, tant que le clip attend ses données, ou sur une image fixe ou un message faute de vidéo, rien ne s'efface.
 
 ### Planification (`SCHED`)
 
