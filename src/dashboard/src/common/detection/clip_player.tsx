@@ -147,10 +147,11 @@ function ClipVideo({
           const { currentTime, duration } = e.currentTarget
           if (duration > 0) setPlayed(currentTime / duration)
         }}
-        onPlay={() => {
-          setPaused(false)
-          onPlayingChange(true)
-        }}
+        onPlay={() => setPaused(false)}
+        // A clip waiting for its data is not playing: its controls stay while it waits.
+        onPlaying={() => onPlayingChange(true)}
+        onWaiting={() => onPlayingChange(false)}
+        onStalled={() => onPlayingChange(false)}
         onPause={() => {
           setPaused(true)
           onPlayingChange(false)
