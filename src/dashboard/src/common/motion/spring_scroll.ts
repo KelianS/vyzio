@@ -13,6 +13,9 @@ export function nearestScrollTop(
   return null
 }
 
+// A finger, a wheel, a key or the scrollbar takes the page back at once.
+const TAKEN_BACK_BY = ['wheel', 'touchstart', 'pointerdown', 'keydown'] as const
+
 /**
  * Brings `element` into view the nearest way, clear of its `scroll-margin-top`, on the arrival
  * spring; at once when the phone asks for less motion. Returns how to stop it.
@@ -36,12 +39,9 @@ export function springIntoView(element: HTMLElement): () => void {
   const stop = () => {
     motion.stop()
     unsubscribe()
-    window.removeEventListener('wheel', stop)
-    window.removeEventListener('touchstart', stop)
+    TAKEN_BACK_BY.forEach((type) => window.removeEventListener(type, stop))
   }
-  // A finger or a wheel takes the page back at once.
-  window.addEventListener('wheel', stop, { passive: true })
-  window.addEventListener('touchstart', stop, { passive: true })
+  TAKEN_BACK_BY.forEach((type) => window.addEventListener(type, stop, { passive: true }))
   void motion.then(stop)
   return stop
 }
