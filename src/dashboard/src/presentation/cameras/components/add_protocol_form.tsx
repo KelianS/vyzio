@@ -14,6 +14,7 @@ import { PROTOCOL_LABELS, SPECIFIC_ACCOUNT_HELP } from '../protocol_labels'
 import { ALL_PROTOCOLS } from '../camera_connection_values'
 import { Picker } from './protocol_choice'
 import { Field } from '../../../common/components/field'
+import { SecretInput } from '../../../common/components/secret_input'
 
 /** Adds a protocol the camera does not speak yet, checked at once (CAM-45). */
 export function AddProtocol({
@@ -112,9 +113,8 @@ function AddProtocolForm({
               />
             </Field>
             <Field label="Mot de passe">
-              <Input
+              <SecretInput
                 {...SECRET_KEYBOARD}
-                type="password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
               />

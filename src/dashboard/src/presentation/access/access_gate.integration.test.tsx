@@ -89,6 +89,71 @@ describe('AccessGate', () => {
     expect(await screen.findByText('Interface ouverte')).toBeInTheDocument()
   })
 
+  it('PasswordScreen_ShouldShowThePasswordInClear_WhenTheUserPressesTheEye', async () => {
+    // Arrange
+    fakeNetwork({ [STATE]: ok(installed), [SESSION]: failure(401) })
+    renderGate()
+    await typeThePassword('correct-horse')
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Afficher le mot de passe' }))
+
+    // Assert
+    expect(screen.getByRole('textbox', { name: 'Mot de passe' })).toHaveValue('correct-horse')
+    expect(screen.getByRole('button', { name: 'Afficher le mot de passe' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+  })
+
+  it('PasswordScreen_ShouldMaskThePasswordAndKeepTheFocusInTheField_WhenTheUserPressesTheEyeAgain', async () => {
+    // Arrange
+    fakeNetwork({ [STATE]: ok(installed), [SESSION]: failure(401) })
+    renderGate()
+    await typeThePassword('correct-horse')
+    const eye = screen.getByRole('button', { name: 'Afficher le mot de passe' })
+    await userEvent.click(eye)
+
+    // Act
+    await userEvent.click(eye)
+
+    // Assert
+    const field = screen.getByLabelText('Mot de passe')
+    expect(field).toHaveAttribute('type', 'password')
+    expect(field).toHaveFocus()
+    expect(eye).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('PasswordScreen_ShouldMaskThePasswordAgain_WhenTheUserSubmitsItRevealed', async () => {
+    // Arrange
+    fakeNetwork({ [STATE]: ok(installed), [SESSION]: failure(401), [SIGN_IN]: failure(401) })
+    renderGate()
+    await typeThePassword('guess')
+    await userEvent.click(screen.getByRole('button', { name: 'Afficher le mot de passe' }))
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Déverrouiller' }))
+
+    // Assert
+    expect(await screen.findByRole('alert')).toHaveTextContent('Mot de passe incorrect.')
+    expect(screen.getByLabelText('Mot de passe')).toHaveAttribute('type', 'password')
+  })
+
+  it('PasswordScreen_ShouldOpenWithThePasswordMasked_WhenAFreshInstallationAsksForOne', async () => {
+    // Arrange
+    fakeNetwork({ [STATE]: ok(fresh) })
+
+    // Act
+    renderGate()
+
+    // Assert
+    expect(await screen.findByLabelText('Mot de passe')).toHaveAttribute('type', 'password')
+    expect(screen.getByRole('button', { name: 'Afficher le mot de passe' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+  })
+
   it('onLoad_ShouldFillTheScreenSayingVyzioDoesNotAnswer_WhenTheStateCannotBeRead', async () => {
     // Arrange
     fakeNetwork({ [STATE]: failure(500) })

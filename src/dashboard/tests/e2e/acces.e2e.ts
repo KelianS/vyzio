@@ -35,7 +35,7 @@ test.describe('First opening', () => {
     // None of the application is mounted behind it: no navigation, no cameras.
     await expect(page.getByRole('banner')).toHaveCount(0)
 
-    await page.getByLabel('Mot de passe').fill(FAKE_PASSWORD)
+    await page.getByLabel('Mot de passe', { exact: true }).fill(FAKE_PASSWORD)
     await page.getByRole('button', { name: 'Protéger et continuer' }).click()
 
     await expect(page.getByRole('banner')).toBeVisible()
@@ -50,7 +50,7 @@ test.describe('First opening', () => {
     )
 
     await page.goto('/')
-    await page.getByLabel('Mot de passe').fill('court')
+    await page.getByLabel('Mot de passe', { exact: true }).fill('court')
 
     await expect(page.getByText('Au moins 8 caractères.')).toBeVisible()
     await expect(page.getByRole('button', { name: 'Protéger et continuer' })).toBeDisabled()
@@ -69,13 +69,13 @@ test.describe('Sign-in', () => {
     await page.goto('/')
     await expect(page.getByRole('heading', { name: 'Vyzio est verrouillé' })).toBeVisible()
 
-    await page.getByLabel('Mot de passe').fill('pas-le-bon-mot')
+    await page.getByLabel('Mot de passe', { exact: true }).fill('pas-le-bon-mot')
     await page.getByRole('button', { name: 'Déverrouiller' }).click()
 
     // A refusal is not a failure: it reads beside the field, and the screen stays usable.
     await expect(page.getByRole('alert')).toContainText('Mot de passe incorrect.')
 
-    await page.getByLabel('Mot de passe').fill(FAKE_PASSWORD)
+    await page.getByLabel('Mot de passe', { exact: true }).fill(FAKE_PASSWORD)
     await page.getByRole('button', { name: 'Déverrouiller' }).click()
 
     await expect(page.getByRole('banner')).toBeVisible()
@@ -90,7 +90,7 @@ test.describe('Sign-in', () => {
     )
     await page.goto('/')
     const unlock = page.getByRole('button', { name: 'Déverrouiller' })
-    await page.getByLabel('Mot de passe').fill('pas-le-bon-mot')
+    await page.getByLabel('Mot de passe', { exact: true }).fill('pas-le-bon-mot')
     const before = await topOf(unlock)
 
     await unlock.click()
@@ -152,11 +152,11 @@ test.describe('Password change', () => {
     await page.getByRole('button', { name: 'Se déconnecter' }).click()
     await expect(page.getByRole('heading', { name: 'Vyzio est verrouillé' })).toBeVisible()
 
-    await page.getByLabel('Mot de passe').fill(FAKE_PASSWORD)
+    await page.getByLabel('Mot de passe', { exact: true }).fill(FAKE_PASSWORD)
     await page.getByRole('button', { name: 'Déverrouiller' }).click()
     await expect(page.getByRole('alert')).toContainText('Mot de passe incorrect.')
 
-    await page.getByLabel('Mot de passe').fill('un-nouveau-mot')
+    await page.getByLabel('Mot de passe', { exact: true }).fill('un-nouveau-mot')
     await page.getByRole('button', { name: 'Déverrouiller' }).click()
     await expect(page.getByRole('banner')).toBeVisible()
   })
@@ -181,7 +181,7 @@ test.describe('Forgotten password', () => {
     ).toBeVisible()
     await expect(page.getByText('n’ont pas bougé')).toBeVisible()
 
-    await page.getByLabel('Mot de passe').fill('un-nouveau-mot')
+    await page.getByLabel('Mot de passe', { exact: true }).fill('un-nouveau-mot')
     await page.getByRole('button', { name: 'Enregistrer et continuer' }).click()
 
     await expect(page.getByRole('banner')).toBeVisible()

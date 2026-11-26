@@ -96,6 +96,23 @@ describe('NotificationChannelView', () => {
     )
   })
 
+  it('onRevealToken_ShouldShowTheTypedTokenInClear_WhenTheUserPressesTheEye', async () => {
+    // Arrange
+    fakeNetwork(channelRoutes())
+    renderScreen(<NotificationChannelView />, channelAt('telegram'))
+    await userEvent.type(await screen.findByLabelText('Token du bot'), 'not-a-real-token')
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Afficher « Token du bot »' }))
+
+    // Assert
+    expect(screen.getByLabelText('Token du bot')).toHaveAttribute('type', 'text')
+    expect(screen.getByRole('button', { name: 'Afficher « Token du bot »' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+  })
+
   it('onOpen_ShouldOfferNoAdvancedPage_WhenTheChannelIsNotConfiguredYet', async () => {
     // Arrange
     fakeNetwork(channelRoutes(makeChannelConfig({ isConfigured: false })))

@@ -1,6 +1,6 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { Button } from '../../../common/ui/button'
-import { Input } from '../../../common/ui/input'
+import { SecretInput } from '../../../common/components/secret_input'
 
 /**
  * The only screen seen without being in. It carries its help inline: there is no screen behind which
@@ -51,9 +51,8 @@ export function PasswordScreen({
           <label htmlFor="password" className="block font-medium">
             {label}
           </label>
-          <Input
+          <SecretInput
             id="password"
-            type="password"
             autoFocus
             autoComplete={minLength === undefined ? 'current-password' : 'new-password'}
             value={password}
