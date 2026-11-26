@@ -29,11 +29,15 @@ function nextOf(items: readonly DetectionEvent[], eventId: string): DetectionEve
  * Changing a filter reads again from the start: a cursor does not outlive the criteria that produced
  * it. The sheet stays open, several values being checked one after another.
  */
-const REFILTERED: Pick<DetectionHistoryUido, 'items' | 'nextCursor' | 'loaded' | 'playingId'> = {
+const REFILTERED: Pick<
+  DetectionHistoryUido,
+  'items' | 'nextCursor' | 'loaded' | 'playingId' | 'playedOnItsOwn'
+> = {
   items: [],
   nextCursor: null,
   loaded: false,
   playingId: null,
+  playedOnItsOwn: false,
 }
 
 export function detectionHistoryReducer(
@@ -91,13 +95,13 @@ export function detectionHistoryReducer(
       }
 
     case 'CLIP_PLAYED':
-      return { ...state, playingId: action.eventId }
+      return { ...state, playingId: action.eventId, playedOnItsOwn: false }
     // The next clip plays by itself, with nothing to set; after the last, the player rests (HIST-18).
     // While its actions are open the clip holds still, so they never land on the next one.
     case 'CLIP_ENDED': {
       const next = nextOf(state.items, action.eventId)
       return next && state.sheet !== 'actions' && state.sheet !== 'identity'
-        ? { ...state, playingId: next.eventId }
+        ? { ...state, playingId: next.eventId, playedOnItsOwn: true }
         : state
     }
 
@@ -128,6 +132,7 @@ export function detectionHistoryReducer(
       return {
         ...state,
         deletingEventId: null,
+        playedOnItsOwn: false,
         playingId: playing
           ? (nextOf(state.items, action.eventId)?.eventId ?? null)
           : state.playingId,

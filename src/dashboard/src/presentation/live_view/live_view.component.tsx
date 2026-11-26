@@ -12,6 +12,7 @@ import { TechnicalDetails } from '../../common/components/technical_details'
 import { TopBarIconLink } from '../../common/components/top_bar'
 import { OrientationUnavailable } from '../../common/components/orientation_unavailable'
 import { ClipPlayer } from '../../common/detection/clip_player'
+import { PLAYER_FRAME, STICKY_WELL } from '../../common/detection/sticky_player'
 import { cameraMark, cutLine } from '../../common/camera/camera_status'
 import { usePresenter } from '../../common/presenter/use_presenter'
 import { Button } from '../../common/ui/button'
@@ -35,7 +36,7 @@ import { ViewTabs } from './components/view_tabs'
 import { ViewTab, viewTabOf } from './components/view_tab'
 import { LiveAccess, liveAccessOf } from './live_access'
 import { CAMERA_REMOVED, presetLabel } from './live_view.formatters'
-import { useSideways } from './live_layout'
+import { useSideways } from '../../common/layout/sideways'
 import { buildLiveViewPresenter } from './live_view.presenter'
 import { liveViewReducer } from './live_view.reducer'
 import { buildInitialLiveViewUido } from './live_view.uido'
@@ -379,7 +380,8 @@ export function LiveView({ camera }: { camera: Camera }) {
           labels={uido.clipLabels}
           apiBaseUrl={apiBaseUrl}
           clipGone={uido.clipGoneId === playing.eventId}
-          className="aspect-video w-full rounded-card"
+          // Beside its list on a wide screen (LIVE-19), the clip keeps the live's place and size (UI-39).
+          className={cn(PLAYER_FRAME, 'lg:max-h-none')}
           onVideoError={() => void presenter.onClipFailed(playing.eventId)}
         >
           <PressableControl>
@@ -461,6 +463,8 @@ export function LiveView({ camera }: { camera: Camera }) {
         <div
           className={cn(
             immersive ? 'fixed inset-0 z-40 touch-manipulation bg-picture' : 'relative w-full',
+            // A clip sticks under the bar, beside its list as above it, so a row far down plays in view (UI-39).
+            playing && !immersive && !sideways && STICKY_WELL,
           )}
           onPointerDownCapture={immersive ? controls.hold : undefined}
           onPointerUpCapture={immersive ? controls.release : undefined}
