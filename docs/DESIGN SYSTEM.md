@@ -411,7 +411,7 @@ over a page: the back button returns to the previous page, home when there is no
   sits is the use case's.
 - **Clip player**: the pause, the clip's caption and its controls fade over a playing clip the way
   the full-screen controls do; when they fade and what brings them back is
-  [SPECS](SPECS.md) LIVE-20.
+  [SPECS](SPECS.md) HIST-20.
 - **The browser's own bars**: in full screen, the screen asks the browser to hide them on a gesture,
   and keeps every control inside the device's safe areas.
 

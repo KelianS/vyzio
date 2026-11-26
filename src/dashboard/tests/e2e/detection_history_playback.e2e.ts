@@ -57,7 +57,7 @@ test.describe('DetectionHistoryView playback', () => {
   })
 })
 
-// A playing clip lets its picture be seen: its controls fade, a tap brings them back (LIVE-20).
+// A playing clip lets its picture be seen: its controls fade, a tap brings them back (HIST-20).
 test.describe('DetectionHistoryView playback controls', () => {
   test.beforeEach(async ({ page }) => {
     await installFakeBackend(

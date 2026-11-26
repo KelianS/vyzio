@@ -23,7 +23,7 @@ function stillOf(event: DetectionEvent, clipGone: boolean): string | null {
 /**
  * The player of a detection, in place of a picture: its video from the start, its name and hour over
  * it, how far it has played. It stops on its last frame unless the screen goes on (`onEnded`).
- * While it plays, all but the progress line fade and come back at a tap or a key (HIST-18).
+ * While it plays, all but the progress line fade and come back at a tap or a key (HIST-20).
  */
 export function ClipPlayer({
   event,
