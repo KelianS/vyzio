@@ -43,6 +43,7 @@ function openShellAt(...entries: string[]) {
         ),
         children: [
           { path: '/', element: <p>Accueil</p> },
+          { path: '/cameras/:id', element: <PageHeader title="Jardin" /> },
           { path: '/detections', element: <PageHeader title="Détections" /> },
           { path: '/settings', element: <PageHeader title="Réglages" /> },
           { path: '/settings/cameras/add', element: <AddCameraView /> },
@@ -309,6 +310,79 @@ describe('AppShell', () => {
       expect(state.camerasLoading || state.systemStats === null).toBe(false)
     })
     expect(screen.queryByRole('list', { name: 'Alertes' })).not.toBeInTheDocument()
+  })
+
+  it('TopBar_ShouldOpenTheCameraAndDropItsAlert_WhenTheUserTouchesTheAlert', async () => {
+    // Arrange
+    fakeNetwork({
+      'GET /api/cameras': ok([makeCamera({ displayName: 'Jardin', status: 'offline' })]),
+      'GET /api/system/stats': ok(stats()),
+    })
+    const router = openShellAt('/')
+    const alerts = await screen.findByRole('list', { name: 'Alertes' })
+
+    // Act
+    await userEvent.click(within(alerts).getByRole('link', { name: /Jardin ne répond plus/ }))
+
+    // Assert
+    expect(router.state.location.pathname).toBe('/cameras/camera-1')
+    expect(screen.queryByRole('list', { name: 'Alertes' })).not.toBeInTheDocument()
+  })
+
+  it('TopBar_ShouldKeepATouchedAlertClosed_WhenTheInterfaceIsOpenedAgainOnThisDevice', async () => {
+    // Arrange
+    fakeNetwork({
+      'GET /api/cameras': ok([makeCamera({ displayName: 'Jardin', status: 'offline' })]),
+      'GET /api/system/stats': ok(stats()),
+    })
+    openShellAt('/')
+    await userEvent.click(
+      within(await screen.findByRole('list', { name: 'Alertes' })).getByRole('link', {
+        name: /Jardin ne répond plus/,
+      }),
+    )
+    cleanup()
+
+    // Act
+    openShellAt('/')
+
+    // Assert
+    await waitFor(() => {
+      const state = useRootStore.getState()
+      expect(state.camerasLoading || state.systemStats === null).toBe(false)
+    })
+    expect(screen.queryByRole('list', { name: 'Alertes' })).not.toBeInTheDocument()
+  })
+
+  it('TopBar_ShouldShowATouchedAlertAgain_WhenItsCauseEndedThenCameBack', async () => {
+    // Arrange
+    const network = fakeNetwork({
+      'GET /api/cameras': ok([makeCamera({ displayName: 'Jardin', status: 'offline' })]),
+      'GET /api/system/stats': ok(stats()),
+    })
+    openShellAt('/')
+    await userEvent.click(
+      within(await screen.findByRole('list', { name: 'Alertes' })).getByRole('link', {
+        name: /Jardin ne répond plus/,
+      }),
+    )
+    await waitFor(() =>
+      expect(screen.queryByRole('list', { name: 'Alertes' })).not.toBeInTheDocument(),
+    )
+    network.answer('GET /api/cameras', ok([makeCamera({ displayName: 'Jardin' })]))
+    await act(() => useRootStore.getState().loadCameras(appContainer.cameras.getCameras))
+    network.answer(
+      'GET /api/cameras',
+      ok([makeCamera({ displayName: 'Jardin', status: 'offline' })]),
+    )
+
+    // Act
+    await act(() => useRootStore.getState().loadCameras(appContainer.cameras.getCameras))
+
+    // Assert
+    expect(
+      within(screen.getByRole('list', { name: 'Alertes' })).getByText('Jardin ne répond plus'),
+    ).toBeVisible()
   })
 
   it('TopBar_ShouldSayVyzioNoLongerAnswers_WhenTheSystemCannotBeReachedAnyMore', async () => {

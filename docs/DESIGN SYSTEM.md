@@ -161,7 +161,8 @@ is no navigation bar** ([SPECS](SPECS.md) UI-29).
 - **The alert slot** (UI-30): the bar grows downwards, its height springing to make room for an
   alert and to give it back. Each alert is a line in ink with a quieter second line, and a round
   close button at its end except for Vyzio out of reach; one that closes also leaves by a sideways
-  swipe, the same as its close button.
+  swipe, the same as its close button, and one that leads somewhere closes as the touch takes the
+  user there.
 - **The settings apply** (UI-28) is the bar's main action, drawn as one (§ Editing cycle).
 - **The clip player sticks under it** ([SPECS](SPECS.md) UI-39): while the list below scrolls, it
   stays under the bar, never taller than 40% of the screen so the list stays in reach; on a phone held
