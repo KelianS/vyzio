@@ -127,6 +127,41 @@ describe('ClipPlayer', () => {
     expect(screen.getByRole('button', { name: 'Pause' })).toBeInTheDocument()
   })
 
+  it('ClipPlayer_ShouldKeepItsControls_WhenAFingerHoldsOneOfThem', () => {
+    // Arrange
+    aPlayingClip()
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'Plus d’actions' }))
+
+    // Act
+    wait(5000)
+
+    // Assert
+    expect(screen.getByRole('button', { name: 'Pause' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Plus d’actions' })).toBeInTheDocument()
+  })
+
+  it('ClipPlayer_ShouldFadeNothing_WhenTheDetectionHasNoVideo', () => {
+    // Arrange
+    render(
+      <ClipPlayer
+        event={makeDetectionEvent({ label: 'cat', hasSnapshot: true })}
+        labels={[{ value: 'cat', displayName: 'Chat' }]}
+        apiBaseUrl=""
+        clipGone={false}
+        onVideoError={() => {}}
+      >
+        <button type="button">Plus d’actions</button>
+      </ClipPlayer>,
+    )
+
+    // Act
+    wait(3000)
+
+    // Assert
+    expect(screen.getByRole('button', { name: 'Plus d’actions' })).toBeInTheDocument()
+    expect(screen.getByText('Chat', { selector: 'p' }).closest('[inert]')).toBeNull()
+  })
+
   it('ClipPlayer_ShouldKeepItsControls_WhenTheClipIsPaused', () => {
     // Arrange
     const video = aPlayingClip()
@@ -157,7 +192,6 @@ describe('ClipPlayer', () => {
     // Arrange
     const video = aPlayingClip()
     fireEvent.stalled(video)
-    fireEvent.timeUpdate(video)
 
     // Act
     wait(3000)
