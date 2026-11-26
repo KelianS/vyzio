@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { CalendarOff, ImageOff } from 'lucide-react'
-import { prefersReducedMotion } from '../motion/springs'
+import { springIntoView } from '../motion/spring_scroll'
 import { cn } from '../ui/utils'
 import { DetectionThumbnail } from '../components/detection_thumbnail'
 import { DetectionTypeIcon } from './detection_type_icon'
@@ -43,11 +43,8 @@ export function ClipList({
   const playingRow = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
-    if (follow)
-      playingRow.current?.scrollIntoView({
-        block: 'nearest',
-        behavior: prefersReducedMotion() ? 'auto' : 'smooth',
-      })
+    const row = playingRow.current
+    if (follow && row) return springIntoView(row)
   }, [follow, playingId])
 
   return (

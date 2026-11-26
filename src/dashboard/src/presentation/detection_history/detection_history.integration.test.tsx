@@ -127,14 +127,17 @@ describe('DetectionHistoryView', () => {
     fakeNetwork(twoClips)
     renderScreen(<DetectionHistoryView />)
     await screen.findByRole('group', { name: 'Détection : Chat' })
-    const scroll = vi.spyOn(Element.prototype, 'scrollIntoView')
+    vi.spyOn(
+      screen.getByRole('button', { name: /Voiture/ }),
+      'getBoundingClientRect',
+    ).mockReturnValue({ top: 900, bottom: 976 } as DOMRect)
+    const scroll = vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
 
     // Act
     fireEvent.ended(player().querySelector('video')!)
 
     // Assert
-    expect(scroll).toHaveBeenCalledExactlyOnceWith({ block: 'nearest', behavior: 'auto' })
-    expect(scroll.mock.contexts[0]).toBe(screen.getByRole('button', { name: /Voiture/ }))
+    expect(scroll).toHaveBeenCalledExactlyOnceWith(0, 208)
     scroll.mockRestore()
   })
 
@@ -143,7 +146,8 @@ describe('DetectionHistoryView', () => {
     fakeNetwork(twoClips)
     renderScreen(<DetectionHistoryView />)
     const row = await screen.findByRole('button', { name: /Voiture/ })
-    const scroll = vi.spyOn(Element.prototype, 'scrollIntoView')
+    vi.spyOn(row, 'getBoundingClientRect').mockReturnValue({ top: 900, bottom: 976 } as DOMRect)
+    const scroll = vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
 
     // Act
     await userEvent.click(row)
